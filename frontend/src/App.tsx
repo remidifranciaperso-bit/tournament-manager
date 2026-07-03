@@ -2,16 +2,28 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { generateTournament, previewExcel } from "./api";
+import { CourtBackground, CourtGraphic } from "./components/CourtBackground";
 import { FileDrop } from "./components/FileDrop";
-import { PadelBall } from "./components/PadelBall";
-import { Stepper } from "./components/Stepper";
 import {
+  FeaturePill,
+  IconClock,
+  IconGrid,
+  IconLogo,
+  IconTrophy,
+  IconUpload,
+  StepHeader,
+} from "./components/Icons";
+import { PadelBall } from "./components/PadelBall";
+import { Stepper, StepperMobile } from "./components/Stepper";
+import {
+  Badge,
   GhostButton,
   NumberStepper,
   OptionCard,
   PrimaryButton,
   Segmented,
   Toggle,
+  TypeChip,
 } from "./components/ui";
 import {
   FORMATS_SUPPORTES,
@@ -30,6 +42,8 @@ const STEPS = [
   { key: "generate", label: "Génération" },
 ];
 
+const WIZARD_STEPS = STEPS.slice(1);
+
 function formatDateFr(iso: string) {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
@@ -37,9 +51,7 @@ function formatDateFr(iso: string) {
 
 function syncTerrains(form: TournamentForm, nb: number): TournamentForm {
   const terrains = [...form.terrains];
-  while (terrains.length < nb) {
-    terrains.push(`Terrain ${terrains.length + 1}`);
-  }
+  while (terrains.length < nb) terrains.push(`Terrain ${terrains.length + 1}`);
   while (terrains.length > nb) terrains.pop();
   const terrainPrincipal = terrains.includes(form.terrainPrincipal)
     ? form.terrainPrincipal
@@ -54,6 +66,10 @@ function syncHeures(form: TournamentForm, nbJours: number): TournamentForm {
   }
   while (heures.length > nbJours) heures.pop();
   return { ...form, nbJours, heuresDebutJours: heures };
+}
+
+function poulesDisponibleFrom(nb: number) {
+  return nb === 20 || nb === 24;
 }
 
 export default function App() {
@@ -81,11 +97,9 @@ export default function App() {
       setPreviewError(null);
       return;
     }
-
     let cancelled = false;
     setPreviewLoading(true);
     setPreviewError(null);
-
     previewExcel(form.excelFile)
       .then((result) => {
         if (cancelled) return;
@@ -95,9 +109,7 @@ export default function App() {
           if (!poulesDisponibleFrom(result.nb_equipes)) {
             next.modeTournoi = "Élimination directe";
           }
-          if (result.nb_equipes < 20) {
-            next = syncHeures(next, 1);
-          }
+          if (result.nb_equipes < 20) next = syncHeures(next, 1);
           return next;
         });
       })
@@ -110,7 +122,6 @@ export default function App() {
       .finally(() => {
         if (!cancelled) setPreviewLoading(false);
       });
-
     return () => {
       cancelled = true;
     };
@@ -128,8 +139,7 @@ export default function App() {
         return true;
       case 1:
         if (!form.excelFile || previewLoading) return false;
-        if (previewError) return false;
-        if (!preview?.supporte) return false;
+        if (previewError || !preview?.supporte) return false;
         if (form.pasDeLogo) return form.club.trim() !== "";
         return form.logoFile !== null;
       case 2:
@@ -159,17 +169,16 @@ export default function App() {
       URL.revokeObjectURL(pdfUrl);
       setPdfUrl(null);
     }
-
     try {
       const { blob, filename } = await generateTournament(form);
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
       setPdfFilename(filename);
       confetti({
-        particleCount: 120,
-        spread: 70,
-        origin: { y: 0.65 },
-        colors: ["#14a196", "#d7f24e", "#ffffff"],
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ["#00e5c3", "#d4ff4a", "#ffffff"],
       });
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -179,162 +188,204 @@ export default function App() {
   };
 
   const slideVariants = {
-    initial: { opacity: 0, x: 24 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -24 },
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -12 },
   };
 
+  if (step === 0) {
+    return (
+      <div className="relative flex min-h-full flex-col">
+        <CourtBackground />
+        <WelcomeStep onStart={() => setStep(1)} />
+      </div>
+    );
+  }
+
   return (
-    <div className="court-lines flex min-h-full flex-col">
-      <header className="sticky top-0 z-20 border-b border-white/50 bg-white/60 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <PadelBall size={36} />
-            <div>
-              <div className="font-display text-lg font-bold text-deep-900">
-                Padel Tournament Manager
-              </div>
-              <div className="text-xs text-deep-800/50">
-                Générateur de dossier tournoi
-              </div>
+    <div className="relative flex min-h-full">
+      <CourtBackground />
+
+      {/* Sidebar desktop */}
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.06] bg-arena-900/50 p-6 backdrop-blur-xl lg:flex">
+        <div className="mb-8 flex items-center gap-3">
+          <PadelBall size={32} />
+          <div>
+            <div className="font-display text-lg tracking-wider text-white">
+              PADEL TM
+            </div>
+            <div className="text-[10px] uppercase tracking-widest text-white/30">
+              Tournament Manager
             </div>
           </div>
-          {step > 0 && (
-            <span className="rounded-full bg-court-100 px-3 py-1 text-xs font-semibold text-court-700">
-              Étape {step}/{STEPS.length - 1}
-            </span>
-          )}
         </div>
-        {step > 0 && (
-          <div className="border-t border-white/40 px-4 pb-5 pt-3 sm:px-6">
-            <Stepper
-              steps={STEPS.slice(1)}
-              current={step - 1}
-              onGo={(i) => i < step && setStep(i + 1)}
-            />
+        <Stepper
+          steps={WIZARD_STEPS}
+          current={step - 1}
+          onGo={(i) => i < step - 1 && setStep(i + 1)}
+        />
+        <div className="mt-auto pt-8">
+          <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
+            <div className="text-[10px] uppercase tracking-widest text-white/30">
+              Progression
+            </div>
+            <div className="mt-1 font-display text-3xl text-neon">
+              {Math.round(((step) / (STEPS.length - 1)) * 100)}%
+            </div>
           </div>
-        )}
-      </header>
+        </div>
+      </aside>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            variants={slideVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.28, ease: "easeOut" }}
-          >
-            {step === 0 && <WelcomeStep onStart={() => setStep(1)} />}
+      <div className="flex min-h-full flex-1 flex-col">
+        {/* Header mobile */}
+        <header className="border-b border-white/[0.06] bg-arena-900/40 px-4 py-4 backdrop-blur-xl lg:hidden">
+          <StepperMobile steps={WIZARD_STEPS} current={step - 1} />
+        </header>
 
-            {step === 1 && (
-              <ImportStep
-                form={form}
-                patch={patch}
-                preview={preview}
-                previewLoading={previewLoading}
-                previewError={previewError}
-              />
-            )}
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-8 sm:py-10">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              variants={slideVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {step === 1 && (
+                <ImportStep
+                  form={form}
+                  patch={patch}
+                  preview={preview}
+                  previewLoading={previewLoading}
+                  previewError={previewError}
+                />
+              )}
+              {step === 2 && <IdentityStep form={form} patch={patch} />}
+              {step === 3 && (
+                <FormatStep
+                  form={form}
+                  patch={patch}
+                  nbEquipes={nbEquipes}
+                  poulesDisponibles={poulesDisponibles}
+                  multiJoursDisponible={multiJoursDisponible}
+                />
+              )}
+              {step === 4 && <PlanningStep form={form} patch={patch} />}
+              {step === 5 && (
+                <GenerateStep
+                  form={form}
+                  preview={preview}
+                  generating={generating}
+                  genError={genError}
+                  pdfUrl={pdfUrl}
+                  pdfFilename={pdfFilename}
+                  onGenerate={handleGenerate}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </main>
 
-            {step === 2 && (
-              <IdentityStep form={form} patch={patch} />
-            )}
-
-            {step === 3 && (
-              <FormatStep
-                form={form}
-                patch={patch}
-                nbEquipes={nbEquipes}
-                poulesDisponibles={poulesDisponibles}
-                multiJoursDisponible={multiJoursDisponible}
-              />
-            )}
-
-            {step === 4 && (
-              <PlanningStep form={form} patch={patch} />
-            )}
-
-            {step === 5 && (
-              <GenerateStep
-                form={form}
-                preview={preview}
-                generating={generating}
-                genError={genError}
-                pdfUrl={pdfUrl}
-                pdfFilename={pdfFilename}
-                onGenerate={handleGenerate}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      {step > 0 && (
-        <footer className="sticky bottom-0 border-t border-white/50 bg-white/70 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <footer className="sticky bottom-0 border-t border-white/[0.06] bg-arena-900/60 px-4 py-4 backdrop-blur-xl sm:px-8">
+          <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
             {step > 1 ? (
-              <GhostButton onClick={goBack}>Retour</GhostButton>
+              <GhostButton onClick={goBack}>← Retour</GhostButton>
             ) : (
               <div />
             )}
             {step < STEPS.length - 1 ? (
               <PrimaryButton onClick={goNext} disabled={!stepValid}>
-                Suivant
+                Continuer →
               </PrimaryButton>
             ) : (
               <div />
             )}
           </div>
         </footer>
-      )}
+      </div>
     </div>
   );
 }
 
-function poulesDisponibleFrom(nb: number) {
-  return nb === 20 || nb === 24;
-}
-
 function WelcomeStep({ onStart }: { onStart: () => void }) {
+  const features = [
+    "Participants",
+    "Tableaux",
+    "Convocations",
+    "Planning",
+    "Classement",
+  ];
+
   return (
-    <section className="flex flex-col items-center text-center">
-      <motion.div
-        animate={{ y: [0, -12, 0] }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-        className="mb-8"
-      >
-        <PadelBall size={80} />
-      </motion.div>
-      <h1 className="font-display text-4xl font-extrabold tracking-tight text-deep-900 sm:text-5xl">
-        Créez votre dossier
-        <span className="block bg-gradient-to-r from-court-500 to-court-700 bg-clip-text text-transparent">
-          tournoi padel
-        </span>
-      </h1>
-      <p className="mt-4 max-w-lg text-deep-800/70">
-        Importez votre fichier Excel, configurez le tournoi en quelques étapes
-        et téléchargez un PDF professionnel prêt à imprimer.
-      </p>
-      <div className="mt-8 flex flex-wrap justify-center gap-3 text-sm text-deep-800/60">
-        {["Participants", "Tableaux", "Convocations", "Planning", "Classement"].map(
-          (label) => (
-            <span
-              key={label}
-              className="rounded-full border border-court-200 bg-white/60 px-3 py-1 font-medium"
-            >
-              {label}
+    <div className="relative flex min-h-full flex-col items-center justify-center px-6 py-16">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2">
+        {/* Texte */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-neon/20 bg-neon/5 px-4 py-1.5">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-neon" />
+            <span className="text-xs font-medium uppercase tracking-widest text-neon">
+              Générateur professionnel
             </span>
-          )
-        )}
+          </div>
+
+          <h1 className="font-display text-[clamp(3.5rem,10vw,7rem)] leading-[0.9] tracking-wide text-white">
+            TOURNOI
+            <br />
+            <span className="text-neon">PADEL</span>
+          </h1>
+
+          <p className="mt-6 max-w-md text-base leading-relaxed text-white/50">
+            De votre fichier Excel au dossier complet en PDF — tableaux,
+            convocations, planning et classement. En quelques clics.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-2">
+            {features.map((f, i) => (
+              <motion.div
+                key={f}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + i * 0.07 }}
+              >
+                <FeaturePill>{f}</FeaturePill>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            className="mt-10"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <PrimaryButton onClick={onStart} size="lg">
+              Créer mon tournoi →
+            </PrimaryButton>
+          </motion.div>
+        </motion.div>
+
+        {/* Court graphique */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="relative hidden justify-center lg:flex"
+        >
+          <div className="absolute inset-0 rounded-full bg-neon/10 blur-3xl" />
+          <motion.div
+            animate={{ y: [0, -16, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <CourtGraphic className="relative h-[420px] w-auto drop-shadow-2xl" />
+          </motion.div>
+        </motion.div>
       </div>
-      <div className="mt-10">
-        <PrimaryButton onClick={onStart}>
-          Créer mon tournoi
-        </PrimaryButton>
-      </div>
-    </section>
+    </div>
   );
 }
 
@@ -352,57 +403,52 @@ function ImportStep({
   previewError: string | null;
 }) {
   return (
-    <section className="glass p-6 sm:p-8">
-      <h2 className="font-display text-2xl font-bold text-deep-900">
-        Import des fichiers
-      </h2>
-      <p className="mt-1 text-sm text-deep-800/60">
-        Chargez la liste des participants et le logo de votre club.
-      </p>
-
-      <div className="mt-6 space-y-6">
+    <section className="panel p-8">
+      <StepHeader
+        num="01"
+        title="IMPORT"
+        subtitle="Fichier Excel des participants et identité visuelle du club."
+      />
+      <div className="space-y-6">
         <div>
-          <label className="field-label">Fichier Excel des participants</label>
+          <label className="field-label">Fichier Excel</label>
           <FileDrop
             accept=".xlsx"
             file={form.excelFile}
             onFile={(f) => patch({ excelFile: f })}
-            title="Glissez votre fichier .xlsx ici"
-            hint="ou cliquez pour parcourir"
-            icon="📊"
+            title="Glissez votre .xlsx ici"
+            hint="Liste des participants — première feuille"
+            icon={<IconUpload className="h-7 w-7" />}
           />
           {previewLoading && (
-            <p className="mt-2 text-sm text-court-600">Analyse en cours…</p>
+            <p className="mt-3 text-sm text-neon/70">Analyse en cours…</p>
           )}
           {previewError && (
-            <p className="mt-2 text-sm text-red-600">{previewError}</p>
+            <p className="mt-3 text-sm text-red-400">{previewError}</p>
           )}
           {preview && !previewLoading && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-3 flex flex-wrap items-center gap-2"
+              className="mt-3 flex flex-wrap gap-2"
             >
-              <span className="rounded-full bg-court-500 px-3 py-1 text-sm font-semibold text-white">
+              <Badge variant="success">
                 {preview.nb_equipes} équipes détectées
-              </span>
+              </Badge>
               {!preview.supporte && (
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
-                  Format non supporté — formats disponibles :{" "}
-                  {FORMATS_SUPPORTES.join(", ")}
-                </span>
+                <Badge variant="warning">
+                  Format non supporté — {FORMATS_SUPPORTES.join(", ")} équipes
+                </Badge>
               )}
             </motion.div>
           )}
         </div>
 
-        <div className="flex items-center gap-4">
-          <Toggle
-            checked={form.pasDeLogo}
-            onChange={(v) => patch({ pasDeLogo: v })}
-            label="Pas de logo à importer"
-          />
-        </div>
+        <Toggle
+          checked={form.pasDeLogo}
+          onChange={(v) => patch({ pasDeLogo: v })}
+          label="Pas de logo — saisir le nom du club"
+        />
 
         {form.pasDeLogo ? (
           <div>
@@ -414,7 +460,7 @@ function ImportStep({
               className="text-input"
               value={form.club}
               onChange={(e) => patch({ club: e.target.value })}
-              placeholder="Nom du club"
+              placeholder="Padel Club Paris"
             />
           </div>
         ) : (
@@ -424,9 +470,9 @@ function ImportStep({
               accept=".png,.jpg,.jpeg"
               file={form.logoFile}
               onFile={(f) => patch({ logoFile: f })}
-              title="Glissez votre logo ici"
-              hint="PNG ou JPG"
-              icon="🏟️"
+              title="Logo PNG ou JPG"
+              hint="Affiché en bas de chaque page du dossier"
+              icon={<IconLogo className="h-7 w-7" />}
             />
           </div>
         )}
@@ -443,15 +489,13 @@ function IdentityStep({
   patch: (p: Partial<TournamentForm>) => void;
 }) {
   return (
-    <section className="glass p-6 sm:p-8">
-      <h2 className="font-display text-2xl font-bold text-deep-900">
-        Identité du tournoi
-      </h2>
-      <p className="mt-1 text-sm text-deep-800/60">
-        Date, catégorie et niveau du tournoi.
-      </p>
-
-      <div className="mt-6 space-y-6">
+    <section className="panel p-8">
+      <StepHeader
+        num="02"
+        title="IDENTITÉ"
+        subtitle="Date, niveau FFT et catégorie du tournoi."
+      />
+      <div className="space-y-8">
         <div>
           <label className="field-label" htmlFor="date">
             Date du tournoi
@@ -459,7 +503,7 @@ function IdentityStep({
           <input
             id="date"
             type="date"
-            className="text-input"
+            className="text-input max-w-xs"
             value={form.dateTournoi}
             onChange={(e) => patch({ dateTournoi: e.target.value })}
           />
@@ -469,19 +513,12 @@ function IdentityStep({
           <label className="field-label">Type de tournoi</label>
           <div className="flex flex-wrap gap-2">
             {TYPES_TOURNOI.map((t) => (
-              <button
+              <TypeChip
                 key={t}
-                type="button"
+                label={t}
+                active={form.typeTournoi === t}
                 onClick={() => patch({ typeTournoi: t })}
-                className={[
-                  "rounded-2xl px-4 py-2 font-display text-sm font-bold transition",
-                  form.typeTournoi === t
-                    ? "bg-gradient-to-r from-court-500 to-court-600 text-white shadow-glow"
-                    : "border border-court-100 bg-white/70 text-deep-800/70 hover:border-court-300",
-                ].join(" ")}
-              >
-                {t}
-              </button>
+              />
             ))}
           </div>
         </div>
@@ -489,6 +526,7 @@ function IdentityStep({
         <div>
           <label className="field-label">Catégorie</label>
           <Segmented
+            id="genre"
             value={form.genreTournoi}
             options={[
               { value: "Hommes", label: "Hommes" },
@@ -517,33 +555,31 @@ function FormatStep({
   multiJoursDisponible: boolean;
 }) {
   return (
-    <section className="glass p-6 sm:p-8">
-      <h2 className="font-display text-2xl font-bold text-deep-900">
-        Format sportif
-      </h2>
-      <p className="mt-1 text-sm text-deep-800/60">
-        {nbEquipes > 0
-          ? `${nbEquipes} équipes — choisissez le déroulement.`
-          : "Choisissez le déroulement du tournoi."}
-      </p>
-
-      <div className="mt-6 space-y-6">
+    <section className="panel p-8">
+      <StepHeader
+        num="03"
+        title="FORMAT"
+        subtitle={
+          nbEquipes > 0
+            ? `${nbEquipes} équipes — déroulement et style du dossier.`
+            : "Déroulement et style du dossier."
+        }
+      />
+      <div className="space-y-8">
         <div className="grid gap-3 sm:grid-cols-2">
           <OptionCard
             active={form.modeTournoi === "Élimination directe"}
             onClick={() => patch({ modeTournoi: "Élimination directe" })}
             title="Élimination directe"
             subtitle="Tableau classique"
-            icon="🏆"
+            icon={<IconTrophy />}
           />
           <OptionCard
             active={form.modeTournoi === "Poules + tableau final"}
-            onClick={() =>
-              patch({ modeTournoi: "Poules + tableau final" })
-            }
+            onClick={() => patch({ modeTournoi: "Poules + tableau final" })}
             title="Poules + tableau final"
-            subtitle="Disponible pour 20 et 24 équipes"
-            icon="📋"
+            subtitle="20 et 24 équipes uniquement"
+            icon={<IconGrid />}
             disabled={!poulesDisponibles}
           />
         </div>
@@ -552,16 +588,11 @@ function FormatStep({
           <div>
             <label className="field-label">Constitution des poules</label>
             <Segmented
+              id="poules"
               value={form.methodePoules}
               options={[
-                {
-                  value: "Méthode du serpentin",
-                  label: "Serpentin",
-                },
-                {
-                  value: "Tirage au sort par rang",
-                  label: "Tirage au sort",
-                },
+                { value: "Méthode du serpentin", label: "Serpentin" },
+                { value: "Tirage au sort par rang", label: "Tirage au sort" },
               ]}
               onChange={(v) => patch({ methodePoules: v })}
             />
@@ -572,19 +603,18 @@ function FormatStep({
           <label className="field-label">Nombre de jours</label>
           {multiJoursDisponible ? (
             <Segmented
-              value={String(form.nbJours) as "1" | "2" | "3"}
+              id="jours"
+              value={String(form.nbJours)}
               options={[
                 { value: "1", label: "1 jour" },
                 { value: "2", label: "2 jours" },
                 { value: "3", label: "3 jours" },
               ]}
-              onChange={(v) =>
-                patch(syncHeures(form, Number(v)))
-              }
+              onChange={(v) => patch(syncHeures(form, Number(v)))}
             />
           ) : (
-            <p className="text-sm text-deep-800/60">
-              Formats 8, 12 et 16 équipes : tournoi sur 1 jour uniquement.
+            <p className="text-sm text-white/40">
+              Formats 8, 12 et 16 équipes : 1 jour uniquement.
             </p>
           )}
         </div>
@@ -597,14 +627,14 @@ function FormatStep({
               onClick={() => patch({ styleTemplates: "Basic" })}
               title="Basic"
               subtitle="Templates classiques"
-              icon="📄"
+              icon={<span className="text-lg">📄</span>}
             />
             <OptionCard
               active={form.styleTemplates === "Avancé"}
               onClick={() => patch({ styleTemplates: "Avancé" })}
               title="Avancé"
               subtitle="Templates bleus premium"
-              icon="✨"
+              icon={<span className="text-lg">✦</span>}
             />
           </div>
         </div>
@@ -621,15 +651,13 @@ function PlanningStep({
   patch: (p: Partial<TournamentForm>) => void;
 }) {
   return (
-    <section className="glass p-6 sm:p-8">
-      <h2 className="font-display text-2xl font-bold text-deep-900">
-        Planning & terrains
-      </h2>
-      <p className="mt-1 text-sm text-deep-800/60">
-        Horaires, durée des matchs et configuration des terrains.
-      </p>
-
-      <div className="mt-6 space-y-6">
+    <section className="panel p-8">
+      <StepHeader
+        num="04"
+        title="PLANNING"
+        subtitle="Horaires, durée des matchs et configuration des terrains."
+      />
+      <div className="space-y-8">
         {form.heuresDebutJours.map((heure, i) => (
           <div key={i}>
             <label className="field-label" htmlFor={`heure-${i}`}>
@@ -637,23 +665,26 @@ function PlanningStep({
                 ? "Heure de début"
                 : `Heure de début — jour ${i + 1}`}
             </label>
-            <input
-              id={`heure-${i}`}
-              className="text-input max-w-xs"
-              value={heure}
-              onChange={(e) => {
-                const heures = [...form.heuresDebutJours];
-                heures[i] = e.target.value;
-                patch({ heuresDebutJours: heures });
-              }}
-              placeholder="18:00"
-            />
+            <div className="flex items-center gap-3">
+              <IconClock className="h-5 w-5 text-neon/50" />
+              <input
+                id={`heure-${i}`}
+                className="text-input max-w-[140px]"
+                value={heure}
+                onChange={(e) => {
+                  const heures = [...form.heuresDebutJours];
+                  heures[i] = e.target.value;
+                  patch({ heuresDebutJours: heures });
+                }}
+                placeholder="18:00"
+              />
+            </div>
           </div>
         ))}
 
         <div>
           <label className="field-label">
-            Durée prévisionnelle d&apos;un match : {form.dureeMatch} min
+            Durée d&apos;un match — {form.dureeMatch} min
           </label>
           <input
             type="range"
@@ -661,11 +692,13 @@ function PlanningStep({
             max={90}
             step={5}
             value={form.dureeMatch}
-            onChange={(e) =>
-              patch({ dureeMatch: Number(e.target.value) })
-            }
-            className="mt-2 w-full accent-court-500"
+            onChange={(e) => patch({ dureeMatch: Number(e.target.value) })}
+            className="mt-2 w-full accent-neon"
           />
+          <div className="mt-1 flex justify-between text-xs text-white/25">
+            <span>20 min</span>
+            <span>90 min</span>
+          </div>
         </div>
 
         <div>
@@ -697,7 +730,7 @@ function PlanningStep({
 
         <div>
           <label className="field-label" htmlFor="terrain-principal">
-            Terrain principal pour la finale
+            Terrain principal — finale
           </label>
           <select
             id="terrain-principal"
@@ -746,73 +779,89 @@ function GenerateStep({
   ];
 
   return (
-    <section className="glass p-6 sm:p-8">
-      <h2 className="font-display text-2xl font-bold text-deep-900">
-        Récapitulatif & génération
-      </h2>
-      <p className="mt-1 text-sm text-deep-800/60">
-        Vérifiez les paramètres puis lancez la génération du PDF.
-      </p>
+    <section className="panel p-8">
+      <StepHeader
+        num="05"
+        title="GÉNÉRATION"
+        subtitle="Vérifiez le récapitulatif et lancez la production du PDF."
+      />
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-court-100">
-        <table className="w-full text-sm">
-          <tbody>
-            {rows.map(([label, value]) => (
-              <tr key={label} className="border-b border-court-50 last:border-0">
-                <td className="bg-court-50/50 px-4 py-2.5 font-semibold text-deep-800/70">
-                  {label}
-                </td>
-                <td className="px-4 py-2.5 text-deep-900">{value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
+        {rows.map(([label, value], i) => (
+          <div
+            key={label}
+            className={[
+              "flex items-center justify-between gap-4 px-5 py-3.5",
+              i % 2 === 0 ? "bg-white/[0.02]" : "bg-transparent",
+              i < rows.length - 1 ? "border-b border-white/[0.04]" : "",
+            ].join(" ")}
+          >
+            <span className="text-xs font-medium uppercase tracking-widest text-white/35">
+              {label}
+            </span>
+            <span className="text-right text-sm font-medium text-white/80">
+              {value}
+            </span>
+          </div>
+        ))}
       </div>
 
       <div className="mt-8 flex flex-col items-center gap-4">
         {generating ? (
-          <div className="flex flex-col items-center gap-3 py-4">
-            <PadelBall size={56} spinning />
-            <p className="font-medium text-court-700">
-              Génération du dossier en cours…
-            </p>
-            <p className="text-sm text-deep-800/50">
-              Tableaux, convocations et planning
-            </p>
+          <div className="flex flex-col items-center gap-4 py-6">
+            <PadelBall size={64} spinning />
+            <div className="text-center">
+              <p className="font-display text-xl tracking-wide text-neon">
+                GÉNÉRATION EN COURS
+              </p>
+              <p className="mt-1 text-sm text-white/40">
+                Tableaux · Convocations · Planning
+              </p>
+            </div>
+            <div className="h-1 w-48 overflow-hidden rounded-full bg-white/10">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-neon to-lime"
+                animate={{ x: ["-100%", "100%"] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                style={{ width: "40%" }}
+              />
+            </div>
           </div>
         ) : (
-          <PrimaryButton onClick={onGenerate} disabled={generating}>
-            Générer le tournoi
+          <PrimaryButton onClick={onGenerate} size="lg" disabled={generating}>
+            Générer le dossier PDF
           </PrimaryButton>
         )}
-
         {genError && (
-          <p className="text-center text-sm text-red-600">{genError}</p>
+          <p className="text-center text-sm text-red-400">{genError}</p>
         )}
       </div>
 
       {pdfUrl && (
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-8 space-y-4"
         >
-          <div className="flex items-center justify-between gap-3">
-            <p className="font-semibold text-court-700">
-              PDF généré avec succès
-            </p>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-neon/20 bg-neon/5 px-5 py-4">
+            <div>
+              <p className="font-display text-lg tracking-wide text-neon">
+                DOSSIER PRÊT
+              </p>
+              <p className="text-xs text-white/40">{pdfFilename}</p>
+            </div>
             <a
               href={pdfUrl}
               download={pdfFilename}
-              className="inline-flex items-center gap-2 rounded-2xl bg-ball-400 px-5 py-2.5 text-sm font-bold text-deep-900 shadow-glass transition hover:bg-ball-300"
+              className="inline-flex items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
             >
-              Télécharger le PDF
+              Télécharger ↓
             </a>
           </div>
           <iframe
             title="Aperçu PDF"
             src={pdfUrl}
-            className="h-[480px] w-full rounded-2xl border border-court-100 bg-white shadow-glass"
+            className="h-[500px] w-full rounded-2xl border border-white/10 bg-white shadow-panel"
           />
         </motion.div>
       )}

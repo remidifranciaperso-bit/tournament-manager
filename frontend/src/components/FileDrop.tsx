@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { IconCheck, IconUpload } from "./Icons";
 
 export function FileDrop({
   accept,
@@ -14,7 +15,7 @@ export function FileDrop({
   onFile: (f: File | null) => void;
   title: string;
   hint: string;
-  icon: string;
+  icon?: React.ReactNode;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -34,12 +35,12 @@ export function FileDrop({
       }}
       onClick={() => inputRef.current?.click()}
       className={[
-        "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed p-8 text-center transition",
+        "group relative flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition",
         over
-          ? "border-court-500 bg-court-50"
+          ? "border-neon/60 bg-neon/5 shadow-neon"
           : file
-            ? "border-court-400 bg-court-50/60"
-            : "border-court-200 bg-white/60 hover:border-court-400",
+            ? "border-neon/40 bg-neon/5"
+            : "border-white/15 bg-white/[0.02] hover:border-neon/30 hover:bg-white/[0.04]",
       ].join(" ")}
     >
       <input
@@ -49,18 +50,43 @@ export function FileDrop({
         className="hidden"
         onChange={(e) => onFile(e.target.files?.[0] ?? null)}
       />
+
+      {/* Halo au survol */}
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
+        <div className="absolute inset-0 bg-gradient-to-b from-neon/5 to-transparent" />
+      </div>
+
       <motion.div
         key={file ? "has" : "empty"}
-        initial={{ scale: 0.6, opacity: 0 }}
+        initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="text-4xl"
+        className={[
+          "relative flex h-16 w-16 items-center justify-center rounded-2xl transition",
+          file ? "bg-neon/20 text-neon" : "bg-white/5 text-white/40 group-hover:text-neon/70",
+        ].join(" ")}
       >
-        {file ? "✅" : icon}
+        {file ? <IconCheck className="h-7 w-7" /> : icon ?? <IconUpload className="h-7 w-7" />}
       </motion.div>
-      <div className="font-display font-semibold text-deep-900">
-        {file ? file.name : title}
+
+      <div>
+        <div className="font-semibold text-white">
+          {file ? file.name : title}
+        </div>
+        <div className="mt-1 text-xs text-white/40">{hint}</div>
       </div>
-      <div className="text-sm text-deep-800/60">{hint}</div>
+
+      {file && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onFile(null);
+          }}
+          className="text-xs text-white/30 underline-offset-2 hover:text-white/60 hover:underline"
+        >
+          Changer de fichier
+        </button>
+      )}
     </div>
   );
 }

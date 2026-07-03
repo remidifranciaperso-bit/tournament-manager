@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { IconCheck } from "./Icons";
 
 export interface StepDef {
   key: string;
@@ -14,52 +15,93 @@ export function Stepper({
   current: number;
   onGo: (i: number) => void;
 }) {
+  return (
+    <nav className="flex flex-col gap-1">
+      {steps.map((step, i) => {
+        const done = i < current;
+        const active = i === current;
+        const reachable = i <= current;
+
+        return (
+          <button
+            key={step.key}
+            type="button"
+            onClick={() => reachable && onGo(i)}
+            disabled={!reachable}
+            className={[
+              "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition",
+              active
+                ? "bg-neon/10"
+                : reachable
+                  ? "hover:bg-white/5"
+                  : "cursor-default opacity-40",
+            ].join(" ")}
+          >
+            <motion.span
+              initial={false}
+              animate={{
+                scale: active ? 1.05 : 1,
+              }}
+              className={[
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition",
+                done
+                  ? "bg-neon text-arena-950"
+                  : active
+                    ? "bg-neon/20 text-neon ring-1 ring-neon/40"
+                    : "bg-white/5 text-white/40",
+              ].join(" ")}
+            >
+              {done ? <IconCheck className="h-4 w-4" /> : i + 1}
+            </motion.span>
+
+            <div className="min-w-0">
+              <div
+                className={[
+                  "truncate text-sm font-medium transition",
+                  active ? "text-white" : "text-white/45",
+                ].join(" ")}
+              >
+                {step.label}
+              </div>
+              {active && (
+                <motion.div
+                  layoutId="step-indicator"
+                  className="mt-0.5 h-0.5 w-8 rounded-full bg-neon"
+                />
+              )}
+            </div>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** Stepper horizontal compact pour mobile */
+export function StepperMobile({
+  steps,
+  current,
+}: {
+  steps: StepDef[];
+  current: number;
+}) {
   const pct = steps.length > 1 ? (current / (steps.length - 1)) * 100 : 0;
 
   return (
     <div className="w-full">
-      <div className="relative mx-auto flex max-w-3xl items-center justify-between">
-        <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-court-100" />
+      <div className="mb-2 flex justify-between text-xs text-white/40">
+        <span>
+          Étape {current + 1} / {steps.length}
+        </span>
+        <span>{steps[current]?.label}</span>
+      </div>
+      <div className="relative h-1 overflow-hidden rounded-full bg-white/10">
         <motion.div
-          className="absolute left-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-gradient-to-r from-court-400 to-court-600"
+          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-neon to-lime"
           initial={false}
           animate={{ width: `${pct}%` }}
           transition={{ type: "spring", stiffness: 200, damping: 26 }}
         />
-        {steps.map((step, i) => {
-          const done = i < current;
-          const active = i === current;
-          const reachable = i <= current;
-          return (
-            <button
-              key={step.key}
-              type="button"
-              onClick={() => reachable && onGo(i)}
-              className="relative z-10 flex flex-col items-center gap-2"
-              disabled={!reachable}
-            >
-              <motion.span
-                initial={false}
-                animate={{
-                  scale: active ? 1.15 : 1,
-                  backgroundColor: done || active ? "#0d8079" : "#ffffff",
-                  color: done || active ? "#ffffff" : "#106661",
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-court-500 text-sm font-bold shadow-sm"
-              >
-                {done ? "✓" : i + 1}
-              </motion.span>
-              <span
-                className={[
-                  "hidden text-xs font-semibold sm:block",
-                  active ? "text-court-700" : "text-deep-800/50",
-                ].join(" ")}
-              >
-                {step.label}
-              </span>
-            </button>
-          );
-        })}
       </div>
     </div>
   );
