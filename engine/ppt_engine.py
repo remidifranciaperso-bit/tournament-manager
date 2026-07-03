@@ -315,7 +315,9 @@ def trouver_tables_participants(prs):
 
     for slide in prs.slides:
 
-        if not slide_contient_texte(slide, "PARTICIPANTS"):
+        # Préfixe "PARTICIPANT" : couvre "PARTICIPANTS" (H/Mixte) et
+        # "PARTICIPANTES" (Femmes), la balise ayant déjà été remplacée.
+        if not slide_contient_texte(slide, "PARTICIPANT"):
             continue
 
         for shape in parcourir_shapes(slide.shapes):
