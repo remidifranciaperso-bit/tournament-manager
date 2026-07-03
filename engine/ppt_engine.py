@@ -113,6 +113,37 @@ def parcourir_shapes(shapes):
 _APRES_EFFECTLST = (qn("a:scene3d"), qn("a:sp3d"), qn("a:extLst"))
 
 
+def redresser_connecteurs(prs):
+    """
+    Redresse les connecteurs obliques en rendu LibreOffice.
+
+    Les connecteurs des templates sont liés à leurs formes via stCxn/endCxn
+    (point d'accroche). PowerPoint et LibreOffice ne calculent pas ce point
+    d'accroche au même endroit -> LibreOffice dessine une branche en biais.
+    On retire la liaison : le connecteur garde sa géométrie stockée (xfrm),
+    qui est bien droite et identique au rendu PowerPoint d'origine.
+    """
+
+    for slide in prs.slides:
+        for shape in parcourir_shapes(slide.shapes):
+            element = shape._element
+
+            if element.tag != qn("p:cxnSp"):
+                continue
+
+            nv_cxn = element.find(qn("p:nvCxnSpPr"))
+            if nv_cxn is None:
+                continue
+
+            c_nv_cxn = nv_cxn.find(qn("p:cNvCxnSpPr"))
+            if c_nv_cxn is None:
+                continue
+
+            for tag in ("a:stCxn", "a:endCxn"):
+                for liaison in c_nv_cxn.findall(qn(tag)):
+                    c_nv_cxn.remove(liaison)
+
+
 def supprimer_ombres_theme(prs):
     """
     Neutralise les ombres héritées du thème.
@@ -879,6 +910,8 @@ def remplir_template(
     )
 
     supprimer_ombres_theme(prs)
+
+    redresser_connecteurs(prs)
 
     restantes = balises_restantes(prs)
 
