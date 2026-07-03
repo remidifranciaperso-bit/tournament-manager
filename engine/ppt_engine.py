@@ -107,8 +107,13 @@ def parcourir_shapes(shapes):
             yield from parcourir_shapes(shape.shapes)
 
 
-def remplacer_dans_text_frame(text_frame, valeurs):
-    texte_original = text_frame.text
+def remplacer_dans_paragraphe(paragraphe, valeurs):
+    # On travaille au niveau du paragraphe (et non du text_frame entier) :
+    # concaténer tous les paragraphes avec des "\n" puis tout réinjecter dans
+    # un seul run insère un saut de ligne DANS le run, ce que LibreOffice rend
+    # mal (perte du centrage / du gras). Paragraphe par paragraphe, la
+    # structure et l'alignement d'origine sont préservés.
+    texte_original = "".join(run.text for run in paragraphe.runs)
 
     if not texte_original:
         return 0
@@ -141,10 +146,25 @@ def remplacer_dans_text_frame(text_frame, valeurs):
     )
 
     if nouveau != texte_original:
-        remplacer_texte_preserve_style(
-            text_frame,
-            nouveau,
-        )
+        if paragraphe.runs:
+            paragraphe.runs[0].text = nouveau
+
+            for run in paragraphe.runs[1:]:
+                run.text = ""
+        else:
+            paragraphe.text = nouveau
+
+    return nb
+
+
+def remplacer_dans_text_frame(text_frame, valeurs):
+    if not text_frame.paragraphs:
+        return 0
+
+    nb = 0
+
+    for paragraphe in text_frame.paragraphs:
+        nb += remplacer_dans_paragraphe(paragraphe, valeurs)
 
     return nb
 
