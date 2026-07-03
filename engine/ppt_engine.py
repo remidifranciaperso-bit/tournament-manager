@@ -5,6 +5,7 @@ import re
 from engine.points_engine import get_points
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.oxml.ns import qn
 from PIL import Image
 
 
@@ -105,6 +106,64 @@ def parcourir_shapes(shapes):
 
         if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
             yield from parcourir_shapes(shape.shapes)
+
+
+# Éléments de spPr qui, selon le schéma OOXML, doivent suivre effectLst :
+# on insère effectLst juste avant eux pour garder un XML valide.
+_APRES_EFFECTLST = (qn("a:scene3d"), qn("a:sp3d"), qn("a:extLst"))
+
+
+def supprimer_ombres_theme(prs):
+    """
+    Neutralise les ombres héritées du thème.
+
+    Les formes des templates n'ont pas d'ombre explicite mais référencent un
+    style d'effet du thème (effectRef idx != 0) qui, lui, contient une ombre.
+    PowerPoint ne l'affiche pas, mais LibreOffice l'applique -> ombre parasite
+    en rendu PDF.
+
+    Deux neutralisations combinées (LibreOffice ignore un effectLst vide et
+    applique quand même l'effectRef) :
+      1. effectRef idx="0" -> plus aucune référence à un effet du thème ;
+      2. <a:effectLst/> vide dans spPr -> formatage local explicite « sans
+         effet », qui prime sur la référence de style.
+    """
+
+    for slide in prs.slides:
+        for shape in parcourir_shapes(slide.shapes):
+            element = shape._element
+
+            style = element.find(qn("p:style"))
+            if style is not None:
+                effect_ref = style.find(qn("a:effectRef"))
+                if effect_ref is not None and effect_ref.get("idx") not in (
+                    None,
+                    "0",
+                ):
+                    effect_ref.set("idx", "0")
+
+            sp_pr = element.find(qn("p:spPr"))
+            if sp_pr is None:
+                continue
+
+            if (
+                sp_pr.find(qn("a:effectLst")) is not None
+                or sp_pr.find(qn("a:effectDag")) is not None
+            ):
+                continue
+
+            effect_lst = sp_pr.makeelement(qn("a:effectLst"), {})
+
+            insertion = None
+            for enfant in sp_pr:
+                if enfant.tag in _APRES_EFFECTLST:
+                    insertion = enfant
+                    break
+
+            if insertion is not None:
+                insertion.addprevious(effect_lst)
+            else:
+                sp_pr.append(effect_lst)
 
 
 def remplacer_dans_paragraphe(paragraphe, valeurs):
@@ -790,6 +849,8 @@ def remplir_template(
         tournoi,
         matchs,
     )
+
+    supprimer_ombres_theme(prs)
 
     restantes = balises_restantes(prs)
 
