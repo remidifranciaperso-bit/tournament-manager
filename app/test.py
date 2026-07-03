@@ -1,0 +1,1 @@
+print("Tournament Manager fonctionne")

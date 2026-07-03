@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: tournament-manager
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /_stcore/health
+    autoDeploy: true
+    envVars:
+      - key: PDF_CONVERTER
+        value: libreoffice

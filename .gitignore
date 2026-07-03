@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Fichiers Office temporaires (verrous)
+~$*.pptx
+~$*.docx
+
+# Sorties générées à l'exécution
+exports/
+
+# Données / échantillons non nécessaires au déploiement
+data/
+excels test/
+excels tests 2/
+anciennes et autres versions/
+points/
+pour bosser les plannifs/
+
+# Documents de travail
+*.docx
+
+# Scripts temporaires
+_*.py

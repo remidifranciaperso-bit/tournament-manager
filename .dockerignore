@@ -1,0 +1,23 @@
+.git
+.gitignore
+.DS_Store
+**/.DS_Store
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Fichiers de travail lourds et non nécessaires à l'exécution
+exports/*
+!exports/.gitkeep
+data/
+excels test/
+excels tests 2/
+anciennes et autres versions/
+pour bosser les plannifs/
+points/
+*.docx
+
+# Environnements virtuels
+.venv/
+venv/
+env/
