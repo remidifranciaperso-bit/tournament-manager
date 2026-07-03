@@ -383,11 +383,59 @@ def remplir_table_participants_unique(table, equipes):
         )
 
 
+_MOTIF_JOUEUR = re.compile(r"joueur", re.IGNORECASE)
+
+
+def _feminiser_joueur(texte):
+    def _remplacer(match):
+        mot = match.group(0)
+        if mot.isupper():
+            return "JOUEUSE"
+        if mot[:1].isupper():
+            return "Joueuse"
+        return "joueuse"
+
+    return _MOTIF_JOUEUR.sub(_remplacer, texte)
+
+
+def detecter_genre(tournoi):
+    genre = getattr(tournoi, "genre_tournoi", None)
+
+    if genre is None:
+        type_base = str(getattr(tournoi, "type_tournoi", "")).strip()
+        if " - " in type_base:
+            morceaux = type_base.split(" - ")
+            if len(morceaux) > 1:
+                genre = morceaux[1].strip()
+
+    return genre
+
+
+def feminiser_entetes_participants(prs):
+    """
+    Sur la page Participants, remplace « Joueur 1/2 » par « Joueuse 1/2 »
+    (en respectant la casse d'origine) pour les tournois féminins.
+    Agit uniquement sur la ligne d'en-tête du tableau des participants.
+    """
+    for table in trouver_tables_participants(prs):
+        if not table.rows:
+            continue
+
+        for cell in table.rows[0].cells:
+            for paragraphe in cell.text_frame.paragraphs:
+                for run in paragraphe.runs:
+                    if _MOTIF_JOUEUR.search(run.text):
+                        run.text = _feminiser_joueur(run.text)
+
+
 def remplir_table_participants(prs, tournoi):
     tables = trouver_tables_participants(prs)
 
     if not tables:
         return
+
+    if detecter_genre(tournoi) == "Femmes":
+        feminiser_entetes_participants(prs)
 
     equipes = sorted(
         tournoi.equipes,
