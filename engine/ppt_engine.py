@@ -466,7 +466,12 @@ def construire_valeurs_poules(tournoi):
     valeurs["{{SECOND_POULE_D}}"] = "🥈 Poule D:"
 
     return valeurs
-def construire_convocations(matchs, date_tournoi, heure_debut_tournoi="00:00"):
+def construire_convocations(
+    matchs,
+    date_tournoi,
+    heure_debut_tournoi="00:00",
+    heures_debut_jours=None,
+):
 
     convocations = {}
 
@@ -492,17 +497,39 @@ def construire_convocations(matchs, date_tournoi, heure_debut_tournoi="00:00"):
     except Exception:
         heure_limite = datetime.strptime("00:00", "%H:%M").time()
 
+    if not heures_debut_jours:
+        heures_debut_jours = [heure_debut_tournoi]
+
+    def heure_debut_du_jour(jour):
+        # jour est 1-based ; on récupère l'heure de début propre à ce jour.
+        index = max(0, jour - 1)
+
+        if index < len(heures_debut_jours):
+            valeur = heures_debut_jours[index]
+        else:
+            valeur = heures_debut_jours[-1]
+
+        try:
+            return datetime.strptime(str(valeur), "%H:%M").time()
+        except Exception:
+            return heure_limite
+
     def infos_match(match):
         jour = getattr(match, "jour", 1)
 
         try:
             heure_match = datetime.strptime(match.heure, "%H:%M").time()
         except Exception:
-            heure_match = heure_limite
+            heure_match = heure_debut_du_jour(jour)
 
         decalage_jour = jour - 1
 
-        if heure_match < heure_limite:
+        # Bascule "après minuit" : un match dont l'heure est antérieure au
+        # début de SON jour appartient à la nuit suivante (ex. finale à 00:40
+        # après un début à 18:00). On compare au début du jour concerné, et
+        # non au début global du tournoi : sinon un jour 2 qui démarre plus
+        # tôt que le jour 1 (ex. 09:00 < 18:00) serait décalé à tort de +1.
+        if heure_match < heure_debut_du_jour(jour):
             decalage_jour += 1
 
         return decalage_jour, heure_match
@@ -580,6 +607,7 @@ def remplir_table_convocations(prs, tournoi, matchs):
         matchs,
         tournoi.date_tournoi,
         tournoi.heure_debut,
+        getattr(tournoi, "heures_debut_jours", None),
     )
 
     # 32 équipes : convocations sur 2 pages
