@@ -21,3 +21,7 @@ points/
 .venv/
 venv/
 env/
+
+# Frontend (reconstruit dans le stage Node du Dockerfile)
+frontend/node_modules/
+frontend/dist/

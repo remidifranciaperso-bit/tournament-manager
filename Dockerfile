@@ -1,3 +1,13 @@
+# Stage 1 : build du front React (Vite)
+FROM node:20-alpine AS frontend-build
+
+WORKDIR /app/frontend
+COPY frontend/package.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2 : runtime Python + LibreOffice
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -7,7 +17,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 # LibreOffice Impress (conversion PPTX -> PDF sans interface graphique)
 # + polices : DejaVu / Liberation pour le texte, Noto Color Emoji pour les
-# pictogrammes 🏆 🥈 ❌ utilisés dans les templates.
+# pictogrammes utilises dans les templates.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libreoffice-impress \
@@ -19,9 +29,7 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Polices custom des templates (Grindy Brush, TSL Sans) : indispensables
-# pour un rendu PDF fidèle des titres. fontconfig les associe par nom de
-# famille, exactement comme le fait PowerPoint.
+# Polices custom des templates (Grindy Brush, TSL Sans)
 COPY fonts/ /usr/share/fonts/truetype/tournament/
 RUN fc-cache -f -v > /dev/null
 
@@ -31,17 +39,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-# Streamlit doit pouvoir écrire ses fichiers de config / d'exports.
 RUN mkdir -p /app/exports \
     && chmod -R 777 /app/exports /tmp
 
-EXPOSE 8501
+EXPOSE 8000
 
-# $PORT est fourni par la plupart des hébergeurs (Render, Railway...).
-# Valeur par défaut 8501 en local.
-CMD streamlit run app/ui.py \
-    --server.port=${PORT:-8501} \
-    --server.address=0.0.0.0 \
-    --server.headless=true \
-    --browser.gatherUsageStats=false
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

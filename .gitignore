@@ -30,3 +30,7 @@ pour bosser les plannifs/
 
 # Scripts temporaires
 _*.py
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
