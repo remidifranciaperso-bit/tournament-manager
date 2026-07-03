@@ -1041,6 +1041,12 @@ def remplacer_logo(prs, logo_path=None, club=""):
                     club,
                 )
 
+                # Sans logo, la zone de texte du club ne doit pas afficher
+                # sa bordure (le trait w="0" du template se rend comme un
+                # rectangle visible en LibreOffice). On la neutralise en
+                # gardant le texte du club organisateur.
+                shape.line.fill.background()
+
 def analyser_template(fichier):
     prs = Presentation(fichier)
 
