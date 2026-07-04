@@ -8,10 +8,12 @@ type RacketProgressProps = {
 };
 
 /**
- * Seuils clip-path calibrés sur le masque : chaque étape remplit
- * exactement 1/8 de la surface de la raquette (cumul pixels du bas).
+ * Étendue verticale réelle du tracé de la raquette dans l'image/masque
+ * (en % de la hauteur). Le remplissage est linéaire en hauteur entre ces
+ * bornes : chaque étape ajoute la même portion de hauteur (1/8 → 8/8).
  */
-const CLIP_TOP_BY_STEP = [74.95, 58.15, 47.76, 38.9, 30.65, 22.3, 13.34, 0.81];
+const CONTENT_TOP = 0.81;
+const CONTENT_BOTTOM = 99.39;
 
 const MASK_STYLE: CSSProperties = {
   WebkitMaskImage: "url(/images/padel-racket-fill-mask.png)",
@@ -29,8 +31,8 @@ const MASK_STYLE: CSSProperties = {
 function clipTopForStep(step: number, total: number): number {
   const s = Math.min(Math.max(step, 0), total);
   if (s <= 0) return 100;
-  const idx = Math.min(s - 1, CLIP_TOP_BY_STEP.length - 1);
-  return CLIP_TOP_BY_STEP[idx] ?? 100;
+  const ratio = s / total;
+  return CONTENT_TOP + (1 - ratio) * (CONTENT_BOTTOM - CONTENT_TOP);
 }
 
 export function RacketProgress({ step, total = 8 }: RacketProgressProps) {

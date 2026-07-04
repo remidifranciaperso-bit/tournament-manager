@@ -263,11 +263,11 @@ export default function App() {
                 <div className="text-[10px] uppercase tracking-widest text-white/30">
                   Progression
                 </div>
-                <div className="mt-0.5 font-display text-3xl leading-none text-lime">
+                <div className="mt-2 font-display text-3xl leading-none text-lime">
                   {step}/{WIZARD_STEPS.length}
                 </div>
               </div>
-              <div className="flex h-[3.75rem] min-w-0 flex-1 items-center justify-center overflow-visible">
+              <div className="flex min-h-[4rem] min-w-0 flex-1 items-center justify-center overflow-visible">
                 <RacketProgress step={step} total={WIZARD_STEPS.length} />
               </div>
             </div>
