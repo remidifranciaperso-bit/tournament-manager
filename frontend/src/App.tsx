@@ -4,6 +4,7 @@ import { generateTournament, previewExcel } from "./api";
 import { CourtBackground } from "./components/CourtBackground";
 import { FileDrop } from "./components/FileDrop";
 import {
+  IconCheck,
   IconClock,
   IconGrid,
   IconLogo,
@@ -236,7 +237,7 @@ export default function App() {
             className="mb-4 flex w-full justify-center rounded-full transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/50"
             aria-label="Retour à l'accueil"
           >
-            <PadelBall size={46} realistic />
+            <PadelBall size={40} realistic />
           </button>
           <h2
             className="font-brush text-[clamp(1.35rem,4.5vw,2rem)] leading-[1.05] text-lime"
@@ -346,6 +347,19 @@ export default function App() {
   );
 }
 
+const WELCOME_HIGHLIGHTS = [
+  "Création complète d'un dossier de tournoi",
+  "Choix du format",
+  "Tableau de convocations",
+  "Placement automatique des équipes dans les tableaux",
+  "Composition des poules",
+  "Tirage au sort automatisé",
+  "Paramètres de tournoi personnalisables",
+  "Planning de matchs intelligent",
+  "Prise en charge des barèmes de points FFT",
+  "PDF téléchargeable prêt à imprimer",
+];
+
 function WelcomeStep({ onStart }: { onStart: () => void }) {
   return (
     <div className="relative flex min-h-full flex-col items-center justify-center px-6 py-16">
@@ -381,9 +395,31 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
           </PrimaryButton>
         </motion.div>
 
-        <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-white/45 sm:text-base">
-          Fichier collé, mise en page de ton choix.
-        </p>
+        <motion.div
+          className="mx-auto mt-12 w-full max-w-3xl"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+        >
+          <div className="lime-panel px-5 py-6 sm:px-7 sm:py-7">
+            <ul className="grid gap-x-8 gap-y-3.5 text-left sm:grid-cols-2">
+              {WELCOME_HIGHLIGHTS.map((item, i) => (
+                <motion.li
+                  key={item}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.52 + i * 0.035 }}
+                  className="flex items-start gap-3 text-sm leading-snug text-white/55 sm:text-[0.9375rem]"
+                >
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
+                    <IconCheck className="h-3 w-3" />
+                  </span>
+                  <span>{item}</span>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        </motion.div>
       </motion.div>
     </div>
   );
@@ -1058,7 +1094,7 @@ function GenerationStep({
 
       {generating && (
         <div className="mt-8 flex flex-col items-center gap-4">
-          <PadelBall size={46} spinning realistic />
+          <PadelBall size={40} spinning realistic />
           <p className="text-sm text-white/45">
             Tableaux · Convocations · Planning
           </p>
@@ -1088,7 +1124,7 @@ function GenerationStep({
             </a>
           </div>
           <p
-            className="mt-6 font-brush text-[clamp(1.25rem,4.5vw,2rem)] leading-none text-lime"
+            className="mt-8 font-brush text-[clamp(1.25rem,4.5vw,2rem)] leading-none text-lime sm:mt-10"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
           >
             QUE LE MEILLEUR GAGNE
