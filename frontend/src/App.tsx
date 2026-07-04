@@ -351,7 +351,7 @@ const WELCOME_HIGHLIGHTS = [
   "Dossier tournoi complet",
   "Choix du format",
   "Tableau de convocations",
-  "Placement automatique des équipes",
+  "Placement des équipes",
   "Composition des poules",
   "Tirage au sort automatisé",
   "Paramètres personnalisables",
