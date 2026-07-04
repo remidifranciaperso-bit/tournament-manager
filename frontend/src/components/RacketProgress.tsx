@@ -7,6 +7,12 @@ type RacketProgressProps = {
   total?: number;
 };
 
+/**
+ * Seuils clip-path calibrés sur le masque : chaque étape remplit
+ * exactement 1/8 de la surface de la raquette (cumul pixels du bas).
+ */
+const CLIP_TOP_BY_STEP = [74.95, 58.15, 47.76, 38.9, 30.65, 22.3, 13.34, 0.81];
+
 const MASK_STYLE: CSSProperties = {
   WebkitMaskImage: "url(/images/padel-racket-fill-mask.png)",
   maskImage: "url(/images/padel-racket-fill-mask.png)",
@@ -16,29 +22,37 @@ const MASK_STYLE: CSSProperties = {
   maskRepeat: "no-repeat",
   WebkitMaskPosition: "center",
   maskPosition: "center",
+  WebkitMaskMode: "alpha",
+  maskMode: "alpha",
 };
 
+function clipTopForStep(step: number, total: number): number {
+  const s = Math.min(Math.max(step, 0), total);
+  if (s <= 0) return 100;
+  const idx = Math.min(s - 1, CLIP_TOP_BY_STEP.length - 1);
+  return CLIP_TOP_BY_STEP[idx] ?? 100;
+}
+
 export function RacketProgress({ step, total = 8 }: RacketProgressProps) {
-  const ratio = Math.min(Math.max(step, 0), total) / total;
-  const fillHeight = `${ratio * 100}%`;
+  const clipTop = clipTopForStep(step, total);
 
   return (
     <div className="relative aspect-[100/200] h-[5.25rem] w-auto origin-center scale-[1.35]">
-      <div className="absolute inset-0" style={MASK_STYLE}>
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 bg-lime"
-          initial={false}
-          animate={{ height: fillHeight }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 bg-lime/50 blur-sm"
-          initial={false}
-          animate={{ height: fillHeight }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          aria-hidden
-        />
-      </div>
+      <motion.div
+        className="absolute inset-0 bg-lime"
+        initial={false}
+        animate={{ clipPath: `inset(${clipTop}% 0 0 0)` }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        style={MASK_STYLE}
+      />
+      <motion.div
+        className="absolute inset-0 bg-lime/40 blur-md"
+        initial={false}
+        animate={{ clipPath: `inset(${clipTop}% 0 0 0)` }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        style={MASK_STYLE}
+        aria-hidden
+      />
       <img
         src="/images/padel-racket.png"
         alt=""
