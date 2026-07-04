@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { generateTournament, previewExcel } from "./api";
 import { CourtBackground } from "./components/CourtBackground";
@@ -37,6 +37,7 @@ const STEPS = [
   { key: "format", label: "Format" },
   { key: "planning", label: "Planning" },
   { key: "terrains", label: "Terrains" },
+  { key: "summary", label: "Résumé" },
   { key: "generate", label: "Génération" },
 ];
 
@@ -80,6 +81,7 @@ export default function App() {
   const [genError, setGenError] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState("tournoi.pdf");
+  const genStartedRef = useRef(false);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
   const poulesDisponibles = nbEquipes === 20 || nbEquipes === 24;
@@ -156,6 +158,8 @@ export default function App() {
         );
       case 7:
         return true;
+      case 8:
+        return true;
       default:
         return false;
     }
@@ -163,8 +167,19 @@ export default function App() {
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const goBack = () => setStep((s) => Math.max(s - 1, 0));
+  const goHome = () => setStep(0);
 
-  const handleGenerate = async () => {
+  const handleValidateSummary = () => {
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
+    }
+    setGenError(null);
+    genStartedRef.current = false;
+    setStep(8);
+  };
+
+  const handleGenerate = useCallback(async () => {
     setGenerating(true);
     setGenError(null);
     if (pdfUrl) {
@@ -181,7 +196,17 @@ export default function App() {
     } finally {
       setGenerating(false);
     }
-  };
+  }, [form, pdfUrl]);
+
+  useEffect(() => {
+    if (step !== 8) {
+      genStartedRef.current = false;
+      return;
+    }
+    if (genStartedRef.current || generating) return;
+    genStartedRef.current = true;
+    handleGenerate();
+  }, [step, generating, handleGenerate]);
 
   const slideVariants = {
     initial: { opacity: 0, y: 20 },
@@ -205,9 +230,14 @@ export default function App() {
       {/* Sidebar desktop */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.06] bg-arena-900/50 p-6 backdrop-blur-xl lg:flex">
         <div className="mb-8 text-center">
-          <div className="mb-4 flex justify-center">
+          <button
+            type="button"
+            onClick={goHome}
+            className="mb-4 flex w-full justify-center rounded-full transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/50"
+            aria-label="Retour à l'accueil"
+          >
             <PadelBall size={56} realistic />
-          </div>
+          </button>
           <h2
             className="font-brush text-[clamp(1.35rem,4.5vw,2rem)] leading-[1.05] text-lime"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
@@ -275,14 +305,14 @@ export default function App() {
               {step === 5 && <PlanningStep form={form} patch={patch} />}
               {step === 6 && <TerrainsStep form={form} patch={patch} />}
               {step === 7 && (
-                <GenerateStep
-                  form={form}
-                  preview={preview}
+                <SummaryStep form={form} preview={preview} />
+              )}
+              {step === 8 && (
+                <GenerationStep
                   generating={generating}
                   genError={genError}
                   pdfUrl={pdfUrl}
                   pdfFilename={pdfFilename}
-                  onGenerate={handleGenerate}
                 />
               )}
             </motion.div>
@@ -298,10 +328,14 @@ export default function App() {
             )}
             {step < STEPS.length - 1 &&
             step !== 1 &&
+            step !== 7 &&
+            step !== 8 &&
             (step !== 2 || stepValid) ? (
               <PrimaryButton onClick={goNext} disabled={!stepValid}>
                 Continuer →
               </PrimaryButton>
+            ) : step === 7 ? (
+              <PrimaryButton onClick={handleValidateSummary}>Valider</PrimaryButton>
             ) : (
               <div />
             )}
@@ -889,22 +923,12 @@ function formatHeuresDebut(form: TournamentForm) {
     .join(" · ");
 }
 
-function GenerateStep({
+function SummaryStep({
   form,
   preview,
-  generating,
-  genError,
-  pdfUrl,
-  pdfFilename,
-  onGenerate,
 }: {
   form: TournamentForm;
   preview: PreviewResult | null;
-  generating: boolean;
-  genError: string | null;
-  pdfUrl: string | null;
-  pdfFilename: string;
-  onGenerate: () => void;
 }) {
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
 
@@ -951,16 +975,14 @@ function GenerateStep({
     ["Terrains", String(form.nbTerrains)],
     ["Style", form.styleTemplates],
   ].map((row) =>
-    Array.isArray(row)
-      ? { label: row[0], value: row[1] }
-      : row
+    Array.isArray(row) ? { label: row[0], value: row[1] } : row
   );
 
   return (
     <div className="mx-auto w-full max-w-2xl text-center">
       <WizardPageTitle
         title="Résumé du tournoi"
-        subtitle="Vérifiez le récapitulatif et lancez la production du PDF."
+        subtitle="Vérifiez le récapitulatif avant de lancer la génération."
       />
 
       <div className="overflow-hidden rounded-2xl border border-lime/20">
@@ -980,62 +1002,92 @@ function GenerateStep({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      <div className="mt-8 flex flex-col items-center gap-4">
-        {generating ? (
-          <div className="flex flex-col items-center gap-4 py-6">
-            <PadelBall size={64} spinning realistic />
-            <div className="text-center">
-              <p className="font-display text-xl tracking-wide text-neon">
-                GÉNÉRATION EN COURS
-              </p>
-              <p className="mt-1 text-sm text-white/40">
-                Tableaux · Convocations · Planning
-              </p>
-            </div>
-            <div className="h-1 w-48 overflow-hidden rounded-full bg-white/10">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-neon to-lime"
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-                style={{ width: "40%" }}
-              />
-            </div>
-          </div>
-        ) : (
-          <PrimaryButton onClick={onGenerate} size="lg" disabled={generating}>
-            Générer le dossier PDF
-          </PrimaryButton>
-        )}
-        {genError && (
-          <p className="text-center text-sm text-red-400">{genError}</p>
-        )}
+function GenerationStep({
+  generating,
+  genError,
+  pdfUrl,
+  pdfFilename,
+}: {
+  generating: boolean;
+  genError: string | null;
+  pdfUrl: string | null;
+  pdfFilename: string;
+}) {
+  const done = !!pdfUrl && !generating;
+
+  return (
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle
+        title="Génération"
+        subtitle={
+          done
+            ? "Votre dossier tournoi est prêt."
+            : "Production du PDF en cours…"
+        }
+      />
+
+      <div className="mx-auto mt-6 w-full max-w-md">
+        <div className="h-2 overflow-hidden rounded-full bg-white/10">
+          {done ? (
+            <motion.div
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="h-full rounded-full bg-lime shadow-lime"
+            />
+          ) : (
+            <motion.div
+              className="h-full rounded-full bg-lime shadow-lime"
+              initial={{ width: "12%" }}
+              animate={{ width: generating ? "88%" : "12%" }}
+              transition={{
+                duration: generating ? 8 : 0.3,
+                ease: "easeInOut",
+              }}
+            />
+          )}
+        </div>
       </div>
 
-      {pdfUrl && (
+      {generating && (
+        <div className="mt-8 flex flex-col items-center gap-4">
+          <PadelBall size={56} spinning realistic />
+          <p className="text-sm text-white/45">
+            Tableaux · Convocations · Planning
+          </p>
+        </div>
+      )}
+
+      {genError && (
+        <p className="mt-6 text-center text-sm text-red-400">{genError}</p>
+      )}
+
+      {done && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-8 space-y-6"
+          className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-3"
         >
-          <div className="lime-panel flex items-center justify-between gap-3 px-5 py-4">
-            <p className="font-display text-lg tracking-wide text-lime sm:text-xl">
-              DOSSIER PRÊT
-            </p>
-            <a
-              href={pdfUrl}
-              download={pdfFilename}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
-            >
-              Télécharger ↓
-            </a>
-          </div>
-          <p
-            className="font-brush text-[clamp(1.75rem,6vw,3rem)] leading-[1.05] text-lime"
-            style={{ textShadow: "0 0 32px rgba(212,255,74,0.12)" }}
+          <span className="font-display text-lg tracking-wide text-lime sm:text-xl">
+            DOSSIER PRÊT
+          </span>
+          <a
+            href={pdfUrl}
+            download={pdfFilename}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
+          >
+            Télécharger ↓
+          </a>
+          <span
+            className="font-brush text-[clamp(1.25rem,4.5vw,2rem)] leading-none text-lime"
+            style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
           >
             QUE LE MEILLEUR GAGNE
-          </p>
+          </span>
         </motion.div>
       )}
     </div>
