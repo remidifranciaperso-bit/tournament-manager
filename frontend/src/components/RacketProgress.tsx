@@ -37,7 +37,7 @@ export function RacketProgress({ step, total = 8 }: RacketProgressProps) {
   const clipTop = clipTopForStep(step, total);
 
   return (
-    <div className="relative aspect-[746/982] h-[5.25rem] w-auto origin-center scale-[1.35]">
+    <div className="relative aspect-[746/982] h-[3.5rem] w-auto">
       <motion.div
         className="absolute inset-0 bg-lime"
         initial={false}
