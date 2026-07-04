@@ -13,6 +13,7 @@ import {
   WizardPageTitle,
 } from "./components/Icons";
 import { PadelBall } from "./components/PadelBall";
+import { RacketProgress } from "./components/RacketProgress";
 import { Stepper, StepperMobile } from "./components/Stepper";
 import {
   GhostButton,
@@ -262,6 +263,7 @@ export default function App() {
             <div className="mt-1 font-display text-3xl text-lime">
               {step}/{WIZARD_STEPS.length}
             </div>
+            <RacketProgress step={step} total={WIZARD_STEPS.length} />
           </div>
         </div>
       </aside>
