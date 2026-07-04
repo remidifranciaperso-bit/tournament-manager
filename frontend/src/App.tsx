@@ -256,18 +256,18 @@ export default function App() {
           onGo={(i) => i < step - 1 && setStep(i + 1)}
           className="min-h-0 flex-1 overflow-y-auto"
         />
-        <div className="shrink-0 pt-6">
-          <div className="rounded-xl border border-lime/15 bg-lime/[0.04] p-4">
-            <div className="flex items-center gap-3">
+        <div className="shrink-0 pt-3">
+          <div className="overflow-visible rounded-xl border border-lime/15 bg-lime/[0.04] px-3 py-2">
+            <div className="flex items-center gap-2">
               <div className="flex shrink-0 flex-col justify-center">
                 <div className="text-[10px] uppercase tracking-widest text-white/30">
                   Progression
                 </div>
-                <div className="mt-1 font-display text-3xl leading-none text-lime">
+                <div className="mt-0.5 font-display text-3xl leading-none text-lime">
                   {step}/{WIZARD_STEPS.length}
                 </div>
               </div>
-              <div className="flex h-[5.5rem] min-w-0 flex-1 items-center justify-center">
+              <div className="flex h-[3.75rem] min-w-0 flex-1 items-center justify-center overflow-visible">
                 <RacketProgress step={step} total={WIZARD_STEPS.length} />
               </div>
             </div>
