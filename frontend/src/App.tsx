@@ -348,16 +348,16 @@ export default function App() {
 }
 
 const WELCOME_HIGHLIGHTS = [
-  "Création complète d'un dossier de tournoi",
+  "Dossier tournoi complet",
   "Choix du format",
   "Tableau de convocations",
   "Placement automatique des équipes",
   "Composition des poules",
   "Tirage au sort automatisé",
-  "Paramètres de tournoi personnalisables",
+  "Paramètres personnalisables",
   "Planning de matchs intelligent",
   "Barèmes de points FFT intégrés",
-  "PDF téléchargeable prêt à imprimer",
+  "PDF prêt à imprimer",
 ];
 
 function WelcomeStep({ onStart }: { onStart: () => void }) {
@@ -367,20 +367,21 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="mx-auto w-full max-w-5xl overflow-x-hidden text-center"
+        className="mx-auto w-full max-w-4xl overflow-x-hidden text-center"
       >
         <h1
-          className="w-full text-center font-brush whitespace-nowrap text-[min(6.75rem,max(0.875rem,calc((100vw-3rem)/17)))] leading-[1.05] text-lime"
+          className="font-brush text-[clamp(2.5rem,8vw,5.25rem)] leading-[1.02] text-lime"
           style={{ textShadow: "0 0 40px rgba(212,255,74,0.15)" }}
         >
-          Padel Tournament Engine
+          <span className="block">Padel Tournament</span>
+          <span className="block">Engine</span>
         </h1>
 
         <p className="mt-4 text-base font-medium text-white/70 sm:text-lg">
           Générateur professionnel de tournois padel
         </p>
 
-        <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-white/45 sm:text-base">
+        <p className="mx-auto mt-6 whitespace-nowrap text-center text-[clamp(0.75rem,2.8vw,1rem)] leading-snug text-white/45">
           De votre fichier excel au dossier complet, en quelques clics.
         </p>
 
@@ -396,23 +397,23 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         </motion.div>
 
         <motion.div
-          className="mx-auto mt-12 w-full max-w-3xl overflow-x-hidden"
+          className="mx-auto mt-12 w-full max-w-4xl overflow-x-hidden"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <div className="lime-panel px-4 py-6 sm:px-6 sm:py-7">
-            <ul className="mx-auto flex flex-col items-center gap-2.5">
+          <div className="lime-panel px-4 py-6 sm:px-7 sm:py-7">
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:gap-x-6 sm:gap-y-3">
               {WELCOME_HIGHLIGHTS.map((item, i) => (
                 <motion.li
                   key={item}
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.52 + i * 0.035 }}
-                  className="flex max-w-full items-center gap-2.5 whitespace-nowrap text-[min(0.9375rem,max(0.625rem,calc((100vw-4.5rem)/36)))] leading-none text-white/55"
+                  className="flex min-w-0 items-center gap-2 whitespace-nowrap text-left text-[10px] leading-none text-white/55 sm:text-[11px] md:text-xs"
                 >
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
-                    <IconCheck className="h-2.5 w-2.5" />
+                  <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime sm:h-4 sm:w-4">
+                    <IconCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                   </span>
                   <span>{item}</span>
                 </motion.li>
