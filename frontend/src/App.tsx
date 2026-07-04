@@ -236,7 +236,7 @@ export default function App() {
             className="mb-4 flex w-full justify-center rounded-full transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/50"
             aria-label="Retour à l'accueil"
           >
-            <PadelBall size={56} realistic />
+            <PadelBall size={46} realistic />
           </button>
           <h2
             className="font-brush text-[clamp(1.35rem,4.5vw,2rem)] leading-[1.05] text-lime"
@@ -367,8 +367,8 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         </p>
 
         <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-white/45 sm:text-base">
-          De votre fichier Excel au dossier complet en PDF — tableaux,
-          convocations, planning et classement. En quelques clics.
+          Importez l&apos;Excel, suivez les étapes et récupérez votre dossier
+          tournoi en PDF.
         </p>
 
         <motion.div
@@ -1055,7 +1055,7 @@ function GenerationStep({
 
       {generating && (
         <div className="mt-8 flex flex-col items-center gap-4">
-          <PadelBall size={56} spinning realistic />
+          <PadelBall size={46} spinning realistic />
           <p className="text-sm text-white/45">
             Tableaux · Convocations · Planning
           </p>
@@ -1070,24 +1070,26 @@ function GenerationStep({
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-3"
+          className="mt-8"
         >
-          <span className="font-display text-lg tracking-wide text-lime sm:text-xl">
-            DOSSIER PRÊT
-          </span>
-          <a
-            href={pdfUrl}
-            download={pdfFilename}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
-          >
-            Télécharger ↓
-          </a>
-          <span
-            className="font-brush text-[clamp(1.25rem,4.5vw,2rem)] leading-none text-lime"
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <span className="font-display text-lg tracking-wide text-lime sm:text-xl">
+              DOSSIER PRÊT
+            </span>
+            <a
+              href={pdfUrl}
+              download={pdfFilename}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
+            >
+              Télécharger ↓
+            </a>
+          </div>
+          <p
+            className="mt-6 font-brush text-[clamp(1.25rem,4.5vw,2rem)] leading-none text-lime"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
           >
             QUE LE MEILLEUR GAGNE
-          </span>
+          </p>
         </motion.div>
       )}
     </div>
