@@ -1022,7 +1022,7 @@ function SummaryStep({
     ["Déroulement", formatModeTournoi(form.modeTournoi)],
     ["Jours", String(form.nbJours)],
     ["Terrains", String(form.nbTerrains)],
-    ["Style", form.styleTemplates],
+    ["Durée des matchs", `${form.dureeMatch} min`],
   ].map((row) =>
     Array.isArray(row) ? { label: row[0], value: row[1] } : row
   );
