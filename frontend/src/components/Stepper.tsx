@@ -31,7 +31,7 @@ export function Stepper({
             className={[
               "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition",
               active
-                ? "bg-neon/10"
+                ? "bg-lime/10"
                 : reachable
                   ? "hover:bg-white/5"
                   : "cursor-default opacity-40",
@@ -45,9 +45,9 @@ export function Stepper({
               className={[
                 "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition",
                 done
-                  ? "bg-neon text-arena-950"
+                  ? "bg-lime text-arena-950"
                   : active
-                    ? "bg-neon/20 text-neon ring-1 ring-neon/40"
+                    ? "bg-lime/20 text-lime ring-1 ring-lime/40"
                     : "bg-white/5 text-white/40",
               ].join(" ")}
             >
@@ -58,7 +58,11 @@ export function Stepper({
               <div
                 className={[
                   "truncate text-sm font-medium transition",
-                  active ? "text-white" : "text-white/45",
+                  done
+                    ? "text-lime"
+                    : active
+                      ? "text-white"
+                      : "text-white/45",
                 ].join(" ")}
               >
                 {step.label}
@@ -66,7 +70,7 @@ export function Stepper({
               {active && (
                 <motion.div
                   layoutId="step-indicator"
-                  className="mt-0.5 h-0.5 w-8 rounded-full bg-neon"
+                  className="mt-0.5 h-0.5 w-8 rounded-full bg-lime"
                 />
               )}
             </div>
@@ -97,7 +101,7 @@ export function StepperMobile({
       </div>
       <div className="relative h-1 overflow-hidden rounded-full bg-white/10">
         <motion.div
-          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-neon to-lime"
+          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-lime/80 to-lime"
           initial={false}
           animate={{ width: `${pct}%` }}
           transition={{ type: "spring", stiffness: 200, damping: 26 }}

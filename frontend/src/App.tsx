@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import confetti from "canvas-confetti";
 import { generateTournament, previewExcel } from "./api";
 import { CourtBackground } from "./components/CourtBackground";
 import { FileDrop } from "./components/FileDrop";
@@ -177,12 +176,6 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
       setPdfFilename(filename);
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ["#00e5c3", "#d4ff4a", "#ffffff"],
-      });
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -211,16 +204,19 @@ export default function App() {
 
       {/* Sidebar desktop */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.06] bg-arena-900/50 p-6 backdrop-blur-xl lg:flex">
-        <div className="mb-8 flex items-center gap-3">
-          <PadelBall size={32} />
-          <div>
-            <div className="font-display text-lg tracking-wider text-white">
-              PADEL TM
-            </div>
-            <div className="text-[10px] uppercase tracking-widest text-white/30">
-              Tournament Manager
-            </div>
+        <div className="mb-8 text-center">
+          <div className="mb-4 flex justify-center">
+            <PadelBall size={52} id="sidebar-ball" />
           </div>
+          <h2
+            className="font-brush text-[clamp(1.35rem,4.5vw,2rem)] leading-[1.05] text-lime"
+            style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
+          >
+            Padel Tournament Engine
+          </h2>
+          <p className="mt-2 text-sm font-medium text-white/55">
+            Génération tournoi
+          </p>
         </div>
         <Stepper
           steps={WIZARD_STEPS}
@@ -228,12 +224,12 @@ export default function App() {
           onGo={(i) => i < step - 1 && setStep(i + 1)}
         />
         <div className="mt-auto pt-8">
-          <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
+          <div className="rounded-xl border border-lime/15 bg-lime/[0.04] p-4">
             <div className="text-[10px] uppercase tracking-widest text-white/30">
               Progression
             </div>
-            <div className="mt-1 font-display text-3xl text-neon">
-              {Math.round(((step) / (STEPS.length - 1)) * 100)}%
+            <div className="mt-1 font-display text-3xl text-lime">
+              {step}/{WIZARD_STEPS.length}
             </div>
           </div>
         </div>
@@ -885,6 +881,14 @@ function TerrainsStep({
   );
 }
 
+function formatHeuresDebut(form: TournamentForm) {
+  if (form.heuresDebutJours.length === 0) return "—";
+  if (form.nbJours === 1) return form.heuresDebutJours[0];
+  return form.heuresDebutJours
+    .map((h, i) => `Jour ${i + 1} : ${h}`)
+    .join(" · ");
+}
+
 function GenerateStep({
   form,
   preview,
@@ -902,22 +906,55 @@ function GenerateStep({
   pdfFilename: string;
   onGenerate: () => void;
 }) {
-  const rows: [string, string][] = [
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!form.logoFile || form.pasDeLogo) {
+      setLogoPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(form.logoFile);
+    setLogoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [form.logoFile, form.pasDeLogo]);
+
+  const rows: { label: string; value: ReactNode }[] = [
     ["Club organisateur", form.club || "—"],
-    [
-      "Logo",
-      form.pasDeLogo
-        ? "Pas de logo"
-        : form.logoFile?.name ?? "—",
-    ],
-    ["Date", formatDateFr(form.dateTournoi)],
+    {
+      label: "Logo",
+      value:
+        form.pasDeLogo || !logoPreviewUrl ? (
+          <span>Pas de logo</span>
+        ) : (
+          <img
+            src={logoPreviewUrl}
+            alt="Logo du club"
+            className="ml-auto h-10 max-w-[88px] object-contain"
+          />
+        ),
+    },
+    {
+      label: "Date",
+      value: (
+        <div className="text-right">
+          <div>{formatDateFr(form.dateTournoi)}</div>
+          <div className="mt-0.5 text-xs text-lime/70">
+            {formatHeuresDebut(form)}
+          </div>
+        </div>
+      ),
+    },
     ["Type", `${form.typeTournoi} ${form.genreTournoi}`],
-    ["Équipes", preview ? String(preview.nb_equipes) : "—"],
+    ["Nombre d'équipes", preview ? String(preview.nb_equipes) : "—"],
     ["Déroulement", formatModeTournoi(form.modeTournoi)],
     ["Jours", String(form.nbJours)],
     ["Terrains", String(form.nbTerrains)],
     ["Style", form.styleTemplates],
-  ];
+  ].map((row) =>
+    Array.isArray(row)
+      ? { label: row[0], value: row[1] }
+      : row
+  );
 
   return (
     <div className="mx-auto w-full max-w-2xl text-center">
@@ -927,7 +964,7 @@ function GenerateStep({
       />
 
       <div className="overflow-hidden rounded-2xl border border-lime/20">
-        {rows.map(([label, value], i) => (
+        {rows.map(({ label, value }, i) => (
           <div
             key={label}
             className={[
@@ -939,9 +976,7 @@ function GenerateStep({
             <span className="text-xs font-medium uppercase tracking-widest text-white/35">
               {label}
             </span>
-            <span className="text-right text-sm font-medium text-lime">
-              {value}
-            </span>
+            <div className="text-right text-sm font-medium text-lime">{value}</div>
           </div>
         ))}
       </div>
@@ -981,28 +1016,26 @@ function GenerateStep({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-8 space-y-4"
+          className="mt-8 space-y-6"
         >
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-neon/20 bg-neon/5 px-5 py-4">
-            <div>
-              <p className="font-display text-lg tracking-wide text-neon">
-                DOSSIER PRÊT
-              </p>
-              <p className="text-xs text-white/40">{pdfFilename}</p>
-            </div>
+          <div className="lime-panel flex items-center justify-between gap-3 px-5 py-4">
+            <p className="font-display text-lg tracking-wide text-lime sm:text-xl">
+              DOSSIER PRÊT
+            </p>
             <a
               href={pdfUrl}
               download={pdfFilename}
-              className="inline-flex items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
             >
               Télécharger ↓
             </a>
           </div>
-          <iframe
-            title="Aperçu PDF"
-            src={pdfUrl}
-            className="h-[500px] w-full rounded-2xl border border-white/10 bg-white shadow-panel"
-          />
+          <p
+            className="font-brush text-[clamp(1.75rem,6vw,3rem)] leading-[1.05] text-lime"
+            style={{ textShadow: "0 0 32px rgba(212,255,74,0.12)" }}
+          >
+            QUE LE MEILLEUR GAGNE
+          </p>
         </motion.div>
       )}
     </div>
