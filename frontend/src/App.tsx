@@ -231,21 +231,21 @@ export default function App() {
       {/* Sidebar desktop */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.06] bg-arena-900/50 p-6 backdrop-blur-xl lg:flex">
         <div className="mb-8 text-center">
-          <button
-            type="button"
-            onClick={goHome}
-            className="mb-4 flex w-full justify-center rounded-full transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/50"
-            aria-label="Retour à l'accueil"
-          >
-            <PadelBall size={40} realistic />
-          </button>
           <h2
             className="font-brush text-[clamp(1.35rem,4.5vw,2rem)] leading-[1.05] text-lime"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
           >
             Padel Tournament Engine
           </h2>
-          <p className="mt-2 text-sm font-medium text-white/55">
+          <button
+            type="button"
+            onClick={goHome}
+            className="mx-auto my-4 flex justify-center rounded-full transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/50"
+            aria-label="Retour à l'accueil"
+          >
+            <PadelBall size={40} realistic />
+          </button>
+          <p className="text-sm font-medium text-white/55">
             Génération tournoi
           </p>
         </div>
