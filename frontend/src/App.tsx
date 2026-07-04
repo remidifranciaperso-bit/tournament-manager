@@ -320,7 +320,7 @@ export default function App() {
           </AnimatePresence>
         </main>
 
-        <footer className="sticky bottom-0 border-t border-white/[0.06] bg-arena-900/60 px-4 py-4 backdrop-blur-xl sm:px-8">
+        <footer className="sticky bottom-0 px-4 py-4 sm:px-8">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
             {step > 1 ? (
               <GhostButton onClick={goBack}>← Retour</GhostButton>

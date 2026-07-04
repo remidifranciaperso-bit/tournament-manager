@@ -3,6 +3,8 @@
  * Cotes FIP : filet au centre, lignes de service à 6,95 m du filet,
  * ligne centrale de service sur la largeur (5 m).
  */
+import type { CSSProperties } from "react";
+
 const COURT = {
   length: 20,
   width: 10,
@@ -26,7 +28,13 @@ function padelCourtLines(viewW: number, viewL: number, inset = 5) {
   return { x0, x1, y0, y1, cx, courtW, courtH, yNet, yServiceTop, yServiceBottom };
 }
 
-export function CourtBackground() {
+function PadelCourtSvg({
+  className = "",
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
   const vbW = 100;
   const vbL = 200;
   const {
@@ -42,29 +50,44 @@ export function CourtBackground() {
   } = padelCourtLines(vbW, vbL, 5);
 
   return (
+    <svg
+      className={className}
+      style={style}
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid meet"
+      viewBox={`0 0 ${vbW} ${vbL}`}
+    >
+      <g
+        fill="none"
+        stroke="#d4ff4a"
+        strokeWidth="0.4"
+        vectorEffect="non-scaling-stroke"
+      >
+        <rect x={x0} y={y0} width={courtW} height={courtH} rx="1" />
+        <line x1={x0} y1={yNet} x2={x1} y2={yNet} strokeWidth="0.6" />
+        <line x1={x0} y1={yServiceTop} x2={x1} y2={yServiceTop} />
+        <line x1={x0} y1={yServiceBottom} x2={x1} y2={yServiceBottom} />
+        <line x1={cx} y1={yServiceTop} x2={cx} y2={yNet} />
+        <line x1={cx} y1={yNet} x2={cx} y2={yServiceBottom} />
+      </g>
+    </svg>
+  );
+}
+
+export function CourtBackground() {
+  return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-arena-950">
       <div className="absolute inset-0 bg-mesh" />
 
-      <svg
-        className="absolute inset-0 h-full w-full opacity-[0.07]"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="xMidYMid meet"
-        viewBox={`0 0 ${vbW} ${vbL}`}
-      >
-        <g
-          fill="none"
-          stroke="#d4ff4a"
-          strokeWidth="0.4"
-          vectorEffect="non-scaling-stroke"
-        >
-          <rect x={x0} y={y0} width={courtW} height={courtH} rx="1" />
-          <line x1={x0} y1={yNet} x2={x1} y2={yNet} strokeWidth="0.6" />
-          <line x1={x0} y1={yServiceTop} x2={x1} y2={yServiceTop} />
-          <line x1={x0} y1={yServiceBottom} x2={x1} y2={yServiceBottom} />
-          <line x1={cx} y1={yServiceTop} x2={cx} y2={yNet} />
-          <line x1={cx} y1={yNet} x2={cx} y2={yServiceBottom} />
-        </g>
-      </svg>
+      <PadelCourtSvg className="absolute left-1/2 top-0 h-full w-auto -translate-x-1/2 opacity-[0.07]" />
+      <PadelCourtSvg
+        className="absolute top-0 h-full w-auto -translate-x-1/2 opacity-[0.07]"
+        style={{ left: "calc(50% - 50vh - 5vw)" }}
+      />
+      <PadelCourtSvg
+        className="absolute top-0 h-full w-auto -translate-x-1/2 opacity-[0.07]"
+        style={{ left: "calc(50% + 50vh + 5vw)" }}
+      />
 
       <div className="absolute -right-32 -top-32 h-96 w-96 animate-pulseGlow rounded-full bg-neon/10 blur-3xl" />
       <div className="absolute -bottom-20 -left-20 h-72 w-72 animate-pulseGlow rounded-full bg-lime/5 blur-3xl" />
