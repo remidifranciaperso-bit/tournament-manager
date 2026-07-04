@@ -397,23 +397,25 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         </motion.div>
 
         <motion.div
-          className="mx-auto mt-12 w-full max-w-4xl overflow-x-hidden"
+          className="mt-12 flex justify-center overflow-x-hidden"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <div className="lime-panel px-4 py-6 sm:px-7 sm:py-7">
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:gap-x-6 sm:gap-y-3">
+          <div className="lime-panel mx-auto w-fit max-w-full px-5 py-6 sm:px-6 sm:py-7">
+            <ul className="mx-auto grid w-fit grid-cols-2 gap-x-5 gap-y-2.5 sm:gap-x-8 sm:gap-y-3">
               {WELCOME_HIGHLIGHTS.map((item, i) => (
                 <motion.li
                   key={item}
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.52 + i * 0.035 }}
-                  className="flex min-w-0 items-center gap-2 whitespace-nowrap text-left text-[10px] leading-none text-white/55 sm:text-[11px] md:text-xs"
+                  className={`flex items-center gap-2 whitespace-nowrap text-xs leading-none text-white/55 sm:text-sm ${
+                    i % 2 === 0 ? "justify-end" : "justify-start"
+                  }`}
                 >
-                  <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime sm:h-4 sm:w-4">
-                    <IconCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
+                    <IconCheck className="h-2.5 w-2.5" />
                   </span>
                   <span>{item}</span>
                 </motion.li>
