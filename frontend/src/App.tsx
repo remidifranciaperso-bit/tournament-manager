@@ -260,7 +260,7 @@ export default function App() {
           <div className="overflow-visible rounded-xl border border-lime/15 bg-lime/[0.04] px-3 py-2">
             <div className="flex items-center gap-2">
               <div className="flex shrink-0 flex-col justify-center">
-                <div className="text-[10px] uppercase tracking-widest text-white/30">
+                <div className="text-sm font-medium text-lime">
                   Progression
                 </div>
                 <div className="mt-2 font-display text-3xl leading-none text-lime">
