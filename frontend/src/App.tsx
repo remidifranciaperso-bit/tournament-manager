@@ -217,7 +217,7 @@ export default function App() {
 
   if (step === 0) {
     return (
-      <div className="relative flex min-h-full flex-col">
+      <div className="relative flex min-h-full w-full flex-col overflow-x-hidden">
         <CourtBackground />
         <WelcomeStep onStart={() => setStep(1)} />
       </div>
@@ -362,15 +362,15 @@ const WELCOME_HIGHLIGHTS = [
 
 function WelcomeStep({ onStart }: { onStart: () => void }) {
   return (
-    <div className="relative flex min-h-full flex-col items-center justify-center px-6 py-16">
+    <div className="relative flex min-h-full w-full flex-col items-center justify-center overflow-x-hidden px-4 py-16 sm:px-6">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="mx-auto w-full max-w-5xl text-center"
+        className="mx-auto w-full max-w-5xl overflow-x-hidden text-center"
       >
         <h1
-          className="mx-auto w-fit font-brush whitespace-nowrap text-[clamp(3.25rem,11vw,6.75rem)] leading-[1.05] text-lime"
+          className="w-full text-center font-brush whitespace-nowrap text-[min(6.75rem,max(0.875rem,calc((100vw-3rem)/17)))] leading-[1.05] text-lime"
           style={{ textShadow: "0 0 40px rgba(212,255,74,0.15)" }}
         >
           Padel Tournament Engine
@@ -396,23 +396,23 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         </motion.div>
 
         <motion.div
-          className="mx-auto mt-12 w-full max-w-3xl"
+          className="mx-auto mt-12 w-full max-w-3xl overflow-x-hidden"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <div className="lime-panel px-5 py-6 sm:px-7 sm:py-7">
-            <ul className="grid gap-x-8 gap-y-3.5 text-left sm:grid-cols-2">
+          <div className="lime-panel px-4 py-6 sm:px-6 sm:py-7">
+            <ul className="mx-auto flex flex-col items-center gap-2.5">
               {WELCOME_HIGHLIGHTS.map((item, i) => (
                 <motion.li
                   key={item}
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.52 + i * 0.035 }}
-                  className="flex items-start gap-3 text-sm leading-snug text-white/55 sm:text-[0.9375rem]"
+                  className="flex max-w-full items-center gap-2.5 whitespace-nowrap text-[min(0.9375rem,max(0.625rem,calc((100vw-4.5rem)/36)))] leading-none text-white/55"
                 >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
-                    <IconCheck className="h-3 w-3" />
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
+                    <IconCheck className="h-2.5 w-2.5" />
                   </span>
                   <span>{item}</span>
                 </motion.li>
