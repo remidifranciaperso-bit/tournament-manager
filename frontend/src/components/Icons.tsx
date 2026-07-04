@@ -40,6 +40,16 @@ export function IconClock({ className = "h-6 w-6" }: IconProps) {
   );
 }
 
+export function IconHourglass({ className = "h-6 w-6" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M7 3h10M7 21h10" strokeLinecap="round" />
+      <path d="M7 3c0 4 2.5 6 5 9 2.5-3 5-5 5-9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 21c0-4 2.5-6 5-9 2.5 3 5 5 5 9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconCheck({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

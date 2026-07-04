@@ -7,6 +7,7 @@ import {
   IconCheck,
   IconClock,
   IconGrid,
+  IconHourglass,
   IconLogo,
   IconTrophy,
   IconUpload,
@@ -879,8 +880,11 @@ function PlanningStep({
           <label className="field-label-tight">
             Durée estimée d&apos;un match
           </label>
-          <div className="text-input lime-input w-[140px] text-center">
-            {form.dureeMatch} min
+          <div className="flex items-center gap-3">
+            <IconHourglass className="h-5 w-5 shrink-0 text-lime/70" />
+            <div className="text-input lime-input w-[140px] text-center">
+              {form.dureeMatch} min
+            </div>
           </div>
           <div className="w-full max-w-md">
             <input
