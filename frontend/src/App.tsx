@@ -370,11 +370,11 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         className="mx-auto w-full max-w-4xl overflow-x-hidden text-center"
       >
         <h1
-          className="font-brush text-[clamp(2.5rem,8vw,5.25rem)] leading-[1.02] text-lime"
+          className="flex flex-col gap-1.5 font-brush text-[clamp(2.5rem,8vw,5.25rem)] leading-[1.02] text-lime sm:gap-2"
           style={{ textShadow: "0 0 40px rgba(212,255,74,0.15)" }}
         >
-          <span className="block">Padel Tournament</span>
-          <span className="block">Engine</span>
+          <span>Padel Tournament</span>
+          <span>Engine</span>
         </h1>
 
         <p className="mt-4 text-base font-medium text-white/70 sm:text-lg">
