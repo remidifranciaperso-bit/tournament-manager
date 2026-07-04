@@ -20,10 +20,13 @@ const MASK_STYLE: CSSProperties = {
 
 export function RacketProgress({ step, total = 8 }: RacketProgressProps) {
   const s = Math.min(Math.max(step, 0), total);
-  // Le masque dépasse légèrement le tracé : on retarde d'un demi-palier
-  // pour que le remplissage ne paraisse complet qu'à la dernière étape.
-  const ratio = s >= total ? 1 : Math.max(0, (s - 0.5) / total);
-  const clipTop = (1 - ratio) * 100;
+  const ratio = s / total;
+
+  // Le masque dépasse le tracé visible en haut : on remplit uniquement la zone utile
+  // pour que chaque étape ajoute 1/total identique (1/8 → 8/8).
+  const MASK_TOP = 12;
+  const FILL_RANGE = 100 - MASK_TOP;
+  const clipTop = MASK_TOP + (1 - ratio) * FILL_RANGE;
 
   return (
     <div className="relative aspect-[100/200] h-[5.25rem] w-auto origin-center scale-[1.35]">
