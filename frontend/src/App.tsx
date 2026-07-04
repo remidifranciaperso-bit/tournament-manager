@@ -877,8 +877,11 @@ function PlanningStep({
 
         <div className="flex flex-col items-center gap-3">
           <label className="field-label-tight">
-            Durée estimée d&apos;un match — {form.dureeMatch} min
+            Durée estimée d&apos;un match
           </label>
+          <div className="text-input lime-input max-w-[140px] text-center text-2xl font-semibold">
+            {form.dureeMatch} min
+          </div>
           <div className="w-full max-w-md">
             <input
               type="range"
