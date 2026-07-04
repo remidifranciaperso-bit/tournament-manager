@@ -226,12 +226,12 @@ export default function App() {
   }
 
   return (
-    <div className="relative flex min-h-full">
+    <div className="relative flex h-dvh overflow-hidden">
       <CourtBackground />
 
       {/* Sidebar desktop */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.06] bg-arena-900/50 p-6 backdrop-blur-xl lg:flex">
-        <div className="mb-8 text-center">
+      <aside className="hidden h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-white/[0.06] bg-arena-900/50 p-6 backdrop-blur-xl lg:flex">
+        <div className="mb-8 shrink-0 text-center">
           <h2
             className="font-brush text-[clamp(1.35rem,4.5vw,2rem)] leading-[1.05] text-lime"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
@@ -254,27 +254,30 @@ export default function App() {
           steps={WIZARD_STEPS}
           current={step - 1}
           onGo={(i) => i < step - 1 && setStep(i + 1)}
+          className="min-h-0 flex-1 overflow-y-auto"
         />
-        <div className="mt-auto pt-8">
+        <div className="shrink-0 pt-6">
           <div className="rounded-xl border border-lime/15 bg-lime/[0.04] p-4">
             <div className="text-[10px] uppercase tracking-widest text-white/30">
               Progression
             </div>
-            <div className="mt-1 font-display text-3xl text-lime">
-              {step}/{WIZARD_STEPS.length}
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <div className="font-display text-3xl leading-none text-lime">
+                {step}/{WIZARD_STEPS.length}
+              </div>
+              <RacketProgress step={step} total={WIZARD_STEPS.length} />
             </div>
-            <RacketProgress step={step} total={WIZARD_STEPS.length} />
           </div>
         </div>
       </aside>
 
-      <div className="flex min-h-full flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Header mobile */}
         <header className="border-b border-white/[0.06] bg-arena-900/40 px-4 py-4 backdrop-blur-xl lg:hidden">
           <StepperMobile steps={WIZARD_STEPS} current={step - 1} />
         </header>
 
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-8 sm:py-10">
+        <main className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto px-4 py-8 sm:px-8 sm:py-10">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}

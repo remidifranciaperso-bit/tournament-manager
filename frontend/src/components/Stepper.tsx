@@ -10,13 +10,15 @@ export function Stepper({
   steps,
   current,
   onGo,
+  className = "",
 }: {
   steps: StepDef[];
   current: number;
   onGo: (i: number) => void;
+  className?: string;
 }) {
   return (
-    <nav className="flex flex-col gap-1">
+    <nav className={["flex flex-col gap-1", className].join(" ")}>
       {steps.map((step, i) => {
         const done = i < current;
         const active = i === current;
