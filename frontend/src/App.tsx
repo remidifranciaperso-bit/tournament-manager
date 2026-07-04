@@ -351,12 +351,12 @@ const WELCOME_HIGHLIGHTS = [
   "Création complète d'un dossier de tournoi",
   "Choix du format",
   "Tableau de convocations",
-  "Placement automatique des équipes dans les tableaux",
+  "Placement automatique des équipes",
   "Composition des poules",
   "Tirage au sort automatisé",
   "Paramètres de tournoi personnalisables",
   "Planning de matchs intelligent",
-  "Prise en charge des barèmes de points FFT",
+  "Barèmes de points FFT intégrés",
   "PDF téléchargeable prêt à imprimer",
 ];
 
@@ -370,7 +370,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         className="mx-auto w-full max-w-5xl text-center"
       >
         <h1
-          className="font-brush whitespace-nowrap text-[clamp(3.25rem,11vw,6.75rem)] leading-[1.05] text-lime"
+          className="mx-auto w-fit font-brush whitespace-nowrap text-[clamp(3.25rem,11vw,6.75rem)] leading-[1.05] text-lime"
           style={{ textShadow: "0 0 40px rgba(212,255,74,0.15)" }}
         >
           Padel Tournament Engine
