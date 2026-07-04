@@ -367,8 +367,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         </p>
 
         <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-white/45 sm:text-base">
-          Importez l&apos;Excel, suivez les étapes et récupérez votre dossier
-          tournoi en PDF.
+          De votre fichier excel au dossier complet, en quelques clics.
         </p>
 
         <motion.div
@@ -381,6 +380,10 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
             Générer mon tournoi
           </PrimaryButton>
         </motion.div>
+
+        <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-white/45 sm:text-base">
+          Fichier collé, mise en page de ton choix.
+        </p>
       </motion.div>
     </div>
   );
