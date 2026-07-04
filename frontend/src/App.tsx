@@ -206,7 +206,7 @@ export default function App() {
       <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.06] bg-arena-900/50 p-6 backdrop-blur-xl lg:flex">
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
-            <PadelBall size={52} id="sidebar-ball" />
+            <PadelBall size={56} realistic />
           </div>
           <h2
             className="font-brush text-[clamp(1.35rem,4.5vw,2rem)] leading-[1.05] text-lime"
@@ -984,7 +984,7 @@ function GenerateStep({
       <div className="mt-8 flex flex-col items-center gap-4">
         {generating ? (
           <div className="flex flex-col items-center gap-4 py-6">
-            <PadelBall size={64} spinning />
+            <PadelBall size={64} spinning realistic />
             <div className="text-center">
               <p className="font-display text-xl tracking-wide text-neon">
                 GÉNÉRATION EN COURS
