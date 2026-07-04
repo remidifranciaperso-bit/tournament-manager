@@ -860,7 +860,7 @@ function PlanningStep({
                   <IconClock className="h-5 w-5 shrink-0 text-lime/70" />
                   <input
                     id={`heure-${i}`}
-                    className="text-input lime-input max-w-[140px]"
+                    className="text-input lime-input w-[140px] text-center"
                     value={heure}
                     onChange={(e) => {
                       const heures = [...form.heuresDebutJours];
@@ -879,7 +879,7 @@ function PlanningStep({
           <label className="field-label-tight">
             Durée estimée d&apos;un match
           </label>
-          <div className="text-input lime-input max-w-[140px] text-center text-2xl font-semibold">
+          <div className="text-input lime-input w-[140px] text-center">
             {form.dureeMatch} min
           </div>
           <div className="w-full max-w-md">
