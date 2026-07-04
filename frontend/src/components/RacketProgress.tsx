@@ -23,7 +23,7 @@ export function RacketProgress({ step, total = 8 }: RacketProgressProps) {
   const clipTop = (1 - ratio) * 100;
 
   return (
-    <div className="relative mx-auto mt-3 h-[7.25rem] w-[5.25rem]">
+    <div className="relative mx-auto mt-3 h-[4.5rem] w-[3.35rem]">
       <motion.div
         className="absolute inset-0 bg-lime"
         initial={false}
@@ -44,7 +44,7 @@ export function RacketProgress({ step, total = 8 }: RacketProgressProps) {
         alt=""
         draggable={false}
         className="relative z-10 h-full w-full select-none object-contain"
-        style={{ filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.4))" }}
+        style={{ filter: "drop-shadow(0 3px 10px rgba(0,0,0,0.35))" }}
       />
     </div>
   );
