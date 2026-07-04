@@ -267,7 +267,7 @@ export default function App() {
                   {step}/{WIZARD_STEPS.length}
                 </div>
               </div>
-              <div className="flex h-[5.5rem] flex-1 items-center justify-center">
+              <div className="flex h-[5.5rem] min-w-0 flex-1 items-center justify-center">
                 <RacketProgress step={step} total={WIZARD_STEPS.length} />
               </div>
             </div>
