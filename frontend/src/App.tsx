@@ -397,22 +397,20 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         </motion.div>
 
         <motion.div
-          className="mt-12 flex justify-center overflow-x-hidden"
+          className="mt-12 flex justify-center overflow-x-hidden px-2"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <div className="lime-panel mx-auto w-fit max-w-full px-5 py-6 sm:px-6 sm:py-7">
-            <ul className="mx-auto grid w-fit grid-cols-2 gap-x-5 gap-y-2.5 sm:gap-x-8 sm:gap-y-3">
+          <div className="lime-panel w-full max-w-lg px-6 py-6 sm:max-w-xl sm:px-7 sm:py-7">
+            <ul className="grid grid-cols-2 gap-x-6 gap-y-3 sm:gap-x-7 sm:gap-y-3">
               {WELCOME_HIGHLIGHTS.map((item, i) => (
                 <motion.li
                   key={item}
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.52 + i * 0.035 }}
-                  className={`flex items-center gap-2 whitespace-nowrap text-xs leading-none text-white/55 sm:text-sm ${
-                    i % 2 === 0 ? "justify-end" : "justify-start"
-                  }`}
+                  className="flex items-center justify-start gap-2 whitespace-nowrap text-xs leading-none text-white/55 sm:text-sm"
                 >
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
                     <IconCheck className="h-2.5 w-2.5" />
