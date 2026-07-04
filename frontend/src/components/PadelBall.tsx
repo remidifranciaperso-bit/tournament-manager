@@ -20,13 +20,12 @@ export function PadelBall({
         draggable={false}
         className={[
           "select-none object-contain",
-          "mix-blend-screen",
           spinning ? "animate-spinBall" : "",
         ].join(" ")}
         style={{
           width: size,
           height: size,
-          filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.45))",
+          filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.5))",
         }}
       />
     );
