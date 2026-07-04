@@ -217,7 +217,7 @@ export default function App() {
 
   if (step === 0) {
     return (
-      <div className="relative flex min-h-full flex-col">
+      <div className="relative h-dvh overflow-hidden">
         <CourtBackground />
         <WelcomeStep onStart={() => setStep(1)} />
       </div>
@@ -362,57 +362,59 @@ const WELCOME_HIGHLIGHTS = [
 
 function WelcomeStep({ onStart }: { onStart: () => void }) {
   return (
-    <div className="relative flex min-h-full flex-col items-center justify-center px-6 py-16">
+    <div className="flex h-dvh flex-col items-center justify-center overflow-hidden px-4 py-3 sm:px-6 sm:py-4">
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="mx-auto w-full max-w-2xl text-center"
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="flex w-full max-w-5xl flex-col items-center gap-3 sm:gap-4 lg:flex-row lg:items-center lg:gap-10 xl:max-w-6xl"
       >
-        <h1
-          className="font-brush text-[clamp(3.25rem,11vw,6.75rem)] leading-[1.05] text-lime"
-          style={{ textShadow: "0 0 40px rgba(212,255,74,0.15)" }}
-        >
-          Padel Tournament Engine
-        </h1>
+        <div className="w-full shrink-0 text-center lg:w-[38%] lg:text-left xl:w-[36%]">
+          <h1
+            className="font-brush text-[clamp(1.85rem,6.5vw,3.75rem)] leading-[1.02] text-lime"
+            style={{ textShadow: "0 0 40px rgba(212,255,74,0.15)" }}
+          >
+            Padel Tournament Engine
+          </h1>
 
-        <p className="mt-4 text-base font-medium text-white/70 sm:text-lg">
-          Générateur professionnel de tournois padel
-        </p>
+          <p className="mt-1 text-sm font-medium text-white/70 sm:text-base">
+            Générateur professionnel de tournois padel
+          </p>
 
-        <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-white/45 sm:text-base">
-          De votre fichier excel au dossier complet, en quelques clics.
-        </p>
+          <p className="mt-1 text-xs leading-snug text-white/45 sm:text-sm">
+            De votre fichier excel au dossier complet, en quelques clics.
+          </p>
+
+          <motion.div
+            className="mt-3 flex justify-center sm:mt-4 lg:justify-start"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <PrimaryButton onClick={onStart} size="md">
+              Générer mon tournoi
+            </PrimaryButton>
+          </motion.div>
+        </div>
 
         <motion.div
-          className="mt-10 flex justify-center"
-          initial={{ opacity: 0, y: 16 }}
+          className="w-full min-w-0 lg:flex-1"
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
+          transition={{ delay: 0.28 }}
         >
-          <PrimaryButton onClick={onStart} size="lg">
-            Générer mon tournoi
-          </PrimaryButton>
-        </motion.div>
-
-        <motion.div
-          className="mx-auto mt-12 w-full max-w-3xl"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-        >
-          <div className="lime-panel px-5 py-6 sm:px-7 sm:py-7">
-            <ul className="grid gap-x-8 gap-y-3.5 text-left sm:grid-cols-2">
+          <div className="lime-panel px-3 py-2.5 sm:px-4 sm:py-3">
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-left sm:gap-x-5 sm:gap-y-2">
               {WELCOME_HIGHLIGHTS.map((item, i) => (
                 <motion.li
                   key={item}
-                  initial={{ opacity: 0, x: -6 }}
+                  initial={{ opacity: 0, x: -4 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.52 + i * 0.035 }}
-                  className="flex items-start gap-3 text-sm leading-snug text-white/55 sm:text-[0.9375rem]"
+                  transition={{ delay: 0.32 + i * 0.02 }}
+                  className="flex items-start gap-2 text-[10px] leading-tight text-white/50 sm:text-xs sm:leading-snug"
                 >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
-                    <IconCheck className="h-3 w-3" />
+                  <span className="mt-px flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime sm:mt-0.5 sm:h-4 sm:w-4">
+                    <IconCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                   </span>
                   <span>{item}</span>
                 </motion.li>
