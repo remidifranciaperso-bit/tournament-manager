@@ -58,6 +58,28 @@ export function IconLogo({ className = "h-8 w-8" }: IconProps) {
   );
 }
 
+export function WizardPageTitle({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="mb-8 text-center">
+      <h2
+        className="font-brush text-[clamp(2.25rem,7vw,4.25rem)] leading-[1.05] text-lime"
+        style={{ textShadow: "0 0 40px rgba(212,255,74,0.12)" }}
+      >
+        {title}
+      </h2>
+      <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-white/45 sm:text-base">
+        {subtitle}
+      </p>
+    </div>
+  );
+}
+
 export function StepHeader({
   num,
   title,

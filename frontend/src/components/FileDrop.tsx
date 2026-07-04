@@ -9,16 +9,19 @@ export function FileDrop({
   title,
   hint,
   icon,
+  variant = "neon",
 }: {
   accept: string;
   file: File | null;
   onFile: (f: File | null) => void;
   title: string;
-  hint: string;
+  hint?: string;
   icon?: React.ReactNode;
+  variant?: "neon" | "lime";
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  const isLime = variant === "lime";
 
   return (
     <div
@@ -37,10 +40,16 @@ export function FileDrop({
       className={[
         "group relative flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition",
         over
-          ? "border-neon/60 bg-neon/5 shadow-neon"
+          ? isLime
+            ? "border-lime/60 bg-lime/5 shadow-lime"
+            : "border-neon/60 bg-neon/5 shadow-neon"
           : file
-            ? "border-neon/40 bg-neon/5"
-            : "border-white/15 bg-white/[0.02] hover:border-neon/30 hover:bg-white/[0.04]",
+            ? isLime
+              ? "border-lime/40 bg-lime/5"
+              : "border-neon/40 bg-neon/5"
+            : isLime
+              ? "border-lime/25 bg-lime/[0.03] hover:border-lime/45 hover:bg-lime/5"
+              : "border-white/15 bg-white/[0.02] hover:border-neon/30 hover:bg-white/[0.04]",
       ].join(" ")}
     >
       <input
@@ -53,7 +62,12 @@ export function FileDrop({
 
       {/* Halo au survol */}
       <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
-        <div className="absolute inset-0 bg-gradient-to-b from-neon/5 to-transparent" />
+        <div
+          className={[
+            "absolute inset-0 bg-gradient-to-b to-transparent",
+            isLime ? "from-lime/5" : "from-neon/5",
+          ].join(" ")}
+        />
       </div>
 
       <motion.div
@@ -62,7 +76,13 @@ export function FileDrop({
         animate={{ scale: 1, opacity: 1 }}
         className={[
           "relative flex h-16 w-16 items-center justify-center rounded-2xl transition",
-          file ? "bg-neon/20 text-neon" : "bg-white/5 text-white/40 group-hover:text-neon/70",
+          file
+            ? isLime
+              ? "bg-lime/20 text-lime"
+              : "bg-neon/20 text-neon"
+            : isLime
+              ? "bg-white/5 text-white/40 group-hover:text-lime/80"
+              : "bg-white/5 text-white/40 group-hover:text-neon/70",
         ].join(" ")}
       >
         {file ? <IconCheck className="h-7 w-7" /> : icon ?? <IconUpload className="h-7 w-7" />}
@@ -72,7 +92,9 @@ export function FileDrop({
         <div className="font-semibold text-white">
           {file ? file.name : title}
         </div>
-        <div className="mt-1 text-xs text-white/40">{hint}</div>
+        {hint ? (
+          <div className="mt-1 text-xs text-white/40">{hint}</div>
+        ) : null}
       </div>
 
       {file && (

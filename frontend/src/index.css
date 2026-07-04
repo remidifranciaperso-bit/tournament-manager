@@ -6,6 +6,14 @@
   color-scheme: dark;
 }
 
+@font-face {
+  font-family: "Grindy Brush";
+  src: url("/fonts/GrindyBrush.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 html,
 body,
 #root {
@@ -44,9 +52,33 @@ body {
     @apply mb-2 block text-xs font-semibold uppercase tracking-widest text-white/45;
   }
 
+  .field-label-tight {
+    @apply mb-0 block text-center text-xs font-semibold uppercase tracking-widest text-white/45;
+  }
+
+  .lime-panel {
+    @apply rounded-2xl border-2 border-lime/40 bg-lime/5 shadow-lime;
+  }
+
   .text-input {
     @apply w-full rounded-xl border border-white/10 bg-arena-900/80 px-4 py-3.5 text-white outline-none transition
       placeholder:text-white/25 focus:border-neon/50 focus:shadow-neon;
+  }
+
+  .lime-input {
+    @apply border-lime/35 bg-arena-900/80 text-lime focus:border-lime/60 focus:shadow-lime;
+    accent-color: #d4ff4a;
+    color-scheme: dark;
+  }
+
+  .lime-range {
+    accent-color: #d4ff4a;
+  }
+
+  .lime-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.85;
+    filter: brightness(1.15) saturate(1.4);
   }
 
   .chip {

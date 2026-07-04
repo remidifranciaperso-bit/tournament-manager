@@ -71,6 +71,7 @@ export function OptionCard({
   subtitle,
   icon,
   disabled,
+  variant = "neon",
 }: {
   active: boolean;
   onClick: () => void;
@@ -78,7 +79,10 @@ export function OptionCard({
   subtitle?: string;
   icon?: ReactNode;
   disabled?: boolean;
+  variant?: "neon" | "lime";
 }) {
+  const isLime = variant === "lime";
+
   return (
     <motion.button
       type="button"
@@ -86,12 +90,16 @@ export function OptionCard({
       whileHover={disabled ? undefined : { y: -2 }}
       whileTap={disabled ? undefined : { scale: 0.99 }}
       className={[
-        "group relative flex w-full flex-col items-start gap-2 rounded-2xl border p-5 text-left transition",
+        "group relative flex w-full flex-col items-start gap-3 rounded-2xl border p-5 text-left transition",
         disabled
           ? "cursor-not-allowed border-white/5 bg-white/[0.02] opacity-40"
           : active
-            ? "border-neon/50 bg-neon/5 shadow-neon"
-            : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]",
+            ? isLime
+              ? "border-lime/50 bg-lime/5 shadow-lime"
+              : "border-neon/50 bg-neon/5 shadow-neon"
+            : isLime
+              ? "border-white/10 bg-white/[0.03] hover:border-lime/25 hover:bg-lime/[0.04]"
+              : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]",
       ].join(" ")}
     >
       {icon && (
@@ -99,21 +107,30 @@ export function OptionCard({
           className={[
             "flex h-10 w-10 items-center justify-center rounded-xl transition",
             active
-              ? "bg-neon/15 text-neon"
-              : "bg-white/5 text-white/50 group-hover:text-white/70",
+              ? isLime
+                ? "bg-lime/20 text-lime"
+                : "bg-neon/15 text-neon"
+              : isLime
+                ? "bg-lime/10 text-lime/55 group-hover:bg-lime/15 group-hover:text-lime"
+                : "bg-white/5 text-white/50 group-hover:text-white/70",
           ].join(" ")}
         >
           {icon}
         </div>
       )}
-      <div className="font-semibold text-white">{title}</div>
-      {subtitle && (
-        <div className="text-xs text-white/45">{subtitle}</div>
-      )}
+      <div className="flex flex-col gap-0.5">
+        <div className="font-semibold text-white">{title}</div>
+        {subtitle && (
+          <div className="text-xs text-white/45">{subtitle}</div>
+        )}
+      </div>
       {active && (
         <motion.span
-          layoutId="option-active-ring"
-          className="absolute inset-0 rounded-2xl ring-1 ring-neon/30"
+          layoutId={isLime ? "option-active-ring-lime" : "option-active-ring"}
+          className={[
+            "absolute inset-0 rounded-2xl ring-1",
+            isLime ? "ring-lime/30" : "ring-neon/30",
+          ].join(" ")}
         />
       )}
     </motion.button>
@@ -167,11 +184,15 @@ export function Toggle({
   checked,
   onChange,
   label,
+  variant = "neon",
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
+  variant?: "neon" | "lime";
 }) {
+  const isLime = variant === "lime";
+
   return (
     <button
       type="button"
@@ -181,19 +202,34 @@ export function Toggle({
       <span
         className={[
           "relative h-7 w-12 rounded-full transition",
-          checked ? "bg-neon/80" : "bg-white/15",
+          checked
+            ? isLime
+              ? "bg-lime/80"
+              : "bg-neon/80"
+            : "bg-white/15",
         ].join(" ")}
       >
         <motion.span
           layout
           transition={{ type: "spring", stiffness: 500, damping: 32 }}
           className={[
-            "absolute top-1 h-5 w-5 rounded-full bg-white shadow",
-            checked ? "left-6" : "left-1",
+            "absolute top-1 h-5 w-5 rounded-full shadow",
+            checked
+              ? isLime
+                ? "left-6 bg-arena-950"
+                : "left-6 bg-white"
+              : "left-1 bg-white",
           ].join(" ")}
         />
       </span>
-      <span className="text-sm font-medium text-white/60">{label}</span>
+      <span
+        className={[
+          "text-sm font-medium transition",
+          checked && isLime ? "text-lime" : "text-white/60",
+        ].join(" ")}
+      >
+        {label}
+      </span>
     </button>
   );
 }
@@ -233,14 +269,61 @@ export function NumberStepper({
   );
 }
 
+export function LimeChoice({
+  label,
+  active,
+  onClick,
+  compact = false,
+  variant = "filled",
+}: {
+  label: ReactNode;
+  active: boolean;
+  onClick: () => void;
+  compact?: boolean;
+  variant?: "filled" | "halo";
+}) {
+  const isHalo = variant === "halo";
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={{ scale: isHalo ? 1.01 : 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      className={[
+        "relative w-full rounded-xl border text-center leading-snug transition",
+        isHalo
+          ? "px-3 py-3 text-sm font-medium sm:px-4"
+          : [
+              "font-display tracking-wider",
+              compact
+                ? "px-2 py-2 text-sm sm:px-3 sm:py-2.5 sm:text-base"
+                : "px-3 py-2.5 text-sm sm:px-4 sm:text-base",
+            ].join(" "),
+        active
+          ? isHalo
+            ? "border-lime/40 bg-lime/5 text-lime shadow-lime ring-1 ring-lime/30"
+            : "border-lime/50 bg-lime text-arena-950 shadow-lime"
+          : isHalo
+            ? "border-white/10 bg-white/[0.04] text-white/50 hover:border-lime/25 hover:text-white/75"
+            : "border-white/10 bg-white/[0.04] text-white/55 hover:border-lime/25 hover:text-white/80",
+      ].join(" ")}
+    >
+      {label}
+    </motion.button>
+  );
+}
+
 export function TypeChip({
   label,
   active,
   onClick,
+  compact = false,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  compact?: boolean;
 }) {
   return (
     <motion.button
@@ -249,7 +332,8 @@ export function TypeChip({
       whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.97 }}
       className={[
-        "rounded-xl px-5 py-2.5 font-display text-lg tracking-wider transition",
+        "rounded-xl font-display tracking-wider transition",
+        compact ? "px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base" : "px-5 py-2.5 text-lg",
         active
           ? "bg-neon text-arena-950 shadow-neon"
           : "border border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white",

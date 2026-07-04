@@ -29,7 +29,7 @@ export async function generateTournament(
   if (form.logoFile && !form.pasDeLogo) {
     body.append("logo", form.logoFile);
   }
-  body.append("club", form.pasDeLogo ? form.club : "");
+  body.append("club", form.club);
   body.append("date_tournoi", form.dateTournoi);
   body.append("type_tournoi", form.typeTournoi);
   body.append("genre_tournoi", form.genreTournoi);

@@ -37,6 +37,7 @@ export default {
       },
       fontFamily: {
         display: ["Bebas Neue", "system-ui", "sans-serif"],
+        brush: ["Grindy Brush", "cursive"],
         sans: ["Sora", "system-ui", "sans-serif"],
       },
       boxShadow: {

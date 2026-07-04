@@ -2,28 +2,25 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { generateTournament, previewExcel } from "./api";
-import { CourtBackground, CourtGraphic } from "./components/CourtBackground";
+import { CourtBackground } from "./components/CourtBackground";
 import { FileDrop } from "./components/FileDrop";
 import {
-  FeaturePill,
   IconClock,
   IconGrid,
   IconLogo,
   IconTrophy,
   IconUpload,
-  StepHeader,
+  WizardPageTitle,
 } from "./components/Icons";
 import { PadelBall } from "./components/PadelBall";
 import { Stepper, StepperMobile } from "./components/Stepper";
 import {
-  Badge,
   GhostButton,
   NumberStepper,
   OptionCard,
   PrimaryButton,
-  Segmented,
+  LimeChoice,
   Toggle,
-  TypeChip,
 } from "./components/ui";
 import {
   FORMATS_SUPPORTES,
@@ -35,10 +32,12 @@ import {
 
 const STEPS = [
   { key: "welcome", label: "Accueil" },
-  { key: "import", label: "Import" },
-  { key: "identity", label: "Identité" },
+  { key: "participants", label: "Participants" },
+  { key: "club", label: "Club" },
+  { key: "identity", label: "Paramètres" },
   { key: "format", label: "Format" },
   { key: "planning", label: "Planning" },
+  { key: "terrains", label: "Terrains" },
   { key: "generate", label: "Génération" },
 ];
 
@@ -139,20 +138,24 @@ export default function App() {
         return true;
       case 1:
         if (!form.excelFile || previewLoading) return false;
-        if (previewError || !preview?.supporte) return false;
-        if (form.pasDeLogo) return form.club.trim() !== "";
-        return form.logoFile !== null;
+        return !previewError && !!preview?.supporte;
       case 2:
-        return form.dateTournoi !== "";
+        return (
+          form.club.trim() !== "" &&
+          (form.pasDeLogo || form.logoFile !== null)
+        );
       case 3:
-        return true;
+        return form.dateTournoi !== "";
       case 4:
+        return true;
+      case 5:
+        return form.heuresDebutJours.every((h) => h.trim() !== "");
+      case 6:
         return (
           form.terrains.length > 0 &&
-          form.terrains.every((t) => t.trim() !== "") &&
-          form.heuresDebutJours.every((h) => h.trim() !== "")
+          form.terrains.every((t) => t.trim() !== "")
         );
-      case 5:
+      case 7:
         return true;
       default:
         return false;
@@ -253,16 +256,18 @@ export default function App() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             >
               {step === 1 && (
-                <ImportStep
+                <ParticipantsStep
                   form={form}
                   patch={patch}
                   preview={preview}
                   previewLoading={previewLoading}
                   previewError={previewError}
+                  onValidate={goNext}
                 />
               )}
-              {step === 2 && <IdentityStep form={form} patch={patch} />}
-              {step === 3 && (
+              {step === 2 && <ClubStep form={form} patch={patch} />}
+              {step === 3 && <IdentityStep form={form} patch={patch} />}
+              {step === 4 && (
                 <FormatStep
                   form={form}
                   patch={patch}
@@ -271,8 +276,9 @@ export default function App() {
                   multiJoursDisponible={multiJoursDisponible}
                 />
               )}
-              {step === 4 && <PlanningStep form={form} patch={patch} />}
-              {step === 5 && (
+              {step === 5 && <PlanningStep form={form} patch={patch} />}
+              {step === 6 && <TerrainsStep form={form} patch={patch} />}
+              {step === 7 && (
                 <GenerateStep
                   form={form}
                   preview={preview}
@@ -294,7 +300,9 @@ export default function App() {
             ) : (
               <div />
             )}
-            {step < STEPS.length - 1 ? (
+            {step < STEPS.length - 1 &&
+            step !== 1 &&
+            (step !== 2 || stepValid) ? (
               <PrimaryButton onClick={goNext} disabled={!stepValid}>
                 Continuer →
               </PrimaryButton>
@@ -309,175 +317,241 @@ export default function App() {
 }
 
 function WelcomeStep({ onStart }: { onStart: () => void }) {
-  const features = [
-    "Participants",
-    "Tableaux",
-    "Convocations",
-    "Planning",
-    "Classement",
-  ];
-
   return (
     <div className="relative flex min-h-full flex-col items-center justify-center px-6 py-16">
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2">
-        {/* Texte */}
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="mx-auto w-full max-w-2xl text-center"
+      >
+        <h1
+          className="font-brush text-[clamp(3.25rem,11vw,6.75rem)] leading-[1.05] text-lime"
+          style={{ textShadow: "0 0 40px rgba(212,255,74,0.15)" }}
         >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-neon/20 bg-neon/5 px-4 py-1.5">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-neon" />
-            <span className="text-xs font-medium uppercase tracking-widest text-neon">
-              Générateur professionnel
-            </span>
-          </div>
+          Padel Tournament Engine
+        </h1>
 
-          <h1 className="font-display text-[clamp(3.5rem,10vw,7rem)] leading-[0.9] tracking-wide text-white">
-            TOURNOI
-            <br />
-            <span className="text-neon">PADEL</span>
-          </h1>
+        <p className="mt-4 text-base font-medium text-white/70 sm:text-lg">
+          Générateur professionnel de tournois padel
+        </p>
 
-          <p className="mt-6 max-w-md text-base leading-relaxed text-white/50">
-            De votre fichier Excel au dossier complet en PDF — tableaux,
-            convocations, planning et classement. En quelques clics.
-          </p>
+        <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-white/45 sm:text-base">
+          De votre fichier Excel au dossier complet en PDF — tableaux,
+          convocations, planning et classement. En quelques clics.
+        </p>
 
-          <div className="mt-8 flex flex-wrap gap-2">
-            {features.map((f, i) => (
-              <motion.div
-                key={f}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.07 }}
-              >
-                <FeaturePill>{f}</FeaturePill>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            className="mt-10"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <PrimaryButton onClick={onStart} size="lg">
-              Créer mon tournoi →
-            </PrimaryButton>
-          </motion.div>
-        </motion.div>
-
-        {/* Court graphique */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="relative hidden justify-center lg:flex"
+          className="mt-10 flex justify-center"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
         >
-          <div className="absolute inset-0 rounded-full bg-neon/10 blur-3xl" />
-          <motion.div
-            animate={{ y: [0, -16, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <CourtGraphic className="relative h-[420px] w-auto drop-shadow-2xl" />
-          </motion.div>
+          <PrimaryButton onClick={onStart} size="lg">
+            Générer mon tournoi
+          </PrimaryButton>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
-function ImportStep({
+function ParticipantsStep({
   form,
   patch,
   preview,
   previewLoading,
   previewError,
+  onValidate,
 }: {
   form: TournamentForm;
   patch: (p: Partial<TournamentForm>) => void;
   preview: PreviewResult | null;
   previewLoading: boolean;
   previewError: string | null;
+  onValidate: () => void;
 }) {
+  const formatsLabel = FORMATS_SUPPORTES.join(", ").replace(/, ([^,]*)$/, " ou $1");
+
+  const resetFile = () => patch({ excelFile: null });
+
+  const analysisReady = preview && !previewLoading;
+
   return (
-    <section className="panel p-8">
-      <StepHeader
-        num="01"
-        title="IMPORT"
-        subtitle="Fichier Excel des participants et identité visuelle du club."
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle
+        title="Participants"
+        subtitle="Importez votre fichier Excel : le moteur lit la liste des joueurs, forme les paires et classe les têtes de séries automatiquement."
       />
-      <div className="space-y-6">
-        <div>
-          <label className="field-label">Fichier Excel</label>
+      <div>
+        {!form.excelFile && (
           <FileDrop
             accept=".xlsx"
-            file={form.excelFile}
+            file={null}
             onFile={(f) => patch({ excelFile: f })}
-            title="Glissez votre .xlsx ici"
-            hint="Liste des participants — première feuille"
+            title="Glissez votre fichier .xlsx ici"
             icon={<IconUpload className="h-7 w-7" />}
           />
-          {previewLoading && (
-            <p className="mt-3 text-sm text-neon/70">Analyse en cours…</p>
-          )}
-          {previewError && (
-            <p className="mt-3 text-sm text-red-400">{previewError}</p>
-          )}
-          {preview && !previewLoading && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-3 flex flex-wrap gap-2"
-            >
-              <Badge variant="success">
-                {preview.nb_equipes} équipes détectées
-              </Badge>
-              {!preview.supporte && (
-                <Badge variant="warning">
-                  Format non supporté — {FORMATS_SUPPORTES.join(", ")} équipes
-                </Badge>
-              )}
-            </motion.div>
-          )}
-        </div>
+        )}
 
-        <Toggle
-          checked={form.pasDeLogo}
-          onChange={(v) => patch({ pasDeLogo: v })}
-          label="Pas de logo — saisir le nom du club"
-        />
-
-        {form.pasDeLogo ? (
-          <div>
-            <label className="field-label" htmlFor="club">
-              Club organisateur
-            </label>
-            <input
-              id="club"
-              className="text-input"
-              value={form.club}
-              onChange={(e) => patch({ club: e.target.value })}
-              placeholder="Padel Club Paris"
-            />
-          </div>
-        ) : (
-          <div>
-            <label className="field-label">Logo du club</label>
-            <FileDrop
-              accept=".png,.jpg,.jpeg"
-              file={form.logoFile}
-              onFile={(f) => patch({ logoFile: f })}
-              title="Logo PNG ou JPG"
-              hint="Affiché en bas de chaque page du dossier"
-              icon={<IconLogo className="h-7 w-7" />}
-            />
+        {form.excelFile && previewLoading && (
+          <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] p-10 text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-neon/30 border-t-neon" />
+            <p className="text-sm text-neon/70 sm:text-base">Analyse en cours…</p>
           </div>
         )}
+
+        {form.excelFile && !previewLoading && previewError && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center gap-5 rounded-2xl border-2 border-red-500/30 bg-red-500/5 p-10 text-center"
+          >
+            <p className="text-sm font-semibold text-red-400 sm:text-base">
+              {previewError}
+            </p>
+            <GhostButton onClick={resetFile}>Choisir un autre fichier</GhostButton>
+          </motion.div>
+        )}
+
+        {form.excelFile && analysisReady && !preview.supporte && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center gap-5 rounded-2xl border-2 border-red-500/30 bg-red-500/5 p-10 text-center"
+          >
+            <p className="text-sm font-semibold text-red-400 sm:text-base">
+              Nombre d&apos;équipes non supporté par le moteur !
+            </p>
+            <div className="space-y-1 text-sm text-white/45 sm:text-base">
+              <p>{preview.nb_equipes} équipes détectées</p>
+              <p>
+                Formats acceptés : {formatsLabel} équipes.
+              </p>
+            </div>
+            <GhostButton onClick={resetFile}>Choisir un autre fichier</GhostButton>
+          </motion.div>
+        )}
+
+        {form.excelFile && analysisReady && preview.supporte && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="lime-panel flex flex-col items-center justify-center gap-6 p-10 text-center"
+          >
+            <div className="font-display text-4xl tracking-wide text-lime sm:text-5xl">
+              {preview.nb_equipes} équipes détectées
+            </div>
+            <p className="text-sm text-white/45 sm:text-base">
+              {form.excelFile.name}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <PrimaryButton onClick={onValidate}>Valider</PrimaryButton>
+              <GhostButton onClick={resetFile}>Changer de fichier</GhostButton>
+            </div>
+          </motion.div>
+        )}
       </div>
-    </section>
+    </div>
+  );
+}
+
+function formatModeTournoi(mode: string) {
+  if (mode === "Élimination directe") return "Tableau principal";
+  if (mode === "Poules + tableau final") return "Poules + Tableau final";
+  return mode;
+}
+
+function ClubStep({
+  form,
+  patch,
+}: {
+  form: TournamentForm;
+  patch: (p: Partial<TournamentForm>) => void;
+}) {
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!form.logoFile || form.pasDeLogo) {
+      setLogoPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(form.logoFile);
+    setLogoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [form.logoFile, form.pasDeLogo]);
+
+  return (
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle
+        title="Club"
+        subtitle="Renseignez le club organisateur et importez le logo de votre club."
+      />
+      <div className="space-y-6 text-left">
+        <div className="mx-auto max-w-md">
+          <label className="field-label" htmlFor="club">
+            Club organisateur
+          </label>
+          <input
+            id="club"
+            className="text-input lime-input"
+            value={form.club}
+            onChange={(e) => patch({ club: e.target.value })}
+            placeholder="Padel Club Paris"
+          />
+        </div>
+
+        {!form.pasDeLogo && (
+          <div className="mx-auto max-w-md">
+            <label className="field-label">Logo du club</label>
+            {form.logoFile && logoPreviewUrl ? (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="lime-panel flex flex-col items-center gap-4 p-8 text-center"
+              >
+                <div className="flex h-36 w-full items-center justify-center rounded-xl bg-white/[0.04] p-4">
+                  <img
+                    src={logoPreviewUrl}
+                    alt="Aperçu du logo"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+                <p className="text-sm text-white/50">{form.logoFile.name}</p>
+                <GhostButton
+                  onClick={() => patch({ logoFile: null })}
+                >
+                  Changer de logo
+                </GhostButton>
+              </motion.div>
+            ) : (
+              <FileDrop
+                accept=".png,.jpg,.jpeg"
+                file={null}
+                onFile={(f) => {
+                  if (f) patch({ logoFile: f, pasDeLogo: false });
+                }}
+                title="Glissez votre logo ici"
+                hint="PNG ou JPG"
+                icon={<IconLogo className="h-7 w-7" />}
+                variant="lime"
+              />
+            )}
+          </div>
+        )}
+
+        <div className="mx-auto flex max-w-md justify-center">
+          <Toggle
+            variant="lime"
+            checked={form.pasDeLogo}
+            onChange={(v) =>
+              patch(v ? { pasDeLogo: true, logoFile: null } : { pasDeLogo: false })
+            }
+            label="Pas de logo à importer"
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -489,55 +563,62 @@ function IdentityStep({
   patch: (p: Partial<TournamentForm>) => void;
 }) {
   return (
-    <section className="panel p-8">
-      <StepHeader
-        num="02"
-        title="IDENTITÉ"
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle
+        title="Paramètres du tournoi"
         subtitle="Date, niveau FFT et catégorie du tournoi."
       />
+
       <div className="space-y-8">
-        <div>
-          <label className="field-label" htmlFor="date">
+        <div className="flex flex-col items-center gap-1.5">
+          <label className="field-label-tight" htmlFor="date">
             Date du tournoi
           </label>
           <input
             id="date"
             type="date"
-            className="text-input max-w-xs"
+            className="text-input lime-input w-[min(100%,13rem)]"
             value={form.dateTournoi}
             onChange={(e) => patch({ dateTournoi: e.target.value })}
           />
         </div>
 
-        <div>
-          <label className="field-label">Type de tournoi</label>
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col items-center gap-1.5">
+          <label className="field-label-tight">Niveau FFT</label>
+          <div className="grid w-full max-w-xl grid-cols-6 gap-1.5 sm:max-w-2xl sm:gap-2">
             {TYPES_TOURNOI.map((t) => (
-              <TypeChip
+              <LimeChoice
                 key={t}
                 label={t}
                 active={form.typeTournoi === t}
                 onClick={() => patch({ typeTournoi: t })}
+                compact
               />
             ))}
           </div>
         </div>
 
-        <div>
-          <label className="field-label">Catégorie</label>
-          <Segmented
-            id="genre"
-            value={form.genreTournoi}
-            options={[
-              { value: "Hommes", label: "Hommes" },
-              { value: "Femmes", label: "Femmes" },
-              { value: "Mixte", label: "Mixte" },
-            ]}
-            onChange={(v) => patch({ genreTournoi: v })}
-          />
+        <div className="flex flex-col items-center gap-1.5">
+          <label className="field-label-tight">Catégorie</label>
+          <div className="grid w-full max-w-md grid-cols-3 gap-1.5 sm:gap-2">
+            {(
+              [
+                { value: "Hommes", label: "Hommes" },
+                { value: "Femmes", label: "Femmes" },
+                { value: "Mixte", label: "Mixte" },
+              ] as const
+            ).map((opt) => (
+              <LimeChoice
+                key={opt.value}
+                label={opt.label}
+                active={form.genreTournoi === opt.value}
+                onClick={() => patch({ genreTournoi: opt.value })}
+              />
+            ))}
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -554,92 +635,115 @@ function FormatStep({
   poulesDisponibles: boolean;
   multiJoursDisponible: boolean;
 }) {
+  const subtitle =
+    nbEquipes > 0
+      ? `Déroulement du tournoi — ${nbEquipes} équipes`
+      : "Déroulement du tournoi";
+
   return (
-    <section className="panel p-8">
-      <StepHeader
-        num="03"
-        title="FORMAT"
-        subtitle={
-          nbEquipes > 0
-            ? `${nbEquipes} équipes — déroulement et style du dossier.`
-            : "Déroulement et style du dossier."
-        }
-      />
-      <div className="space-y-8">
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle title="Format" subtitle={subtitle} />
+
+      <div className="space-y-8 text-left">
         <div className="grid gap-3 sm:grid-cols-2">
           <OptionCard
+            variant="lime"
             active={form.modeTournoi === "Élimination directe"}
             onClick={() => patch({ modeTournoi: "Élimination directe" })}
-            title="Élimination directe"
-            subtitle="Tableau classique"
+            title="Tableau principal"
+            subtitle="et tableaux de classements"
             icon={<IconTrophy />}
           />
           <OptionCard
+            variant="lime"
             active={form.modeTournoi === "Poules + tableau final"}
             onClick={() => patch({ modeTournoi: "Poules + tableau final" })}
-            title="Poules + tableau final"
-            subtitle="20 et 24 équipes uniquement"
+            title="Poules + Tableau final"
+            subtitle="et tableaux de classements"
             icon={<IconGrid />}
             disabled={!poulesDisponibles}
           />
         </div>
 
         {form.modeTournoi === "Poules + tableau final" && (
-          <div>
-            <label className="field-label">Constitution des poules</label>
-            <Segmented
-              id="poules"
-              value={form.methodePoules}
-              options={[
-                { value: "Méthode du serpentin", label: "Serpentin" },
-                { value: "Tirage au sort par rang", label: "Tirage au sort" },
-              ]}
-              onChange={(v) => patch({ methodePoules: v })}
-            />
+          <div className="flex flex-col items-center gap-1.5">
+            <label className="field-label-tight">Constitution des poules</label>
+            <div className="grid w-full max-w-md grid-cols-2 gap-1.5 sm:gap-2">
+              <LimeChoice
+                variant="halo"
+                label={
+                  <>
+                    Méthode du
+                    <br />
+                    serpentin
+                  </>
+                }
+                active={form.methodePoules === "Méthode du serpentin"}
+                onClick={() =>
+                  patch({ methodePoules: "Méthode du serpentin" })
+                }
+              />
+              <LimeChoice
+                variant="halo"
+                label={
+                  <>
+                    Tirage au sort
+                    <br />
+                    par rang
+                  </>
+                }
+                active={form.methodePoules === "Tirage au sort par rang"}
+                onClick={() =>
+                  patch({ methodePoules: "Tirage au sort par rang" })
+                }
+              />
+            </div>
           </div>
         )}
 
-        <div>
-          <label className="field-label">Nombre de jours</label>
+        <div className="flex flex-col items-center gap-1.5">
+          <label className="field-label-tight">Nombre de jours</label>
           {multiJoursDisponible ? (
-            <Segmented
-              id="jours"
-              value={String(form.nbJours)}
-              options={[
-                { value: "1", label: "1 jour" },
-                { value: "2", label: "2 jours" },
-                { value: "3", label: "3 jours" },
-              ]}
-              onChange={(v) => patch(syncHeures(form, Number(v)))}
-            />
+            <div className="grid w-full max-w-md grid-cols-3 gap-1.5 sm:gap-2">
+              {(
+                [
+                  { value: 1, label: "1 jour" },
+                  { value: 2, label: "2 jours" },
+                  { value: 3, label: "3 jours" },
+                ] as const
+              ).map((opt) => (
+                <LimeChoice
+                  key={opt.value}
+                  label={opt.label}
+                  active={form.nbJours === opt.value}
+                  onClick={() => patch(syncHeures(form, opt.value))}
+                />
+              ))}
+            </div>
           ) : (
-            <p className="text-sm text-white/40">
+            <p className="text-center text-sm text-white/40">
               Formats 8, 12 et 16 équipes : 1 jour uniquement.
             </p>
           )}
         </div>
 
-        <div>
-          <label className="field-label">Style du dossier</label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <OptionCard
+        <div className="flex flex-col items-center gap-1.5">
+          <label className="field-label-tight">Style du dossier</label>
+          <div className="grid w-full max-w-md grid-cols-2 gap-1.5 sm:gap-2">
+            <LimeChoice
+              label="Basic"
               active={form.styleTemplates === "Basic"}
               onClick={() => patch({ styleTemplates: "Basic" })}
-              title="Basic"
-              subtitle="Templates classiques"
-              icon={<span className="text-lg">📄</span>}
             />
-            <OptionCard
+            <LimeChoice
+              label="Avancé"
               active={form.styleTemplates === "Avancé"}
               onClick={() => patch({ styleTemplates: "Avancé" })}
-              title="Avancé"
-              subtitle="Templates bleus premium"
-              icon={<span className="text-lg">✦</span>}
             />
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -650,59 +754,90 @@ function PlanningStep({
   form: TournamentForm;
   patch: (p: Partial<TournamentForm>) => void;
 }) {
-  return (
-    <section className="panel p-8">
-      <StepHeader
-        num="04"
-        title="PLANNING"
-        subtitle="Horaires, durée des matchs et configuration des terrains."
-      />
-      <div className="space-y-8">
-        {form.heuresDebutJours.map((heure, i) => (
-          <div key={i}>
-            <label className="field-label" htmlFor={`heure-${i}`}>
-              {form.nbJours === 1
-                ? "Heure de début"
-                : `Heure de début — jour ${i + 1}`}
-            </label>
-            <div className="flex items-center gap-3">
-              <IconClock className="h-5 w-5 text-neon/50" />
-              <input
-                id={`heure-${i}`}
-                className="text-input max-w-[140px]"
-                value={heure}
-                onChange={(e) => {
-                  const heures = [...form.heuresDebutJours];
-                  heures[i] = e.target.value;
-                  patch({ heuresDebutJours: heures });
-                }}
-                placeholder="18:00"
-              />
-            </div>
-          </div>
-        ))}
+  const horaireLabel = form.nbJours === 1 ? "Horaire" : "Horaires";
 
-        <div>
-          <label className="field-label">
-            Durée d&apos;un match — {form.dureeMatch} min
-          </label>
-          <input
-            type="range"
-            min={20}
-            max={90}
-            step={5}
-            value={form.dureeMatch}
-            onChange={(e) => patch({ dureeMatch: Number(e.target.value) })}
-            className="mt-2 w-full accent-neon"
-          />
-          <div className="mt-1 flex justify-between text-xs text-white/25">
-            <span>20 min</span>
-            <span>90 min</span>
+  return (
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle
+        title="Planning"
+        subtitle="Horaires de début et durée estimée des matchs."
+      />
+
+      <div className="space-y-8">
+        <div className="flex flex-col items-center gap-3">
+          <label className="field-label-tight">{horaireLabel}</label>
+          <div className="flex w-full max-w-md flex-col gap-3">
+            {form.heuresDebutJours.map((heure, i) => (
+              <div
+                key={i}
+                className="flex flex-col items-center gap-1.5 sm:flex-row sm:justify-center"
+              >
+                {form.nbJours > 1 && (
+                  <span className="min-w-[4.5rem] text-xs font-medium uppercase tracking-widest text-white/35">
+                    Jour {i + 1}
+                  </span>
+                )}
+                <div className="flex items-center gap-3">
+                  <IconClock className="h-5 w-5 shrink-0 text-lime/70" />
+                  <input
+                    id={`heure-${i}`}
+                    className="text-input lime-input max-w-[140px]"
+                    value={heure}
+                    onChange={(e) => {
+                      const heures = [...form.heuresDebutJours];
+                      heures[i] = e.target.value;
+                      patch({ heuresDebutJours: heures });
+                    }}
+                    placeholder="18:00"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div>
-          <label className="field-label">Nombre de terrains</label>
+        <div className="flex flex-col items-center gap-3">
+          <label className="field-label-tight">
+            Durée estimée d&apos;un match — {form.dureeMatch} min
+          </label>
+          <div className="w-full max-w-md">
+            <input
+              type="range"
+              min={20}
+              max={90}
+              step={5}
+              value={form.dureeMatch}
+              onChange={(e) => patch({ dureeMatch: Number(e.target.value) })}
+              className="lime-range mt-1 w-full"
+            />
+            <div className="mt-1 flex justify-between text-xs text-white/25">
+              <span>20 min</span>
+              <span>90 min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TerrainsStep({
+  form,
+  patch,
+}: {
+  form: TournamentForm;
+  patch: (p: Partial<TournamentForm>) => void;
+}) {
+  return (
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle
+        title="Terrains"
+        subtitle="Nombre, noms et terrain principal pour la finale."
+      />
+
+      <div className="space-y-8 text-left">
+        <div className="flex flex-col items-center gap-3">
+          <label className="field-label-tight">Nombre de terrains</label>
           <NumberStepper
             value={form.nbTerrains}
             min={1}
@@ -711,12 +846,12 @@ function PlanningStep({
           />
         </div>
 
-        <div className="space-y-3">
-          <label className="field-label">Noms des terrains</label>
+        <div className="mx-auto w-full max-w-md space-y-3">
+          <label className="field-label-tight">Noms des terrains</label>
           {form.terrains.map((nom, i) => (
             <input
               key={i}
-              className="text-input"
+              className="text-input lime-input"
               value={nom}
               onChange={(e) => {
                 const terrains = [...form.terrains];
@@ -728,13 +863,13 @@ function PlanningStep({
           ))}
         </div>
 
-        <div>
-          <label className="field-label" htmlFor="terrain-principal">
+        <div className="mx-auto w-full max-w-md">
+          <label className="field-label-tight" htmlFor="terrain-principal">
             Terrain principal — finale
           </label>
           <select
             id="terrain-principal"
-            className="text-input"
+            className="text-input lime-input"
             value={form.terrainPrincipal}
             onChange={(e) => patch({ terrainPrincipal: e.target.value })}
           >
@@ -746,7 +881,7 @@ function PlanningStep({
           </select>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -767,39 +902,44 @@ function GenerateStep({
   pdfFilename: string;
   onGenerate: () => void;
 }) {
-  const rows = [
-    ["Club / Logo", form.pasDeLogo ? form.club : form.logoFile?.name ?? "—"],
+  const rows: [string, string][] = [
+    ["Club organisateur", form.club || "—"],
+    [
+      "Logo",
+      form.pasDeLogo
+        ? "Pas de logo"
+        : form.logoFile?.name ?? "—",
+    ],
     ["Date", formatDateFr(form.dateTournoi)],
     ["Type", `${form.typeTournoi} ${form.genreTournoi}`],
     ["Équipes", preview ? String(preview.nb_equipes) : "—"],
-    ["Format", form.modeTournoi],
+    ["Déroulement", formatModeTournoi(form.modeTournoi)],
     ["Jours", String(form.nbJours)],
     ["Terrains", String(form.nbTerrains)],
     ["Style", form.styleTemplates],
   ];
 
   return (
-    <section className="panel p-8">
-      <StepHeader
-        num="05"
-        title="GÉNÉRATION"
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle
+        title="Résumé du tournoi"
         subtitle="Vérifiez le récapitulatif et lancez la production du PDF."
       />
 
-      <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
+      <div className="overflow-hidden rounded-2xl border border-lime/20">
         {rows.map(([label, value], i) => (
           <div
             key={label}
             className={[
               "flex items-center justify-between gap-4 px-5 py-3.5",
-              i % 2 === 0 ? "bg-white/[0.02]" : "bg-transparent",
-              i < rows.length - 1 ? "border-b border-white/[0.04]" : "",
+              i % 2 === 0 ? "bg-lime/[0.03]" : "bg-transparent",
+              i < rows.length - 1 ? "border-b border-lime/10" : "",
             ].join(" ")}
           >
             <span className="text-xs font-medium uppercase tracking-widest text-white/35">
               {label}
             </span>
-            <span className="text-right text-sm font-medium text-white/80">
+            <span className="text-right text-sm font-medium text-lime">
               {value}
             </span>
           </div>
@@ -865,6 +1005,6 @@ function GenerateStep({
           />
         </motion.div>
       )}
-    </section>
+    </div>
   );
 }

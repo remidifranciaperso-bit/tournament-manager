@@ -1,56 +1,71 @@
+/**
+ * Tracé officiel d'un court de padel (20 m × 10 m), vu du dessus.
+ * Cotes FIP : filet au centre, lignes de service à 6,95 m du filet,
+ * ligne centrale de service sur la largeur (5 m).
+ */
+const COURT = {
+  length: 20,
+  width: 10,
+  serviceFromNet: 6.95,
+};
+
+/** Coordonnées du tracé dans un viewBox, avec marge (inset) comme la v1. */
+function padelCourtLines(viewW: number, viewL: number, inset = 5) {
+  const x0 = inset;
+  const x1 = viewW - inset;
+  const y0 = inset;
+  const y1 = viewL - inset;
+  const courtW = x1 - x0;
+  const courtH = y1 - y0;
+  const cx = x0 + courtW / 2;
+  const yNet = y0 + courtH / 2;
+  const serviceOffset = (COURT.serviceFromNet / COURT.length) * courtH;
+  const yServiceTop = yNet - serviceOffset;
+  const yServiceBottom = yNet + serviceOffset;
+
+  return { x0, x1, y0, y1, cx, courtW, courtH, yNet, yServiceTop, yServiceBottom };
+}
+
 export function CourtBackground() {
+  const vbW = 100;
+  const vbL = 200;
+  const {
+    x0,
+    x1,
+    y0,
+    courtW,
+    courtH,
+    cx,
+    yNet,
+    yServiceTop,
+    yServiceBottom,
+  } = padelCourtLines(vbW, vbL, 5);
+
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {/* Mesh lumineux */}
+    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-arena-950">
       <div className="absolute inset-0 bg-mesh" />
 
-      {/* Texture court en bas */}
-      <div
-        className="absolute -bottom-32 left-1/2 h-[420px] w-[140%] -translate-x-1/2 rounded-[50%] opacity-20"
-        style={{
-          background:
-            "radial-gradient(ellipse, #0d6b62 0%, #0a3d4a 50%, transparent 70%)",
-        }}
-      />
-
-      {/* Lignes de court SVG */}
       <svg
         className="absolute inset-0 h-full w-full opacity-[0.07]"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="xMidYMid meet"
+        viewBox={`0 0 ${vbW} ${vbL}`}
       >
-        <defs>
-          <pattern
-            id="grid"
-            width="80"
-            height="80"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M 80 0 L 0 0 0 80"
-              fill="none"
-              stroke="white"
-              strokeWidth="1"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-        {/* Ligne centrale verticale (filet) */}
-        <line
-          x1="50%"
-          y1="0"
-          x2="50%"
-          y2="100%"
-          stroke="white"
-          strokeWidth="2"
-          strokeDasharray="12 8"
-        />
-        {/* Lignes de service */}
-        <line x1="0" y1="35%" x2="100%" y2="35%" stroke="white" strokeWidth="1.5" />
-        <line x1="0" y1="65%" x2="100%" y2="65%" stroke="white" strokeWidth="1.5" />
+        <g
+          fill="none"
+          stroke="#d4ff4a"
+          strokeWidth="0.4"
+          vectorEffect="non-scaling-stroke"
+        >
+          <rect x={x0} y={y0} width={courtW} height={courtH} rx="1" />
+          <line x1={x0} y1={yNet} x2={x1} y2={yNet} strokeWidth="0.6" />
+          <line x1={x0} y1={yServiceTop} x2={x1} y2={yServiceTop} />
+          <line x1={x0} y1={yServiceBottom} x2={x1} y2={yServiceBottom} />
+          <line x1={cx} y1={yServiceTop} x2={cx} y2={yNet} />
+          <line x1={cx} y1={yNet} x2={cx} y2={yServiceBottom} />
+        </g>
       </svg>
 
-      {/* Orbe néon animé */}
       <div className="absolute -right-32 -top-32 h-96 w-96 animate-pulseGlow rounded-full bg-neon/10 blur-3xl" />
       <div className="absolute -bottom-20 -left-20 h-72 w-72 animate-pulseGlow rounded-full bg-lime/5 blur-3xl" />
     </div>
@@ -58,49 +73,89 @@ export function CourtBackground() {
 }
 
 export function CourtGraphic({ className = "" }: { className?: string }) {
+  const vbW = 100;
+  const vbL = 200;
+  const {
+    x0,
+    x1,
+    y0,
+    courtW,
+    courtH,
+    cx,
+    yNet,
+    yServiceTop,
+    yServiceBottom,
+  } = padelCourtLines(vbW, vbL, 5);
+
   return (
     <svg
-      viewBox="0 0 320 480"
+      viewBox={`0 0 ${vbW} ${vbL}`}
       className={className}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
       <rect
-        x="20"
-        y="20"
-        width="280"
-        height="440"
-        rx="8"
+        x={x0}
+        y={y0}
+        width={courtW}
+        height={courtH}
+        rx="2"
         fill="url(#courtGrad)"
         stroke="rgba(255,255,255,0.15)"
-        strokeWidth="2"
+        strokeWidth="0.8"
       />
       <line
-        x1="160"
-        y1="20"
-        x2="160"
-        y2="460"
+        x1={x0}
+        y1={yNet}
+        x2={x1}
+        y2={yNet}
         stroke="rgba(255,255,255,0.5)"
-        strokeWidth="2"
-        strokeDasharray="8 6"
+        strokeWidth="0.8"
       />
-      <line x1="20" y1="180" x2="300" y2="180" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
-      <line x1="20" y1="300" x2="300" y2="300" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
-      <rect x="20" y="180" width="140" height="120" stroke="rgba(255,255,255,0.2)" strokeWidth="1" fill="none" />
-      <rect x="160" y="180" width="140" height="120" stroke="rgba(255,255,255,0.2)" strokeWidth="1" fill="none" />
-      {/* Balle */}
-      <circle cx="240" cy="120" r="18" fill="url(#ballGrad)" />
+      <line
+        x1={x0}
+        y1={yServiceTop}
+        x2={x1}
+        y2={yServiceTop}
+        stroke="rgba(255,255,255,0.3)"
+        strokeWidth="0.5"
+      />
+      <line
+        x1={x0}
+        y1={yServiceBottom}
+        x2={x1}
+        y2={yServiceBottom}
+        stroke="rgba(255,255,255,0.3)"
+        strokeWidth="0.5"
+      />
+      <line
+        x1={cx}
+        y1={yServiceTop}
+        x2={cx}
+        y2={yNet}
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth="0.5"
+      />
+      <line
+        x1={cx}
+        y1={yNet}
+        x2={cx}
+        y2={yServiceBottom}
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth="0.5"
+      />
+      <circle cx="72" cy="48" r="7" fill="url(#ballGrad)" />
       <path
-        d="M228 108 A22 22 0 0 1 252 108"
+        d="M66 42 A9 9 0 0 1 78 42"
         stroke="white"
-        strokeWidth="2.5"
+        strokeWidth="1.2"
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d="M228 132 A22 22 0 0 0 252 132"
+        d="M66 54 A9 9 0 0 0 78 54"
         stroke="white"
-        strokeWidth="2.5"
+        strokeWidth="1.2"
         strokeLinecap="round"
         fill="none"
       />
