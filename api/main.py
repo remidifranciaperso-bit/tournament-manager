@@ -96,7 +96,6 @@ async def generate(
     duree_match: int = Form(40),
     terrains: str = Form("[]"),
     terrain_principal: str = Form(...),
-    style_templates: str = Form("Basic"),
 ):
     """
     Genere le dossier tournoi (PPTX -> PDF) et renvoie le PDF.
@@ -137,7 +136,6 @@ async def generate(
             nb_jours=nb_jours,
             heures_debut_jours=heures,
             logo_path=logo_path,
-            style_templates=style_templates,
             methode_poules=methode_poules,
         )
     except (ValueError, FileNotFoundError) as exc:

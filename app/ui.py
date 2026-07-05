@@ -193,12 +193,6 @@ st.divider()
 
 st.header("③ Génération")
 
-style_templates = st.radio(
-    "Style du dossier",
-    ["Basic", "Avancé"],
-    horizontal=True,
-)
-
 pret = (
     excel_file is not None
     and len(terrains) > 0
@@ -249,7 +243,6 @@ if st.button(
             nb_jours=nb_jours,
             heures_debut_jours=heures_debut_jours,
             logo_path=logo_path,
-            style_templates=style_templates,
             methode_poules=methode_poules,
         )
 

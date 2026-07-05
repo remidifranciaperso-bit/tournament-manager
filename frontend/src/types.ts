@@ -1,6 +1,5 @@
 export type Genre = "Hommes" | "Femmes" | "Mixte";
 export type ModeTournoi = "Élimination directe" | "Poules + tableau final";
-export type Style = "Basic" | "Avancé";
 export type MethodePoules = "Méthode du serpentin" | "Tirage au sort par rang";
 
 export const TYPES_TOURNOI = [
@@ -41,7 +40,6 @@ export interface TournamentForm {
   genreTournoi: Genre;
   modeTournoi: ModeTournoi;
   methodePoules: MethodePoules;
-  styleTemplates: Style;
   nbJours: number;
   heuresDebutJours: string[];
   dureeMatch: number;
@@ -61,7 +59,6 @@ export function defaultForm(): TournamentForm {
     genreTournoi: "Hommes",
     modeTournoi: "Élimination directe",
     methodePoules: "Méthode du serpentin",
-    styleTemplates: "Avancé",
     nbJours: 1,
     heuresDebutJours: ["18:00"],
     dureeMatch: 40,

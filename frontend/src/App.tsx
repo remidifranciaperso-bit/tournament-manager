@@ -834,22 +834,6 @@ function FormatStep({
             </p>
           )}
         </div>
-
-        <div className="flex flex-col items-center gap-1.5">
-          <label className="field-label-tight">Style du dossier</label>
-          <div className="grid w-full max-w-md grid-cols-2 gap-1.5 sm:gap-2">
-            <LimeChoice
-              label="Basic"
-              active={form.styleTemplates === "Basic"}
-              onClick={() => patch({ styleTemplates: "Basic" })}
-            />
-            <LimeChoice
-              label="Avancé"
-              active={form.styleTemplates === "Avancé"}
-              onClick={() => patch({ styleTemplates: "Avancé" })}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

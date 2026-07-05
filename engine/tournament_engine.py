@@ -62,7 +62,6 @@ def generate_tournament(
     heures_debut_jours=None,
     logo_path=None,
     genre_tournoi=None,
-    style_templates="Basic",
     methode_poules="Méthode du serpentin",
 ):
     base_dir = Path(base_dir)
@@ -152,7 +151,7 @@ def generate_tournament(
             f"{tournoi.nb_jours}J.pptx"
         )
 
-    dossier_templates = "templates bleus" if style_templates == "Avancé" else "templates"
+    dossier_templates = "templates bleus"
 
     template_path = base_dir / dossier_templates / template_nom
     verifier_template_existe(template_path)

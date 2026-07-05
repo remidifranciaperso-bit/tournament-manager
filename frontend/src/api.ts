@@ -35,7 +35,6 @@ export async function generateTournament(
   body.append("genre_tournoi", form.genreTournoi);
   body.append("mode_tournoi", form.modeTournoi);
   body.append("methode_poules", form.methodePoules);
-  body.append("style_templates", form.styleTemplates);
   body.append("nb_jours", String(form.nbJours));
   body.append("heures_debut_jours", JSON.stringify(form.heuresDebutJours));
   body.append("duree_match", String(form.dureeMatch));

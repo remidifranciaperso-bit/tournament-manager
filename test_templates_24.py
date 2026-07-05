@@ -1,4 +1,4 @@
-"""Test de remplissage des templates 24 équipes (style Avancé / bleus).
+"""Test de remplissage des templates 24 équipes (templates bleus).
 
 Vérifie que le moteur remplit correctement chaque template (avec et sans poules,
 1J/2J/3J) sans laisser de placeholder {{...}} non substitué.
@@ -71,7 +71,6 @@ def main():
                 nb_jours=jours,
                 heures_debut_jours=heures,
                 genre_tournoi="Messieurs",
-                style_templates="Avancé",
             )
             restants = placeholders_restants(pdf)
             if restants:
