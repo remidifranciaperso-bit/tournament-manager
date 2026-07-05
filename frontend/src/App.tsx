@@ -441,7 +441,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
             <ul className="m-0 grid list-none grid-cols-2 gap-x-10 gap-y-3.5 sm:gap-x-12">
               <WelcomeHighlight item="Tableaux pré-remplis" delay={0.52} />
               <WelcomeHighlight
-                item={`${FORMATS_SUPPORTES.join("/")} équipes supportées`}
+                item={`${FORMATS_SUPPORTES.join("/")} équipes`}
                 delay={0.555}
               />
               {WELCOME_HIGHLIGHTS_LEFT.map((item, i) => (
