@@ -857,11 +857,11 @@ function PlanningStep({
                     Jour {i + 1}
                   </span>
                 )}
-                <div className="flex items-center gap-3">
-                  <IconClock className="h-5 w-5 shrink-0 text-lime/70" />
+                <div className="relative w-[140px]">
+                  <IconClock className="pointer-events-none absolute right-full top-1/2 mr-3 h-5 w-5 -translate-y-1/2 text-lime/70" />
                   <input
                     id={`heure-${i}`}
-                    className="text-input lime-input w-[140px] text-center"
+                    className="text-input lime-input w-full text-center"
                     value={heure}
                     onChange={(e) => {
                       const heures = [...form.heuresDebutJours];
@@ -880,9 +880,9 @@ function PlanningStep({
           <label className="field-label-tight">
             Durée estimée d&apos;un match
           </label>
-          <div className="flex items-center gap-3">
-            <IconHourglass className="h-5 w-5 shrink-0 text-lime/70" />
-            <div className="text-input lime-input w-[140px] text-center">
+          <div className="relative w-[140px]">
+            <IconHourglass className="pointer-events-none absolute right-full top-1/2 mr-3 h-5 w-5 -translate-y-1/2 text-lime/70" />
+            <div className="text-input lime-input w-full text-center">
               {form.dureeMatch} min
             </div>
           </div>
