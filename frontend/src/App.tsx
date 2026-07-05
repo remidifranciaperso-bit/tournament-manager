@@ -382,10 +382,10 @@ function WelcomeHighlight({
 }) {
   return (
     <motion.li
-      initial={{ opacity: 0, x: -6 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="flex items-center justify-start gap-2 whitespace-nowrap text-xs leading-none text-white/55 sm:text-sm"
+      className="flex min-h-[1.125rem] items-center justify-start gap-2 whitespace-nowrap text-xs leading-none text-white/55 sm:min-h-[1.25rem] sm:text-sm"
     >
       <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
         <IconCheck className="h-2.5 w-2.5" />
@@ -432,13 +432,13 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         </motion.div>
 
         <motion.div
-          className="mt-12 flex w-full justify-center overflow-x-hidden px-2"
+          className="mt-12 flex w-full justify-center"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <div className="lime-panel mx-auto w-full max-w-xl px-6 pt-6 pb-8 sm:max-w-2xl sm:px-7 sm:pt-7 sm:pb-10">
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-3 sm:gap-x-8 sm:gap-y-3.5">
+          <div className="lime-panel mx-auto w-fit max-w-full p-7 sm:p-8">
+            <ul className="m-0 grid list-none grid-cols-2 gap-x-10 gap-y-3.5 sm:gap-x-12">
               <WelcomeHighlight item="Tableaux pré-remplis" delay={0.52} />
               <WelcomeHighlight
                 item={`${FORMATS_SUPPORTES.join("/")} équipes supportées`}
