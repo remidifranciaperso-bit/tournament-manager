@@ -282,7 +282,13 @@ export default function App() {
           <StepperMobile steps={WIZARD_STEPS} current={step - 1} />
         </header>
 
-        <main className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto px-4 py-8 sm:px-8 sm:py-10">
+        <main
+          className={`mx-auto w-full max-w-2xl flex-1 px-4 sm:px-8 ${
+            step === 7
+              ? "flex flex-col justify-center overflow-hidden py-4 sm:py-6"
+              : "overflow-y-auto py-8 sm:py-10"
+          }`}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -605,7 +611,7 @@ function ClubStep({
             className="text-input lime-input"
             value={form.club}
             onChange={(e) => patch({ club: e.target.value })}
-            placeholder="Padel Club Paris"
+            placeholder="Nom du club"
           />
         </div>
 
@@ -1051,6 +1057,7 @@ function SummaryStep({
       <WizardPageTitle
         title="Résumé du tournoi"
         subtitle="Vérifiez le récapitulatif avant de lancer la génération."
+        compact
       />
 
       <div className="overflow-hidden rounded-2xl border border-lime/20">
@@ -1058,7 +1065,7 @@ function SummaryStep({
           <div
             key={label}
             className={[
-              "flex items-center justify-between gap-4 px-5 py-3.5",
+              "flex items-center justify-between gap-4 px-4 py-2.5 sm:px-5 sm:py-3",
               i % 2 === 0 ? "bg-lime/[0.03]" : "bg-transparent",
               i < rows.length - 1 ? "border-b border-lime/10" : "",
             ].join(" ")}
@@ -1156,7 +1163,7 @@ function GenerationStep({
             className="mt-8 font-brush text-[clamp(1.25rem,4.5vw,2rem)] leading-none text-lime sm:mt-10"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
           >
-            QUE LE MEILLEUR GAGNE
+            QUE LES MEILLEURS GAGNENT
           </p>
         </motion.div>
       )}
