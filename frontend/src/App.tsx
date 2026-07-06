@@ -608,6 +608,8 @@ function ClubStep({
           </label>
           <input
             id="club"
+            name="club-organisateur"
+            autoComplete="off"
             className="text-input lime-input"
             value={form.club}
             onChange={(e) => patch({ club: e.target.value })}
