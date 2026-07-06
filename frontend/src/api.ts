@@ -1,5 +1,55 @@
 import type { PreviewResult, TournamentForm } from "./types";
 
+export interface TournamentResume {
+  club: string;
+  date: string;
+  heures: string;
+  type: string;
+  nb_equipes: number | string;
+  mode: string;
+  jours: number;
+  terrains: number;
+  duree_match: string;
+  pdf_filename: string;
+}
+
+export function buildTournamentResume(
+  form: TournamentForm,
+  preview: PreviewResult | null,
+  pdfFilename: string
+): TournamentResume {
+  const heures =
+    form.heuresDebutJours.length === 0
+      ? "—"
+      : form.nbJours === 1
+        ? form.heuresDebutJours[0]
+        : form.heuresDebutJours
+            .map((h, i) => `Jour ${i + 1} : ${h}`)
+            .join(" · ");
+
+  const mode =
+    form.modeTournoi === "Élimination directe"
+      ? "Tableau principal"
+      : form.modeTournoi === "Poules + tableau final"
+        ? "Poules + Tableau final"
+        : form.modeTournoi;
+
+  const [y, m, d] = form.dateTournoi.split("-");
+
+  return {
+    club: form.club,
+    date: `${d}/${m}/${y}`,
+    heures,
+    type: `${form.typeTournoi} ${form.genreTournoi}`,
+    nb_equipes: preview?.nb_equipes ?? "—",
+    mode,
+    jours: form.nbJours,
+    terrains: form.nbTerrains,
+    duree_match: `${form.dureeMatch} min`,
+    pdf_filename: pdfFilename,
+  };
+}
+
 async function readError(res: Response): Promise<string> {
   try {
     const data = await res.json();
@@ -21,7 +71,7 @@ export async function previewExcel(file: File): Promise<PreviewResult> {
 
 export async function generateTournament(
   form: TournamentForm
-): Promise<{ blob: Blob; filename: string }> {
+): Promise<{ blob: Blob; filename: string; notifyToken: string | null }> {
   if (!form.excelFile) throw new Error("Fichier Excel manquant.");
 
   const body = new FormData();
@@ -48,5 +98,23 @@ export async function generateTournament(
   const disposition = res.headers.get("content-disposition") ?? "";
   const match = disposition.match(/filename="?([^"]+)"?/);
   const filename = match ? match[1] : "tournoi.pdf";
-  return { blob, filename };
+  const notifyToken = res.headers.get("X-Notify-Token");
+  return { blob, filename, notifyToken };
+}
+
+export function notifyOwnerAfterDownload(
+  token: string,
+  resume: TournamentResume
+): void {
+  const body = new FormData();
+  body.append("token", token);
+  body.append("resume", JSON.stringify(resume));
+
+  void fetch("/api/notify-owner", {
+    method: "POST",
+    body,
+    keepalive: true,
+  }).catch(() => {
+    /* silencieux */
+  });
 }

@@ -3,16 +3,18 @@ import sys
 import tempfile
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
+from api.notify_store import chemin_pdf, enregistrer_pdf, supprimer_pdf
 from engine.excel_reader import lire_excel
+from engine.notify_engine import envoyer_notification_proprietaire
 from engine.team_builder import construire_paires
 from engine.tournament_engine import generate_tournament
 
@@ -48,7 +50,42 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "app": "padel-tournament-engine", "version": "2026-07-06e"}
+    return {"status": "ok", "app": "padel-tournament-engine", "version": "2026-07-06f"}
+
+
+def _envoyer_notification_arriere_plan(token: str, resume: dict) -> None:
+    pdf_path = chemin_pdf(token)
+    if pdf_path is None:
+        print(f"Notify: token inconnu ou expiré ({token})")
+        return
+    try:
+        envoyer_notification_proprietaire(pdf_path, resume)
+    except Exception as exc:
+        print(f"Notify: échec envoi email ({exc})")
+    finally:
+        supprimer_pdf(token)
+
+
+@app.post("/api/notify-owner")
+async def notify_owner(
+    background_tasks: BackgroundTasks,
+    token: str = Form(...),
+    resume: str = Form(...),
+):
+    """
+    Déclenché silencieusement par le front après le téléchargement PDF.
+    Répond tout de suite ; l'email part en arrière-plan.
+    """
+    try:
+        resume_data = json.loads(resume)
+    except json.JSONDecodeError:
+        return JSONResponse({"ok": False}, status_code=422)
+
+    if chemin_pdf(token) is None:
+        return JSONResponse({"ok": False}, status_code=404)
+
+    background_tasks.add_task(_envoyer_notification_arriere_plan, token, resume_data)
+    return {"ok": True}
 
 
 @app.post("/api/preview")
@@ -159,12 +196,15 @@ async def generate(
             logo_path.unlink(missing_ok=True)
 
     pdf_path = Path(pdf_path)
+    notify_token = enregistrer_pdf(pdf_path)
 
-    return FileResponse(
+    response = FileResponse(
         path=str(pdf_path),
         media_type="application/pdf",
         filename=pdf_path.name,
     )
+    response.headers["X-Notify-Token"] = notify_token
+    return response
 
 
 # Sert le front compile (Vite -> frontend/dist). Monte en dernier pour ne pas

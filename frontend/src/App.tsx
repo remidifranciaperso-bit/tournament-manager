@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { generateTournament, previewExcel } from "./api";
+import { generateTournament, previewExcel, notifyOwnerAfterDownload, buildTournamentResume } from "./api";
 import { CourtBackground } from "./components/CourtBackground";
 import { FileDrop } from "./components/FileDrop";
 import {
@@ -33,7 +33,7 @@ import {
   type TournamentForm,
 } from "./types";
 
-const APP_BUILD = "2026-07-06e";
+const APP_BUILD = "2026-07-06f";
 
 function generationTagline(genre: Genre): string {
   return genre === "Femmes"
@@ -93,6 +93,7 @@ export default function App() {
   const [genError, setGenError] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState("tournoi.pdf");
+  const notifyTokenRef = useRef<string | null>(null);
   const genStartedRef = useRef(false);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
@@ -199,10 +200,11 @@ export default function App() {
       setPdfUrl(null);
     }
     try {
-      const { blob, filename } = await generateTournament(form);
+      const { blob, filename, notifyToken } = await generateTournament(form);
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
       setPdfFilename(filename);
+      notifyTokenRef.current = notifyToken;
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -219,6 +221,16 @@ export default function App() {
     genStartedRef.current = true;
     handleGenerate();
   }, [step, generating, handleGenerate]);
+
+  const handleDownloadNotify = useCallback(() => {
+    const token = notifyTokenRef.current;
+    if (!token) return;
+    notifyOwnerAfterDownload(
+      token,
+      buildTournamentResume(form, preview, pdfFilename)
+    );
+    notifyTokenRef.current = null;
+  }, [form, preview, pdfFilename]);
 
   const slideVariants = {
     initial: { opacity: 0, y: 20 },
@@ -343,6 +355,7 @@ export default function App() {
                   pdfUrl={pdfUrl}
                   pdfFilename={pdfFilename}
                   genreTournoi={form.genreTournoi}
+                  onDownload={handleDownloadNotify}
                 />
               )}
             </motion.div>
@@ -1103,12 +1116,14 @@ function GenerationStep({
   pdfUrl,
   pdfFilename,
   genreTournoi,
+  onDownload,
 }: {
   generating: boolean;
   genError: string | null;
   pdfUrl: string | null;
   pdfFilename: string;
   genreTournoi: Genre;
+  onDownload: () => void;
 }) {
   const done = !!pdfUrl && !generating;
 
@@ -1172,6 +1187,7 @@ function GenerationStep({
             <a
               href={pdfUrl}
               download={pdfFilename}
+              onClick={onDownload}
               className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
             >
               Télécharger ↓

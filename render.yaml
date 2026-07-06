@@ -11,3 +11,9 @@ services:
     envVars:
       - key: PDF_CONVERTER
         value: libreoffice
+      - key: OWNER_EMAIL
+        value: remi.difrancia.perso@gmail.com
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
