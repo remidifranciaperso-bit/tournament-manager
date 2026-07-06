@@ -28,11 +28,18 @@ import {
   FORMATS_SUPPORTES,
   TYPES_TOURNOI,
   defaultForm,
+  type Genre,
   type PreviewResult,
   type TournamentForm,
 } from "./types";
 
-const APP_BUILD = "2026-07-06c";
+const APP_BUILD = "2026-07-06d";
+
+function generationTagline(genre: Genre): string {
+  return genre === "Femmes"
+    ? "QUE LES MEILLEURS GAGNENT"
+    : "QUE LE MEILLEUR GAGNE";
+}
 
 const STEPS = [
   { key: "welcome", label: "Accueil" },
@@ -335,6 +342,7 @@ export default function App() {
                   genError={genError}
                   pdfUrl={pdfUrl}
                   pdfFilename={pdfFilename}
+                  genreTournoi={form.genreTournoi}
                 />
               )}
             </motion.div>
@@ -1094,11 +1102,13 @@ function GenerationStep({
   genError,
   pdfUrl,
   pdfFilename,
+  genreTournoi,
 }: {
   generating: boolean;
   genError: string | null;
   pdfUrl: string | null;
   pdfFilename: string;
+  genreTournoi: Genre;
 }) {
   const done = !!pdfUrl && !generating;
 
@@ -1168,10 +1178,10 @@ function GenerationStep({
             </a>
           </div>
           <p
-            className="mt-8 font-brush text-[clamp(1.25rem,4.5vw,2rem)] leading-none text-lime sm:mt-10"
+            className="mt-14 font-brush text-[clamp(2rem,6.5vw,3.75rem)] leading-none text-lime sm:mt-20"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
           >
-            QUE LES MEILLEURS GAGNENT
+            {generationTagline(genreTournoi)}
           </p>
         </motion.div>
       )}
