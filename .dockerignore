@@ -22,6 +22,5 @@ points/
 venv/
 env/
 
-# Frontend (reconstruit dans le stage Node du Dockerfile)
+# Frontend (reconstruit localement avant commit : npm run build)
 frontend/node_modules/
-frontend/dist/

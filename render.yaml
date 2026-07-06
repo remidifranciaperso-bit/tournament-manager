@@ -1,13 +1,8 @@
-# IMPORTANT : le service Render "tournament-manager.onrender.com" actuel
-# sert encore une ancienne app React (Create React App), pas ce projet.
-# Pour déployer cette app : Dashboard Render → New → Blueprint → ce repo,
-# ou recréer le service en runtime Docker sur remidifranciaperso-bit/tournament-manager.
 services:
   - type: web
-    name: padel-tournament-engine
+    name: tournament-manager
     runtime: docker
     plan: starter
-    repo: https://github.com/remidifranciaperso-bit/tournament-manager
     branch: main
     dockerfilePath: ./Dockerfile
     dockerContext: .

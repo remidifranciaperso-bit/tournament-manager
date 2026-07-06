@@ -1,13 +1,6 @@
-# Stage 1 : build du front React (Vite)
-FROM node:20-alpine AS frontend-build
-
-WORKDIR /app/frontend
-COPY frontend/package.json ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
-
-# Stage 2 : runtime Python + LibreOffice
+# Runtime Python + LibreOffice
+# Le front est pre-compile (frontend/dist) et versionne dans git
+# pour garantir que chaque deploy Render sert la bonne version.
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -15,9 +8,6 @@ ENV PYTHONUNBUFFERED=1 \
     PDF_CONVERTER=libreoffice \
     HOME=/tmp
 
-# LibreOffice Impress (conversion PPTX -> PDF sans interface graphique)
-# + polices : DejaVu / Liberation pour le texte, Noto Color Emoji pour les
-# pictogrammes utilises dans les templates.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libreoffice-impress \
@@ -29,7 +19,6 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Polices custom des templates (Grindy Brush, TSL Sans)
 COPY fonts/ /usr/share/fonts/truetype/tournament/
 RUN fc-cache -f -v > /dev/null
 
@@ -39,7 +28,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-COPY --from=frontend-build /app/frontend/dist ./frontend/dist
+
+RUN test -f frontend/dist/index.html
 
 RUN mkdir -p /app/exports \
     && chmod -R 777 /app/exports /tmp

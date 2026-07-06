@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
@@ -18,6 +19,16 @@ from engine.tournament_engine import generate_tournament
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
 
 app = FastAPI(title="Tournament Manager")
+
+class NoCacheHtmlMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path == "/" or path.endswith(".html"):
+            response.headers["Cache-Control"] = "no-store, must-revalidate"
+        return response
+
+app.add_middleware(NoCacheHtmlMiddleware)
 
 # Autorise le front en developpement (Vite sur :5173). En production le front
 # est servi par cette meme app, donc same-origin : aucun impact.
@@ -37,7 +48,7 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "app": "padel-tournament-engine", "version": "2026-07-06"}
+    return {"status": "ok", "app": "padel-tournament-engine", "version": "2026-07-06c"}
 
 
 @app.post("/api/preview")

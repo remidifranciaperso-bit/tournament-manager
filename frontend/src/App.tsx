@@ -24,8 +24,6 @@ import {
   LimeChoice,
   Toggle,
 } from "./components/ui";
-
-const APP_BUILD = "2026-07-06b";
 import {
   FORMATS_SUPPORTES,
   TYPES_TOURNOI,
@@ -33,6 +31,8 @@ import {
   type PreviewResult,
   type TournamentForm,
 } from "./types";
+
+const APP_BUILD = "2026-07-06c";
 
 const STEPS = [
   { key: "welcome", label: "Accueil" },
@@ -619,6 +619,7 @@ function ClubStep({
             value={form.club}
             onChange={(e) => patch({ club: e.target.value })}
             placeholder="Nom du club"
+            spellCheck={false}
           />
         </div>
 
