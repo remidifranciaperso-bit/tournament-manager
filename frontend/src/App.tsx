@@ -33,12 +33,12 @@ import {
   type TournamentForm,
 } from "./types";
 
-const APP_BUILD = "2026-07-06d";
+const APP_BUILD = "2026-07-06e";
 
 function generationTagline(genre: Genre): string {
   return genre === "Femmes"
-    ? "QUE LES MEILLEURS GAGNENT"
-    : "QUE LE MEILLEUR GAGNE";
+    ? "QUE LES MEILLEURES GAGNENT"
+    : "QUE LES MEILLEURS GAGNENT";
 }
 
 const STEPS = [

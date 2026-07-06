@@ -48,7 +48,7 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "app": "padel-tournament-engine", "version": "2026-07-06d"}
+    return {"status": "ok", "app": "padel-tournament-engine", "version": "2026-07-06e"}
 
 
 @app.post("/api/preview")
