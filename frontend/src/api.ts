@@ -110,6 +110,11 @@ export function notifyOwnerAfterDownload(
   body.append("token", token);
   body.append("resume", JSON.stringify(resume));
 
+  if (navigator.sendBeacon) {
+    const ok = navigator.sendBeacon("/api/notify-owner", body);
+    if (ok) return;
+  }
+
   void fetch("/api/notify-owner", {
     method: "POST",
     body,

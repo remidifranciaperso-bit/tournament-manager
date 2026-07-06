@@ -14,7 +14,7 @@ sys.path.append(str(BASE_DIR))
 
 from api.notify_store import chemin_pdf, enregistrer_pdf, supprimer_pdf
 from engine.excel_reader import lire_excel
-from engine.notify_engine import envoyer_notification_proprietaire
+from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
 from engine.tournament_engine import generate_tournament
 
@@ -39,6 +39,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Notify-Token"],
 )
 
 
@@ -50,7 +51,12 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "app": "padel-tournament-engine", "version": "2026-07-06f"}
+    return {
+        "status": "ok",
+        "app": "padel-tournament-engine",
+        "version": "2026-07-06g",
+        "notify": mode_notification(),
+    }
 
 
 def _envoyer_notification_arriere_plan(token: str, resume: dict) -> None:
@@ -82,8 +88,10 @@ async def notify_owner(
         return JSONResponse({"ok": False}, status_code=422)
 
     if chemin_pdf(token) is None:
+        print(f"Notify: requête refusée, token invalide ({token[:8]}…)")
         return JSONResponse({"ok": False}, status_code=404)
 
+    print(f"Notify: notification planifiée ({token[:8]}…)")
     background_tasks.add_task(_envoyer_notification_arriere_plan, token, resume_data)
     return {"ok": True}
 

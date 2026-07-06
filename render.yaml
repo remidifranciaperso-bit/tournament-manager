@@ -13,7 +13,5 @@ services:
         value: libreoffice
       - key: OWNER_EMAIL
         value: remi.difrancia.perso@gmail.com
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: "587"
+      - key: EMAIL_FROM
+        value: Padel Tournament Engine <onboarding@resend.dev>

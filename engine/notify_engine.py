@@ -1,5 +1,9 @@
+import base64
+import json
 import os
 import smtplib
+import urllib.error
+import urllib.request
 from email.mime.application import MIMEApplication
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
@@ -13,10 +17,23 @@ OWNER_EMAIL = os.environ.get(
     "OWNER_EMAIL",
     "remi.difrancia.perso@gmail.com",
 )
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+EMAIL_FROM = os.environ.get(
+    "EMAIL_FROM",
+    "Padel Tournament Engine <onboarding@resend.dev>",
+)
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+
+
+def mode_notification() -> str:
+    if RESEND_API_KEY:
+        return "resend"
+    if SMTP_USER and SMTP_PASSWORD:
+        return "smtp"
+    return "none"
 
 
 def _resume_lignes(resume: dict) -> list[tuple[str, str]]:
@@ -113,12 +130,84 @@ def _corps_texte(resume: dict) -> str:
     return "\n".join(lignes)
 
 
+def _envoyer_via_resend(
+    sujet: str,
+    corps: str,
+    pdf_name: str,
+    pdf_bytes: bytes,
+    png_bytes: bytes,
+) -> None:
+    payload = {
+        "from": EMAIL_FROM,
+        "to": [OWNER_EMAIL],
+        "subject": sujet,
+        "text": corps,
+        "attachments": [
+            {
+                "filename": "resume-tournoi.png",
+                "content": base64.b64encode(png_bytes).decode("ascii"),
+            },
+            {
+                "filename": pdf_name,
+                "content": base64.b64encode(pdf_bytes).decode("ascii"),
+            },
+        ],
+    }
+    requete = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(requete, timeout=45) as reponse:
+            reponse.read()
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Resend HTTP {exc.code}: {detail}") from exc
+
+
+def _envoyer_via_smtp(
+    sujet: str,
+    corps: str,
+    pdf_name: str,
+    pdf_bytes: bytes,
+    png_bytes: bytes,
+) -> None:
+    message = MIMEMultipart()
+    message["Subject"] = sujet
+    message["From"] = SMTP_USER
+    message["To"] = OWNER_EMAIL
+    message.attach(MIMEText(corps, "plain", "utf-8"))
+
+    image = MIMEImage(png_bytes, _subtype="png")
+    image.add_header(
+        "Content-Disposition",
+        "attachment",
+        filename="resume-tournoi.png",
+    )
+    message.attach(image)
+
+    pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf")
+    pdf_part.add_header("Content-Disposition", "attachment", filename=pdf_name)
+    message.attach(pdf_part)
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+        smtp.starttls()
+        smtp.login(SMTP_USER, SMTP_PASSWORD)
+        smtp.sendmail(SMTP_USER, [OWNER_EMAIL], message.as_string())
+
+
 def envoyer_notification_proprietaire(
     pdf_path: Path,
     resume: dict,
 ) -> None:
-    if not SMTP_USER or not SMTP_PASSWORD:
-        print("Notify: SMTP non configuré — envoi ignoré.")
+    mode = mode_notification()
+    if mode == "none":
+        print("Notify: aucun service email configuré (RESEND_API_KEY ou SMTP).")
         return
 
     if not pdf_path.exists():
@@ -128,27 +217,14 @@ def envoyer_notification_proprietaire(
     club = resume.get("club", "Tournoi")
     date = resume.get("date", "")
     sujet = f"[PTE] Tournoi généré — {club} — {date}"
-
-    message = MIMEMultipart()
-    message["Subject"] = sujet
-    message["From"] = SMTP_USER
-    message["To"] = OWNER_EMAIL
-    message.attach(MIMEText(_corps_texte(resume), "plain", "utf-8"))
-
+    corps = _corps_texte(resume)
     png_bytes = generer_image_resume(resume)
-    image = MIMEImage(png_bytes, _subtype="png")
-    image.add_header("Content-Disposition", "attachment", filename="resume-tournoi.png")
-    message.attach(image)
-
     pdf_bytes = pdf_path.read_bytes()
-    pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf")
     pdf_name = resume.get("pdf_filename", pdf_path.name)
-    pdf_part.add_header("Content-Disposition", "attachment", filename=pdf_name)
-    message.attach(pdf_part)
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
-        smtp.starttls()
-        smtp.login(SMTP_USER, SMTP_PASSWORD)
-        smtp.sendmail(SMTP_USER, [OWNER_EMAIL], message.as_string())
+    if mode == "resend":
+        _envoyer_via_resend(sujet, corps, pdf_name, pdf_bytes, png_bytes)
+    else:
+        _envoyer_via_smtp(sujet, corps, pdf_name, pdf_bytes, png_bytes)
 
-    print(f"Notify: email envoyé à {OWNER_EMAIL} ({pdf_name})")
+    print(f"Notify: email envoyé via {mode} à {OWNER_EMAIL} ({pdf_name})")
