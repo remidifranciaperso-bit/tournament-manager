@@ -56,6 +56,7 @@ def construire_payload_live(
     page_sizes: dict[str, dict[str, float]],
     pdf_filename: str,
     layout_path=None,
+    pdf_path=None,
 ) -> dict:
     """
     Manager live = PDF Engine découpé par onglet (``/api/live/{token}/page/N``).
@@ -73,9 +74,14 @@ def construire_payload_live(
 
     planning_layout: dict = {}
     if layout_path is not None:
-        from engine.live_layout import extraire_layout_planning
+        from engine.live_layout import (
+            calibrer_planning_layout_pdf,
+            extraire_layout_planning,
+        )
 
         planning_layout = extraire_layout_planning(layout_path, page_map)
+        if pdf_path is not None:
+            planning_layout = calibrer_planning_layout_pdf(planning_layout, pdf_path)
         planning_layout = _enrichir_planning_layout(planning_layout, fields)
 
     return {

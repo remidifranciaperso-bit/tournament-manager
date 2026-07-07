@@ -18,6 +18,10 @@ def _pct(value: int, total: int) -> float:
     return round(value / total * 100, 3)
 
 
+def _pct_float(value: float, total: float) -> float:
+    return round(value / total * 100, 3)
+
+
 def _field_dict(
     key: str,
     left: int,
@@ -157,6 +161,97 @@ def extraire_layout_planning(template_path, page_map: dict) -> dict[str, list[di
         index = str(entry["index"])
         if index in layout:
             planning_layout[index] = layout[index]
+
+    return planning_layout
+
+
+def _extraire_checkboxes_pdf_page(page) -> list[dict]:
+    width = float(page.rect.width)
+    height = float(page.rect.height)
+    if width <= 0 or height <= 0:
+        return []
+
+    boxes: list[dict] = []
+    for block in page.get_text("dict")["blocks"]:
+        if block.get("type") != 0:
+            continue
+        for line in block["lines"]:
+            for span in line["spans"]:
+                if span["text"].strip() not in _DONE_MARKERS:
+                    continue
+                x0, y0, x1, y1 = span["bbox"]
+                boxes.append(
+                    {
+                        "left": _pct_float(x0, width),
+                        "top": _pct_float(y0, height),
+                        "width": _pct_float(x1 - x0, width),
+                        "height": _pct_float(y1 - y0, height),
+                    }
+                )
+
+    boxes.sort(key=lambda box: box["top"])
+    return boxes
+
+
+def extraire_checkboxes_pdf(pdf_path, page_indices: list[int]) -> dict[str, list[dict]]:
+    import fitz
+
+    doc = fitz.open(str(pdf_path))
+    result: dict[str, list[dict]] = {}
+
+    try:
+        for index in sorted(set(page_indices)):
+            if index < 0 or index >= doc.page_count:
+                continue
+            boxes = _extraire_checkboxes_pdf_page(doc[index])
+            if boxes:
+                result[str(index)] = boxes
+    finally:
+        doc.close()
+
+    return result
+
+
+def _centrer_hit_area(template_box: dict, pdf_box: dict) -> dict:
+    pdf_cx = pdf_box["left"] + pdf_box["width"] / 2
+    pdf_cy = pdf_box["top"] + pdf_box["height"] / 2
+    width = max(template_box["width"], pdf_box["width"], 3.5)
+    height = max(template_box["height"], pdf_box["height"], 3.0)
+
+    return {
+        "left": round(pdf_cx - width / 2, 3),
+        "top": round(pdf_cy - height / 2, 3),
+        "width": round(width, 3),
+        "height": round(height, 3),
+    }
+
+
+def calibrer_planning_layout_pdf(
+    planning_layout: dict[str, list[dict]],
+    pdf_path,
+) -> dict[str, list[dict]]:
+    """Aligne les zones TERMINÉ sur les cases ☐ du PDF Engine (évite la dérive PPTX)."""
+    if not planning_layout:
+        return planning_layout
+
+    page_indices = [int(index) for index in planning_layout]
+    pdf_boxes = extraire_checkboxes_pdf(pdf_path, page_indices)
+
+    for page_index, slide_fields in planning_layout.items():
+        done_fields = sorted(
+            (field for field in slide_fields if field["key"].endswith("_DONE")),
+            key=lambda field: field["top"],
+        )
+        page_boxes = pdf_boxes.get(page_index, [])
+        if not done_fields or not page_boxes:
+            continue
+
+        for field, pdf_box in zip(done_fields, page_boxes):
+            hit_area = _centrer_hit_area(field, pdf_box)
+            field["left"] = hit_area["left"]
+            field["top"] = hit_area["top"]
+            field["width"] = hit_area["width"]
+            field["height"] = hit_area["height"]
 
     return planning_layout
 
