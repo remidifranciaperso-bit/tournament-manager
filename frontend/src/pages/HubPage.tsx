@@ -44,7 +44,8 @@ export default function HubPage() {
               Manager
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-white/60">
-              Gérer un tournoi en live : scores, tableaux et planning du jour J.
+              Gérer un tournoi en live : scores, tableaux, planning et
+              classements du jour J.
             </p>
             <span className="mt-6 inline-block text-sm font-semibold text-lime/80 group-hover:text-lime">
               Ouvrir →

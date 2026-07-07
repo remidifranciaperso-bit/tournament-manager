@@ -17,7 +17,7 @@ from api.notify_store import chemin_pdf, enregistrer_pdf, supprimer_pdf
 from engine.excel_reader import lire_excel
 from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
-from engine.tournament_engine import generate_tournament
+from engine.tournament_engine import generate_tournament, generate_tournament_live
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
 
@@ -52,10 +52,29 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 @app.get("/api/health")
 def health():
+    pymupdf_ok = False
+    try:
+        import fitz  # noqa: F401
+
+        pymupdf_ok = True
+    except ImportError:
+        pass
+
+    soffice = None
+    try:
+        from engine.pdf_engine import trouver_soffice
+
+        soffice = trouver_soffice()
+    except Exception:
+        pass
+
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-07a",
+        "version": "2026-07-07c",
+        "live": "mask-v4",
+        "pymupdf": pymupdf_ok,
+        "soffice": bool(soffice),
         "deploy": os.environ.get("DEPLOY_TARGET", "engine"),
         "notify": mode_notification(),
     }
@@ -137,6 +156,74 @@ async def preview(excel: UploadFile = File(...)):
         "formats_supportes": FORMATS_SUPPORTES,
         "equipes": equipes,
     }
+
+
+@app.post("/api/generate-live")
+async def generate_live(
+    excel: UploadFile = File(...),
+    logo: UploadFile | None = File(None),
+    club: str = Form(""),
+    date_tournoi: str = Form(...),
+    type_tournoi: str = Form(...),
+    genre_tournoi: str = Form(...),
+    mode_tournoi: str = Form("Élimination directe"),
+    methode_poules: str = Form("Méthode du serpentin"),
+    nb_jours: int = Form(1),
+    heures_debut_jours: str = Form("[]"),
+    duree_match: int = Form(40),
+    terrains: str = Form("[]"),
+    terrain_principal: str = Form(...),
+):
+    """
+    Génère le tournoi (PDF) et renvoie les données structurées pour le Manager live.
+    """
+    try:
+        heures = json.loads(heures_debut_jours)
+        liste_terrains = json.loads(terrains)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="Parametres JSON invalides.")
+
+    if not heures:
+        raise HTTPException(status_code=422, detail="Heure de debut manquante.")
+
+    if not liste_terrains:
+        raise HTTPException(status_code=422, detail="Aucun terrain defini.")
+
+    excel_path = _ecrire_fichier_temporaire(excel, ".xlsx")
+
+    logo_path = None
+    if logo is not None and logo.filename:
+        suffix = Path(logo.filename).suffix or ".png"
+        logo_path = _ecrire_fichier_temporaire(logo, suffix)
+
+    try:
+        payload = generate_tournament_live(
+            excel_path=excel_path,
+            club=club,
+            date_tournoi=date_tournoi,
+            type_tournoi=type_tournoi,
+            genre_tournoi=genre_tournoi,
+            heure_debut=heures[0],
+            duree_match=duree_match,
+            terrains=liste_terrains,
+            terrain_principal=terrain_principal,
+            base_dir=BASE_DIR,
+            mode_tournoi=mode_tournoi,
+            nb_jours=nb_jours,
+            heures_debut_jours=heures,
+            logo_path=logo_path,
+            methode_poules=methode_poules,
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Erreur de generation : {exc}")
+    finally:
+        excel_path.unlink(missing_ok=True)
+        if logo_path is not None:
+            logo_path.unlink(missing_ok=True)
+
+    return payload
 
 
 @app.post("/api/generate")

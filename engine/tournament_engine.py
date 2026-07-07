@@ -47,7 +47,7 @@ def verifier_template_existe(template_path):
             f"Template introuvable : {template_path}"
         )
 
-def generate_tournament(
+def _construire_tournoi_et_matchs(
     excel_path,
     club,
     date_tournoi,
@@ -56,16 +56,12 @@ def generate_tournament(
     duree_match,
     terrains,
     terrain_principal,
-    base_dir,
     mode_tournoi="Élimination directe",
     nb_jours=1,
     heures_debut_jours=None,
-    logo_path=None,
     genre_tournoi=None,
     methode_poules="Méthode du serpentin",
 ):
-    base_dir = Path(base_dir)
-
     type_tournoi = str(type_tournoi).strip()
 
     if " - " in type_tournoi:
@@ -140,6 +136,10 @@ def generate_tournament(
         heures_debut_jours=tournoi.heures_debut_jours,
     )
 
+    return tournoi, matchs
+
+
+def _chemin_template(tournoi, base_dir):
     if tournoi.mode_tournoi == "Poules + tableau final":
         template_nom = (
             f"Template_{tournoi.nb_equipes}_poules_"
@@ -151,10 +151,47 @@ def generate_tournament(
             f"{tournoi.nb_jours}J.pptx"
         )
 
-    dossier_templates = "templates bleus"
-
-    template_path = base_dir / dossier_templates / template_nom
+    template_path = base_dir / "templates bleus" / template_nom
     verifier_template_existe(template_path)
+    return template_path
+
+
+def generate_tournament(
+    excel_path,
+    club,
+    date_tournoi,
+    type_tournoi,
+    heure_debut,
+    duree_match,
+    terrains,
+    terrain_principal,
+    base_dir,
+    mode_tournoi="Élimination directe",
+    nb_jours=1,
+    heures_debut_jours=None,
+    logo_path=None,
+    genre_tournoi=None,
+    methode_poules="Méthode du serpentin",
+):
+    base_dir = Path(base_dir)
+
+    tournoi, matchs = _construire_tournoi_et_matchs(
+        excel_path=excel_path,
+        club=club,
+        date_tournoi=date_tournoi,
+        type_tournoi=type_tournoi,
+        heure_debut=heure_debut,
+        duree_match=duree_match,
+        terrains=terrains,
+        terrain_principal=terrain_principal,
+        mode_tournoi=mode_tournoi,
+        nb_jours=nb_jours,
+        heures_debut_jours=heures_debut_jours,
+        genre_tournoi=genre_tournoi,
+        methode_poules=methode_poules,
+    )
+
+    template_path = _chemin_template(tournoi, base_dir)
 
     exports_dir = base_dir / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
@@ -181,3 +218,50 @@ def generate_tournament(
     )
 
     return pdf_path
+
+
+def generate_tournament_live(
+    excel_path,
+    club,
+    date_tournoi,
+    type_tournoi,
+    heure_debut,
+    duree_match,
+    terrains,
+    terrain_principal,
+    base_dir,
+    mode_tournoi="Élimination directe",
+    nb_jours=1,
+    heures_debut_jours=None,
+    logo_path=None,
+    genre_tournoi=None,
+    methode_poules="Méthode du serpentin",
+):
+    from engine.live_export import construire_payload_live
+
+    base_dir = Path(base_dir)
+
+    tournoi, matchs = _construire_tournoi_et_matchs(
+        excel_path=excel_path,
+        club=club,
+        date_tournoi=date_tournoi,
+        type_tournoi=type_tournoi,
+        heure_debut=heure_debut,
+        duree_match=duree_match,
+        terrains=terrains,
+        terrain_principal=terrain_principal,
+        mode_tournoi=mode_tournoi,
+        nb_jours=nb_jours,
+        heures_debut_jours=heures_debut_jours,
+        genre_tournoi=genre_tournoi,
+        methode_poules=methode_poules,
+    )
+
+    template_path = _chemin_template(tournoi, base_dir)
+
+    return construire_payload_live(
+        tournoi=tournoi,
+        matchs=matchs,
+        template_path=template_path,
+        base_dir=base_dir,
+    )

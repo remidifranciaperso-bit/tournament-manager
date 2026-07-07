@@ -1,0 +1,611 @@
+{
+  "0": [
+    {
+      "key": "LOGO",
+      "left": 27.389,
+      "top": 5.552,
+      "width": 44.337,
+      "height": 10.771
+    },
+    {
+      "key": "TYPE",
+      "left": -4.296,
+      "top": 22.849,
+      "width": 106.312,
+      "height": 22.888
+    },
+    {
+      "key": "NB_EQUIPES",
+      "left": 20.133,
+      "top": 78.486,
+      "width": 59.735,
+      "height": 7.629
+    },
+    {
+      "key": "DATE",
+      "left": 20.133,
+      "top": 62.155,
+      "width": 59.735,
+      "height": 8.078
+    },
+    {
+      "key": "HEURE",
+      "left": 20.133,
+      "top": 70.336,
+      "width": 59.735,
+      "height": 8.078
+    },
+    {
+      "key": "NB_TERRAINS",
+      "left": 20.133,
+      "top": 86.636,
+      "width": 59.735,
+      "height": 7.629
+    }
+  ],
+  "1": [
+    {
+      "key": "PARTICIPANTS",
+      "left": 0.213,
+      "top": 0.558,
+      "width": 99.575,
+      "height": 19.298
+    },
+    {
+      "key": "TYPE",
+      "left": -0.0,
+      "top": 1.467,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "DATE",
+      "left": 67.273,
+      "top": 1.443,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "LOGO",
+      "left": 37.341,
+      "top": 96.576,
+      "width": 23.979,
+      "height": 2.917
+    }
+  ],
+  "2": [
+    {
+      "key": "TYPE",
+      "left": -0.0,
+      "top": 1.467,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "DATE",
+      "left": 67.273,
+      "top": 1.443,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "LOGO",
+      "left": 37.341,
+      "top": 96.576,
+      "width": 23.979,
+      "height": 2.917
+    }
+  ],
+  "3": [
+    {
+      "key": "Q1_TERRAIN",
+      "left": 3.397,
+      "top": 10.239,
+      "width": 27.876,
+      "height": 3.815
+    },
+    {
+      "key": "Q2_TERRAIN",
+      "left": 3.397,
+      "top": 33.115,
+      "width": 27.83,
+      "height": 6.283
+    },
+    {
+      "key": "Q4_TERRAIN",
+      "left": 3.406,
+      "top": 79.197,
+      "width": 27.81,
+      "height": 3.832
+    },
+    {
+      "key": "PF_TERRAIN",
+      "left": 75.385,
+      "top": 77.29,
+      "width": 14.282,
+      "height": 6.283
+    },
+    {
+      "key": "D1_TERRAIN",
+      "left": 35.97,
+      "top": 21.087,
+      "width": 27.968,
+      "height": 3.815
+    },
+    {
+      "key": "Q3_TERRAIN",
+      "left": 3.397,
+      "top": 56.102,
+      "width": 27.83,
+      "height": 3.815
+    },
+    {
+      "key": "D2_TERRAIN",
+      "left": 36.156,
+      "top": 66.924,
+      "width": 27.861,
+      "height": 6.283
+    },
+    {
+      "key": "F_TERRAIN",
+      "left": 68.796,
+      "top": 44.669,
+      "width": 27.968,
+      "height": 6.283
+    },
+    {
+      "key": "Q1_CODE",
+      "left": 3.406,
+      "top": 10.239,
+      "width": 10.7,
+      "height": 3.815
+    },
+    {
+      "key": "Q1_HEURE",
+      "left": 20.097,
+      "top": 10.239,
+      "width": 11.22,
+      "height": 3.815
+    },
+    {
+      "key": "Q1_EQ1",
+      "left": 3.525,
+      "top": 15.174,
+      "width": 27.62,
+      "height": 3.59
+    },
+    {
+      "key": "Q1_EQ2",
+      "left": 3.525,
+      "top": 21.351,
+      "width": 27.62,
+      "height": 3.59
+    },
+    {
+      "key": "Q2_CODE",
+      "left": 3.43,
+      "top": 33.115,
+      "width": 10.309,
+      "height": 3.815
+    },
+    {
+      "key": "Q2_HEURE",
+      "left": 20.005,
+      "top": 33.115,
+      "width": 11.314,
+      "height": 3.815
+    },
+    {
+      "key": "Q2_EQ1",
+      "left": 3.525,
+      "top": 38.05,
+      "width": 27.62,
+      "height": 3.59
+    },
+    {
+      "key": "Q2_EQ2",
+      "left": 3.525,
+      "top": 44.227,
+      "width": 27.62,
+      "height": 3.59
+    },
+    {
+      "key": "Q3_CODE",
+      "left": 3.43,
+      "top": 56.102,
+      "width": 10.309,
+      "height": 3.815
+    },
+    {
+      "key": "Q3_HEURE",
+      "left": 20.097,
+      "top": 56.102,
+      "width": 11.222,
+      "height": 3.815
+    },
+    {
+      "key": "Q3_EQ1",
+      "left": 3.525,
+      "top": 61.037,
+      "width": 27.62,
+      "height": 3.59
+    },
+    {
+      "key": "Q3_EQ2",
+      "left": 3.525,
+      "top": 67.214,
+      "width": 27.62,
+      "height": 3.59
+    },
+    {
+      "key": "Q4_CODE",
+      "left": 3.383,
+      "top": 79.197,
+      "width": 10.309,
+      "height": 3.815
+    },
+    {
+      "key": "Q4_HEURE",
+      "left": 20.087,
+      "top": 79.197,
+      "width": 11.186,
+      "height": 3.815
+    },
+    {
+      "key": "Q4_EQ1",
+      "left": 3.525,
+      "top": 84.132,
+      "width": 27.62,
+      "height": 3.59
+    },
+    {
+      "key": "Q4_EQ2",
+      "left": 3.525,
+      "top": 90.31,
+      "width": 27.62,
+      "height": 3.59
+    },
+    {
+      "key": "D1_HEURE",
+      "left": 52.67,
+      "top": 21.087,
+      "width": 11.268,
+      "height": 3.815
+    },
+    {
+      "key": "D1_CODE",
+      "left": 36.049,
+      "top": 21.087,
+      "width": 10.309,
+      "height": 3.815
+    },
+    {
+      "key": "WIN_Q1",
+      "left": 35.615,
+      "top": 26.022,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "WIN_Q2",
+      "left": 35.615,
+      "top": 32.199,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "D2_CODE",
+      "left": 36.049,
+      "top": 66.924,
+      "width": 10.309,
+      "height": 6.283
+    },
+    {
+      "key": "D2_HEURE",
+      "left": 52.762,
+      "top": 66.924,
+      "width": 11.176,
+      "height": 3.815
+    },
+    {
+      "key": "WIN_Q3",
+      "left": 35.615,
+      "top": 71.859,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "WIN_Q4",
+      "left": 35.615,
+      "top": 78.036,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "PF_CODE",
+      "left": 69.0,
+      "top": 77.29,
+      "width": 10.379,
+      "height": 3.815
+    },
+    {
+      "key": "PF_HEURE",
+      "left": 85.764,
+      "top": 77.29,
+      "width": 11.195,
+      "height": 6.283
+    },
+    {
+      "key": "LOSE_D1",
+      "left": 68.504,
+      "top": 82.225,
+      "width": 25.431,
+      "height": 3.59
+    },
+    {
+      "key": "LOSE_D2",
+      "left": 68.504,
+      "top": 88.402,
+      "width": 25.431,
+      "height": 3.59
+    },
+    {
+      "key": "F_CODE",
+      "left": 68.954,
+      "top": 44.669,
+      "width": 9.577,
+      "height": 3.815
+    },
+    {
+      "key": "F_HEURE",
+      "left": 85.576,
+      "top": 44.669,
+      "width": 11.268,
+      "height": 3.815
+    },
+    {
+      "key": "WIN_D1",
+      "left": 68.504,
+      "top": 49.604,
+      "width": 25.431,
+      "height": 3.59
+    },
+    {
+      "key": "WIN_D2",
+      "left": 68.504,
+      "top": 55.781,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "TYPE",
+      "left": -0.0,
+      "top": 1.467,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "DATE",
+      "left": 67.273,
+      "top": 1.443,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "LOGO",
+      "left": 37.341,
+      "top": 96.576,
+      "width": 23.979,
+      "height": 2.917
+    }
+  ],
+  "4": [
+    {
+      "key": "C5_8_2_TERRAIN",
+      "left": 35.924,
+      "top": 66.924,
+      "width": 27.968,
+      "height": 6.283
+    },
+    {
+      "key": "C5_8_1_TERRAIN",
+      "left": 35.97,
+      "top": 21.087,
+      "width": 27.968,
+      "height": 6.283
+    },
+    {
+      "key": "C7_8_TERRAIN",
+      "left": 3.318,
+      "top": 44.88,
+      "width": 27.565,
+      "height": 6.283
+    },
+    {
+      "key": "C5_8_1_CODE",
+      "left": 36.049,
+      "top": 21.087,
+      "width": 12.969,
+      "height": 3.815
+    },
+    {
+      "key": "C5_8_1_HEURE",
+      "left": 50.425,
+      "top": 21.087,
+      "width": 13.513,
+      "height": 3.815
+    },
+    {
+      "key": "LOSE_Q1",
+      "left": 35.615,
+      "top": 26.022,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "LOSE_Q2",
+      "left": 35.615,
+      "top": 32.199,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "C5_8_2_CODE",
+      "left": 36.119,
+      "top": 66.924,
+      "width": 12.899,
+      "height": 3.815
+    },
+    {
+      "key": "C5_8_2_HEURE",
+      "left": 50.0,
+      "top": 66.924,
+      "width": 13.938,
+      "height": 3.815
+    },
+    {
+      "key": "LOSE_Q3",
+      "left": 35.615,
+      "top": 71.859,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "LOSE_Q4",
+      "left": 35.615,
+      "top": 78.036,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "C7_8_CODE",
+      "left": 3.234,
+      "top": 44.88,
+      "width": 11.439,
+      "height": 3.815
+    },
+    {
+      "key": "C7_8_HEURE",
+      "left": 18.661,
+      "top": 44.88,
+      "width": 12.462,
+      "height": 3.815
+    },
+    {
+      "key": "LOSE_C5_8_1",
+      "left": 2.835,
+      "top": 49.815,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "LOSE_C5_8_2",
+      "left": 2.835,
+      "top": 55.992,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "C5_6_CODE",
+      "left": 68.723,
+      "top": 44.669,
+      "width": 11.629,
+      "height": 3.815
+    },
+    {
+      "key": "C5_6_TERRAIN",
+      "left": 75.108,
+      "top": 44.669,
+      "width": 14.282,
+      "height": 6.283
+    },
+    {
+      "key": "C5_6_HEURE",
+      "left": 84.221,
+      "top": 44.669,
+      "width": 12.462,
+      "height": 3.815
+    },
+    {
+      "key": "WIN_C5_8_1",
+      "left": 68.504,
+      "top": 49.604,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "WIN_C5_8_2",
+      "left": 68.504,
+      "top": 55.781,
+      "width": 25.431,
+      "height": 3.141
+    },
+    {
+      "key": "TYPE",
+      "left": -0.0,
+      "top": 1.467,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "DATE",
+      "left": 67.273,
+      "top": 1.443,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "LOGO",
+      "left": 37.341,
+      "top": 96.576,
+      "width": 23.979,
+      "height": 2.917
+    }
+  ],
+  "5": [
+    {
+      "key": "TYPE",
+      "left": -0.0,
+      "top": 1.467,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "DATE",
+      "left": 67.273,
+      "top": 1.443,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "LOGO",
+      "left": 37.341,
+      "top": 96.576,
+      "width": 23.979,
+      "height": 2.917
+    }
+  ],
+  "6": [
+    {
+      "key": "TYPE",
+      "left": -0.0,
+      "top": 1.467,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "DATE",
+      "left": 67.273,
+      "top": 1.443,
+      "width": 32.707,
+      "height": 5.385
+    },
+    {
+      "key": "LOGO",
+      "left": 37.341,
+      "top": 96.576,
+      "width": 23.979,
+      "height": 2.917
+    }
+  ]
+}

@@ -4,15 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/ball.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Padel Tournament Engine</title>
+    <title>Padel Tournament Platform</title>
+    <script>
+      (function () {
+        var path = window.location.pathname;
+        if (path && path !== "/" && path !== "/index.html" && !window.location.hash) {
+          window.location.replace("/#" + path + window.location.search);
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/index-CQpFKsJP.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-qyrWqUpt.css">
+    <script type="module" crossorigin src="/assets/index-B3_jWSgX.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-khQ5E7c4.css">
   </head>
   <body>
     <div id="root"></div>
