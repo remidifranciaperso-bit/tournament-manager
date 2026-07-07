@@ -1,9 +1,6 @@
 import re
 
 from engine.ppt_engine import (
-    ICONE_DEUXIEME,
-    ICONE_PERDANT,
-    ICONE_VAINQUEUR,
     construire_valeurs_globales,
     construire_valeurs_matchs,
     construire_valeurs_planning,
@@ -56,7 +53,7 @@ def construire_valeurs_masque_template(template_path) -> dict[str, str]:
                     elif _est_balise_statique_masque(nom):
                         if nom.startswith("SECOND_"):
                             suffixe = nom.replace("SECOND_", "", 1)
-                            valeurs[balise] = f"{ICONE_DEUXIEME}{suffixe}:"
+                            valeurs[balise] = f"🥈 {suffixe}:"
                         else:
                             valeurs[balise] = ""
                     else:

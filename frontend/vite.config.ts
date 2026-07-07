@@ -5,9 +5,6 @@ import react from "@vitejs/plugin-react";
 // pour rester en same-origin cote navigateur.
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    include: ["pdfjs-dist"],
-  },
   server: {
     host: "127.0.0.1",
     port: 5173,
