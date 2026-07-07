@@ -44,10 +44,7 @@ def _environnement_libreoffice_silencieux():
     return env
 
 
-def _executer_libreoffice(
-    commande: list[str],
-    timeout: int = 180,
-) -> subprocess.CompletedProcess:
+def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess.CompletedProcess:
     """
     Lance LibreOffice sans fenêtre ni bruit terminal si possible.
     """
@@ -77,13 +74,7 @@ def _executer_libreoffice(
         )
 
 
-def convertir_avec_libreoffice(
-    pptx_path,
-    output_dir,
-    soffice_bin,
-    format_sortie="pdf",
-    base_dir: Path | None = None,
-):
+def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie="pdf"):
     """
     Conversion PPTX -> PDF (ou autre) via LibreOffice en mode headless/invisible.
     """
@@ -111,9 +102,9 @@ def convertir_avec_libreoffice(
                 "pdf:impress_pdf_Export:"
                 "{"
                 '"SelectPdfVersion":{"type":"long","value":"1"},'
-                '"Quality":{"type":"long","value":"90"},'
-                '"ReduceImageResolution":{"type":"boolean","value":"true"},'
-                '"MaxImageResolution":{"type":"long","value":"300"}'
+                '"Quality":{"type":"long","value":"100"},'
+                '"ReduceImageResolution":{"type":"boolean","value":"false"},'
+                '"MaxImageResolution":{"type":"long","value":"600"}'
                 "}"
             ),
             "--outdir",
@@ -121,10 +112,7 @@ def convertir_avec_libreoffice(
             str(pptx_path),
         ]
 
-        from engine.font_setup import environnement_polices_tournoi
-
-        with environnement_polices_tournoi(base_dir):
-            _executer_libreoffice(commande)
+        _executer_libreoffice(commande)
 
     if not fichier_sortie.exists():
         raise RuntimeError(
@@ -177,7 +165,7 @@ def convertir_avec_powerpoint_macos(pptx_path, output_dir):
     return pdf_path
 
 
-def convertir_pptx_en_pdf(pptx_path, output_dir, base_dir: Path | None = None):
+def convertir_pptx_en_pdf(pptx_path, output_dir):
     """
     Convertit un PowerPoint en PDF de manière portable.
 
@@ -210,9 +198,7 @@ def convertir_pptx_en_pdf(pptx_path, output_dir, base_dir: Path | None = None):
                 "PDF_CONVERTER=libreoffice mais aucun binaire LibreOffice "
                 "n'a été trouvé. Installez LibreOffice ou définissez SOFFICE_BIN."
             )
-        return convertir_avec_libreoffice(
-            pptx_path, output_dir, soffice_bin, base_dir=base_dir
-        )
+        return convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin)
 
     if sys.platform == "darwin":
         return convertir_avec_powerpoint_macos(pptx_path, output_dir)

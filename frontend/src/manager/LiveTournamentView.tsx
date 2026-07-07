@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
-import { LivePdfViewer, downloadEnginePdf } from "./LivePdfViewer";
+import { LiveTemplateViewer } from "./LiveSlideViewer";
 import type { LiveTournamentData } from "./liveTypes";
 import {
   LIVE_PRIMARY_TABS,
@@ -44,7 +44,7 @@ interface LiveTournamentViewProps {
 export function LiveTournamentView({
   liveData,
 }: LiveTournamentViewProps) {
-  const { page_map, live_token, page_sizes, pdf_filename } = liveData;
+  const { page_map, template_id, layout, fields } = liveData;
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -150,16 +150,17 @@ export function LiveTournamentView({
       case "planning":
       case "final":
         return (
-          <LivePdfViewer
-            liveToken={live_token}
-            pageSizes={page_sizes}
+          <LiveTemplateViewer
+            templateId={template_id}
+            layout={layout}
+            fields={fields}
             slideIndices={slideIndices}
           />
         );
       default:
         return null;
     }
-  }, [primaryTab, live_token, page_sizes, slideIndices]);
+  }, [primaryTab, template_id, layout, fields, slideIndices]);
 
   const isSlideTab =
     primaryTab === "main" ||
@@ -192,20 +193,6 @@ export function LiveTournamentView({
             </button>
           ))}
         </div>
-
-        {live_token && (
-          <div className="mt-2 flex shrink-0 justify-end">
-            <button
-              type="button"
-              onClick={() =>
-                downloadEnginePdf(live_token, pdf_filename || "tournoi.pdf")
-              }
-              className="rounded-lg bg-white/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/55 transition hover:bg-white/[0.1] hover:text-white/80 sm:text-[11px]"
-            >
-              Télécharger PDF Engine
-            </button>
-          </div>
-        )}
 
         {showSubTabs && (
           <div className="mt-2 flex shrink-0 justify-center gap-1 overflow-hidden">

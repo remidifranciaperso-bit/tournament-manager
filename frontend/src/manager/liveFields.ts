@@ -1,4 +1,4 @@
-/** Clés figées dans le masque PNG (emojis WIN/LOSE déjà rendus par LibreOffice). */
+/** Clés figées dans le masque PNG (libellés Gagnants/Perdants déjà rendus). */
 export function isStaticTemplateKey(key: string): boolean {
   return (
     key.startsWith("WIN_") ||

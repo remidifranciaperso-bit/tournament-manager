@@ -31,19 +31,22 @@ def equipe_label_court(equipe):
     texte = equipe.strip()
 
     if texte.startswith("Vainqueur Poule "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return "Gagnants " + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Deuxième Poule "):
-        return "🥈 " + texte.replace("Deuxième ", "") + ":"
+        return "Deuxième " + texte.replace("Deuxième Poule ", "Poule ") + ":"
+
+    if texte.startswith("Troisième Poule "):
+        return "Troisième " + texte.replace("Troisième Poule ", "Poule ") + ":"
 
     if texte.startswith("Second Poule "):
-        return "🥈 " + texte.replace("Second ", "") + ":"
+        return "Deuxième " + texte.replace("Second Poule ", "Poule ") + ":"
 
     if texte.startswith("Vainqueur "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return "Gagnants " + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Perdant "):
-        return "❌ " + texte.replace("Perdant ", "") + ":"
+        return "Perdants " + texte.replace("Perdant ", "") + ":"
 
     return texte
 
@@ -54,19 +57,22 @@ def equipe_label_planning(equipe):
     texte = equipe.strip()
 
     if texte.startswith("Vainqueur Poule "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return "Gagnants " + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Deuxième Poule "):
-        return "🥈 " + texte.replace("Deuxième ", "") + ":"
+        return "Deuxième " + texte.replace("Deuxième Poule ", "Poule ") + ":"
+
+    if texte.startswith("Troisième Poule "):
+        return "Troisième " + texte.replace("Troisième Poule ", "Poule ") + ":"
 
     if texte.startswith("Second Poule "):
-        return "🥈 " + texte.replace("Second ", "") + ":"
+        return "Deuxième " + texte.replace("Second Poule ", "Poule ") + ":"
 
     if texte.startswith("Vainqueur "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return "Gagnants " + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Perdant "):
-        return "❌ " + texte.replace("Perdant ", "") + ":"
+        return "Perdants " + texte.replace("Perdant ", "") + ":"
 
     return texte
 
@@ -75,10 +81,16 @@ def valeur_balise_speciale(balise):
     nom = balise.strip().replace("{{", "").replace("}}", "")
 
     if nom.startswith("WIN_"):
-        return "🏆 " + nom.replace("WIN_", "", 1) + ":"
+        return "Gagnants " + nom.replace("WIN_", "", 1) + ":"
 
     if nom.startswith("LOSE_"):
-        return "❌ " + nom.replace("LOSE_", "", 1) + ":"
+        return "Perdants " + nom.replace("LOSE_", "", 1) + ":"
+
+    if nom.startswith("SECOND_"):
+        return "Deuxième " + nom.replace("SECOND_", "", 1) + ":"
+
+    if nom.startswith("THIRD_"):
+        return "Troisième " + nom.replace("THIRD_", "", 1) + ":"
 
     return None
 
@@ -536,15 +548,15 @@ def construire_valeurs_poules(tournoi):
         for i, equipe in enumerate(equipes, start=1):
             valeurs[f"{{{{POULE_{nom_poule}_{i}_EQ}}}}"] = equipe_label_court(equipe)
 
-    valeurs["{{WIN_POULE_A}}"] = "🏆 Poule A:"
-    valeurs["{{WIN_POULE_B}}"] = "🏆 Poule B:"
-    valeurs["{{WIN_POULE_C}}"] = "🏆 Poule C:"
-    valeurs["{{WIN_POULE_D}}"] = "🏆 Poule D:"
+    valeurs["{{WIN_POULE_A}}"] = "Gagnants Poule A:"
+    valeurs["{{WIN_POULE_B}}"] = "Gagnants Poule B:"
+    valeurs["{{WIN_POULE_C}}"] = "Gagnants Poule C:"
+    valeurs["{{WIN_POULE_D}}"] = "Gagnants Poule D:"
 
-    valeurs["{{SECOND_POULE_A}}"] = "🥈 Poule A:"
-    valeurs["{{SECOND_POULE_B}}"] = "🥈 Poule B:"
-    valeurs["{{SECOND_POULE_C}}"] = "🥈 Poule C:"
-    valeurs["{{SECOND_POULE_D}}"] = "🥈 Poule D:"
+    valeurs["{{SECOND_POULE_A}}"] = "Deuxième Poule A:"
+    valeurs["{{SECOND_POULE_B}}"] = "Deuxième Poule B:"
+    valeurs["{{SECOND_POULE_C}}"] = "Deuxième Poule C:"
+    valeurs["{{SECOND_POULE_D}}"] = "Deuxième Poule D:"
 
     return valeurs
 def construire_convocations(

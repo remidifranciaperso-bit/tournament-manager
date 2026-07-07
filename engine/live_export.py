@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from engine.live_layout import lire_layout_public
+from engine.live_page_map import cartographier_pages_live
 from engine.live_valeurs import construire_champs_live
 from engine.models.match import Match
 
@@ -39,28 +40,24 @@ def serialiser_tournoi(tournoi) -> dict:
 def construire_payload_live(
     tournoi,
     matchs,
-    pdf_path: Path,
     template_path: Path,
-    pptx_path: Path,
     base_dir: Path,
-    live_token: str,
-    page_map: dict,
-    page_sizes: dict[str, dict[str, float]],
+    pptx_path: Path | None = None,
 ) -> dict:
     """
-    Manager live = même PDF que l'Engine, pages servies à la demande (disque).
-
-    Le PDF n'est pas encodé en base64 : le front charge
-    ``/api/live/{token}/page/{index}`` et ``/api/live/{token}/pdf``.
+    Manager live = même logique de remplissage que l'Engine (ppt_engine),
+    affichage via masques PNG template + champs dynamiques (layout.json).
+    Les libellés WIN_/LOSE_/SECOND_ sont figés dans le masque ; les placeholders
+    {{H1_EQ1}}, scores, etc. sont mis à jour côté front via ``fields``.
     """
+    page_map = cartographier_pages_live(
+        template_path,
+        pptx_path or template_path,
+    )
+
     if not page_map.get("main") and not page_map.get("classement"):
         raise RuntimeError(
             "Impossible de cartographier les pages du tournoi pour le live."
-        )
-
-    if not page_sizes:
-        raise RuntimeError(
-            f"Aucune page PDF extraite ({pdf_path.name})."
         )
 
     template_id = Path(template_path).stem
@@ -74,8 +71,5 @@ def construire_payload_live(
         "template_id": template_id,
         "layout": layout,
         "fields": fields,
-        "live_token": live_token,
-        "page_sizes": page_sizes,
-        "pdf_filename": Path(pdf_path).name,
-        "live_version": "pdf-v9",
+        "live_version": "template-v6",
     }

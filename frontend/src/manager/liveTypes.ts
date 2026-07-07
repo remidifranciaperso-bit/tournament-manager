@@ -48,9 +48,7 @@ export interface LiveTournamentMeta {
   duree_match: number;
 }
 
-/**
- * Données live — PDF servi à la demande via ``live_token`` (pas de base64 en JSON).
- */
+/** Données live : masque template + champs dynamiques (même logique remplissage que Engine). */
 export interface LiveTournamentData {
   meta: LiveTournamentMeta;
   matches: LiveMatch[];
@@ -58,8 +56,5 @@ export interface LiveTournamentData {
   template_id: string;
   layout: LiveLayout;
   fields: Record<string, string>;
-  live_token: string;
-  page_sizes: Record<string, { width: number; height: number }>;
-  pdf_filename: string;
   live_version?: string;
 }

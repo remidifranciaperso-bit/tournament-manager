@@ -14,7 +14,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
 from api.notify_store import chemin_pdf, enregistrer_pdf, supprimer_pdf
-from api.live_store import chemin_page, chemin_pdf_complet, nom_pdf
 from engine.excel_reader import lire_excel
 from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
@@ -72,8 +71,8 @@ def health():
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-07f",
-        "live": "pdf-v9" if soffice else None,
+        "version": "2026-07-07e",
+        "live": "template-v6",
         "pymupdf": pymupdf_ok,
         "soffice": bool(soffice),
         "deploy": os.environ.get("DEPLOY_TARGET", "engine"),
@@ -225,33 +224,6 @@ async def generate_live(
             logo_path.unlink(missing_ok=True)
 
     return payload
-
-
-@app.get("/api/live/{token}/page/{index}")
-def live_page_pdf(token: str, index: int):
-    """Sert une page PDF du tournoi live (évite le base64 en mémoire)."""
-    chemin = chemin_page(token, index)
-    if chemin is None:
-        raise HTTPException(status_code=404, detail="Page live introuvable.")
-    return FileResponse(
-        chemin,
-        media_type="application/pdf",
-        headers={"Cache-Control": "private, max-age=3600"},
-    )
-
-
-@app.get("/api/live/{token}/pdf")
-def live_pdf_complet(token: str):
-    """PDF Engine complet pour export fin de tournoi."""
-    chemin = chemin_pdf_complet(token)
-    if chemin is None:
-        raise HTTPException(status_code=404, detail="PDF live introuvable.")
-    return FileResponse(
-        chemin,
-        media_type="application/pdf",
-        filename=nom_pdf(token),
-        headers={"Cache-Control": "private, max-age=3600"},
-    )
 
 
 @app.post("/api/generate")
