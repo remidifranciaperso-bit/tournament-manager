@@ -159,6 +159,7 @@ def _envoyer_via_resend(
         headers={
             "Authorization": f"Bearer {RESEND_API_KEY}",
             "Content-Type": "application/json",
+            "User-Agent": "padel-tournament-engine/1.0",
         },
         method="POST",
     )

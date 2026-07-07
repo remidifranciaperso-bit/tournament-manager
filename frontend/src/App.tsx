@@ -33,7 +33,7 @@ import {
   type TournamentForm,
 } from "./types";
 
-const APP_BUILD = "2026-07-06g";
+const APP_BUILD = "2026-07-07a";
 
 function generationTagline(genre: Genre): string {
   return genre === "Femmes"
