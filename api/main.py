@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -55,6 +56,7 @@ def health():
         "status": "ok",
         "app": "padel-tournament-engine",
         "version": "2026-07-07a",
+        "deploy": os.environ.get("DEPLOY_TARGET", "engine"),
         "notify": mode_notification(),
     }
 
