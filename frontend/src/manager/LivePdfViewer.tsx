@@ -74,8 +74,8 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
 
     const fit = Math.min(slotW / img.naturalWidth, slotH / img.naturalHeight);
     setRenderSize({
-      w: Math.floor(img.naturalWidth * fit),
-      h: Math.floor(img.naturalHeight * fit),
+      w: img.naturalWidth * fit,
+      h: img.naturalHeight * fit,
     });
   }, []);
 
@@ -119,34 +119,53 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
           alt=""
           decoding="async"
           draggable={false}
-          className="block h-full w-full select-none object-contain"
+          className="block select-none"
+          style={
+            renderSize
+              ? { width: renderSize.w, height: renderSize.h }
+              : undefined
+          }
         />
 
         {renderSize &&
-          checkboxes.map((box, index) => (
-            <button
-              key={index}
-              type="button"
-              aria-pressed={box.checked}
-              onClick={box.onToggle}
-              className="absolute flex items-center justify-center border border-black/25 bg-white/80 transition hover:bg-lime/20"
-              style={{
-                left: `${box.left}%`,
-                top: `${box.top}%`,
-                width: `${box.width}%`,
-                height: `${box.height}%`,
-              }}
-            >
-              <span
-                className="font-bold leading-none text-black"
+          checkboxes.map((box, index) => {
+            const markSize = Math.max(
+              9,
+              Math.min(
+                (box.height / 100) * renderSize.h * 0.72,
+                (box.width / 100) * renderSize.w * 0.72
+              )
+            );
+
+            return (
+              <button
+                key={index}
+                type="button"
+                aria-pressed={box.checked}
+                aria-label={box.checked ? "Match terminé" : "Marquer terminé"}
+                onClick={box.onToggle}
+                className="absolute m-0 flex cursor-pointer items-center justify-center border-0 bg-transparent p-0 outline-none"
                 style={{
-                  fontSize: `${Math.max(10, (box.height / 100) * renderSize.h * 0.62)}px`,
+                  left: `${box.left}%`,
+                  top: `${box.top}%`,
+                  width: `${box.width}%`,
+                  height: `${box.height}%`,
                 }}
               >
-                {box.checked ? "☑" : "☐"}
-              </span>
-            </button>
-          ))}
+                {box.checked ? (
+                  <span
+                    className="pointer-events-none font-bold leading-none text-lime"
+                    style={{
+                      fontSize: `${markSize}px`,
+                      textShadow: "0 0 2px rgba(0,0,0,0.55)",
+                    }}
+                  >
+                    ✓
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
       </div>
     </div>
   );

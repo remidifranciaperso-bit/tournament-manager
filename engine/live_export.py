@@ -42,7 +42,7 @@ def construire_payload_live(
     live_token: str,
     page_sizes: dict[str, dict[str, float]],
     pdf_filename: str,
-    template_path=None,
+    layout_path=None,
 ) -> dict:
     """
     Manager live = PDF Engine découpé par onglet (``/api/live/{token}/page/N``).
@@ -59,10 +59,10 @@ def construire_payload_live(
     fields = construire_champs_live(tournoi, matchs)
 
     planning_layout: dict = {}
-    if template_path is not None:
+    if layout_path is not None:
         from engine.live_layout import extraire_layout_planning
 
-        planning_layout = extraire_layout_planning(template_path, page_map)
+        planning_layout = extraire_layout_planning(layout_path, page_map)
 
     return {
         "meta": serialiser_tournoi(tournoi),

@@ -18,13 +18,21 @@ def _pct(value: int, total: int) -> float:
     return round(value / total * 100, 3)
 
 
-def _field_dict(key: str, left: int, top: int, width: int, height: int) -> dict:
+def _field_dict(
+    key: str,
+    left: int,
+    top: int,
+    width: int,
+    height: int,
+    slide_w: int,
+    slide_h: int,
+) -> dict:
     return {
         "key": key,
-        "left": _pct(left, SLIDE_W),
-        "top": _pct(top, SLIDE_H),
-        "width": _pct(width, SLIDE_W),
-        "height": _pct(height, SLIDE_H),
+        "left": _pct(left, slide_w),
+        "top": _pct(top, slide_h),
+        "width": _pct(width, slide_w),
+        "height": _pct(height, slide_h),
     }
 
 
@@ -37,7 +45,12 @@ def _cell_rect(shape, row_idx: int, col_idx: int) -> tuple[int, int, int, int]:
     return left, top, width, height
 
 
-def _append_text_shape_fields(fields: list[dict], shape) -> None:
+def _append_text_shape_fields(
+    fields: list[dict],
+    shape,
+    slide_w: int,
+    slide_h: int,
+) -> None:
     if not getattr(shape, "has_text_frame", False):
         return
 
@@ -53,11 +66,18 @@ def _append_text_shape_fields(fields: list[dict], shape) -> None:
                 shape.top,
                 shape.width,
                 shape.height,
+                slide_w,
+                slide_h,
             )
         )
 
 
-def _append_table_fields(fields: list[dict], shape) -> None:
+def _append_table_fields(
+    fields: list[dict],
+    shape,
+    slide_w: int,
+    slide_h: int,
+) -> None:
     if not getattr(shape, "has_table", False):
         return
 
@@ -78,7 +98,9 @@ def _append_table_fields(fields: list[dict], shape) -> None:
             for tag in tags:
                 key = tag.strip()
                 left, top, width, height = _cell_rect(shape, row_idx, col_idx)
-                fields.append(_field_dict(key, left, top, width, height))
+                fields.append(
+                    _field_dict(key, left, top, width, height, slide_w, slide_h)
+                )
                 if _PLANNING_CODE.match(key):
                     code_key = key
 
@@ -94,19 +116,23 @@ def _append_table_fields(fields: list[dict], shape) -> None:
                     top,
                     width,
                     height,
+                    slide_w,
+                    slide_h,
                 )
             )
 
 
 def extraire_layout_template(template_path) -> dict[str, list[dict]]:
     prs = Presentation(str(template_path))
+    slide_w = prs.slide_width
+    slide_h = prs.slide_height
     layout: dict[str, list[dict]] = {}
 
     for slide_index, slide in enumerate(prs.slides):
         fields: list[dict] = []
         for shape in parcourir_shapes(slide.shapes):
-            _append_text_shape_fields(fields, shape)
-            _append_table_fields(fields, shape)
+            _append_text_shape_fields(fields, shape, slide_w, slide_h)
+            _append_table_fields(fields, shape, slide_w, slide_h)
 
         if fields:
             layout[str(slide_index)] = fields
