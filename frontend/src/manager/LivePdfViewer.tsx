@@ -34,7 +34,10 @@ export function useLivePdfDocument(pdfBase64: string | undefined) {
     setLoading(true);
     setError(null);
 
-    const task = getDocument({ data: base64ToUint8Array(pdfBase64) });
+    const task = getDocument({
+      data: base64ToUint8Array(pdfBase64),
+      useSystemFonts: true,
+    });
 
     task.promise
       .then((loaded) => {
@@ -84,18 +87,32 @@ function LivePdfPage({ doc, slideIndex }: LivePdfPageProps) {
     const pageNumber = slideIndex + 1;
     const page = await doc.getPage(pageNumber);
     const baseViewport = page.getViewport({ scale: 1 });
-    const scale = Math.min(
+    const fitScale = Math.min(
       slotW / baseViewport.width,
       slotH / baseViewport.height
     );
-    const viewport = page.getViewport({ scale });
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const renderScale = fitScale * dpr;
+    const viewport = page.getViewport({ scale: renderScale });
     const context = canvas.getContext("2d");
     if (!context) return;
 
+    const cssWidth = Math.floor(baseViewport.width * fitScale);
+    const cssHeight = Math.floor(baseViewport.height * fitScale);
+
     canvas.width = Math.floor(viewport.width);
     canvas.height = Math.floor(viewport.height);
+    canvas.style.width = `${cssWidth}px`;
+    canvas.style.height = `${cssHeight}px`;
 
-    const task = page.render({ canvasContext: context, viewport });
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+
+    const task = page.render({
+      canvasContext: context,
+      viewport,
+      intent: "print",
+    });
     renderTaskRef.current = task;
     await task.promise;
   }, [doc, slideIndex]);
@@ -121,7 +138,11 @@ function LivePdfPage({ doc, slideIndex }: LivePdfPageProps) {
       ref={slotRef}
       className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white"
     >
-      <canvas ref={canvasRef} className="block max-h-full max-w-full" />
+      <canvas
+        ref={canvasRef}
+        className="block"
+        style={{ maxWidth: "100%", maxHeight: "100%" }}
+      />
     </div>
   );
 }
