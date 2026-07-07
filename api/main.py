@@ -71,8 +71,8 @@ def health():
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-07d",
-        "live": "pdf-v5" if soffice else None,
+        "version": "2026-07-07e",
+        "live": "template-v6",
         "pymupdf": pymupdf_ok,
         "soffice": bool(soffice),
         "deploy": os.environ.get("DEPLOY_TARGET", "engine"),

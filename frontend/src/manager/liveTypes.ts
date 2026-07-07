@@ -48,13 +48,13 @@ export interface LiveTournamentMeta {
   duree_match: number;
 }
 
+/** Données live : masque template + champs dynamiques (même logique remplissage que Engine). */
 export interface LiveTournamentData {
   meta: LiveTournamentMeta;
   matches: LiveMatch[];
   page_map: LivePageMap;
   template_id: string;
+  layout: LiveLayout;
   fields: Record<string, string>;
-  pdf_base64: string;
-  pdf_filename: string;
   live_version?: string;
 }

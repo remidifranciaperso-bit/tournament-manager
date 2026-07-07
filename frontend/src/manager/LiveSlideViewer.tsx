@@ -1,35 +1,55 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { fieldValue, isDynamicField } from "./liveFields";
 import type { LiveLayout, LiveLayoutField } from "./liveTypes";
+
+function useBlockZoom(containerRef: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const blockWheelZoom = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) event.preventDefault();
+    };
+    const blockGesture = (event: Event) => event.preventDefault();
+    const blockMultiTouch = (event: TouchEvent) => {
+      if (event.touches.length > 1) event.preventDefault();
+    };
+
+    el.addEventListener("wheel", blockWheelZoom, { passive: false });
+    el.addEventListener("gesturestart", blockGesture, { passive: false });
+    el.addEventListener("gesturechange", blockGesture, { passive: false });
+    el.addEventListener("gestureend", blockGesture, { passive: false });
+    el.addEventListener("touchmove", blockMultiTouch, { passive: false });
+
+    return () => {
+      el.removeEventListener("wheel", blockWheelZoom);
+      el.removeEventListener("gesturestart", blockGesture);
+      el.removeEventListener("gesturechange", blockGesture);
+      el.removeEventListener("gestureend", blockGesture);
+      el.removeEventListener("touchmove", blockMultiTouch);
+    };
+  }, [containerRef]);
+}
 
 interface LiveSlideViewerProps {
   templateId: string;
   slideIndex: number;
   fields: Record<string, string>;
-  layoutFields?: LiveLayoutField[];
+  layoutFields: LiveLayoutField[];
 }
 
-function fieldValue(fields: Record<string, string>, key: string): string {
-  return fields[key] ?? "";
-}
-
-function isStaticWinLoseKey(key: string): boolean {
-  return (
-    key.startsWith("WIN_") ||
-    key.startsWith("LOSE_") ||
-    key.startsWith("SECOND_")
-  );
-}
-
-export function LiveSlideViewer({
+function LiveSlideViewer({
   templateId,
   slideIndex,
   fields,
-  layoutFields = [],
+  layoutFields,
 }: LiveSlideViewerProps) {
   const slotRef = useRef<HTMLDivElement>(null);
   const [renderSize, setRenderSize] = useState<{ w: number; h: number } | null>(
     null
   );
+
+  useBlockZoom(slotRef);
 
   const maskSrc = `/live-templates/${templateId}/${slideIndex}.png`;
 
@@ -75,16 +95,18 @@ export function LiveSlideViewer({
   }, [maskSrc, computeScale]);
 
   const dynamicFields = layoutFields.filter(
-    (field) => fieldValue(fields, field.key) && !isStaticWinLoseKey(field.key)
+    (field) =>
+      isDynamicField(field.key) && fieldValue(fields, field.key).length > 0
   );
 
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white"
+      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white"
+      style={{ touchAction: "none" }}
     >
       <div
-        className="relative shrink-0 origin-center"
+        className="relative shrink-0"
         style={
           renderSize
             ? { width: renderSize.w, height: renderSize.h }
@@ -96,30 +118,28 @@ export function LiveSlideViewer({
           alt={`Slide ${slideIndex + 1}`}
           draggable={false}
           className="block h-full w-full select-none"
-          onError={(event) => {
-            (event.currentTarget as HTMLImageElement).style.opacity = "0.35";
-          }}
         />
 
-        {dynamicFields.map((field) => (
-          <div
-            key={field.key}
-            className="absolute overflow-hidden bg-white/95 px-[2%] text-left font-sans font-semibold leading-none text-black"
-            style={{
-              left: `${field.left}%`,
-              top: `${field.top}%`,
-              width: `${field.width}%`,
-              height: `${field.height}%`,
-              fontSize: `${Math.max(
-                7,
-                (field.height / 100) * (renderSize?.h ?? 400) * 0.55
-              )}px`,
-            }}
-            title={field.key}
-          >
-            <span className="block truncate">{fieldValue(fields, field.key)}</span>
-          </div>
-        ))}
+        {renderSize &&
+          dynamicFields.map((field) => (
+            <div
+              key={field.key}
+              className="absolute flex items-center justify-center overflow-hidden whitespace-nowrap font-sans font-bold leading-none text-black"
+              style={{
+                left: `${field.left}%`,
+                top: `${field.top}%`,
+                width: `${field.width}%`,
+                height: `${field.height}%`,
+                fontSize: `${Math.max(
+                  7,
+                  (field.height / 100) * renderSize.h * 0.58
+                )}px`,
+              }}
+              data-field={field.key}
+            >
+              {fieldValue(fields, field.key)}
+            </div>
+          ))}
       </div>
     </div>
   );
@@ -129,34 +149,7 @@ interface LiveSlidesStackProps {
   templateId: string;
   slideIndices: number[];
   fields: Record<string, string>;
-  layout?: LiveLayout;
-}
-
-function useLiveLayout(templateId: string, layout?: LiveLayout) {
-  const [loaded, setLoaded] = useState<LiveLayout | null>(layout ?? null);
-
-  useEffect(() => {
-    if (layout) {
-      setLoaded(layout);
-      return;
-    }
-
-    let cancelled = false;
-    void fetch(`/live-templates/${templateId}/layout.json`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: LiveLayout | null) => {
-        if (!cancelled && data) setLoaded(data);
-      })
-      .catch(() => {
-        /* silencieux */
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [templateId, layout]);
-
-  return loaded;
+  layout: LiveLayout;
 }
 
 export function LiveSlidesStack({
@@ -165,8 +158,6 @@ export function LiveSlidesStack({
   fields,
   layout,
 }: LiveSlidesStackProps) {
-  const resolvedLayout = useLiveLayout(templateId, layout);
-
   if (slideIndices.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-white/40">
@@ -175,22 +166,37 @@ export function LiveSlidesStack({
     );
   }
 
-  const activeIndex = slideIndices[0];
-
-  if (!resolvedLayout) {
-    return (
-      <p className="flex flex-1 items-center justify-center text-sm text-white/40">
-        Chargement du template…
-      </p>
-    );
-  }
+  const slideIndex = slideIndices[0];
 
   return (
     <LiveSlideViewer
       templateId={templateId}
-      slideIndex={activeIndex}
+      slideIndex={slideIndex}
       fields={fields}
-      layoutFields={resolvedLayout[String(activeIndex)] ?? []}
+      layoutFields={layout[String(slideIndex)] ?? []}
+    />
+  );
+}
+
+interface LiveTemplateViewerProps {
+  templateId: string;
+  fields: Record<string, string>;
+  layout: LiveLayout;
+  slideIndices: number[];
+}
+
+export function LiveTemplateViewer({
+  templateId,
+  fields,
+  layout,
+  slideIndices,
+}: LiveTemplateViewerProps) {
+  return (
+    <LiveSlidesStack
+      templateId={templateId}
+      slideIndices={slideIndices}
+      fields={fields}
+      layout={layout}
     />
   );
 }
