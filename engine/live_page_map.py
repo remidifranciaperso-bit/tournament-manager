@@ -130,12 +130,60 @@ def _label_classement(slide) -> str:
     return "Classement"
 
 
-def _label_main(position: int, total: int) -> str:
-    if total == 2:
-        return "Partie haute" if position == 0 else "Partie basse"
-    if total > 1:
-        return f"Partie {position + 1}"
-    return "Tableau principal"
+_PRELIM_CODE = re.compile(r"^P\d+$")
+
+
+def _is_prelim_slide(text: str) -> bool:
+    codes = _slide_codes(text)
+    if not codes:
+        return False
+
+    p_codes = {code for code in codes if _PRELIM_CODE.match(code)}
+    h_codes = {code for code in codes if re.match(r"^H\d+$", code)}
+    q_codes = {code for code in codes if re.match(r"^Q\d+$", code)}
+
+    if p_codes and not h_codes and not q_codes:
+        return True
+
+    text_upper = text.upper()
+    return any(
+        token in text_upper
+        for token in ("PRELIMINAIRE", "PRÉLIMINAIRE", "PRELIMIN", "TOUR PRE")
+    )
+
+
+def _label_main_entries(indices: list[int], prs: Presentation) -> list[dict]:
+    slides_info = []
+    for index in indices:
+        slide = prs.slides[index]
+        text = _slide_text(slide)
+        slides_info.append(
+            {
+                "index": index,
+                "is_prelim": _is_prelim_slide(text),
+            }
+        )
+
+    bracket = [info for info in slides_info if not info["is_prelim"]]
+    bracket_total = len(bracket)
+    bracket_pos = 0
+    entries = []
+
+    for info in slides_info:
+        if info["is_prelim"]:
+            label = "Tour préliminaire"
+        elif bracket_total == 2:
+            label = "Partie haute" if bracket_pos == 0 else "Partie basse"
+            bracket_pos += 1
+        elif bracket_total == 1:
+            label = "Tableau principal"
+        else:
+            bracket_pos += 1
+            label = f"Partie {bracket_pos}"
+
+        entries.append({"index": info["index"], "label": label})
+
+    return entries
 
 
 def _label_final(slide) -> str:
@@ -146,14 +194,13 @@ def _label_final(slide) -> str:
 
 
 def _as_page_entries(indices: list[int], prs: Presentation, kind: str) -> list[dict]:
-    entries = []
-    total = len(indices)
+    if kind == "main":
+        return _label_main_entries(indices, prs)
 
-    for position, index in enumerate(indices):
+    entries = []
+    for index in indices:
         slide = prs.slides[index]
-        if kind == "main":
-            label = _label_main(position, total)
-        elif kind == "planning":
+        if kind == "planning":
             label = _label_planning(slide)
         elif kind == "classement":
             label = _label_classement(slide)
