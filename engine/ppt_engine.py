@@ -8,6 +8,12 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
 from PIL import Image
 
+# Polices emoji couleur (AppleColorEmoji, NotoColorEmoji) laissent un fond
+# opaque sur les bandeaux colorés au rendu PDF / pdf.js. Glyphes texte standard.
+ICONE_VAINQUEUR = "★ "
+ICONE_PERDANT = "✗ "
+ICONE_DEUXIEME = "◆ "
+
 
 def format_date(date_str):
     try:
@@ -31,19 +37,19 @@ def equipe_label_court(equipe):
     texte = equipe.strip()
 
     if texte.startswith("Vainqueur Poule "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_VAINQUEUR + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Deuxième Poule "):
-        return "🥈 " + texte.replace("Deuxième ", "") + ":"
+        return ICONE_DEUXIEME + texte.replace("Deuxième ", "") + ":"
 
     if texte.startswith("Second Poule "):
-        return "🥈 " + texte.replace("Second ", "") + ":"
+        return ICONE_DEUXIEME + texte.replace("Second ", "") + ":"
 
     if texte.startswith("Vainqueur "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_VAINQUEUR + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Perdant "):
-        return "❌ " + texte.replace("Perdant ", "") + ":"
+        return ICONE_PERDANT + texte.replace("Perdant ", "") + ":"
 
     return texte
 
@@ -54,19 +60,19 @@ def equipe_label_planning(equipe):
     texte = equipe.strip()
 
     if texte.startswith("Vainqueur Poule "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_VAINQUEUR + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Deuxième Poule "):
-        return "🥈 " + texte.replace("Deuxième ", "") + ":"
+        return ICONE_DEUXIEME + texte.replace("Deuxième ", "") + ":"
 
     if texte.startswith("Second Poule "):
-        return "🥈 " + texte.replace("Second ", "") + ":"
+        return ICONE_DEUXIEME + texte.replace("Second ", "") + ":"
 
     if texte.startswith("Vainqueur "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_VAINQUEUR + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Perdant "):
-        return "❌ " + texte.replace("Perdant ", "") + ":"
+        return ICONE_PERDANT + texte.replace("Perdant ", "") + ":"
 
     return texte
 
@@ -75,10 +81,13 @@ def valeur_balise_speciale(balise):
     nom = balise.strip().replace("{{", "").replace("}}", "")
 
     if nom.startswith("WIN_"):
-        return "🏆 " + nom.replace("WIN_", "", 1) + ":"
+        return ICONE_VAINQUEUR + nom.replace("WIN_", "", 1) + ":"
 
     if nom.startswith("LOSE_"):
-        return "❌ " + nom.replace("LOSE_", "", 1) + ":"
+        return ICONE_PERDANT + nom.replace("LOSE_", "", 1) + ":"
+
+    if nom.startswith("SECOND_"):
+        return ICONE_DEUXIEME + nom.replace("SECOND_", "", 1) + ":"
 
     return None
 
@@ -230,7 +239,7 @@ def remplacer_dans_paragraphe(paragraphe, valeurs):
         return balise
 
     nouveau = re.sub(
-        r"\{\{(?:WIN|LOSE)_[A-Z0-9_]+\}\}",
+        r"\{\{(?:WIN|LOSE|SECOND)_[A-Z0-9_]+\}\}",
         repl,
         nouveau,
     )
@@ -536,15 +545,15 @@ def construire_valeurs_poules(tournoi):
         for i, equipe in enumerate(equipes, start=1):
             valeurs[f"{{{{POULE_{nom_poule}_{i}_EQ}}}}"] = equipe_label_court(equipe)
 
-    valeurs["{{WIN_POULE_A}}"] = "🏆 Poule A:"
-    valeurs["{{WIN_POULE_B}}"] = "🏆 Poule B:"
-    valeurs["{{WIN_POULE_C}}"] = "🏆 Poule C:"
-    valeurs["{{WIN_POULE_D}}"] = "🏆 Poule D:"
+    valeurs["{{WIN_POULE_A}}"] = ICONE_VAINQUEUR + "Poule A:"
+    valeurs["{{WIN_POULE_B}}"] = ICONE_VAINQUEUR + "Poule B:"
+    valeurs["{{WIN_POULE_C}}"] = ICONE_VAINQUEUR + "Poule C:"
+    valeurs["{{WIN_POULE_D}}"] = ICONE_VAINQUEUR + "Poule D:"
 
-    valeurs["{{SECOND_POULE_A}}"] = "🥈 Poule A:"
-    valeurs["{{SECOND_POULE_B}}"] = "🥈 Poule B:"
-    valeurs["{{SECOND_POULE_C}}"] = "🥈 Poule C:"
-    valeurs["{{SECOND_POULE_D}}"] = "🥈 Poule D:"
+    valeurs["{{SECOND_POULE_A}}"] = ICONE_DEUXIEME + "Poule A:"
+    valeurs["{{SECOND_POULE_B}}"] = ICONE_DEUXIEME + "Poule B:"
+    valeurs["{{SECOND_POULE_C}}"] = ICONE_DEUXIEME + "Poule C:"
+    valeurs["{{SECOND_POULE_D}}"] = ICONE_DEUXIEME + "Poule D:"
 
     return valeurs
 def construire_convocations(
