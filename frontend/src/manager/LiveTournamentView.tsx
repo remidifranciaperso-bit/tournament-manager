@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
-import { LiveSlidesStack } from "./LiveSlideViewer";
+import { LivePdfViewer } from "./LivePdfViewer";
 import type { LiveTournamentData } from "./liveTypes";
 import {
   LIVE_PRIMARY_TABS,
@@ -44,7 +44,7 @@ interface LiveTournamentViewProps {
 export function LiveTournamentView({
   liveData,
 }: LiveTournamentViewProps) {
-  const { page_map, template_id, fields } = liveData;
+  const { page_map, pdf_base64 } = liveData;
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -150,16 +150,15 @@ export function LiveTournamentView({
       case "planning":
       case "final":
         return (
-          <LiveSlidesStack
-            templateId={template_id}
+          <LivePdfViewer
+            pdfBase64={pdf_base64}
             slideIndices={slideIndices}
-            fields={fields}
           />
         );
       default:
         return null;
     }
-  }, [primaryTab, template_id, slideIndices, fields]);
+  }, [primaryTab, pdf_base64, slideIndices]);
 
   const isSlideTab =
     primaryTab === "main" ||

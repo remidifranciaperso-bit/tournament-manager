@@ -44,7 +44,7 @@ export function ManagerLiveGenerationStep({
               initial={{ width: "12%" }}
               animate={{ width: generating ? "88%" : "12%" }}
               transition={{
-                duration: generating ? 6 : 0.3,
+                duration: generating ? 25 : 0.3,
                 ease: "easeInOut",
               }}
             />
@@ -56,7 +56,7 @@ export function ManagerLiveGenerationStep({
         <div className="mt-8 flex flex-col items-center gap-4">
           <PadelBall size={40} spinning realistic />
           <p className="text-sm text-white/45">
-            Équipes · Tableaux · Planning live
+            Génération du PDF (même rendu que l'Engine)…
           </p>
         </div>
       )}

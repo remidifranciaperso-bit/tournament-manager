@@ -1,6 +1,7 @@
+import base64
 from pathlib import Path
 
-from engine.live_page_map import cartographier_pages_live, indices_depuis_page_map
+from engine.live_page_map import cartographier_pages_live
 from engine.live_valeurs import construire_champs_live
 from engine.models.match import Match
 
@@ -36,36 +37,33 @@ def serialiser_tournoi(tournoi) -> dict:
     }
 
 
-def template_id_depuis_chemin(template_path: Path) -> str:
-    return Path(template_path).stem
-
-
 def construire_payload_live(
     tournoi,
     matchs,
+    pdf_path: Path,
     template_path: Path,
-    base_dir: Path,
-    pptx_path: Path | None = None,
+    pptx_path: Path,
 ) -> dict:
-    page_map = cartographier_pages_live(
-        template_path,
-        pptx_path or template_path,
-    )
-    needed = indices_depuis_page_map(page_map)
+    """
+    Payload Manager live : même PDF que l'Engine, rendu côté navigateur (pdf.js).
+    LibreOffice reste côté serveur, invisible pour l'utilisateur.
+    """
+    page_map = cartographier_pages_live(template_path, pptx_path)
 
-    if not needed:
+    if not page_map.get("main") and not page_map.get("classement"):
         raise RuntimeError(
             "Impossible de cartographier les pages du tournoi pour le live."
         )
 
-    template_id = template_id_depuis_chemin(template_path)
+    pdf_bytes = Path(pdf_path).read_bytes()
     fields = construire_champs_live(tournoi, matchs)
 
     return {
         "meta": serialiser_tournoi(tournoi),
         "matches": [serialiser_match(match) for match in matchs],
         "page_map": page_map,
-        "template_id": template_id,
         "fields": fields,
-        "live_version": "mask-v4",
+        "pdf_base64": base64.b64encode(pdf_bytes).decode("ascii"),
+        "pdf_filename": Path(pdf_path).name,
+        "live_version": "pdf-v5",
     }

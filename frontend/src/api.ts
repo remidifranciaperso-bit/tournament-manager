@@ -68,7 +68,7 @@ async function readError(res: Response): Promise<string> {
   }
 }
 
-export const EXPECTED_LIVE_API = "mask-v4";
+export const EXPECTED_LIVE_API = "pdf-v5";
 
 export interface ApiHealth {
   status: string;
@@ -85,9 +85,13 @@ export async function fetchApiHealth(): Promise<ApiHealth> {
 export async function assertLiveApiReady(): Promise<void> {
   const health = await fetchApiHealth();
   if (health.live !== EXPECTED_LIVE_API) {
+    const hint =
+      health.live == null
+        ? "LibreOffice est requis côté serveur pour le Manager live."
+        : `Version live=${health.live}.`;
     throw new Error(
-      `API obsolète (version ${health.version ?? "?"}, live=${health.live ?? "absent"}). ` +
-        "Fermez tous les terminaux du projet puis relancez ./scripts/run-local.sh."
+      `API obsolète ou incomplète (version ${health.version ?? "?"}, live=${health.live ?? "absent"}). ${hint} ` +
+        "Relancez ./scripts/run-local.sh ou vérifiez le déploiement Render."
     );
   }
 }
@@ -130,9 +134,9 @@ export async function generateLiveTournament(
 
   const data = (await res.json()) as LiveTournamentData;
 
-  if (!data.template_id || !data.page_map || !data.fields) {
+  if (!data.pdf_base64 || !data.page_map) {
     throw new Error(
-      "Réponse live incomplète. Relancez ./scripts/run-local.sh pour charger la nouvelle API."
+      "Le serveur n'a pas renvoyé le PDF live. Vérifiez que LibreOffice est disponible sur le serveur."
     );
   }
 
