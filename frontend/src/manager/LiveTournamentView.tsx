@@ -44,7 +44,7 @@ interface LiveTournamentViewProps {
 export function LiveTournamentView({
   liveData,
 }: LiveTournamentViewProps) {
-  const { page_map, page_pdfs, page_sizes, pdf_base64, pdf_filename } = liveData;
+  const { page_map, live_token, page_sizes, pdf_filename } = liveData;
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -151,7 +151,7 @@ export function LiveTournamentView({
       case "final":
         return (
           <LivePdfViewer
-            pagePdfs={page_pdfs}
+            liveToken={live_token}
             pageSizes={page_sizes}
             slideIndices={slideIndices}
           />
@@ -159,7 +159,7 @@ export function LiveTournamentView({
       default:
         return null;
     }
-  }, [primaryTab, page_pdfs, page_sizes, slideIndices]);
+  }, [primaryTab, live_token, page_sizes, slideIndices]);
 
   const isSlideTab =
     primaryTab === "main" ||
@@ -193,12 +193,12 @@ export function LiveTournamentView({
           ))}
         </div>
 
-        {pdf_base64 && (
+        {live_token && (
           <div className="mt-2 flex shrink-0 justify-end">
             <button
               type="button"
               onClick={() =>
-                downloadEnginePdf(pdf_base64, pdf_filename || "tournoi.pdf")
+                downloadEnginePdf(live_token, pdf_filename || "tournoi.pdf")
               }
               className="rounded-lg bg-white/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/55 transition hover:bg-white/[0.1] hover:text-white/80 sm:text-[11px]"
             >

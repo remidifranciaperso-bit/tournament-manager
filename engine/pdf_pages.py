@@ -1,35 +1,46 @@
-import base64
 from pathlib import Path
 
 import fitz
 
 
-def extraire_pages_pdf(pdf_path: Path, indices: list[int]) -> dict[str, str]:
+def extraire_pages_sur_disque(
+    pdf_path: Path,
+    indices: list[int],
+    output_dir: Path,
+) -> dict[str, dict[str, float]]:
     """
-    Extrait des PDF d'une page (base64) pour affichage natif navigateur.
-    Une page = un onglet : rendu identique à l'Engine (polices, emojis, brush).
+    Extrait des PDF d'une page sur disque (sans base64 en RAM).
+    Retourne les dimensions par index de slide.
     """
     if not indices:
         return {}
 
+    output_dir.mkdir(parents=True, exist_ok=True)
     doc = fitz.open(str(pdf_path))
-    pages: dict[str, str] = {}
+    sizes: dict[str, dict[str, float]] = {}
 
     try:
         for index in sorted(set(indices)):
             if index < 0 or index >= doc.page_count:
                 continue
 
-            single = fitz.open()
-            single.insert_pdf(doc, from_page=index, to_page=index)
-            pdf_bytes = single.tobytes(deflate=True, garbage=4)
-            single.close()
+            rect = doc[index].rect
+            sizes[str(index)] = {
+                "width": float(rect.width),
+                "height": float(rect.height),
+            }
 
-            pages[str(index)] = base64.b64encode(pdf_bytes).decode("ascii")
+            single = fitz.open()
+            try:
+                single.insert_pdf(doc, from_page=index, to_page=index)
+                destination = output_dir / f"{index}.pdf"
+                single.save(str(destination), garbage=4, deflate=True)
+            finally:
+                single.close()
     finally:
         doc.close()
 
-    return pages
+    return sizes
 
 
 def indices_depuis_page_map(page_map: dict) -> list[int]:

@@ -8,7 +8,7 @@ from pptx import Presentation
 
 BRUSH_FONT_NAME = "Grindy Brush"
 EMU_PAR_POUCE = 914_400
-DPI_RASTER = 300
+DPI_RASTER = 200
 
 
 def _shape_utilise_brush(shape) -> bool:

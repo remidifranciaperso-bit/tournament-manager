@@ -111,9 +111,9 @@ def convertir_avec_libreoffice(
                 "pdf:impress_pdf_Export:"
                 "{"
                 '"SelectPdfVersion":{"type":"long","value":"1"},'
-                '"Quality":{"type":"long","value":"100"},'
-                '"ReduceImageResolution":{"type":"boolean","value":"false"},'
-                '"MaxImageResolution":{"type":"long","value":"600"}'
+                '"Quality":{"type":"long","value":"90"},'
+                '"ReduceImageResolution":{"type":"boolean","value":"true"},'
+                '"MaxImageResolution":{"type":"long","value":"300"}'
                 "}"
             ),
             "--outdir",

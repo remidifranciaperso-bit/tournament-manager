@@ -68,7 +68,7 @@ async function readError(res: Response): Promise<string> {
   }
 }
 
-export const EXPECTED_LIVE_API = "pdf-v8";
+export const EXPECTED_LIVE_API = "pdf-v9";
 
 export interface ApiHealth {
   status: string;
@@ -133,7 +133,7 @@ export async function generateLiveTournament(
 
   const data = (await res.json()) as LiveTournamentData;
 
-  if (!data.page_pdfs || !data.pdf_base64 || !data.page_map) {
+  if (!data.live_token || !data.page_map || !data.page_sizes) {
     throw new Error(
       "Réponse live incomplète. Vérifiez LibreOffice sur le serveur et relancez l'API."
     );

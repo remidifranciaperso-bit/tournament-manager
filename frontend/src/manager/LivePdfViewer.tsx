@@ -1,30 +1,4 @@
-import { useEffect, useMemo, useRef, type RefObject } from "react";
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-function usePagePdfUrl(pagePdfBase64: string | undefined): string | null {
-  const blobUrl = useMemo(() => {
-    if (!pagePdfBase64) return null;
-    const bytes = base64ToUint8Array(pagePdfBase64);
-    const blob = new Blob([bytes], { type: "application/pdf" });
-    return URL.createObjectURL(blob);
-  }, [pagePdfBase64]);
-
-  useEffect(() => {
-    return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
-  }, [blobUrl]);
-
-  return blobUrl;
-}
+import { useEffect, useRef, type RefObject } from "react";
 
 function useBlockZoom(containerRef: RefObject<HTMLElement | null>) {
   useEffect(() => {
@@ -56,23 +30,14 @@ function useBlockZoom(containerRef: RefObject<HTMLElement | null>) {
 }
 
 interface LivePdfPageProps {
-  pagePdfBase64: string;
+  pageUrl: string;
   pageSize?: { width: number; height: number };
 }
 
-function LivePdfPage({ pagePdfBase64, pageSize }: LivePdfPageProps) {
+function LivePdfPage({ pageUrl, pageSize }: LivePdfPageProps) {
   const slotRef = useRef<HTMLDivElement>(null);
-  const pageUrl = usePagePdfUrl(pagePdfBase64);
 
   useBlockZoom(slotRef);
-
-  if (!pageUrl) {
-    return (
-      <p className="flex flex-1 items-center justify-center text-sm text-white/40">
-        Page indisponible.
-      </p>
-    );
-  }
 
   const aspectRatio =
     pageSize && pageSize.width > 0 && pageSize.height > 0
@@ -92,7 +57,7 @@ function LivePdfPage({ pagePdfBase64, pageSize }: LivePdfPageProps) {
         style={{ aspectRatio }}
       >
         <iframe
-          key={pagePdfBase64.slice(0, 48)}
+          key={pageUrl}
           src={src}
           title="Page tournoi"
           className="h-full w-full border-0 bg-white"
@@ -103,13 +68,13 @@ function LivePdfPage({ pagePdfBase64, pageSize }: LivePdfPageProps) {
 }
 
 export interface LivePdfViewerProps {
-  pagePdfs: Record<string, string>;
+  liveToken: string;
   pageSizes?: Record<string, { width: number; height: number }>;
   slideIndices: number[];
 }
 
 export function LivePdfViewer({
-  pagePdfs,
+  liveToken,
   pageSizes,
   slideIndices,
 }: LivePdfViewerProps) {
@@ -122,28 +87,16 @@ export function LivePdfViewer({
   }
 
   const slideIndex = slideIndices[0];
-  const pagePdf = pagePdfs[String(slideIndex)];
   const pageSize = pageSizes?.[String(slideIndex)];
+  const pageUrl = `/api/live/${liveToken}/page/${slideIndex}`;
 
-  if (!pagePdf) {
-    return (
-      <p className="flex flex-1 items-center justify-center text-sm text-white/40">
-        Page {slideIndex + 1} indisponible.
-      </p>
-    );
-  }
-
-  return <LivePdfPage pagePdfBase64={pagePdf} pageSize={pageSize} />;
+  return <LivePdfPage pageUrl={pageUrl} pageSize={pageSize} />;
 }
 
 /** Télécharge le PDF Engine complet (export fin de tournoi). */
-export function downloadEnginePdf(pdfBase64: string, filename: string): void {
-  const bytes = base64ToUint8Array(pdfBase64);
-  const blob = new Blob([bytes], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
+export function downloadEnginePdf(liveToken: string, filename: string): void {
   const anchor = document.createElement("a");
-  anchor.href = url;
+  anchor.href = `/api/live/${liveToken}/pdf`;
   anchor.download = filename;
   anchor.click();
-  URL.revokeObjectURL(url);
 }

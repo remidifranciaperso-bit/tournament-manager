@@ -1,35 +1,8 @@
-import base64
 from pathlib import Path
 
 from engine.live_layout import lire_layout_public
-from engine.live_page_map import cartographier_pages_live
 from engine.live_valeurs import construire_champs_live
 from engine.models.match import Match
-from engine.pdf_pages import extraire_pages_pdf, indices_depuis_page_map
-
-
-def _dimensions_pages_pdf(pdf_path: Path, indices: list[int]) -> dict[str, dict[str, float]]:
-    import fitz
-
-    if not indices:
-        return {}
-
-    doc = fitz.open(str(pdf_path))
-    sizes: dict[str, dict[str, float]] = {}
-
-    try:
-        for index in sorted(set(indices)):
-            if index < 0 or index >= doc.page_count:
-                continue
-            rect = doc[index].rect
-            sizes[str(index)] = {
-                "width": float(rect.width),
-                "height": float(rect.height),
-            }
-    finally:
-        doc.close()
-
-    return sizes
 
 
 def serialiser_match(match: Match) -> dict:
@@ -70,34 +43,29 @@ def construire_payload_live(
     template_path: Path,
     pptx_path: Path,
     base_dir: Path,
+    live_token: str,
+    page_map: dict,
+    page_sizes: dict[str, dict[str, float]],
 ) -> dict:
     """
-    Manager live = même PDF que l'Engine (remplir_template + LibreOffice).
+    Manager live = même PDF que l'Engine, pages servies à la demande (disque).
 
-    - ``page_pdfs`` : une page par onglet, rendu navigateur natif (polices brush/TSL/Noto).
-    - ``pdf_base64`` : PDF complet pour export final tournoi.
-    - ``fields`` / ``matches`` : état live pour mises à jour dynamiques puis regénération PDF.
+    Le PDF n'est pas encodé en base64 : le front charge
+    ``/api/live/{token}/page/{index}`` et ``/api/live/{token}/pdf``.
     """
-    page_map = cartographier_pages_live(template_path, pptx_path)
-
     if not page_map.get("main") and not page_map.get("classement"):
         raise RuntimeError(
             "Impossible de cartographier les pages du tournoi pour le live."
         )
 
-    needed = indices_depuis_page_map(page_map)
-    page_pdfs = extraire_pages_pdf(pdf_path, needed)
-    page_sizes = _dimensions_pages_pdf(pdf_path, needed)
-
-    if not page_pdfs:
+    if not page_sizes:
         raise RuntimeError(
-            f"Aucune page PDF extraite ({pdf_path.name}, attendu {needed})."
+            f"Aucune page PDF extraite ({pdf_path.name})."
         )
 
     template_id = Path(template_path).stem
     fields = construire_champs_live(tournoi, matchs)
     layout = lire_layout_public(base_dir, template_id)
-    pdf_bytes = Path(pdf_path).read_bytes()
 
     return {
         "meta": serialiser_tournoi(tournoi),
@@ -106,9 +74,8 @@ def construire_payload_live(
         "template_id": template_id,
         "layout": layout,
         "fields": fields,
-        "page_pdfs": page_pdfs,
+        "live_token": live_token,
         "page_sizes": page_sizes,
-        "pdf_base64": base64.b64encode(pdf_bytes).decode("ascii"),
         "pdf_filename": Path(pdf_path).name,
-        "live_version": "pdf-v8",
+        "live_version": "pdf-v9",
     }
