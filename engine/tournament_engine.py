@@ -302,5 +302,5 @@ def generate_tournament_live(
         live_token=live_token,
         page_sizes=page_sizes,
         pdf_filename=pdf_path.name,
-        layout_path=pptx_path,
+        layout_path=template_path,
     )

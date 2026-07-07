@@ -35,6 +35,19 @@ def serialiser_tournoi(tournoi) -> dict:
     }
 
 
+def _enrichir_planning_layout(
+    planning_layout: dict[str, list[dict]],
+    fields: dict[str, str],
+) -> dict[str, list[dict]]:
+    for slide_fields in planning_layout.values():
+        for field in slide_fields:
+            if not field["key"].endswith("_DONE"):
+                continue
+            code_key = field["key"].replace("_DONE", "_CODE")
+            field["match_code"] = fields.get(code_key, "")
+    return planning_layout
+
+
 def construire_payload_live(
     tournoi,
     matchs,
@@ -63,6 +76,7 @@ def construire_payload_live(
         from engine.live_layout import extraire_layout_planning
 
         planning_layout = extraire_layout_planning(layout_path, page_map)
+        planning_layout = _enrichir_planning_layout(planning_layout, fields)
 
     return {
         "meta": serialiser_tournoi(tournoi),

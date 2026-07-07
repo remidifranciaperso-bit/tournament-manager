@@ -1,6 +1,7 @@
 import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 
 export interface PlanningCheckboxOverlay {
+  code: string;
   left: number;
   top: number;
   width: number;
@@ -40,10 +41,13 @@ export function buildPlanningCheckOverlays(
   for (const field of layoutFields) {
     if (!field.key.endsWith("_DONE")) continue;
 
-    const code = matchCodeForDoneField(field.key, fields, matches);
+    const code =
+      field.match_code?.trim() ||
+      matchCodeForDoneField(field.key, fields, matches);
     if (!code) continue;
 
     overlays.push({
+      code,
       left: field.left,
       top: field.top,
       width: field.width,

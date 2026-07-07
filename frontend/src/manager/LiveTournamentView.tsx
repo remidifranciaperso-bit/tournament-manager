@@ -173,7 +173,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     progress.toggleMatch,
   ]);
 
-  const content = useMemo(() => {
+  const renderContent = () => {
     switch (primaryTab) {
       case "avancement":
         return (
@@ -210,19 +210,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
       default:
         return null;
     }
-  }, [
-    primaryTab,
-    live_token,
-    prefetchIndices,
-    slideIndices,
-    progress.elapsed,
-    progress.done,
-    progress.total,
-    progress.percent,
-    progress.completed,
-    progress.toggleMatch,
-    planningCheckboxes,
-  ]);
+  };
 
   const isSlideTab =
     primaryTab === "main" ||
@@ -289,7 +277,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                 : "flex min-h-0 flex-1 flex-col overflow-y-auto"
             }
           >
-            {content}
+            {renderContent()}
           </div>
         </div>
       </div>

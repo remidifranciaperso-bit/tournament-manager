@@ -87,6 +87,13 @@ def _append_table_fields(
     if nrows == 0 or ncols == 0:
         return
 
+    termine_col = None
+    for col_idx in range(ncols):
+        header = table.cell(0, col_idx).text.strip().upper()
+        if "TERMIN" in header:
+            termine_col = col_idx
+            break
+
     for row_idx in range(nrows):
         code_key = None
         done_col = None
@@ -107,8 +114,10 @@ def _append_table_fields(
             if text in _DONE_MARKERS:
                 done_col = col_idx
 
-        if code_key and done_col is not None:
-            left, top, width, height = _cell_rect(shape, row_idx, done_col)
+        target_done_col = done_col if done_col is not None else termine_col
+
+        if code_key and target_done_col is not None:
+            left, top, width, height = _cell_rect(shape, row_idx, target_done_col)
             fields.append(
                 _field_dict(
                     code_key.replace("_CODE", "_DONE"),

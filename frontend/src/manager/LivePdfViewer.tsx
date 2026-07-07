@@ -133,7 +133,7 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
         />
 
         {renderSize &&
-          checkboxes.map((box, index) => {
+          checkboxes.map((box) => {
             const markSize = Math.max(
               10,
               Math.min(
@@ -144,7 +144,7 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
 
             return (
               <button
-                key={index}
+                key={box.code}
                 type="button"
                 aria-pressed={box.checked}
                 aria-label={box.checked ? "Match terminé" : "Marquer terminé"}

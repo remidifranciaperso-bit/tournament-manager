@@ -22,6 +22,7 @@ export interface LiveLayoutField {
   top: number;
   width: number;
   height: number;
+  match_code?: string;
 }
 
 export type LivePlanningLayout = Record<string, LiveLayoutField[]>;
