@@ -1,6 +1,7 @@
 import type { LivePageEntry, LivePageMap } from "./liveTypes";
 
 export type LivePrimaryTab =
+  | "avancement"
   | "live"
   | "upcoming"
   | "main"
@@ -9,12 +10,13 @@ export type LivePrimaryTab =
   | "final";
 
 export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
+  { id: "avancement", label: "Avancement" },
   { id: "live", label: "Matchs en cours" },
   { id: "upcoming", label: "Prochains matchs" },
   { id: "main", label: "Tableau principal" },
-  { id: "classement", label: "Tableaux de classement" },
+  { id: "classement", label: "Classement" },
   { id: "planning", label: "Planning" },
-  { id: "final", label: "Classement final" },
+  { id: "final", label: "Final" },
 ];
 
 export const LIVE_PRIMARY_TAB_COUNT = LIVE_PRIMARY_TABS.length;

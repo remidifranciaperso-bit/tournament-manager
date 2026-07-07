@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
-import { LivePdfViewer, downloadEnginePdf } from "./LivePdfViewer";
+import { LiveAvancementTab } from "./LiveAvancementTab";
+import { LivePdfViewer } from "./LivePdfViewer";
+import { LivePlanningChecks } from "./LivePlanningChecks";
 import type { LiveTournamentData } from "./liveTypes";
 import {
   LIVE_PRIMARY_TABS,
@@ -13,9 +15,11 @@ import {
   subTabLabels,
   type LivePrimaryTab,
 } from "./liveTabs";
+import { matchesForPlanningPage } from "./planningMatches";
+import { useLiveProgress } from "./useLiveProgress";
 
 const TAB_BASE =
-  "min-w-0 truncate rounded-lg px-1.5 py-3 text-center text-[10px] font-semibold uppercase leading-tight tracking-wide transition sm:px-2 sm:text-[11px]";
+  "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide transition sm:px-1.5 sm:py-3 sm:text-[10px]";
 
 function tabClass(active: boolean) {
   return [
@@ -43,7 +47,9 @@ interface LiveTournamentViewProps {
 }
 
 export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
-  const { page_map, live_token, pdf_filename } = liveData;
+  const { page_map, live_token, matches, meta } = liveData;
+
+  const progress = useLiveProgress(live_token, matches.length, meta);
 
   const prefetchIndices = useMemo(
     () => allSlideIndices(page_map),
@@ -61,7 +67,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   );
   const finalPages = useMemo(() => pageEntries(page_map, "final"), [page_map]);
 
-  const [primaryTab, setPrimaryTab] = useState<LivePrimaryTab>("main");
+  const [primaryTab, setPrimaryTab] = useState<LivePrimaryTab>("avancement");
   const [mainPage, setMainPage] = useState(0);
   const [classementPage, setClassementPage] = useState(0);
   const [planningPage, setPlanningPage] = useState(0);
@@ -141,17 +147,31 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     planningPage,
     page_map,
     finalPages,
+    planningPages,
   ]);
+
+  const planningMatches = useMemo(
+    () => matchesForPlanningPage(matches, page_map, planningPage),
+    [matches, page_map, planningPage]
+  );
 
   const content = useMemo(() => {
     switch (primaryTab) {
+      case "avancement":
+        return (
+          <LiveAvancementTab
+            elapsed={progress.elapsed}
+            done={progress.done}
+            total={progress.total}
+            percent={progress.percent}
+          />
+        );
       case "live":
         return <PlaceholderTab label="Matchs en cours" />;
       case "upcoming":
         return <PlaceholderTab label="Prochains matchs" />;
       case "main":
       case "classement":
-      case "planning":
       case "final":
         return (
           <LivePdfViewer
@@ -160,10 +180,37 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             slideIndices={slideIndices}
           />
         );
+      case "planning":
+        return (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <LivePdfViewer
+              liveToken={live_token}
+              prefetchIndices={prefetchIndices}
+              slideIndices={slideIndices}
+            />
+            <LivePlanningChecks
+              matches={planningMatches}
+              completed={progress.completed}
+              onToggle={progress.toggleMatch}
+            />
+          </div>
+        );
       default:
         return null;
     }
-  }, [primaryTab, live_token, prefetchIndices, slideIndices]);
+  }, [
+    primaryTab,
+    live_token,
+    prefetchIndices,
+    slideIndices,
+    progress.elapsed,
+    progress.done,
+    progress.total,
+    progress.percent,
+    progress.completed,
+    progress.toggleMatch,
+    planningMatches,
+  ]);
 
   const isSlideTab =
     primaryTab === "main" ||
@@ -183,7 +230,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           PADEL TOURNAMENT MANAGER
         </h1>
 
-        <div className="mt-3 flex shrink-0 gap-1 overflow-hidden">
+        <div className="mt-3 flex shrink-0 gap-0.5 overflow-hidden sm:gap-1">
           {LIVE_PRIMARY_TABS.map((tab) => (
             <button
               key={tab.id}
@@ -196,20 +243,6 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             </button>
           ))}
         </div>
-
-        {live_token && (
-          <div className="mt-2 flex shrink-0 justify-end">
-            <button
-              type="button"
-              onClick={() =>
-                downloadEnginePdf(live_token, pdf_filename || "tournoi.pdf")
-              }
-              className="rounded-lg bg-white/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/55 transition hover:bg-white/[0.1] hover:text-white/80 sm:text-[11px]"
-            >
-              Télécharger PDF Engine
-            </button>
-          </div>
-        )}
 
         {showSubTabs && (
           <div className="mt-2 flex shrink-0 justify-center gap-1 overflow-hidden">
