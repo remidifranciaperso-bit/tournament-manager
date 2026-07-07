@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 
 function useBlockZoom(containerRef: RefObject<HTMLElement | null>) {
   useEffect(() => {
@@ -29,21 +29,31 @@ function useBlockZoom(containerRef: RefObject<HTMLElement | null>) {
   }, [containerRef]);
 }
 
-interface LivePdfPageProps {
-  pageUrl: string;
-  pageSize?: { width: number; height: number };
+function pagePngUrl(liveToken: string, slideIndex: number): string {
+  return `/api/live/${liveToken}/page/${slideIndex}.png`;
 }
 
-function LivePdfPage({ pageUrl, pageSize }: LivePdfPageProps) {
+function usePrefetchPages(liveToken: string, indices: number[]) {
+  const prefetched = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    for (const index of indices) {
+      if (prefetched.current.has(index)) continue;
+      prefetched.current.add(index);
+      const img = new Image();
+      img.decoding = "async";
+      img.src = pagePngUrl(liveToken, index);
+    }
+  }, [liveToken, indices]);
+}
+
+interface LivePdfPageProps {
+  pageUrl: string;
+}
+
+function LivePdfPage({ pageUrl }: LivePdfPageProps) {
   const slotRef = useRef<HTMLDivElement>(null);
   useBlockZoom(slotRef);
-
-  const aspectRatio =
-    pageSize && pageSize.width > 0 && pageSize.height > 0
-      ? `${pageSize.width} / ${pageSize.height}`
-      : "297 / 210";
-
-  const src = `${pageUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH&zoom=page-width`;
 
   return (
     <div
@@ -51,33 +61,37 @@ function LivePdfPage({ pageUrl, pageSize }: LivePdfPageProps) {
       className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white"
       style={{ touchAction: "none" }}
     >
-      <div
-        className="h-full max-h-full w-full max-w-full overflow-hidden"
-        style={{ aspectRatio }}
-      >
-        <iframe
-          key={pageUrl}
-          src={src}
-          title="Page tournoi"
-          className="h-full w-full border-0 bg-white"
-        />
-      </div>
+      <img
+        key={pageUrl}
+        src={pageUrl}
+        alt=""
+        decoding="async"
+        draggable={false}
+        className="max-h-full max-w-full object-contain"
+      />
     </div>
   );
 }
 
 export interface LivePdfViewerProps {
   liveToken: string;
-  pageSizes?: Record<string, { width: number; height: number }>;
+  prefetchIndices: number[];
   slideIndices: number[];
 }
 
 export function LivePdfViewer({
   liveToken,
-  pageSizes,
+  prefetchIndices,
   slideIndices,
 }: LivePdfViewerProps) {
-  if (slideIndices.length === 0) {
+  usePrefetchPages(liveToken, prefetchIndices);
+
+  const pageUrl = useMemo(() => {
+    if (slideIndices.length === 0) return null;
+    return pagePngUrl(liveToken, slideIndices[0]);
+  }, [liveToken, slideIndices]);
+
+  if (!pageUrl) {
     return (
       <p className="py-8 text-center text-sm text-white/40">
         Aucune page disponible pour cet onglet.
@@ -85,11 +99,7 @@ export function LivePdfViewer({
     );
   }
 
-  const slideIndex = slideIndices[0];
-  const pageSize = pageSizes?.[String(slideIndex)];
-  const pageUrl = `/api/live/${liveToken}/page/${slideIndex}`;
-
-  return <LivePdfPage pageUrl={pageUrl} pageSize={pageSize} />;
+  return <LivePdfPage pageUrl={pageUrl} />;
 }
 
 export function downloadEnginePdf(liveToken: string, filename: string): void {

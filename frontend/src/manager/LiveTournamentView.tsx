@@ -6,6 +6,7 @@ import type { LiveTournamentData } from "./liveTypes";
 import {
   LIVE_PRIMARY_TABS,
   LIVE_TAB_WIDTH_CLASS,
+  allSlideIndices,
   pageEntries,
   planningIndicesForPage,
   slideIndexAt,
@@ -42,7 +43,12 @@ interface LiveTournamentViewProps {
 }
 
 export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
-  const { page_map, live_token, page_sizes, pdf_filename } = liveData;
+  const { page_map, live_token, pdf_filename } = liveData;
+
+  const prefetchIndices = useMemo(
+    () => allSlideIndices(page_map),
+    [page_map]
+  );
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -150,14 +156,14 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         return (
           <LivePdfViewer
             liveToken={live_token}
-            pageSizes={page_sizes}
+            prefetchIndices={prefetchIndices}
             slideIndices={slideIndices}
           />
         );
       default:
         return null;
     }
-  }, [primaryTab, live_token, page_sizes, slideIndices]);
+  }, [primaryTab, live_token, prefetchIndices, slideIndices]);
 
   const isSlideTab =
     primaryTab === "main" ||

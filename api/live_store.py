@@ -60,6 +60,14 @@ def chemin_page(token: str, index: int) -> Path | None:
     return page if page.is_file() else None
 
 
+def chemin_page_png(token: str, index: int) -> Path | None:
+    session = chemin_session(token)
+    if session is None:
+        return None
+    page = session / "pages" / f"{index}.png"
+    return page if page.is_file() else None
+
+
 def nom_pdf(token: str) -> str:
     session = chemin_session(token)
     if session is None:

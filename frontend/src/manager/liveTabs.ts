@@ -50,3 +50,21 @@ export function planningIndicesForPage(
   const entry = pageMap.planning[planningPage];
   return entry ? [entry.index] : [];
 }
+
+export function allSlideIndices(pageMap: LivePageMap): number[] {
+  const indices = new Set<number>();
+
+  for (const key of ["main", "classement", "planning", "final"] as const) {
+    for (const entry of pageEntries(pageMap, key)) {
+      indices.add(entry.index);
+    }
+  }
+
+  for (const group of pageMap.planning_groups) {
+    for (const index of group) {
+      indices.add(index);
+    }
+  }
+
+  return [...indices].sort((a, b) => a - b);
+}

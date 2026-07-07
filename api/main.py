@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
 from api.notify_store import chemin_pdf, enregistrer_pdf, supprimer_pdf
-from api.live_store import chemin_page, chemin_pdf_complet, nom_pdf
+from api.live_store import chemin_page, chemin_page_png, chemin_pdf_complet, nom_pdf
 from engine.excel_reader import lire_excel
 from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
@@ -225,6 +225,18 @@ async def generate_live(
             logo_path.unlink(missing_ok=True)
 
     return payload
+
+
+@app.get("/api/live/{token}/page/{index}.png")
+def live_page_png(token: str, index: int):
+    chemin = chemin_page_png(token, index)
+    if chemin is None:
+        raise HTTPException(status_code=404, detail="Page live introuvable.")
+    return FileResponse(
+        chemin,
+        media_type="image/png",
+        headers={"Cache-Control": "private, max-age=86400"},
+    )
 
 
 @app.get("/api/live/{token}/page/{index}")

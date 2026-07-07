@@ -2,13 +2,16 @@ from pathlib import Path
 
 import fitz
 
+DPI_AFFICHAGE = 144
+
 
 def extraire_pages_sur_disque(
     pdf_path: Path,
     indices: list[int],
     output_dir: Path,
+    dpi: int = DPI_AFFICHAGE,
 ) -> dict[str, dict[str, float]]:
-    """Découpe le PDF Engine en pages (fichiers sur disque, pas de base64)."""
+    """Découpe le PDF Engine : PDF par page + PNG pour affichage rapide."""
     if not indices:
         return {}
 
@@ -33,6 +36,9 @@ def extraire_pages_sur_disque(
                 single.save(str(output_dir / f"{index}.pdf"), garbage=4, deflate=True)
             finally:
                 single.close()
+
+            pixmap = doc[index].get_pixmap(dpi=dpi, alpha=False)
+            pixmap.save(str(output_dir / f"{index}.png"))
     finally:
         doc.close()
 
