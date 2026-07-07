@@ -237,7 +237,10 @@ def generate_tournament_live(
     genre_tournoi=None,
     methode_poules="Méthode du serpentin",
 ):
+    from api.live_store import creer_session, liberer_memoire
     from engine.live_export import construire_payload_live
+    from engine.live_page_map import cartographier_pages_live
+    from engine.pdf_pages import extraire_pages_sur_disque, indices_depuis_page_map
 
     base_dir = Path(base_dir)
 
@@ -258,10 +261,45 @@ def generate_tournament_live(
     )
 
     template_path = _chemin_template(tournoi, base_dir)
+    exports_dir = base_dir / "exports"
+    exports_dir.mkdir(parents=True, exist_ok=True)
+
+    nom_export = construire_nom_export(
+        type_tournoi=tournoi.type_tournoi,
+        club=tournoi.club,
+        date_tournoi=tournoi.date_tournoi,
+    )
+
+    pptx_path = exports_dir / f"{nom_export}.pptx"
+
+    remplir_template(
+        template_path=template_path,
+        output_path=pptx_path,
+        tournoi=tournoi,
+        matchs=matchs,
+        logo_path=logo_path,
+    )
+
+    pdf_path = convertir_pptx_en_pdf(
+        pptx_path=pptx_path,
+        output_dir=exports_dir,
+    )
+    liberer_memoire()
+
+    page_map = cartographier_pages_live(template_path, pptx_path)
+    live_token, pages_dir = creer_session(pdf_path, pdf_path.name)
+    page_sizes = extraire_pages_sur_disque(
+        pdf_path,
+        indices_depuis_page_map(page_map),
+        pages_dir,
+    )
+    liberer_memoire()
 
     return construire_payload_live(
         tournoi=tournoi,
         matchs=matchs,
-        template_path=template_path,
-        base_dir=base_dir,
+        page_map=page_map,
+        live_token=live_token,
+        page_sizes=page_sizes,
+        pdf_filename=pdf_path.name,
     )

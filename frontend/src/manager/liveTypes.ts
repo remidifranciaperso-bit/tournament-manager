@@ -24,16 +24,6 @@ export interface LivePageMap {
   final: LivePageEntry[];
 }
 
-export interface LiveLayoutField {
-  key: string;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
-export type LiveLayout = Record<string, LiveLayoutField[]>;
-
 export interface LiveTournamentMeta {
   club: string;
   date_tournoi: string;
@@ -48,13 +38,14 @@ export interface LiveTournamentMeta {
   duree_match: number;
 }
 
-/** Données live : masque template + champs dynamiques (même logique remplissage que Engine). */
+/** Données live — pages = PDF Engine servi par ``/api/live/{token}/page/N``. */
 export interface LiveTournamentData {
   meta: LiveTournamentMeta;
   matches: LiveMatch[];
   page_map: LivePageMap;
-  template_id: string;
-  layout: LiveLayout;
   fields: Record<string, string>;
+  live_token: string;
+  page_sizes: Record<string, { width: number; height: number }>;
+  pdf_filename: string;
   live_version?: string;
 }

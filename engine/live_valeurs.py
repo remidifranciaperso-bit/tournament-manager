@@ -9,7 +9,7 @@ from engine.ppt_engine import (
     valeur_balise_speciale,
 )
 
-_STATIC_PREFIXES = ("WIN_", "LOSE_", "SECOND_", "THIRD_")
+_STATIC_PREFIXES = ("WIN_", "LOSE_", "SECOND_")
 
 
 def _est_balise_statique_masque(nom: str) -> bool:
@@ -53,10 +53,7 @@ def construire_valeurs_masque_template(template_path) -> dict[str, str]:
                     elif _est_balise_statique_masque(nom):
                         if nom.startswith("SECOND_"):
                             suffixe = nom.replace("SECOND_", "", 1)
-                            valeurs[balise] = f"Deuxième {suffixe}:"
-                        elif nom.startswith("THIRD_"):
-                            suffixe = nom.replace("THIRD_", "", 1)
-                            valeurs[balise] = f"Troisième {suffixe}:"
+                            valeurs[balise] = f"🥈 {suffixe}:"
                         else:
                             valeurs[balise] = ""
                     else:

@@ -56,7 +56,7 @@ export function ManagerLiveGenerationStep({
         <div className="mt-8 flex flex-col items-center gap-4">
           <PadelBall size={40} spinning realistic />
           <p className="text-sm text-white/45">
-            Génération des données live (même moteur que l'Engine)…
+            Génération du PDF Engine (identique au téléchargement Engine)…
           </p>
         </div>
       )}
