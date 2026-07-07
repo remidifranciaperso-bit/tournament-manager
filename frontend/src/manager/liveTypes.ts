@@ -16,6 +16,18 @@ export interface LivePageEntry {
   label: string;
 }
 
+export interface LiveLayoutField {
+  key: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+export type LivePlanningLayout = Record<string, LiveLayoutField[]>;
+
+export type LiveLayout = Record<string, LiveLayoutField[]>;
+
 export interface LivePageMap {
   main: LivePageEntry[];
   classement: LivePageEntry[];
@@ -44,6 +56,7 @@ export interface LiveTournamentData {
   matches: LiveMatch[];
   page_map: LivePageMap;
   fields: Record<string, string>;
+  planning_layout?: LivePlanningLayout;
   live_token: string;
   page_sizes: Record<string, { width: number; height: number }>;
   pdf_filename: string;

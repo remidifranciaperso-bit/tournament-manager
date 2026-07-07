@@ -3,7 +3,6 @@ import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LivePdfViewer } from "./LivePdfViewer";
-import { LivePlanningChecks } from "./LivePlanningChecks";
 import type { LiveTournamentData } from "./liveTypes";
 import {
   LIVE_PRIMARY_TABS,
@@ -15,7 +14,7 @@ import {
   subTabLabels,
   type LivePrimaryTab,
 } from "./liveTabs";
-import { matchesForPlanningPage } from "./planningMatches";
+import { buildPlanningCheckOverlays } from "./planningOverlays";
 import { useLiveProgress } from "./useLiveProgress";
 
 const TAB_BASE =
@@ -47,7 +46,8 @@ interface LiveTournamentViewProps {
 }
 
 export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
-  const { page_map, live_token, matches, meta } = liveData;
+  const { page_map, live_token, matches, meta, fields, planning_layout = {} } =
+    liveData;
 
   const progress = useLiveProgress(live_token, matches.length, meta);
 
@@ -150,10 +150,26 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     planningPages,
   ]);
 
-  const planningMatches = useMemo(
-    () => matchesForPlanningPage(matches, page_map, planningPage),
-    [matches, page_map, planningPage]
-  );
+  const planningCheckboxes = useMemo(() => {
+    if (primaryTab !== "planning" || slideIndices.length === 0) return [];
+
+    const slideKey = String(slideIndices[0]);
+    const layoutFields = planning_layout[slideKey] ?? [];
+
+    return buildPlanningCheckOverlays(
+      layoutFields,
+      fields,
+      progress.completed,
+      progress.toggleMatch
+    );
+  }, [
+    primaryTab,
+    slideIndices,
+    planning_layout,
+    fields,
+    progress.completed,
+    progress.toggleMatch,
+  ]);
 
   const content = useMemo(() => {
     switch (primaryTab) {
@@ -182,18 +198,12 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         );
       case "planning":
         return (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <LivePdfViewer
-              liveToken={live_token}
-              prefetchIndices={prefetchIndices}
-              slideIndices={slideIndices}
-            />
-            <LivePlanningChecks
-              matches={planningMatches}
-              completed={progress.completed}
-              onToggle={progress.toggleMatch}
-            />
-          </div>
+          <LivePdfViewer
+            liveToken={live_token}
+            prefetchIndices={prefetchIndices}
+            slideIndices={slideIndices}
+            checkboxes={planningCheckboxes}
+          />
         );
       default:
         return null;
@@ -209,7 +219,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     progress.percent,
     progress.completed,
     progress.toggleMatch,
-    planningMatches,
+    planningCheckboxes,
   ]);
 
   const isSlideTab =
