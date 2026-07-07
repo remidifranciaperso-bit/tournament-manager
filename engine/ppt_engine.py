@@ -8,11 +8,11 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
 from PIL import Image
 
-# Vainqueur = icône coupe PNG (engine/cup_icon.py) : TSL Sans n'a pas le glyphe 🏆.
-# Perdant = "x" ASCII (lisible dans TSL Sans, pas de croix Unicode cassée).
-ICONE_VAINQUEUR = ""
-ICONE_PERDANT = "x "
-ICONE_DEUXIEME = "2 "
+# Libellés texte TSL Sans (zéro image, zéro police extra).
+ICONE_VAINQUEUR = "Gagnants "
+ICONE_PERDANT = "Perdants "
+ICONE_PREMIER = "1er "
+ICONE_DEUXIEME = "2e "
 ICONE_TROISIEME = "3 "
 
 
@@ -38,7 +38,7 @@ def equipe_label_court(equipe):
     texte = equipe.strip()
 
     if texte.startswith("Vainqueur Poule "):
-        return ICONE_VAINQUEUR + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_PREMIER + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Deuxième Poule "):
         return ICONE_DEUXIEME + texte.replace("Deuxième ", "") + ":"
@@ -64,7 +64,7 @@ def equipe_label_planning(equipe):
     texte = equipe.strip()
 
     if texte.startswith("Vainqueur Poule "):
-        return ICONE_VAINQUEUR + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_PREMIER + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Deuxième Poule "):
         return ICONE_DEUXIEME + texte.replace("Deuxième ", "") + ":"
@@ -555,10 +555,10 @@ def construire_valeurs_poules(tournoi):
         for i, equipe in enumerate(equipes, start=1):
             valeurs[f"{{{{POULE_{nom_poule}_{i}_EQ}}}}"] = equipe_label_court(equipe)
 
-    valeurs["{{WIN_POULE_A}}"] = ICONE_VAINQUEUR + "Poule A:"
-    valeurs["{{WIN_POULE_B}}"] = ICONE_VAINQUEUR + "Poule B:"
-    valeurs["{{WIN_POULE_C}}"] = ICONE_VAINQUEUR + "Poule C:"
-    valeurs["{{WIN_POULE_D}}"] = ICONE_VAINQUEUR + "Poule D:"
+    valeurs["{{WIN_POULE_A}}"] = ICONE_PREMIER + "Poule A:"
+    valeurs["{{WIN_POULE_B}}"] = ICONE_PREMIER + "Poule B:"
+    valeurs["{{WIN_POULE_C}}"] = ICONE_PREMIER + "Poule C:"
+    valeurs["{{WIN_POULE_D}}"] = ICONE_PREMIER + "Poule D:"
 
     valeurs["{{SECOND_POULE_A}}"] = ICONE_DEUXIEME + "Poule A:"
     valeurs["{{SECOND_POULE_B}}"] = ICONE_DEUXIEME + "Poule B:"
@@ -994,12 +994,6 @@ def remplir_template(
             )
 
     prs.save(output_path)
-
-    from pathlib import Path
-
-    from engine.cup_icon import inserer_icones_coupe_vainqueur
-
-    inserer_icones_coupe_vainqueur(Path(output_path))
 
 def remplir_template_8(
     template_path,
