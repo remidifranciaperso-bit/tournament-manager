@@ -44,7 +44,7 @@ interface LiveTournamentViewProps {
 export function LiveTournamentView({
   liveData,
 }: LiveTournamentViewProps) {
-  const { page_map, pdf_base64 } = liveData;
+  const { page_map, pdf_base64, template_id, fields } = liveData;
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -152,13 +152,15 @@ export function LiveTournamentView({
         return (
           <LivePdfViewer
             pdfBase64={pdf_base64}
+            templateId={template_id}
+            fields={fields}
             slideIndices={slideIndices}
           />
         );
       default:
         return null;
     }
-  }, [primaryTab, pdf_base64, slideIndices]);
+  }, [primaryTab, pdf_base64, template_id, fields, slideIndices]);
 
   const isSlideTab =
     primaryTab === "main" ||

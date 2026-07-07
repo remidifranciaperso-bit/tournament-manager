@@ -24,6 +24,16 @@ export interface LivePageMap {
   final: LivePageEntry[];
 }
 
+export interface LiveLayoutField {
+  key: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+export type LiveLayout = Record<string, LiveLayoutField[]>;
+
 export interface LiveTournamentMeta {
   club: string;
   date_tournoi: string;
@@ -42,6 +52,7 @@ export interface LiveTournamentData {
   meta: LiveTournamentMeta;
   matches: LiveMatch[];
   page_map: LivePageMap;
+  template_id: string;
   fields: Record<string, string>;
   pdf_base64: string;
   pdf_filename: string;

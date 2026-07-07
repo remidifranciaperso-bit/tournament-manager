@@ -57,11 +57,13 @@ def construire_payload_live(
 
     pdf_bytes = Path(pdf_path).read_bytes()
     fields = construire_champs_live(tournoi, matchs)
+    template_id = Path(template_path).stem
 
     return {
         "meta": serialiser_tournoi(tournoi),
         "matches": [serialiser_match(match) for match in matchs],
         "page_map": page_map,
+        "template_id": template_id,
         "fields": fields,
         "pdf_base64": base64.b64encode(pdf_bytes).decode("ascii"),
         "pdf_filename": Path(pdf_path).name,
