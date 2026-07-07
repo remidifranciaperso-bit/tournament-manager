@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { PlanningCheckboxOverlay } from "./planningOverlays";
 
-function useBlockZoom(containerRef: RefObject<HTMLElement | null>) {
+function useBlockZoom(containerRef: RefObject<HTMLElement | null>, enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return;
     const el = containerRef.current;
     if (!el) return;
 
@@ -27,7 +28,7 @@ function useBlockZoom(containerRef: RefObject<HTMLElement | null>) {
       el.removeEventListener("gestureend", blockGesture);
       el.removeEventListener("touchmove", blockMultiTouch);
     };
-  }, [containerRef]);
+  }, [containerRef, enabled]);
 }
 
 function pagePngUrl(liveToken: string, slideIndex: number): string {
@@ -58,8 +59,9 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
   const [renderSize, setRenderSize] = useState<{ w: number; h: number } | null>(
     null
   );
+  const interactive = checkboxes.length > 0;
 
-  useBlockZoom(slotRef);
+  useBlockZoom(slotRef, !interactive);
 
   const computeScale = useCallback(() => {
     const slot = slotRef.current;
@@ -102,8 +104,11 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white"
-      style={{ touchAction: "none" }}
+      className={[
+        "flex min-h-0 flex-1 select-none items-center justify-center overflow-hidden bg-white",
+        interactive ? "touch-manipulation" : "touch-none",
+      ].join(" ")}
+      style={interactive ? undefined : { touchAction: "none" }}
     >
       <div
         className="relative shrink-0"
@@ -120,17 +125,17 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
           decoding="async"
           draggable={false}
           className="block select-none"
-          style={
-            renderSize
-              ? { width: renderSize.w, height: renderSize.h }
-              : undefined
-          }
+          style={{
+            width: renderSize?.w,
+            height: renderSize?.h,
+            pointerEvents: interactive ? "none" : "auto",
+          }}
         />
 
         {renderSize &&
           checkboxes.map((box, index) => {
             const markSize = Math.max(
-              9,
+              10,
               Math.min(
                 (box.height / 100) * renderSize.h * 0.72,
                 (box.width / 100) * renderSize.w * 0.72
@@ -143,26 +148,35 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
                 type="button"
                 aria-pressed={box.checked}
                 aria-label={box.checked ? "Match terminé" : "Marquer terminé"}
-                onClick={box.onToggle}
-                className="absolute m-0 flex cursor-pointer items-center justify-center border-0 bg-transparent p-0 outline-none"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  box.onToggle();
+                }}
+                onPointerUp={(event) => {
+                  event.stopPropagation();
+                }}
+                className="absolute z-20 m-0 flex cursor-pointer items-center justify-center border-0 bg-transparent p-0 outline-none"
                 style={{
                   left: `${box.left}%`,
                   top: `${box.top}%`,
                   width: `${box.width}%`,
                   height: `${box.height}%`,
+                  pointerEvents: "auto",
+                  touchAction: "manipulation",
                 }}
               >
-                {box.checked ? (
-                  <span
-                    className="pointer-events-none font-bold leading-none text-lime"
-                    style={{
-                      fontSize: `${markSize}px`,
-                      textShadow: "0 0 2px rgba(0,0,0,0.55)",
-                    }}
-                  >
-                    ✓
-                  </span>
-                ) : null}
+                <span
+                  className="pointer-events-none font-bold leading-none"
+                  style={{
+                    fontSize: `${markSize}px`,
+                    color: box.checked ? "#d4ff4a" : "transparent",
+                    textShadow: box.checked
+                      ? "0 0 2px rgba(0,0,0,0.55)"
+                      : undefined,
+                  }}
+                >
+                  {box.checked ? "☑" : "☐"}
+                </span>
               </button>
             );
           })}

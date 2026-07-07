@@ -159,6 +159,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     return buildPlanningCheckOverlays(
       layoutFields,
       fields,
+      matches,
       progress.completed,
       progress.toggleMatch
     );
@@ -167,6 +168,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     slideIndices,
     planning_layout,
     fields,
+    matches,
     progress.completed,
     progress.toggleMatch,
   ]);
@@ -272,11 +274,18 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           </div>
         )}
 
-        <div className="mt-3 flex min-h-0 flex-1 touch-none select-none flex-col overflow-hidden rounded-2xl border border-lime/15 bg-arena-900/45 backdrop-blur-xl">
+        <div
+          className={[
+            "mt-3 flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border border-lime/15 bg-arena-900/45 backdrop-blur-xl",
+            primaryTab === "planning" ? "touch-manipulation" : "touch-none",
+          ].join(" ")}
+        >
           <div
             className={
               isSlideTab
-                ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
+                ? primaryTab === "planning"
+                  ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
+                  : "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
                 : "flex min-h-0 flex-1 flex-col overflow-y-auto"
             }
           >
