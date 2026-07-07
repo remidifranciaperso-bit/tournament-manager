@@ -4,9 +4,13 @@ import {
   type PDFDocumentProxy,
 } from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
+
+/** Résolution minimale du bitmap (bord long) — rendu vectoriel net puis affichage fit. */
+const MIN_BITMAP_LONG_EDGE = 4096;
+const MAX_DEVICE_PIXEL_RATIO = 4;
 
 function base64ToUint8Array(base64: string): Uint8Array {
   const binary = atob(base64);
@@ -15,6 +19,43 @@ function base64ToUint8Array(base64: string): Uint8Array {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+function useBlockZoom(containerRef: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const blockWheelZoom = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+      }
+    };
+
+    const blockGesture = (event: Event) => {
+      event.preventDefault();
+    };
+
+    const blockMultiTouch = (event: TouchEvent) => {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+      }
+    };
+
+    el.addEventListener("wheel", blockWheelZoom, { passive: false });
+    el.addEventListener("gesturestart", blockGesture, { passive: false });
+    el.addEventListener("gesturechange", blockGesture, { passive: false });
+    el.addEventListener("gestureend", blockGesture, { passive: false });
+    el.addEventListener("touchmove", blockMultiTouch, { passive: false });
+
+    return () => {
+      el.removeEventListener("wheel", blockWheelZoom);
+      el.removeEventListener("gesturestart", blockGesture);
+      el.removeEventListener("gesturechange", blockGesture);
+      el.removeEventListener("gestureend", blockGesture);
+      el.removeEventListener("touchmove", blockMultiTouch);
+    };
+  }, [containerRef]);
 }
 
 export function useLivePdfDocument(pdfBase64: string | undefined) {
@@ -73,6 +114,8 @@ function LivePdfPage({ doc, slideIndex }: LivePdfPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
 
+  useBlockZoom(slotRef);
+
   const render = useCallback(async () => {
     const slot = slotRef.current;
     const canvas = canvasRef.current;
@@ -87,26 +130,32 @@ function LivePdfPage({ doc, slideIndex }: LivePdfPageProps) {
     const pageNumber = slideIndex + 1;
     const page = await doc.getPage(pageNumber);
     const baseViewport = page.getViewport({ scale: 1 });
+
     const fitScale = Math.min(
       slotW / baseViewport.width,
       slotH / baseViewport.height
     );
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    const renderScale = fitScale * dpr;
-    const viewport = page.getViewport({ scale: renderScale });
-    const context = canvas.getContext("2d");
-    if (!context) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
 
     const cssWidth = Math.floor(baseViewport.width * fitScale);
     const cssHeight = Math.floor(baseViewport.height * fitScale);
+
+    const longEdge = Math.max(baseViewport.width, baseViewport.height);
+    const minQualityScale = MIN_BITMAP_LONG_EDGE / longEdge;
+    const renderScale = Math.max(fitScale * dpr, minQualityScale);
+
+    const viewport = page.getViewport({ scale: renderScale });
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) return;
 
     canvas.width = Math.floor(viewport.width);
     canvas.height = Math.floor(viewport.height);
     canvas.style.width = `${cssWidth}px`;
     canvas.style.height = `${cssHeight}px`;
 
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = "high";
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.imageSmoothingEnabled = false;
 
     const task = page.render({
       canvasContext: context,
@@ -136,12 +185,17 @@ function LivePdfPage({ doc, slideIndex }: LivePdfPageProps) {
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white"
+      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white"
+      style={{ touchAction: "none" }}
     >
       <canvas
         ref={canvasRef}
-        className="block"
-        style={{ maxWidth: "100%", maxHeight: "100%" }}
+        className="block shrink-0"
+        draggable={false}
+        style={{
+          imageRendering: "auto",
+          WebkitOptimizeContrast: true,
+        }}
       />
     </div>
   );

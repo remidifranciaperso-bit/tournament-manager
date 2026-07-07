@@ -210,11 +210,11 @@ export function LiveTournamentView({
           </div>
         )}
 
-        <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-lime/15 bg-arena-900/45 backdrop-blur-xl">
+        <div className="mt-3 flex min-h-0 flex-1 touch-none select-none flex-col overflow-hidden rounded-2xl border border-lime/15 bg-arena-900/45 backdrop-blur-xl">
           <div
             className={
               isSlideTab
-                ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+                ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
                 : "flex min-h-0 flex-1 flex-col overflow-y-auto"
             }
           >
