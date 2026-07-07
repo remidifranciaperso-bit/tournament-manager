@@ -44,7 +44,10 @@ def _environnement_libreoffice_silencieux():
     return env
 
 
-def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess.CompletedProcess:
+def _executer_libreoffice(
+    commande: list[str],
+    timeout: int = 180,
+) -> subprocess.CompletedProcess:
     """
     Lance LibreOffice sans fenêtre ni bruit terminal si possible.
     """
@@ -74,7 +77,13 @@ def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess
         )
 
 
-def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie="pdf"):
+def convertir_avec_libreoffice(
+    pptx_path,
+    output_dir,
+    soffice_bin,
+    format_sortie="pdf",
+    base_dir: Path | None = None,
+):
     """
     Conversion PPTX -> PDF (ou autre) via LibreOffice en mode headless/invisible.
     """
@@ -112,7 +121,10 @@ def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie
             str(pptx_path),
         ]
 
-        _executer_libreoffice(commande)
+        from engine.font_setup import environnement_polices_tournoi
+
+        with environnement_polices_tournoi(base_dir):
+            _executer_libreoffice(commande)
 
     if not fichier_sortie.exists():
         raise RuntimeError(
@@ -165,7 +177,7 @@ def convertir_avec_powerpoint_macos(pptx_path, output_dir):
     return pdf_path
 
 
-def convertir_pptx_en_pdf(pptx_path, output_dir):
+def convertir_pptx_en_pdf(pptx_path, output_dir, base_dir: Path | None = None):
     """
     Convertit un PowerPoint en PDF de manière portable.
 
@@ -198,7 +210,9 @@ def convertir_pptx_en_pdf(pptx_path, output_dir):
                 "PDF_CONVERTER=libreoffice mais aucun binaire LibreOffice "
                 "n'a été trouvé. Installez LibreOffice ou définissez SOFFICE_BIN."
             )
-        return convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin)
+        return convertir_avec_libreoffice(
+            pptx_path, output_dir, soffice_bin, base_dir=base_dir
+        )
 
     if sys.platform == "darwin":
         return convertir_avec_powerpoint_macos(pptx_path, output_dir)

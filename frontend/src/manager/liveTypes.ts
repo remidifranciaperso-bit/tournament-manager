@@ -48,7 +48,10 @@ export interface LiveTournamentMeta {
   duree_match: number;
 }
 
-/** Données live : masque template + champs dynamiques (même logique remplissage que Engine). */
+/**
+ * Données live — même PDF Engine + état pour mises à jour dynamiques.
+ * ``pdf_base64`` : export final ; ``page_pdfs`` : affichage par onglet.
+ */
 export interface LiveTournamentData {
   meta: LiveTournamentMeta;
   matches: LiveMatch[];
@@ -56,5 +59,9 @@ export interface LiveTournamentData {
   template_id: string;
   layout: LiveLayout;
   fields: Record<string, string>;
+  page_pdfs: Record<string, string>;
+  page_sizes?: Record<string, { width: number; height: number }>;
+  pdf_base64: string;
+  pdf_filename: string;
   live_version?: string;
 }

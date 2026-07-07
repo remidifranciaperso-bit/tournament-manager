@@ -5,7 +5,7 @@ cd "$ROOT"
 
 NODE="${NODE:-/Applications/Cursor.app/Contents/Resources/app/resources/helpers/node}"
 VITE="$ROOT/frontend/node_modules/vite/bin/vite.js"
-EXPECTED_LIVE="template-v6"
+EXPECTED_LIVE="pdf-v8"
 
 echo "API  → http://127.0.0.1:8000/api/health"
 echo "App  → http://127.0.0.1:5173"

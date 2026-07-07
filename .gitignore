@@ -33,3 +33,5 @@ _*.py
 
 # Frontend
 frontend/node_modules/
+frontend/tsconfig.tsbuildinfo
+frontend/tsconfig.node.tsbuildinfo
