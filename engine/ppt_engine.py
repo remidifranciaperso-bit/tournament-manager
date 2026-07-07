@@ -8,10 +8,10 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
 from PIL import Image
 
-# Emojis couleur = fond opaque dans le PDF navigateur. Glyphes TSL/Noto :
-# ★ vainqueur (coupe), ✗ perdant (croix), 2/3 places.
-ICONE_VAINQUEUR = "★ "
-ICONE_PERDANT = "✗ "
+# Vainqueur = icône coupe PNG (engine/cup_icon.py) : TSL Sans n'a pas le glyphe 🏆.
+# Perdant = "x" ASCII (lisible dans TSL Sans, pas de croix Unicode cassée).
+ICONE_VAINQUEUR = ""
+ICONE_PERDANT = "x "
 ICONE_DEUXIEME = "2 "
 ICONE_TROISIEME = "3 "
 
@@ -994,6 +994,12 @@ def remplir_template(
             )
 
     prs.save(output_path)
+
+    from pathlib import Path
+
+    from engine.cup_icon import inserer_icones_coupe_vainqueur
+
+    inserer_icones_coupe_vainqueur(Path(output_path))
 
 def remplir_template_8(
     template_path,
