@@ -6,9 +6,8 @@ import {
   type ParsedMatchSlot,
 } from "./bracketSlideLayout";
 import { buildBracketConnectors } from "./bracketConnectors";
-import { mapFieldToProjection, matchBoxPosition } from "./bracketGeometry";
+import { mapFieldToProjection, mapSizeToProjection, matchBoxPosition } from "./bracketGeometry";
 import {
-  mapSizeToProjection,
   ptOnSlide,
   STANDARD_MATCH_BOX,
   TEMPLATE_PT,
