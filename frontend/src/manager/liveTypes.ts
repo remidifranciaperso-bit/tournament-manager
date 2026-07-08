@@ -49,6 +49,16 @@ export interface LiveTournamentMeta {
   terrain_principal: string;
   heure_debut: string;
   duree_match: number;
+  format_match_tableau_principal?: string | null;
+  format_match_classement?: string;
+  format_match_finale?: string;
+  format_match_poule?: string;
+  formats_match?: {
+    tableau_principal: string;
+    classement: string;
+    finale: string;
+    poule: string | null;
+  };
 }
 
 /** Données live — pages = PDF Engine servi par ``/api/live/{token}/page/N``. */

@@ -174,6 +174,10 @@ async def generate_live(
     duree_match: int = Form(40),
     terrains: str = Form("[]"),
     terrain_principal: str = Form(...),
+    format_match_tableau_principal: str | None = Form(None),
+    format_match_classement: str = Form("identique"),
+    format_match_finale: str = Form("identique"),
+    format_match_poule: str = Form("identique"),
 ):
     """
     Génère le tournoi (PDF) et renvoie les données structurées pour le Manager live.
@@ -214,6 +218,10 @@ async def generate_live(
             heures_debut_jours=heures,
             logo_path=logo_path,
             methode_poules=methode_poules,
+            format_match_tableau_principal=format_match_tableau_principal,
+            format_match_classement=format_match_classement,
+            format_match_finale=format_match_finale,
+            format_match_poule=format_match_poule,
         )
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))

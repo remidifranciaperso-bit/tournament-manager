@@ -20,6 +20,27 @@ def serialiser_match(match: Match) -> dict:
 
 
 def serialiser_tournoi(tournoi) -> dict:
+    principal = getattr(tournoi, "format_match_tableau_principal", None)
+    classement = getattr(tournoi, "format_match_classement", "identique")
+    finale = getattr(tournoi, "format_match_finale", "identique")
+    poule = getattr(tournoi, "format_match_poule", "identique")
+
+    def _resoudre(choix):
+        if choix == "identique" and principal:
+            return principal
+        return choix
+
+    formats_match = None
+    if principal:
+        formats_match = {
+            "tableau_principal": principal,
+            "classement": _resoudre(classement),
+            "finale": _resoudre(finale),
+            "poule": _resoudre(poule)
+            if tournoi.mode_tournoi == "Poules + tableau final"
+            else None,
+        }
+
     return {
         "club": tournoi.club,
         "date_tournoi": tournoi.date_tournoi,
@@ -32,6 +53,11 @@ def serialiser_tournoi(tournoi) -> dict:
         "terrain_principal": tournoi.terrain_principal,
         "heure_debut": tournoi.heure_debut,
         "duree_match": tournoi.duree_match,
+        "format_match_tableau_principal": principal,
+        "format_match_classement": classement,
+        "format_match_finale": finale,
+        "format_match_poule": poule,
+        "formats_match": formats_match,
     }
 
 

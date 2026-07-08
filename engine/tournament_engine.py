@@ -61,6 +61,10 @@ def _construire_tournoi_et_matchs(
     heures_debut_jours=None,
     genre_tournoi=None,
     methode_poules="Méthode du serpentin",
+    format_match_tableau_principal=None,
+    format_match_classement="identique",
+    format_match_finale="identique",
+    format_match_poule="identique",
 ):
     type_tournoi = str(type_tournoi).strip()
 
@@ -97,6 +101,10 @@ def _construire_tournoi_et_matchs(
 
     tournoi.genre_tournoi = genre_tournoi
     tournoi.methode_poules = methode_poules
+    tournoi.format_match_tableau_principal = format_match_tableau_principal
+    tournoi.format_match_classement = format_match_classement
+    tournoi.format_match_finale = format_match_finale
+    tournoi.format_match_poule = format_match_poule
 
     if tournoi.nb_jours not in [1, 2, 3]:
         raise ValueError("Le nombre de jours doit être 1, 2 ou 3.")
@@ -172,6 +180,10 @@ def generate_tournament(
     logo_path=None,
     genre_tournoi=None,
     methode_poules="Méthode du serpentin",
+    format_match_tableau_principal=None,
+    format_match_classement="identique",
+    format_match_finale="identique",
+    format_match_poule="identique",
 ):
     base_dir = Path(base_dir)
 
@@ -236,6 +248,10 @@ def generate_tournament_live(
     logo_path=None,
     genre_tournoi=None,
     methode_poules="Méthode du serpentin",
+    format_match_tableau_principal=None,
+    format_match_classement="identique",
+    format_match_finale="identique",
+    format_match_poule="identique",
 ):
     from api.live_store import creer_session, liberer_memoire
     from engine.live_export import construire_payload_live
@@ -258,6 +274,10 @@ def generate_tournament_live(
         heures_debut_jours=heures_debut_jours,
         genre_tournoi=genre_tournoi,
         methode_poules=methode_poules,
+        format_match_tableau_principal=format_match_tableau_principal,
+        format_match_classement=format_match_classement,
+        format_match_finale=format_match_finale,
+        format_match_poule=format_match_poule,
     )
 
     template_path = _chemin_template(tournoi, base_dir)

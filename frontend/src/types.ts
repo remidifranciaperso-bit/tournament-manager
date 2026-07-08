@@ -2,6 +2,19 @@ export type Genre = "Hommes" | "Femmes" | "Mixte";
 export type ModeTournoi = "Élimination directe" | "Poules + tableau final";
 export type MethodePoules = "Méthode du serpentin" | "Tirage au sort par rang";
 
+export type MatchFormatCode =
+  | "A1"
+  | "A2"
+  | "B1"
+  | "B2"
+  | "C1"
+  | "C2"
+  | "D1"
+  | "D2"
+  | "E1";
+
+export type MatchFormatChoice = MatchFormatCode | "identique";
+
 export const TYPES_TOURNOI = [
   "P25",
   "P50",
@@ -46,6 +59,10 @@ export interface TournamentForm {
   nbTerrains: number;
   terrains: string[];
   terrainPrincipal: string;
+  formatMatchTableauPrincipal: MatchFormatCode | null;
+  formatMatchClassement: MatchFormatChoice;
+  formatMatchFinale: MatchFormatChoice;
+  formatMatchPoule: MatchFormatChoice;
 }
 
 export function defaultForm(): TournamentForm {
@@ -65,5 +82,9 @@ export function defaultForm(): TournamentForm {
     nbTerrains: 4,
     terrains: ["Terrain 1", "Terrain 2", "Terrain 3", "Terrain 4"],
     terrainPrincipal: "Terrain 1",
+    formatMatchTableauPrincipal: null,
+    formatMatchClassement: "identique",
+    formatMatchFinale: "identique",
+    formatMatchPoule: "identique",
   };
 }

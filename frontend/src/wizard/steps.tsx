@@ -20,6 +20,11 @@ import {
   PrimaryButton,
   Toggle,
 } from "../components/ui";
+import { MatchFormatPicker } from "../manager/MatchFormatPicker";
+import {
+  formatChoiceLabel,
+  matchFormatsStepValid,
+} from "../manager/matchFormats";
 import {
   FORMATS_SUPPORTES,
   TYPES_TOURNOI,
@@ -450,20 +455,29 @@ export function FormatStep({
   nbEquipes,
   poulesDisponibles,
   multiJoursDisponible,
+  showMatchFormats = false,
 }: {
   form: TournamentForm;
   patch: (p: Partial<TournamentForm>) => void;
   nbEquipes: number;
   poulesDisponibles: boolean;
   multiJoursDisponible: boolean;
+  showMatchFormats?: boolean;
 }) {
   const subtitle =
     nbEquipes > 0
       ? `Déroulement du tournoi — ${nbEquipes} équipes`
       : "Déroulement du tournoi";
 
+  const isPoulesMode = form.modeTournoi === "Poules + tableau final";
+
   return (
-    <div className="mx-auto w-full max-w-2xl text-center">
+    <div
+      className={[
+        "mx-auto w-full text-center",
+        showMatchFormats ? "max-h-full max-w-3xl overflow-y-auto pr-1" : "max-w-2xl",
+      ].join(" ")}
+    >
       <WizardPageTitle title="Format" subtitle={subtitle} />
 
       <div className="space-y-8 text-left">
@@ -548,6 +562,58 @@ export function FormatStep({
             </p>
           )}
         </div>
+
+        {showMatchFormats && (
+          <div className="space-y-6 border-t border-white/10 pt-8">
+            <div className="text-center">
+              <h3 className="font-display text-lg tracking-wide text-lime sm:text-xl">
+                Formats de match
+              </h3>
+              <p className="mt-1 text-xs text-white/40">
+                Sélectionnez un format pour chaque phase du tournoi.
+              </p>
+            </div>
+
+            <MatchFormatPicker
+              label="Format des matchs du tableau principal"
+              value={form.formatMatchTableauPrincipal}
+              onChange={(value) => {
+                if (value !== "identique") {
+                  patch({ formatMatchTableauPrincipal: value });
+                }
+              }}
+            />
+
+            <MatchFormatPicker
+              label="Format des matchs des tableaux de classement"
+              value={form.formatMatchClassement}
+              onChange={(value) => patch({ formatMatchClassement: value })}
+              allowIdentique
+            />
+
+            <MatchFormatPicker
+              label="Format de la finale"
+              value={form.formatMatchFinale}
+              onChange={(value) => patch({ formatMatchFinale: value })}
+              allowIdentique
+            />
+
+            {isPoulesMode && (
+              <MatchFormatPicker
+                label="Format des matchs de poule"
+                value={form.formatMatchPoule}
+                onChange={(value) => patch({ formatMatchPoule: value })}
+                allowIdentique
+              />
+            )}
+
+            {showMatchFormats && !matchFormatsStepValid(form) && (
+              <p className="text-center text-xs text-amber-300/80">
+                Sélectionnez le format du tableau principal pour continuer.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -700,9 +766,11 @@ export function TerrainsStep({
 export function SummaryStep({
   form,
   preview,
+  showMatchFormats = false,
 }: {
   form: TournamentForm;
   preview: PreviewResult | null;
+  showMatchFormats?: boolean;
 }) {
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
 
@@ -748,6 +816,39 @@ export function SummaryStep({
     ["Jours", String(form.nbJours)],
     ["Terrains", String(form.nbTerrains)],
     ["Durée des matchs", `${form.dureeMatch} min`],
+    ...(showMatchFormats
+      ? [
+          [
+            "Format tableau principal",
+            form.formatMatchTableauPrincipal ?? "—",
+          ],
+          [
+            "Format classements",
+            formatChoiceLabel(
+              form.formatMatchClassement,
+              form.formatMatchTableauPrincipal
+            ),
+          ],
+          [
+            "Format finale",
+            formatChoiceLabel(
+              form.formatMatchFinale,
+              form.formatMatchTableauPrincipal
+            ),
+          ],
+          ...(form.modeTournoi === "Poules + tableau final"
+            ? [
+                [
+                  "Format poules",
+                  formatChoiceLabel(
+                    form.formatMatchPoule,
+                    form.formatMatchTableauPrincipal
+                  ),
+                ],
+              ]
+            : []),
+        ]
+      : []),
   ].map((row) =>
     Array.isArray(row) ? { label: row[0], value: row[1] } : row
   );

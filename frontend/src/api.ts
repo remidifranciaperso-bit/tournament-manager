@@ -127,6 +127,15 @@ export async function generateLiveTournament(
   body.append("duree_match", String(form.dureeMatch));
   body.append("terrains", JSON.stringify(form.terrains));
   body.append("terrain_principal", form.terrainPrincipal);
+  if (form.formatMatchTableauPrincipal) {
+    body.append(
+      "format_match_tableau_principal",
+      form.formatMatchTableauPrincipal
+    );
+  }
+  body.append("format_match_classement", form.formatMatchClassement);
+  body.append("format_match_finale", form.formatMatchFinale);
+  body.append("format_match_poule", form.formatMatchPoule);
 
   const res = await fetch("/api/generate-live", { method: "POST", body });
   if (!res.ok) throw new Error(await readError(res));

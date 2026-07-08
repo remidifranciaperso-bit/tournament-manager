@@ -13,6 +13,7 @@ import { ManagerStartStep } from "../manager/ManagerStartStep";
 import { defaultForm, type PreviewResult, type TournamentForm } from "../types";
 import { MANAGER_WIZARD_STEPS } from "../wizard/constants";
 import { poulesDisponibleFrom, syncHeures } from "../wizard/helpers";
+import { matchFormatsStepValid } from "../manager/matchFormats";
 import {
   ClubStep,
   FormatStep,
@@ -103,7 +104,7 @@ export default function ManagerPage() {
       case 4:
         return form.dateTournoi !== "";
       case 5:
-        return true;
+        return matchFormatsStepValid(form);
       case 6:
         return form.heuresDebutJours.every((h) => h.trim() !== "");
       case 7:
@@ -268,7 +269,9 @@ export default function ManagerPage() {
           className={`mx-auto w-full max-w-2xl flex-1 px-4 sm:px-8 ${
             step === 8
               ? "flex flex-col justify-center overflow-hidden py-4 sm:py-6"
-              : "overflow-hidden py-8 sm:py-10"
+              : step === 5
+                ? "overflow-y-auto py-6 sm:py-8"
+                : "overflow-hidden py-8 sm:py-10"
           }`}
         >
           <AnimatePresence mode="wait">
@@ -279,7 +282,9 @@ export default function ManagerPage() {
               animate="animate"
               exit="exit"
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="h-full overflow-hidden"
+              className={
+                step === 5 ? "h-full overflow-y-auto" : "h-full overflow-hidden"
+              }
             >
               {step === 2 && (
                 <ParticipantsStep
@@ -300,11 +305,14 @@ export default function ManagerPage() {
                   nbEquipes={nbEquipes}
                   poulesDisponibles={poulesDisponibles}
                   multiJoursDisponible={multiJoursDisponible}
+                  showMatchFormats
                 />
               )}
               {step === 6 && <PlanningStep form={form} patch={patch} />}
               {step === 7 && <TerrainsStep form={form} patch={patch} />}
-              {step === 8 && <SummaryStep form={form} preview={preview} />}
+              {step === 8 && (
+                <SummaryStep form={form} preview={preview} showMatchFormats />
+              )}
               {step === 9 && (
                 <ManagerLiveGenerationStep
                   generating={generating}
