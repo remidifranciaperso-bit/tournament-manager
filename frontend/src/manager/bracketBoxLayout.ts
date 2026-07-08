@@ -7,10 +7,7 @@ import { STANDARD_MATCH_BOX } from "./bracketTemplateMetrics";
 import type { ParsedMatchSlot } from "./bracketSlideLayout";
 
 const COLUMN_BUCKET_PCT = 6;
-/** Zone utile du slide — espacement x jusqu'aux bords. */
-const PAGE_TOP_PCT = 4;
-const PAGE_BOTTOM_PCT = 96;
-const MIN_GAP_PCT = 1;
+const PAGE_SPAN_PCT = 100;
 
 const QUARTER_CODES = ["Q1", "Q2", "Q3", "Q4"] as const;
 
@@ -36,26 +33,25 @@ export interface VerticalGrid {
 }
 
 /**
- * n boîtes avec (n+1) intervalles égaux x :
- * haut — x — slot0 — x — … — slot(n-1) — x — bas
+ * n boîtes de hauteur h, (n+1) intervalles égaux x sur 100 % :
+ *   (n+1)·x + n·h = 100  →  x = (100 − n·h) / (n+1)
+ * haut — x — slot0 — x — … — slot(n−1) — x — bas
  */
 export function buildEqualGapGrid(
   slotCount: number,
   preferredBoxHeight: number,
-  topMargin = PAGE_TOP_PCT,
-  bottomMargin = PAGE_BOTTOM_PCT
+  span = PAGE_SPAN_PCT
 ): VerticalGrid {
-  const span = bottomMargin - topMargin;
   let boxHeight = preferredBoxHeight;
   let gap = (span - slotCount * boxHeight) / (slotCount + 1);
 
-  if (gap < MIN_GAP_PCT) {
-    gap = MIN_GAP_PCT;
-    boxHeight = (span - (slotCount + 1) * gap) / slotCount;
+  if (gap < 0) {
+    boxHeight = span / slotCount;
+    gap = 0;
   }
 
   const tops = Array.from({ length: slotCount }, (_, index) =>
-    topMargin + gap + index * (boxHeight + gap)
+    gap + index * (boxHeight + gap)
   );
 
   return { tops, boxHeight, gap };
