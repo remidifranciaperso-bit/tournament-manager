@@ -8,6 +8,8 @@ import { parseTeamLabel, type ParsedTeam } from "./parseTeamLabel";
 
 export const COURT_WIDTH_PX = 280;
 export const COURT_HEIGHT_PX = 560;
+/** Largeur uniforme des encarts equipes / gagnants (% du terrain). */
+export const COURT_BADGE_WIDTH_CLASS = "w-[78%]";
 /** Hauteur fixe sous le terrain (bouton score ou heure prévue). */
 export const COURT_FOOTER_MIN_H_PX = 76;
 
@@ -44,14 +46,13 @@ const COURT_THEME = {
       "field-label-section max-w-[280px] truncate px-1 text-center",
     matchName:
       "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-white/65 sm:text-[13px]",
-    teamBadge: "max-w-[92%] rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 text-center shadow-sm",
+    teamBadge: `${COURT_BADGE_WIDTH_CLASS} shrink-0 rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 text-center shadow-sm`,
     playerName: "text-[14px] font-medium leading-snug text-white sm:text-[15px]",
     seed: "mt-1 text-[14px] font-semibold uppercase tracking-wide text-lime/90 sm:text-[15px]",
     gamesSelect:
       "mt-1.5 w-full max-w-[5.5rem] rounded-md border border-lime/30 bg-arena-950/90 px-1.5 py-1 text-center text-[13px] font-semibold text-lime focus:border-lime/50 focus:outline-none",
     vs: "rounded-full border border-lime/35 bg-arena-950/85 px-2.5 py-0.5 font-display text-sm font-bold uppercase tracking-wider text-lime sm:text-base",
-    winnerBox:
-      "max-w-[90%] rounded-xl border border-lime/40 bg-arena-950/90 px-3 py-2 text-center shadow-md",
+    winnerBox: `${COURT_BADGE_WIDTH_CLASS} shrink-0 rounded-xl border border-lime/40 bg-arena-950/90 px-3 py-2 text-center shadow-md`,
     winnerTitle:
       "text-[11px] font-bold uppercase tracking-wide text-lime sm:text-xs",
     winnerNames:
@@ -67,7 +68,7 @@ const COURT_THEME = {
     matchName:
       "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-arena-600 sm:text-[13px]",
     teamBadge:
-      "max-w-[92%] rounded-lg border border-arena-600/20 bg-white/95 px-2.5 py-2 text-center shadow-sm",
+      `${COURT_BADGE_WIDTH_CLASS} shrink-0 rounded-lg border border-arena-600/20 bg-white/95 px-2.5 py-2 text-center shadow-sm`,
     playerName:
       "text-[14px] font-medium leading-snug text-arena-800 sm:text-[15px]",
     seed: "mt-1 text-[14px] font-semibold uppercase tracking-wide text-arena-600 sm:text-[15px]",
@@ -75,7 +76,7 @@ const COURT_THEME = {
       "mt-1.5 w-full max-w-[5.5rem] rounded-md border border-arena-600/30 bg-white px-1.5 py-1 text-center text-[13px] font-semibold text-arena-700 focus:border-arena-600/50 focus:outline-none",
     vs: "rounded-full border border-arena-600/35 bg-white px-2.5 py-0.5 font-display text-sm font-bold uppercase tracking-wider text-arena-700 sm:text-base",
     winnerBox:
-      "max-w-[90%] rounded-xl border border-arena-600/35 bg-white px-3 py-2 text-center shadow-md",
+      `${COURT_BADGE_WIDTH_CLASS} shrink-0 rounded-xl border border-arena-600/35 bg-white px-3 py-2 text-center shadow-md`,
     winnerTitle:
       "text-[11px] font-bold uppercase tracking-wide text-arena-600 sm:text-xs",
     winnerNames:
@@ -134,9 +135,9 @@ function TeamBadge({
 }) {
   return (
     <div className={theme.teamBadge}>
-      <p className={theme.playerName}>{team.player1}</p>
+      <p className={`${theme.playerName} break-words`}>{team.player1}</p>
       {team.player2 && (
-        <p className={`mt-0.5 ${theme.playerName}`}>{team.player2}</p>
+        <p className={`mt-0.5 break-words ${theme.playerName}`}>{team.player2}</p>
       )}
       <div className="mt-1 flex min-h-[1.75rem] items-center justify-center">
         {scoringMode && gameOptions && onGamesChange ? (
@@ -169,7 +170,7 @@ function WinnerBadge({
   return (
     <div className={theme.winnerBox}>
       <p className={theme.winnerTitle}>Gagnants :</p>
-      <p className={theme.winnerNames}>{names}</p>
+      <p className={`${theme.winnerNames} break-words`}>{names}</p>
     </div>
   );
 }
@@ -251,7 +252,7 @@ export function LiveCourtCard({
 
         {match && equipe1 && equipe2 ? (
           <>
-            <div className="absolute inset-x-0 top-0 z-10 flex h-1/2 items-center justify-center px-2">
+            <div className="absolute inset-x-0 top-0 z-10 flex h-1/2 items-center justify-center">
               <TeamBadge
                 team={equipe1}
                 scoringMode={scoringMode}
@@ -267,7 +268,7 @@ export function LiveCourtCard({
               />
             </div>
 
-            <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
+            <div className="absolute inset-x-0 top-1/2 z-20 flex -translate-y-1/2 items-center justify-center">
               {scoringMode && scoring?.winnerTeam ? (
                 <WinnerBadge team={scoring.winnerTeam} theme={theme} />
               ) : scoringMode && showSetTabs ? (
@@ -291,7 +292,7 @@ export function LiveCourtCard({
               )}
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 z-10 flex h-1/2 items-center justify-center px-2">
+            <div className="absolute inset-x-0 bottom-0 z-10 flex h-1/2 items-center justify-center">
               <TeamBadge
                 team={equipe2}
                 scoringMode={scoringMode}
