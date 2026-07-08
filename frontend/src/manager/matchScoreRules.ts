@@ -19,7 +19,7 @@ interface FormatRules {
   superTiebreakTo?: number;
 }
 
-const FORMAT_RULES: Record<MatchFormatCode, FormatRules> = {
+export const FORMAT_RULES: Record<MatchFormatCode, FormatRules> = {
   A1: { kind: "two_sets", gamesToWin: 6, tiebreakAt: 6 },
   A2: { kind: "two_sets", gamesToWin: 6, tiebreakAt: 6 },
   B1: { kind: "two_sets_super_tb", gamesToWin: 6, tiebreakAt: 6, superTiebreakTo: 10 },
@@ -79,6 +79,49 @@ function setsWon(sets: SetScore[]): { team1: number; team2: number } {
     if (winner === 2) team2 += 1;
   }
   return { team1, team2 };
+}
+
+export function getFormatRules(format: MatchFormatCode): FormatRules {
+  return FORMAT_RULES[format];
+}
+
+/** Valeurs autorisées (0…max) pour un set donné selon le format. */
+export function getSetScoreOptions(
+  format: MatchFormatCode,
+  setIndex: number
+): number[] {
+  const rules = FORMAT_RULES[format];
+
+  if (rules.kind === "one_set" && format === "E1") {
+    return Array.from({ length: 11 }, (_, value) => value);
+  }
+
+  if (rules.kind === "two_sets_super_tb" && setIndex === 2) {
+    return Array.from({ length: 13 }, (_, value) => value);
+  }
+
+  const max =
+    rules.tiebreakAt !== null ? rules.tiebreakAt + 1 : rules.gamesToWin;
+  return Array.from({ length: max + 1 }, (_, value) => value);
+}
+
+export function needsSuperTiebreakSet(
+  format: MatchFormatCode,
+  sets: SetScore[]
+): boolean {
+  const rules = FORMAT_RULES[format];
+  if (rules.kind !== "two_sets_super_tb" || sets.length < 2) return false;
+
+  const w1 = setWinner(sets[0]);
+  const w2 = setWinner(sets[1]);
+  return w1 !== null && w2 !== null && w1 !== w2;
+}
+
+export function activeSetCount(format: MatchFormatCode, sets: SetScore[]): number {
+  const rules = FORMAT_RULES[format];
+  if (rules.kind === "one_set") return 1;
+  if (needsSuperTiebreakSet(format, sets)) return 3;
+  return 2;
 }
 
 export function expectedSetCount(format: MatchFormatCode): number {
