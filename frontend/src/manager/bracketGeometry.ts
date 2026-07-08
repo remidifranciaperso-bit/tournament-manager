@@ -1,5 +1,9 @@
 import type { LiveLayoutField } from "./liveTypes";
-import { STANDARD_MATCH_BOX } from "./bracketTemplateMetrics";
+import {
+  PROJECTION_INSET,
+  projectionContentSize,
+  STANDARD_MATCH_BOX,
+} from "./bracketTemplateMetrics";
 import type { ParsedMatchSlot } from "./bracketSlideLayout";
 
 export interface BoxRectPct {
@@ -14,21 +18,51 @@ export interface PointPct {
   y: number;
 }
 
-export function matchBoxPosition(slot: ParsedMatchSlot) {
-  const anchor = slot.codeField ?? slot.terrainField ?? slot.bounds;
+/** Repère layout template (0–100 %) → zone de projection. */
+export function mapLayoutToProjection(left: number, top: number): PointPct {
+  const size = projectionContentSize();
   return {
-    left: anchor.left,
-    top: anchor.top,
+    x: PROJECTION_INSET.left + (left / 100) * size.width,
+    y: PROJECTION_INSET.top + (top / 100) * size.height,
   };
+}
+
+export function mapSizeToProjection(widthPct: number, heightPct: number) {
+  const size = projectionContentSize();
+  return {
+    width: (widthPct / 100) * size.width,
+    height: (heightPct / 100) * size.height,
+  };
+}
+
+export function mapFieldToProjection(field: LiveLayoutField): LiveLayoutField {
+  const pos = mapLayoutToProjection(field.left, field.top);
+  const dim = mapSizeToProjection(field.width, field.height);
+  return {
+    ...field,
+    left: pos.x,
+    top: pos.y,
+    width: dim.width,
+    height: dim.height,
+  };
+}
+
+export function matchBoxPosition(slot: ParsedMatchSlot): PointPct {
+  const anchor = slot.codeField ?? slot.terrainField ?? slot.bounds;
+  return mapLayoutToProjection(anchor.left, anchor.top);
 }
 
 export function matchBoxRect(slot: ParsedMatchSlot): BoxRectPct {
   const pos = matchBoxPosition(slot);
+  const dim = mapSizeToProjection(
+    STANDARD_MATCH_BOX.widthPct,
+    STANDARD_MATCH_BOX.heightPct
+  );
   return {
-    left: pos.left,
-    top: pos.top,
-    width: STANDARD_MATCH_BOX.widthPct,
-    height: STANDARD_MATCH_BOX.heightPct,
+    left: pos.x,
+    top: pos.y,
+    width: dim.width,
+    height: dim.height,
   };
 }
 
@@ -36,23 +70,27 @@ export function matchBoxRect(slot: ParsedMatchSlot): BoxRectPct {
 export function parentOutlet(rect: BoxRectPct): PointPct {
   return {
     x: rect.left + rect.width,
-    y: rect.top + rect.height * 0.5,
+    y: rect.top + rect.height * 0.48,
   };
 }
 
 /** Entrée à gauche du match enfant (équipe 1 ou 2). */
 export function childInlet(rect: BoxRectPct, team: 1 | 2): PointPct {
-  const yFrac = team === 1 ? 0.38 : 0.72;
+  const yFrac = team === 1 ? 0.36 : 0.62;
   return {
     x: rect.left,
     y: rect.top + rect.height * yFrac,
   };
 }
 
-/** Point milieu d'un feed label (connecteur vers match sans parent sur la slide). */
-export function feedAnchor(field: LiveLayoutField, side: "left" | "right"): PointPct {
+/** Point milieu d'un feed label. */
+export function feedAnchor(
+  field: LiveLayoutField,
+  side: "left" | "right"
+): PointPct {
+  const mapped = mapFieldToProjection(field);
   return {
-    x: side === "left" ? field.left : field.left + field.width,
-    y: field.top + field.height * 0.5,
+    x: side === "left" ? mapped.left : mapped.left + mapped.width,
+    y: mapped.top + mapped.height * 0.5,
   };
 }

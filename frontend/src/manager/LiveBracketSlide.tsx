@@ -6,8 +6,9 @@ import {
   type ParsedMatchSlot,
 } from "./bracketSlideLayout";
 import { buildBracketConnectors } from "./bracketConnectors";
-import { matchBoxPosition } from "./bracketGeometry";
+import { mapFieldToProjection, matchBoxPosition } from "./bracketGeometry";
 import {
+  mapSizeToProjection,
   ptOnSlide,
   STANDARD_MATCH_BOX,
   TEMPLATE_PT,
@@ -22,15 +23,6 @@ import {
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
-
-function pctStyle(field: LiveLayoutField) {
-  return {
-    left: `${field.left}%`,
-    top: `${field.top}%`,
-    width: `${field.width}%`,
-    height: `${field.height}%`,
-  };
-}
 
 function resolveFeedContent(
   key: string,
@@ -67,62 +59,84 @@ function TemplateMatchBox({
   slot,
   team1,
   team2,
+  score,
   scaleH,
 }: {
   match: LiveMatch;
   slot: ParsedMatchSlot;
   team1: string;
   team2: string;
+  score: string | null;
   scaleH: number;
 }) {
   const pos = matchBoxPosition(slot);
+  const dim = mapSizeToProjection(
+    STANDARD_MATCH_BOX.widthPct,
+    STANDARD_MATCH_BOX.heightPct
+  );
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const teamPx = ptOnSlide(TEMPLATE_PT.team, scaleH);
   const vsPx = ptOnSlide(TEMPLATE_PT.vs, scaleH);
+  const scorePx = ptOnSlide(TEMPLATE_PT.score, scaleH);
 
   return (
     <div
-      className="absolute z-10 flex flex-col overflow-hidden border border-template-blue/30 bg-white shadow-sm"
+      className="absolute z-10 flex flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm"
       style={{
-        left: `${pos.left}%`,
-        top: `${pos.top}%`,
-        width: `${STANDARD_MATCH_BOX.widthPct}%`,
-        height: `${STANDARD_MATCH_BOX.heightPct}%`,
+        left: `${pos.x}%`,
+        top: `${pos.y}%`,
+        width: `${dim.width}%`,
+        height: `${dim.height}%`,
       }}
     >
-      {/* Bannière : heure (gauche) · terrain (centre) · code (droite) */}
+      {/* Bannière : code (gauche) · terrain (centre) · heure (droite) */}
       <div
-        className="grid shrink-0 grid-cols-3 items-center bg-template-blue px-[0.35em] font-tsl font-semibold leading-none text-white"
+        className="grid shrink-0 grid-cols-3 items-center rounded-t-lg bg-template-blue px-[0.4em] font-tsl font-semibold leading-none text-white"
         style={{
-          height: "26%",
+          height: score ? "20%" : "22%",
           fontSize: codePx,
         }}
       >
-        <span className="truncate text-left">{match.heure ?? ""}</span>
+        <span className="truncate text-left">{match.code}</span>
         <span className="truncate text-center">{match.terrain ?? ""}</span>
-        <span className="truncate text-right">{match.code}</span>
+        <span className="truncate text-right">{match.heure ?? ""}</span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div
-          className="flex flex-1 items-center justify-center overflow-hidden px-1 text-center font-noto font-medium leading-tight text-arena-800"
+          className="flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto font-medium leading-tight text-arena-800"
           style={{ fontSize: teamPx }}
         >
           <span className="line-clamp-2 break-words">{team1}</span>
         </div>
         <div
           className="flex shrink-0 items-center justify-center font-noto font-semibold text-arena-600"
-          style={{ height: "14%", fontSize: vsPx }}
+          style={{ height: "11%", fontSize: vsPx }}
         >
           vs
         </div>
         <div
-          className="flex flex-1 items-center justify-center overflow-hidden px-1 text-center font-noto font-medium leading-tight text-arena-800"
+          className="flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto font-medium leading-tight text-arena-800"
           style={{ fontSize: teamPx }}
         >
           <span className="line-clamp-2 break-words">{team2}</span>
         </div>
       </div>
+
+      {score ? (
+        <div
+          className="flex shrink-0 items-center justify-center rounded-b-lg border-t border-template-blue/25 bg-template-blue/[0.07] font-tsl font-semibold text-template-blue"
+          style={{ height: "18%", fontSize: scorePx }}
+        >
+          {score}
+        </div>
+      ) : (
+        <div
+          className="shrink-0 rounded-b-lg border-t border-dashed border-template-blue/15"
+          style={{ height: "14%" }}
+          aria-hidden
+        />
+      )}
     </div>
   );
 }
@@ -136,11 +150,16 @@ function FeedLabel({
   text: string;
   scaleH: number;
 }) {
+  const mapped = mapFieldToProjection(field);
+
   return (
     <div
-      className="absolute z-10 flex items-center overflow-hidden border border-template-blue/35 bg-template-blue/10 px-[0.3em] font-noto font-medium leading-tight text-arena-800"
+      className="absolute z-10 flex items-center overflow-hidden rounded-md border border-template-blue/35 bg-template-blue/10 px-[0.3em] font-noto font-medium leading-tight text-arena-800"
       style={{
-        ...pctStyle(field),
+        left: `${mapped.left}%`,
+        top: `${mapped.top}%`,
+        width: `${mapped.width}%`,
+        height: `${mapped.height}%`,
         fontSize: ptOnSlide(TEMPLATE_PT.feedLabel, scaleH),
       }}
     >
@@ -216,7 +235,7 @@ export function LiveBracketSlide({
 
   return (
     <div
-      className="relative shrink-0 overflow-hidden bg-white shadow-sm ring-1 ring-arena-600/10"
+      className="relative h-full w-full overflow-hidden rounded-[10px] bg-white"
       style={{ width: renderWidth, height: renderHeight }}
     >
       <BracketConnectors paths={connectorPaths} />
@@ -225,24 +244,24 @@ export function LiveBracketSlide({
         const match = matchesByCode.get(slot.code);
         if (!match) return null;
 
-        const team1 = resolveTeamDisplay(
-          match.equipe1,
-          matchesByCode,
-          matchResults
-        );
-        const team2 = resolveTeamDisplay(
-          match.equipe2,
-          matchesByCode,
-          matchResults
-        );
+        const result = matchResults[match.code];
 
         return (
           <TemplateMatchBox
             key={slot.code}
             match={match}
             slot={slot}
-            team1={team1}
-            team2={team2}
+            team1={resolveTeamDisplay(
+              match.equipe1,
+              matchesByCode,
+              matchResults
+            )}
+            team2={resolveTeamDisplay(
+              match.equipe2,
+              matchesByCode,
+              matchResults
+            )}
+            score={result?.display ?? null}
             scaleH={renderHeight}
           />
         );

@@ -217,7 +217,6 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             templateId={templateId}
             slideIndex={slideIndex}
             matches={matches}
-            meta={meta}
             matchResults={progress.matchResults}
           />
         );

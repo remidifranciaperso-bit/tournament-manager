@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
+import { SLIDE_ASPECT } from "./bracketSlideLayout";
+import type { LiveMatch } from "./liveTypes";
 import { LiveBracketSlide } from "./LiveBracketSlide";
 import { useTemplateLayout } from "./useTemplateLayout";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -8,7 +9,6 @@ interface LiveBracketViewerProps {
   templateId: string;
   slideIndex: number;
   matches: LiveMatch[];
-  meta: LiveTournamentMeta;
   matchResults: Record<string, StoredMatchResult>;
 }
 
@@ -16,31 +16,31 @@ export function LiveBracketViewer({
   templateId,
   slideIndex,
   matches,
-  meta,
   matchResults,
 }: LiveBracketViewerProps) {
   const { layout, loading, error } = useTemplateLayout(templateId);
   const slotRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const [renderWidth, setRenderWidth] = useState(960);
 
   const computeWidth = useCallback(() => {
-    const slot = slotRef.current;
-    if (!slot) return;
-    const w = slot.clientWidth;
-    const h = slot.clientHeight;
+    const frame = frameRef.current;
+    if (!frame) return;
+    const w = frame.clientWidth;
+    const h = frame.clientHeight;
     if (w <= 0 || h <= 0) return;
-    setRenderWidth(Math.floor(Math.min(w, h * (9906000 / 6858000))));
+    setRenderWidth(Math.floor(Math.min(w, h * SLIDE_ASPECT)));
   }, []);
 
   useEffect(() => {
-    const slot = slotRef.current;
-    if (!slot) return;
+    const frame = frameRef.current;
+    if (!frame) return;
 
     computeWidth();
     const observer = new ResizeObserver(() => computeWidth());
-    observer.observe(slot);
+    observer.observe(frame);
     return () => observer.disconnect();
-  }, [computeWidth]);
+  }, [computeWidth, layout]);
 
   if (loading) {
     return (
@@ -70,14 +70,19 @@ export function LiveBracketViewer({
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white p-2 sm:p-4"
+      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white p-3 sm:p-5"
     >
-      <LiveBracketSlide
-        fields={fields}
-        matches={matches}
-        matchResults={matchResults}
-        renderWidth={renderWidth}
-      />
+      <div
+        ref={frameRef}
+        className="flex h-full max-h-full w-full max-w-full items-center justify-center rounded-xl border-2 border-template-blue bg-white p-1.5 shadow-[inset_0_0_0_1px_rgba(0,176,240,0.15)] sm:p-2"
+      >
+        <LiveBracketSlide
+          fields={fields}
+          matches={matches}
+          matchResults={matchResults}
+          renderWidth={renderWidth}
+        />
+      </div>
     </div>
   );
 }
