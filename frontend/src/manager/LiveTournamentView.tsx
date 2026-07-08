@@ -3,6 +3,7 @@ import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
+import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
 import { LivePdfViewer } from "./LivePdfViewer";
 import type { LiveTournamentData } from "./liveTypes";
 import {
@@ -28,16 +29,6 @@ function tabClass(active: boolean) {
       ? "bg-lime/15 text-lime ring-1 ring-lime/35"
       : "bg-white/[0.04] text-white/45 hover:bg-white/[0.07] hover:text-white/70",
   ].join(" ");
-}
-
-function PlaceholderTab({ label }: { label: string }) {
-  return (
-    <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-      <p className="max-w-md text-center text-sm text-white/40">
-        Contenu « {label} » — à venir.
-      </p>
-    </div>
-  );
 }
 
 interface LiveTournamentViewProps {
@@ -190,12 +181,22 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           <LiveMatchsEnCoursTab
             terrains={meta.terrains}
             matches={matches}
+            meta={meta}
             started={progress.started}
+            completed={progress.completed}
             onStart={progress.startTournament}
+            onCompleteMatch={progress.completeMatch}
           />
         );
       case "upcoming":
-        return <PlaceholderTab label="Prochains matchs" />;
+        return (
+          <LiveProchainsMatchsTab
+            terrains={meta.terrains}
+            matches={matches}
+            completed={progress.completed}
+            started={progress.started}
+          />
+        );
       case "main":
       case "classement":
       case "final":

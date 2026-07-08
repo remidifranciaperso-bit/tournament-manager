@@ -2,35 +2,60 @@ import type { LiveMatch } from "./liveTypes";
 
 export interface CourtMatchDisplay {
   code: string;
+  tour: string;
   equipe1: string;
   equipe2: string;
 }
 
+export function sortMatchesForTerrain(
+  matches: LiveMatch[],
+  terrain: string
+): LiveMatch[] {
+  return matches
+    .filter((match) => match.terrain === terrain)
+    .sort(
+      (a, b) => a.ordre_planning - b.ordre_planning || a.ordre - b.ordre
+    );
+}
+
+function toDisplay(match: LiveMatch): CourtMatchDisplay {
+  return {
+    code: match.code,
+    tour: match.tour,
+    equipe1: match.equipe1?.trim() || "—",
+    equipe2: match.equipe2?.trim() || "—",
+  };
+}
+
+export interface TerrainMatchQueues {
+  current: Map<string, CourtMatchDisplay | null>;
+  upcoming: Map<string, CourtMatchDisplay | null>;
+}
+
+export function matchQueuesByTerrain(
+  matches: LiveMatch[],
+  terrains: string[],
+  completed: Set<string>
+): TerrainMatchQueues {
+  const current = new Map<string, CourtMatchDisplay | null>();
+  const upcoming = new Map<string, CourtMatchDisplay | null>();
+
+  for (const terrain of terrains) {
+    const queue = sortMatchesForTerrain(matches, terrain).filter(
+      (match) => !completed.has(match.code)
+    );
+
+    current.set(terrain, queue[0] ? toDisplay(queue[0]) : null);
+    upcoming.set(terrain, queue[1] ? toDisplay(queue[1]) : null);
+  }
+
+  return { current, upcoming };
+}
+
+/** @deprecated Utiliser matchQueuesByTerrain */
 export function firstMatchByTerrain(
   matches: LiveMatch[],
   terrains: string[]
 ): Map<string, CourtMatchDisplay | null> {
-  const result = new Map<string, CourtMatchDisplay | null>();
-
-  for (const terrain of terrains) {
-    const first = matches
-      .filter((match) => match.terrain === terrain)
-      .sort(
-        (a, b) =>
-          a.ordre_planning - b.ordre_planning || a.ordre - b.ordre
-      )[0];
-
-    result.set(
-      terrain,
-      first
-        ? {
-            code: first.code,
-            equipe1: first.equipe1?.trim() || "—",
-            equipe2: first.equipe2?.trim() || "—",
-          }
-        : null
-    );
-  }
-
-  return result;
+  return matchQueuesByTerrain(matches, terrains, new Set()).current;
 }
