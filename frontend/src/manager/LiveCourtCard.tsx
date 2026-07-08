@@ -6,6 +6,9 @@ import { getSetScoreOptions } from "./matchScoreRules";
 import type { SetScore } from "./matchScoreRules";
 import { parseTeamLabel, type ParsedTeam } from "./parseTeamLabel";
 
+/** Décalage vertical des encarts vers le centre (évite le bord des lignes). */
+const COURT_TEAM_BADGE_TOP_CLASS = "pb-5";
+const COURT_TEAM_BADGE_BOTTOM_CLASS = "pt-5";
 export const COURT_WIDTH_PX = 280;
 export const COURT_HEIGHT_PX = 560;
 /** Largeur uniforme des encarts equipes / gagnants (% du terrain). */
@@ -256,7 +259,9 @@ export function LiveCourtCard({
 
         {match && equipe1 && equipe2 ? (
           <>
-            <div className="absolute inset-x-0 top-0 z-10 flex h-1/2 items-center justify-center">
+            <div
+              className={`absolute inset-x-0 top-0 z-10 flex h-1/2 items-center justify-center ${COURT_TEAM_BADGE_TOP_CLASS}`}
+            >
               <TeamBadge
                 team={equipe1}
                 scoringMode={scoringMode}
@@ -296,7 +301,9 @@ export function LiveCourtCard({
               )}
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 z-10 flex h-1/2 items-center justify-center">
+            <div
+              className={`absolute inset-x-0 bottom-0 z-10 flex h-1/2 items-center justify-center ${COURT_TEAM_BADGE_BOTTOM_CLASS}`}
+            >
               <TeamBadge
                 team={equipe2}
                 scoringMode={scoringMode}
