@@ -474,14 +474,23 @@ export function FormatStep({
   return (
     <div
       className={[
-        "mx-auto w-full text-center",
-        showMatchFormats ? "max-h-full max-w-3xl overflow-y-auto pr-1" : "max-w-2xl",
+        "mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden text-center",
+        showMatchFormats ? "max-w-5xl" : "max-w-2xl",
       ].join(" ")}
     >
-      <WizardPageTitle title="Format" subtitle={subtitle} />
+      <WizardPageTitle
+        title="Format"
+        subtitle={subtitle}
+        compact={showMatchFormats}
+      />
 
-      <div className="space-y-8 text-left">
-        <div className="grid gap-3 sm:grid-cols-2">
+      <div
+        className={[
+          "shrink-0 text-left",
+          showMatchFormats ? "space-y-4" : "space-y-8",
+        ].join(" ")}
+      >
+        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
           <OptionCard
             variant="lime"
             active={form.modeTournoi === "Élimination directe"}
@@ -562,59 +571,69 @@ export function FormatStep({
             </p>
           )}
         </div>
+      </div>
 
-        {showMatchFormats && (
-          <div className="space-y-6 border-t border-white/10 pt-8">
-            <div className="text-center">
-              <h3 className="font-display text-lg tracking-wide text-lime sm:text-xl">
-                Formats de match
-              </h3>
-              <p className="mt-1 text-xs text-white/40">
-                Sélectionnez un format pour chaque phase du tournoi.
-              </p>
-            </div>
+      {showMatchFormats && (
+        <div className="mt-4 flex min-h-0 flex-1 flex-col border-t border-white/10 pt-4">
+          <div className="flex shrink-0 flex-col items-center gap-1.5">
+            <label className="field-label-tight">Formats de match</label>
+          </div>
 
+          <div
+            className={[
+              "mt-2 grid min-h-0 flex-1 gap-2 sm:gap-3",
+              isPoulesMode ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-3",
+            ].join(" ")}
+          >
             <MatchFormatPicker
-              label="Format des matchs du tableau principal"
+              label="Tableau principal"
               value={form.formatMatchTableauPrincipal}
               onChange={(value) => {
                 if (value !== "identique") {
                   patch({ formatMatchTableauPrincipal: value });
                 }
               }}
+              scrollable
+              compact
             />
 
             <MatchFormatPicker
-              label="Format des matchs des tableaux de classement"
+              label="Classements"
               value={form.formatMatchClassement}
               onChange={(value) => patch({ formatMatchClassement: value })}
               allowIdentique
+              scrollable
+              compact
             />
 
             <MatchFormatPicker
-              label="Format de la finale"
+              label="Finale"
               value={form.formatMatchFinale}
               onChange={(value) => patch({ formatMatchFinale: value })}
               allowIdentique
+              scrollable
+              compact
             />
 
             {isPoulesMode && (
               <MatchFormatPicker
-                label="Format des matchs de poule"
+                label="Poules"
                 value={form.formatMatchPoule}
                 onChange={(value) => patch({ formatMatchPoule: value })}
                 allowIdentique
+                scrollable
+                compact
               />
             )}
-
-            {showMatchFormats && !matchFormatsStepValid(form) && (
-              <p className="text-center text-xs text-amber-300/80">
-                Sélectionnez le format du tableau principal pour continuer.
-              </p>
-            )}
           </div>
-        )}
-      </div>
+
+          {!matchFormatsStepValid(form) && (
+            <p className="mt-2 shrink-0 text-center text-xs text-amber-300/80">
+              Sélectionnez le format du tableau principal pour continuer.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -266,12 +266,12 @@ export default function ManagerPage() {
         </header>
 
         <main
-          className={`mx-auto w-full max-w-2xl flex-1 px-4 sm:px-8 ${
+          className={`mx-auto w-full flex-1 px-4 sm:px-8 ${
             step === 8
-              ? "flex flex-col justify-center overflow-hidden py-4 sm:py-6"
+              ? "flex max-w-2xl flex-col justify-center overflow-hidden py-4 sm:py-6"
               : step === 5
-                ? "overflow-y-auto py-6 sm:py-8"
-                : "overflow-hidden py-8 sm:py-10"
+                ? "flex max-w-5xl min-h-0 flex-col overflow-hidden py-4 sm:py-5"
+                : "max-w-2xl overflow-hidden py-8 sm:py-10"
           }`}
         >
           <AnimatePresence mode="wait">
@@ -282,9 +282,7 @@ export default function ManagerPage() {
               animate="animate"
               exit="exit"
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className={
-                step === 5 ? "h-full overflow-y-auto" : "h-full overflow-hidden"
-              }
+              className="flex h-full min-h-0 flex-col overflow-hidden"
             >
               {step === 2 && (
                 <ParticipantsStep
