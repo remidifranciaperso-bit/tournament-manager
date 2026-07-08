@@ -5,6 +5,8 @@ import {
   SLIDE_ASPECT,
   type ParsedMatchSlot,
 } from "./bracketSlideLayout";
+import { buildBracketConnectors } from "./bracketConnectors";
+import { matchBoxPosition } from "./bracketGeometry";
 import {
   ptOnSlide,
   STANDARD_MATCH_BOX,
@@ -60,14 +62,6 @@ function resolveTeamDisplay(
   return formatTeamSlot(label);
 }
 
-function matchBoxPosition(slot: ParsedMatchSlot) {
-  const anchor = slot.codeField ?? slot.terrainField ?? slot.bounds;
-  return {
-    left: anchor.left,
-    top: anchor.top,
-  };
-}
-
 function TemplateMatchBox({
   match,
   slot,
@@ -88,7 +82,7 @@ function TemplateMatchBox({
 
   return (
     <div
-      className="absolute flex flex-col overflow-hidden border border-template-blue/30 bg-white shadow-sm"
+      className="absolute z-10 flex flex-col overflow-hidden border border-template-blue/30 bg-white shadow-sm"
       style={{
         left: `${pos.left}%`,
         top: `${pos.top}%`,
@@ -96,7 +90,7 @@ function TemplateMatchBox({
         height: `${STANDARD_MATCH_BOX.heightPct}%`,
       }}
     >
-      {/* Bannière : code (gauche) · terrain (centre) · heure (droite) */}
+      {/* Bannière : heure (gauche) · terrain (centre) · code (droite) */}
       <div
         className="grid shrink-0 grid-cols-3 items-center bg-template-blue px-[0.35em] font-tsl font-semibold leading-none text-white"
         style={{
@@ -104,12 +98,11 @@ function TemplateMatchBox({
           fontSize: codePx,
         }}
       >
-        <span className="truncate text-left">{match.code}</span>
+        <span className="truncate text-left">{match.heure ?? ""}</span>
         <span className="truncate text-center">{match.terrain ?? ""}</span>
-        <span className="truncate text-right">{match.heure ?? ""}</span>
+        <span className="truncate text-right">{match.code}</span>
       </div>
 
-      {/* Corps : équipe 1 · vs · équipe 2 */}
       <div className="flex min-h-0 flex-1 flex-col">
         <div
           className="flex flex-1 items-center justify-center overflow-hidden px-1 text-center font-noto font-medium leading-tight text-arena-800"
@@ -145,7 +138,7 @@ function FeedLabel({
 }) {
   return (
     <div
-      className="absolute flex items-center overflow-hidden border border-template-blue/35 bg-template-blue/10 px-[0.3em] font-noto font-medium leading-tight text-arena-800"
+      className="absolute z-10 flex items-center overflow-hidden border border-template-blue/35 bg-template-blue/10 px-[0.3em] font-noto font-medium leading-tight text-arena-800"
       style={{
         ...pctStyle(field),
         fontSize: ptOnSlide(TEMPLATE_PT.feedLabel, scaleH),
@@ -153,6 +146,30 @@ function FeedLabel({
     >
       <span className="line-clamp-2 break-words">{text}</span>
     </div>
+  );
+}
+
+function BracketConnectors({ paths }: { paths: string[] }) {
+  if (paths.length === 0) return null;
+
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 z-[5] h-full w-full"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      {paths.map((d, index) => (
+        <path
+          key={index}
+          d={d}
+          fill="none"
+          stroke="#00B0F0"
+          strokeWidth="0.35"
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+    </svg>
   );
 }
 
@@ -171,27 +188,42 @@ export function LiveBracketSlide({
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
-  const feedByKey = useMemo(
-    () => new Map(parsed.feeds.map((f) => [f.key, f])),
-    [parsed.feeds]
-  );
 
   const renderHeight = Math.round(renderWidth / SLIDE_ASPECT);
-  const consumedFeeds = new Set<string>();
+  const consumedFeeds = useMemo(() => {
+    const set = new Set<string>();
+    for (const slot of parsed.matches) {
+      const match = matchesByCode.get(slot.code);
+      if (!match) continue;
+      const feed1 = feedKeyFromTeamLabel(match.equipe1);
+      const feed2 = feedKeyFromTeamLabel(match.equipe2);
+      if (feed1) set.add(feed1);
+      if (feed2) set.add(feed2);
+    }
+    return set;
+  }, [parsed.matches, matchesByCode]);
+
+  const connectorPaths = useMemo(
+    () =>
+      buildBracketConnectors(
+        parsed.matches,
+        parsed.feeds,
+        matchesByCode,
+        consumedFeeds
+      ),
+    [parsed.matches, parsed.feeds, matchesByCode, consumedFeeds]
+  );
 
   return (
     <div
       className="relative shrink-0 overflow-hidden bg-white shadow-sm ring-1 ring-arena-600/10"
       style={{ width: renderWidth, height: renderHeight }}
     >
+      <BracketConnectors paths={connectorPaths} />
+
       {parsed.matches.map((slot) => {
         const match = matchesByCode.get(slot.code);
         if (!match) return null;
-
-        const feed1 = feedKeyFromTeamLabel(match.equipe1);
-        const feed2 = feedKeyFromTeamLabel(match.equipe2);
-        if (feed1) consumedFeeds.add(feed1);
-        if (feed2) consumedFeeds.add(feed2);
 
         const team1 = resolveTeamDisplay(
           match.equipe1,
