@@ -4,7 +4,9 @@ import type { TournamentForm } from "../types";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
+import { LiveBracketViewer } from "./LiveBracketViewer";
 import { LivePdfViewer } from "./LivePdfViewer";
+import { resolveTemplateId } from "./resolveTemplateId";
 import type { LiveTournamentData } from "./liveTypes";
 import {
   LIVE_PRIMARY_TABS,
@@ -42,6 +44,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     liveData;
 
   const progress = useLiveProgress(live_token, matches.length, meta);
+  const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
 
   const prefetchIndices = useMemo(
     () => allSlideIndices(page_map),
@@ -200,7 +203,25 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           />
         );
       case "main":
-      case "classement":
+      case "classement": {
+        const slideIndex = slideIndices[0];
+        if (slideIndex === undefined) {
+          return (
+            <p className="py-8 text-center text-sm text-arena-600/55">
+              Aucune page disponible pour cet onglet.
+            </p>
+          );
+        }
+        return (
+          <LiveBracketViewer
+            templateId={templateId}
+            slideIndex={slideIndex}
+            matches={matches}
+            meta={meta}
+            matchResults={progress.matchResults}
+          />
+        );
+      }
       case "final":
         return (
           <LivePdfViewer
@@ -228,6 +249,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     primaryTab === "classement" ||
     primaryTab === "planning" ||
     primaryTab === "final";
+
+  const isBracketTab = primaryTab === "main" || primaryTab === "classement";
 
   const isProjectionTab = primaryTab === "live" || primaryTab === "upcoming";
 
@@ -278,7 +301,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         <div
           className={[
             "mt-3 flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border",
-            isProjectionTab
+            isProjectionTab || isBracketTab
               ? "border-arena-600/15 bg-white"
               : "border-lime/15 bg-arena-900/45 backdrop-blur-xl",
             primaryTab === "planning" ? "touch-manipulation" : "touch-none",

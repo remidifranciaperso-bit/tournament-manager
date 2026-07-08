@@ -42,6 +42,8 @@ export default {
         display: ["Bebas Neue", "system-ui", "sans-serif"],
         brush: ["Grindy Brush", "cursive"],
         sans: ["Sora", "system-ui", "sans-serif"],
+        tsl: ["TSL Sans", "Sora", "system-ui", "sans-serif"],
+        noto: ["Noto Sans", "Sora", "system-ui", "sans-serif"],
       },
       boxShadow: {
         neon: "0 0 40px -8px rgba(0, 229, 195, 0.55)",
