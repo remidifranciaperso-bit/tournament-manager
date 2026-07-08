@@ -1,5 +1,9 @@
 import { PadelCourtOutline } from "../components/CourtBackground";
 
+/** Taille fixe des terrains (10×20 m → ratio 1:2), indépendante du nombre. */
+const COURT_WIDTH_PX = 200;
+const COURT_HEIGHT_PX = 400;
+
 interface LiveMatchsEnCoursTabProps {
   terrains: string[];
   started: boolean;
@@ -14,17 +18,23 @@ export function LiveMatchsEnCoursTab({
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       {started ? (
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-5">
-          <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-8 sm:gap-y-8">
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-x-auto overscroll-x-contain px-4 py-6 sm:px-8">
+          <div className="flex shrink-0 items-end justify-center gap-8 sm:gap-12">
             {terrains.map((name) => (
               <div
                 key={name}
-                className="flex min-w-0 flex-col items-center justify-start"
+                className="flex shrink-0 flex-col items-center"
               >
-                <p className="field-label-section mb-2 max-w-full truncate px-1">
+                <p className="field-label-section mb-3 max-w-[200px] truncate px-1 text-center">
                   {name}
                 </p>
-                <div className="h-[min(30vh,200px)] w-full max-w-[140px] aspect-[1/2] sm:max-w-[160px]">
+                <div
+                  className="shrink-0"
+                  style={{
+                    width: COURT_WIDTH_PX,
+                    height: COURT_HEIGHT_PX,
+                  }}
+                >
                   <PadelCourtOutline className="h-full w-full" />
                 </div>
               </div>
