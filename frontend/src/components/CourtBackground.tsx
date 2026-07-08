@@ -125,9 +125,9 @@ export function PadelCourtFilled({ className = "" }: { className?: string }) {
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#0a3d4a" />
-          <stop offset="40%" stopColor="#0d5c5a" />
-          <stop offset="100%" stopColor="#0a4a52" />
+          <stop offset="0%" stopColor="#071422" />
+          <stop offset="45%" stopColor="#0c1f35" />
+          <stop offset="100%" stopColor="#122a45" />
         </linearGradient>
       </defs>
       <rect

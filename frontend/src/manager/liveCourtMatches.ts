@@ -5,6 +5,7 @@ export interface CourtMatchDisplay {
   tour: string;
   equipe1: string;
   equipe2: string;
+  heure: string | null;
 }
 
 export function sortMatchesForTerrain(
@@ -24,6 +25,7 @@ function toDisplay(match: LiveMatch): CourtMatchDisplay {
     tour: match.tour,
     equipe1: match.equipe1?.trim() || "—",
     equipe2: match.equipe2?.trim() || "—",
+    heure: match.heure?.trim() || null,
   };
 }
 

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { LiveCourtsRow } from "./LiveCourtCard";
+import { CourtScheduledTime, LiveCourtsRow } from "./LiveCourtCard";
 import { matchQueuesByTerrain } from "./liveCourtMatches";
 import type { LiveMatch } from "./liveTypes";
 
@@ -38,6 +38,13 @@ export function LiveProchainsMatchsTab({
         matchByTerrain={matchByTerrain}
         emptyLabel="Aucun match suivant"
         theme="light"
+        renderFooter={(_terrain, match) =>
+          match ? (
+            <CourtScheduledTime heure={match.heure} />
+          ) : (
+            <CourtFooterSlot />
+          )
+        }
       />
     </div>
   );

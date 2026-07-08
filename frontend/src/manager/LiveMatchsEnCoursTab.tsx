@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MatchFormatCode } from "./matchFormats";
 import {
+  CourtFooterSlot,
   LiveCourtsRow,
   useScoreFormToggle,
   type CourtScoringState,
@@ -157,13 +158,13 @@ export function LiveMatchsEnCoursTab({
             scoreForm.isOpen(terrain) ? scoringState ?? undefined : undefined
           }
           renderFooter={(terrain, match) => {
-            if (!match) return null;
+            if (!match) return <CourtFooterSlot />;
 
             if (scoreForm.isOpen(terrain)) {
               const isValid = Boolean(scoringState?.winnerTeam);
 
               return (
-                <div className="mt-3 flex w-full max-w-[280px] flex-col gap-1.5">
+                <CourtFooterSlot>
                   <button
                     type="button"
                     disabled={!isValid}
@@ -174,7 +175,7 @@ export function LiveMatchsEnCoursTab({
                       closeScoring();
                     }}
                     className={[
-                      "w-full rounded-xl border px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide transition",
+                      "flex min-h-[41px] w-full items-center justify-center rounded-xl border px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide transition",
                       isValid
                         ? "border-arena-600/35 bg-arena-600/10 text-arena-700 hover:bg-arena-600/15"
                         : "cursor-not-allowed border-arena-600/10 bg-arena-600/[0.03] text-arena-600/30",
@@ -189,18 +190,20 @@ export function LiveMatchsEnCoursTab({
                   >
                     Annuler
                   </button>
-                </div>
+                </CourtFooterSlot>
               );
             }
 
             return (
-              <button
-                type="button"
-                onClick={() => scoreForm.open(terrain)}
-                className="mt-3 w-full max-w-[280px] rounded-xl border border-arena-600/30 bg-arena-600/10 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15"
-              >
-                Saisir le score
-              </button>
+              <CourtFooterSlot>
+                <button
+                  type="button"
+                  onClick={() => scoreForm.open(terrain)}
+                  className="flex min-h-[41px] w-full items-center justify-center rounded-xl border border-arena-600/30 bg-arena-600/10 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15"
+                >
+                  Saisir le score
+                </button>
+              </CourtFooterSlot>
             );
           }}
         />

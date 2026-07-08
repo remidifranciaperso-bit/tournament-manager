@@ -8,6 +8,8 @@ import { parseTeamLabel, type ParsedTeam } from "./parseTeamLabel";
 
 export const COURT_WIDTH_PX = 280;
 export const COURT_HEIGHT_PX = 560;
+/** Hauteur fixe sous le terrain (bouton score ou heure prévue). */
+export const COURT_FOOTER_MIN_H_PX = 76;
 
 export type LiveCourtTheme = "dark" | "light";
 
@@ -15,12 +17,33 @@ export function formatMatchName(match: CourtMatchDisplay): string {
   return `${match.code} — ${match.tour}`;
 }
 
+export function CourtFooterSlot({ children }: { children?: ReactNode }) {
+  return (
+    <div
+      className="mt-3 flex w-full max-w-[280px] flex-col justify-start gap-1.5"
+      style={{ minHeight: COURT_FOOTER_MIN_H_PX }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function CourtScheduledTime({ heure }: { heure: string | null }) {
+  return (
+    <CourtFooterSlot>
+      <div className="flex min-h-[41px] w-full items-center justify-center rounded-xl border border-arena-600/30 bg-arena-600/10 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-arena-700">
+        {heure ? `Prévu ${heure}` : "Heure à confirmer"}
+      </div>
+    </CourtFooterSlot>
+  );
+}
+
 const COURT_THEME = {
   dark: {
     terrainLabel:
-      "field-label-section mb-2 max-w-[280px] truncate px-1 text-center",
+      "field-label-section max-w-[280px] truncate px-1 text-center",
     matchName:
-      "mb-2 max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-white/65 sm:text-[13px]",
+      "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-white/65 sm:text-[13px]",
     teamBadge: "max-w-[92%] rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 text-center shadow-sm",
     playerName: "text-[14px] font-medium leading-snug text-white sm:text-[15px]",
     seed: "mt-1 text-[14px] font-semibold uppercase tracking-wide text-lime/90 sm:text-[15px]",
@@ -40,9 +63,9 @@ const COURT_THEME = {
   },
   light: {
     terrainLabel:
-      "mb-2 max-w-[280px] truncate px-1 text-center text-sm font-semibold uppercase tracking-widest text-arena-700 sm:text-base",
+      "max-w-[280px] truncate px-1 text-center text-sm font-semibold uppercase tracking-widest text-arena-700 sm:text-base",
     matchName:
-      "mb-2 max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-arena-600 sm:text-[13px]",
+      "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-arena-600 sm:text-[13px]",
     teamBadge:
       "max-w-[92%] rounded-lg border border-arena-600/20 bg-white/95 px-2.5 py-2 text-center shadow-sm",
     playerName:
@@ -58,8 +81,8 @@ const COURT_THEME = {
     winnerNames:
       "mt-0.5 text-[12px] font-semibold leading-snug text-arena-800 sm:text-[13px]",
     empty: "text-center text-sm text-arena-400",
-    setActive: "bg-arena-600/12 text-arena-700 ring-1 ring-arena-600/30",
-    setInactive: "bg-arena-600/5 text-arena-600/55 hover:text-arena-700",
+    setActive: "bg-white/90 text-arena-700 ring-1 ring-white/80",
+    setInactive: "bg-white/25 text-white/80 hover:bg-white/40 hover:text-white",
     court: "filled" as const,
   },
 } as const;
@@ -114,17 +137,19 @@ function TeamBadge({
       {team.player2 && (
         <p className={`mt-0.5 ${theme.playerName}`}>{team.player2}</p>
       )}
-      {scoringMode && gameOptions && onGamesChange ? (
-        <GamesSelect
-          value={games ?? 0}
-          options={gameOptions}
-          onChange={onGamesChange}
-          label={`Jeux ${team.player1}`}
-          className={theme.gamesSelect}
-        />
-      ) : (
-        team.seed && <p className={theme.seed}>{team.seed}</p>
-      )}
+      <div className="mt-1 flex min-h-[1.75rem] items-center justify-center">
+        {scoringMode && gameOptions && onGamesChange ? (
+          <GamesSelect
+            value={games ?? 0}
+            options={gameOptions}
+            onChange={onGamesChange}
+            label={`Jeux ${team.player1}`}
+            className={`${theme.gamesSelect} mt-0`}
+          />
+        ) : (
+          team.seed && <p className={`${theme.seed} mt-0`}>{team.seed}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -200,29 +225,19 @@ export function LiveCourtCard({
   const CourtGraphic =
     theme.court === "filled" ? PadelCourtFilled : PadelCourtOutline;
 
+  const showSetTabs =
+    scoringMode && scoring && scoring.setCount > 1;
+
   return (
-    <div className="flex shrink-0 flex-col items-center">
-      <p className={theme.terrainLabel}>{terrainName}</p>
-
-      {match && <p className={theme.matchName}>{formatMatchName(match)}</p>}
-
-      {scoringMode && scoring && scoring.setCount > 1 && (
-        <div className="mb-2 flex gap-1">
-          {Array.from({ length: scoring.setCount }, (_, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => scoring.onSetChange(index)}
-              className={[
-                "rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition",
-                index === activeSet ? theme.setActive : theme.setInactive,
-              ].join(" ")}
-            >
-              {index === 2 ? "STB" : `Set ${index + 1}`}
-            </button>
-          ))}
+    <div className="flex w-[280px] shrink-0 flex-col items-center">
+      <div className="mb-2 flex w-full flex-col items-center gap-2">
+        <p className={theme.terrainLabel}>{terrainName}</p>
+        <div className="flex h-5 w-full items-center justify-center">
+          <p className={theme.matchName}>
+            {match ? formatMatchName(match) : "\u00A0"}
+          </p>
         </div>
-      )}
+      </div>
 
       <div
         className="relative shrink-0"
@@ -232,6 +247,24 @@ export function LiveCourtCard({
         }}
       >
         <CourtGraphic className="h-full w-full" />
+
+        {showSetTabs && (
+          <div className="absolute inset-x-0 top-2 z-20 flex justify-center gap-1 px-2">
+            {Array.from({ length: scoring!.setCount }, (_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => scoring!.onSetChange(index)}
+                className={[
+                  "rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition",
+                  index === activeSet ? theme.setActive : theme.setInactive,
+                ].join(" ")}
+              >
+                {index === 2 ? "STB" : `Set ${index + 1}`}
+              </button>
+            ))}
+          </div>
+        )}
 
         {match && equipe1 && equipe2 ? (
           <>
@@ -281,7 +314,8 @@ export function LiveCourtCard({
           </div>
         )}
       </div>
-      {footer}
+
+      {footer ?? <CourtFooterSlot />}
     </div>
   );
 }
