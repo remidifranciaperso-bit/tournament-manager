@@ -92,7 +92,9 @@ function TemplateMatchBox({
         }}
       >
         <span className="truncate text-left font-semibold">{match.code}</span>
-        <span className="truncate text-center font-bold">{match.terrain ?? ""}</span>
+        <span className="truncate text-center font-noto font-bold">
+          {match.terrain ?? ""}
+        </span>
         <span className="truncate text-right font-semibold">{match.heure ?? ""}</span>
       </div>
 
