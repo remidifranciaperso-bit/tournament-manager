@@ -75,7 +75,6 @@ export function LiveBracketViewer({
       <LiveBracketSlide
         fields={fields}
         matches={matches}
-        meta={meta}
         matchResults={matchResults}
         renderWidth={renderWidth}
       />
