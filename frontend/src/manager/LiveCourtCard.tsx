@@ -46,9 +46,9 @@ const COURT_THEME = {
       "field-label-section max-w-[280px] truncate px-1 text-center",
     matchName:
       "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-white/65 sm:text-[13px]",
-    teamBadge: `${COURT_BADGE_WIDTH_CLASS} flex min-h-[5.5rem] shrink-0 flex-col rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 shadow-sm`,
+    teamBadge: `${COURT_BADGE_WIDTH_CLASS} relative min-h-[5.5rem] shrink-0 rounded-lg border border-white/30 bg-arena-950/80 shadow-sm`,
     playerName:
-      "w-full text-center text-[14px] font-medium leading-snug text-white sm:text-[15px]",
+      "block max-w-full text-center text-[14px] font-medium leading-snug text-white sm:text-[15px]",
     seed: "text-[11px] font-semibold uppercase tracking-wide text-template-blue sm:text-[12px]",
     gamesSelect:
       "mt-1.5 w-full max-w-[5.5rem] rounded-md border border-lime/30 bg-arena-950/90 px-1.5 py-1 text-center text-[13px] font-semibold text-lime focus:border-lime/50 focus:outline-none",
@@ -68,9 +68,9 @@ const COURT_THEME = {
       "max-w-[280px] truncate px-1 text-center text-sm font-semibold uppercase tracking-widest text-arena-700 sm:text-base",
     matchName:
       "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-arena-600 sm:text-[13px]",
-    teamBadge: `${COURT_BADGE_WIDTH_CLASS} flex min-h-[5.5rem] shrink-0 flex-col rounded-lg border border-arena-600/20 bg-white/95 px-2.5 py-2 shadow-sm`,
+    teamBadge: `${COURT_BADGE_WIDTH_CLASS} relative min-h-[5.5rem] shrink-0 rounded-lg border border-arena-600/20 bg-white/95 shadow-sm`,
     playerName:
-      "w-full text-center text-[14px] font-medium leading-snug text-arena-800 sm:text-[15px]",
+      "block max-w-full text-center text-[14px] font-medium leading-snug text-arena-800 sm:text-[15px]",
     seed: "text-[11px] font-semibold uppercase tracking-wide text-template-blue sm:text-[12px]",
     gamesSelect:
       "mt-1.5 w-full max-w-[5.5rem] rounded-md border border-arena-600/30 bg-white px-1.5 py-1 text-center text-[13px] font-semibold text-arena-700 focus:border-arena-600/50 focus:outline-none",
@@ -135,15 +135,15 @@ function TeamBadge({
 }) {
   return (
     <div className={theme.teamBadge}>
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <p className={`${theme.playerName} break-words`}>{team.player1}</p>
-        {team.player2 && (
-          <p className={`mt-0.5 break-words ${theme.playerName}`}>
-            {team.player2}
-          </p>
-        )}
+      <div className="absolute inset-x-2.5 top-2 bottom-9 flex items-center justify-center">
+        <div className="flex max-w-full flex-col items-center gap-0.5">
+          <span className={`${theme.playerName} break-words`}>{team.player1}</span>
+          {team.player2 && (
+            <span className={`${theme.playerName} break-words`}>{team.player2}</span>
+          )}
+        </div>
       </div>
-      <div className="flex h-8 items-center justify-center">
+      <div className="absolute inset-x-0 bottom-2 flex h-7 items-center justify-center">
         {scoringMode && gameOptions && onGamesChange ? (
           <GamesSelect
             value={games ?? 0}
