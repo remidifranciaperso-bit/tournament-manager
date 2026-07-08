@@ -165,18 +165,15 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
                   touchAction: "manipulation",
                 }}
               >
-                <span
-                  className="pointer-events-none font-bold leading-none"
-                  style={{
-                    fontSize: `${markSize}px`,
-                    color: box.checked ? "#d4ff4a" : "transparent",
-                    textShadow: box.checked
-                      ? "0 0 2px rgba(0,0,0,0.55)"
-                      : undefined,
-                  }}
-                >
-                  {box.checked ? "☑" : "☐"}
-                </span>
+                {box.checked ? (
+                  <span
+                    className="pointer-events-none font-bold leading-none text-black"
+                    style={{ fontSize: `${markSize}px` }}
+                    aria-hidden
+                  >
+                    ✓
+                  </span>
+                ) : null}
               </button>
             );
           })}

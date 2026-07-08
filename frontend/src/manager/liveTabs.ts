@@ -10,13 +10,13 @@ export type LivePrimaryTab =
   | "final";
 
 export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
-  { id: "avancement", label: "Avancement" },
   { id: "live", label: "Matchs en cours" },
   { id: "upcoming", label: "Prochains matchs" },
   { id: "main", label: "Tableau principal" },
   { id: "classement", label: "Classement" },
   { id: "planning", label: "Planning" },
   { id: "final", label: "Final" },
+  { id: "avancement", label: "Avancement" },
 ];
 
 export const LIVE_PRIMARY_TAB_COUNT = LIVE_PRIMARY_TABS.length;
