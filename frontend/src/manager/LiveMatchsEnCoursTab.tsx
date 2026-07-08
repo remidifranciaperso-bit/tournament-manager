@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { PadelCourtOutline } from "../components/CourtBackground";
 import { firstMatchByTerrain } from "./liveCourtMatches";
+import { parseTeamLabel, type ParsedTeam } from "./parseTeamLabel";
 import type { LiveMatch } from "./liveTypes";
 
 /** Taille fixe des terrains (10×20 m → ratio 1:2), indépendante du nombre. */
@@ -14,10 +15,22 @@ interface LiveMatchsEnCoursTabProps {
   onStart: () => void;
 }
 
-function TeamBadge({ name }: { name: string }) {
+function TeamBadge({ team }: { team: ParsedTeam }) {
   return (
-    <div className="max-w-[92%] rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-1.5 text-center text-[10px] font-medium leading-snug text-white shadow-sm sm:text-[11px]">
-      {name}
+    <div className="max-w-[92%] rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 text-center shadow-sm">
+      <p className="text-[10px] font-medium leading-snug text-white sm:text-[11px]">
+        {team.player1}
+      </p>
+      {team.player2 && (
+        <p className="mt-0.5 text-[10px] font-medium leading-snug text-white sm:text-[11px]">
+          {team.player2}
+        </p>
+      )}
+      {team.seed && (
+        <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-lime/90 sm:text-[10px]">
+          {team.seed}
+        </p>
+      )}
     </div>
   );
 }
@@ -29,6 +42,15 @@ function LiveCourtCard({
   terrainName: string;
   match: { equipe1: string; equipe2: string } | null;
 }) {
+  const equipe1 = useMemo(
+    () => (match ? parseTeamLabel(match.equipe1) : null),
+    [match]
+  );
+  const equipe2 = useMemo(
+    () => (match ? parseTeamLabel(match.equipe2) : null),
+    [match]
+  );
+
   return (
     <div className="flex shrink-0 flex-col items-center">
       <p className="field-label-section mb-3 max-w-[280px] truncate px-1 text-center">
@@ -43,10 +65,10 @@ function LiveCourtCard({
       >
         <PadelCourtOutline className="h-full w-full" />
 
-        {match && (
+        {match && equipe1 && equipe2 && (
           <>
-            <div className="absolute left-1/2 top-[10%] z-10 flex w-full -translate-x-1/2 justify-center px-2">
-              <TeamBadge name={match.equipe1} />
+            <div className="absolute inset-x-0 top-0 z-10 flex h-1/2 items-center justify-center px-2">
+              <TeamBadge team={equipe1} />
             </div>
 
             <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
@@ -55,8 +77,8 @@ function LiveCourtCard({
               </span>
             </div>
 
-            <div className="absolute bottom-[10%] left-1/2 z-10 flex w-full -translate-x-1/2 justify-center px-2">
-              <TeamBadge name={match.equipe2} />
+            <div className="absolute inset-x-0 bottom-0 z-10 flex h-1/2 items-center justify-center px-2">
+              <TeamBadge team={equipe2} />
             </div>
           </>
         )}
