@@ -18,11 +18,11 @@ interface LiveMatchsEnCoursTabProps {
 function TeamBadge({ team }: { team: ParsedTeam }) {
   return (
     <div className="max-w-[92%] rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 text-center shadow-sm">
-      <p className="text-[10px] font-medium leading-snug text-white sm:text-[11px]">
+      <p className="text-[20px] font-medium leading-snug text-white sm:text-[22px]">
         {team.player1}
       </p>
       {team.player2 && (
-        <p className="mt-0.5 text-[10px] font-medium leading-snug text-white sm:text-[11px]">
+        <p className="mt-0.5 text-[20px] font-medium leading-snug text-white sm:text-[22px]">
           {team.player2}
         </p>
       )}
