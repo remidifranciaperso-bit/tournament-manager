@@ -20,8 +20,6 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const ENGINE_BUILD = "2026-07-07a";
-
 const STEPS = [
   { key: "welcome", label: "Accueil" },
   { key: "participants", label: "Participants" },
@@ -223,9 +221,6 @@ export default function EnginePage() {
           </button>
           <p className="text-sm font-medium text-white/55">
             Génération tournoi
-          </p>
-          <p className="mt-2 text-[10px] uppercase tracking-widest text-white/25">
-            build {ENGINE_BUILD}
           </p>
         </div>
         <Stepper
