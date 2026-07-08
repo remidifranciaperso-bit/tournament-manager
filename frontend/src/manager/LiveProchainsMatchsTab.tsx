@@ -1,12 +1,14 @@
 import { useMemo } from "react";
-import { CourtScheduledTime, LiveCourtsRow } from "./LiveCourtCard";
+import { CourtFooterSlot, CourtScheduledTime, LiveCourtsRow } from "./LiveCourtCard";
 import { matchQueuesByTerrain } from "./liveCourtMatches";
 import type { LiveMatch } from "./liveTypes";
+import type { StoredMatchResult } from "./useLiveProgress";
 
 interface LiveProchainsMatchsTabProps {
   terrains: string[];
   matches: LiveMatch[];
   completed: Set<string>;
+  matchResults: Record<string, StoredMatchResult>;
   started: boolean;
 }
 
@@ -14,11 +16,12 @@ export function LiveProchainsMatchsTab({
   terrains,
   matches,
   completed,
+  matchResults,
   started,
 }: LiveProchainsMatchsTabProps) {
   const { upcoming: matchByTerrain } = useMemo(
-    () => matchQueuesByTerrain(matches, terrains, completed),
-    [matches, terrains, completed]
+    () => matchQueuesByTerrain(matches, terrains, completed, matchResults),
+    [matches, terrains, completed, matchResults]
   );
 
   if (!started) {

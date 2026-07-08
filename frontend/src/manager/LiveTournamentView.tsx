@@ -184,6 +184,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             meta={meta}
             started={progress.started}
             completed={progress.completed}
+            matchResults={progress.matchResults}
             onStart={progress.startTournament}
             onCompleteMatch={progress.completeMatch}
           />
@@ -194,6 +195,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             terrains={meta.terrains}
             matches={matches}
             completed={progress.completed}
+            matchResults={progress.matchResults}
             started={progress.started}
           />
         );

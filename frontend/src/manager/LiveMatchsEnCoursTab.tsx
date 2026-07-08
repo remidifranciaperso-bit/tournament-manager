@@ -73,6 +73,7 @@ interface LiveMatchsEnCoursTabProps {
   meta: LiveTournamentMeta;
   started: boolean;
   completed: Set<string>;
+  matchResults: Record<string, StoredMatchResult>;
   onStart: () => void;
   onCompleteMatch: (
     code: string,
@@ -86,6 +87,7 @@ export function LiveMatchsEnCoursTab({
   meta,
   started,
   completed,
+  matchResults,
   onStart,
   onCompleteMatch,
 }: LiveMatchsEnCoursTabProps) {
@@ -98,8 +100,8 @@ export function LiveMatchsEnCoursTab({
   >(null);
 
   const { current: matchByTerrain } = useMemo(
-    () => matchQueuesByTerrain(matches, terrains, completed),
-    [matches, terrains, completed]
+    () => matchQueuesByTerrain(matches, terrains, completed, matchResults),
+    [matches, terrains, completed, matchResults]
   );
 
   const matchLookup = useMemo(() => {

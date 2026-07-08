@@ -1,4 +1,9 @@
 import type { LiveMatch } from "./liveTypes";
+import type { StoredMatchResult } from "./useLiveProgress";
+import {
+  buildMatchesByCode,
+  resolveTeamLabelDeep,
+} from "./resolveTeamLabel";
 
 export interface CourtMatchDisplay {
   code: string;
@@ -19,12 +24,19 @@ export function sortMatchesForTerrain(
     );
 }
 
-function toDisplay(match: LiveMatch): CourtMatchDisplay {
+function toDisplay(
+  match: LiveMatch,
+  matchesByCode: Map<string, LiveMatch>,
+  matchResults: Record<string, StoredMatchResult>
+): CourtMatchDisplay {
+  const equipe1 = match.equipe1?.trim() || "—";
+  const equipe2 = match.equipe2?.trim() || "—";
+
   return {
     code: match.code,
     tour: match.tour,
-    equipe1: match.equipe1?.trim() || "—",
-    equipe2: match.equipe2?.trim() || "—",
+    equipe1: resolveTeamLabelDeep(equipe1, matchesByCode, matchResults),
+    equipe2: resolveTeamLabelDeep(equipe2, matchesByCode, matchResults),
     heure: match.heure?.trim() || null,
   };
 }
@@ -37,8 +49,10 @@ export interface TerrainMatchQueues {
 export function matchQueuesByTerrain(
   matches: LiveMatch[],
   terrains: string[],
-  completed: Set<string>
+  completed: Set<string>,
+  matchResults: Record<string, StoredMatchResult> = {}
 ): TerrainMatchQueues {
+  const matchesByCode = buildMatchesByCode(matches);
   const current = new Map<string, CourtMatchDisplay | null>();
   const upcoming = new Map<string, CourtMatchDisplay | null>();
 
@@ -47,8 +61,14 @@ export function matchQueuesByTerrain(
       (match) => !completed.has(match.code)
     );
 
-    current.set(terrain, queue[0] ? toDisplay(queue[0]) : null);
-    upcoming.set(terrain, queue[1] ? toDisplay(queue[1]) : null);
+    current.set(
+      terrain,
+      queue[0] ? toDisplay(queue[0], matchesByCode, matchResults) : null
+    );
+    upcoming.set(
+      terrain,
+      queue[1] ? toDisplay(queue[1], matchesByCode, matchResults) : null
+    );
   }
 
   return { current, upcoming };
