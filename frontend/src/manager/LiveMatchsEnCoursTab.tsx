@@ -18,16 +18,16 @@ interface LiveMatchsEnCoursTabProps {
 function TeamBadge({ team }: { team: ParsedTeam }) {
   return (
     <div className="max-w-[92%] rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 text-center shadow-sm">
-      <p className="text-[20px] font-medium leading-snug text-white sm:text-[22px]">
+      <p className="text-[14px] font-medium leading-snug text-white sm:text-[15px]">
         {team.player1}
       </p>
       {team.player2 && (
-        <p className="mt-0.5 text-[20px] font-medium leading-snug text-white sm:text-[22px]">
+        <p className="mt-0.5 text-[14px] font-medium leading-snug text-white sm:text-[15px]">
           {team.player2}
         </p>
       )}
       {team.seed && (
-        <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-lime/90 sm:text-[10px]">
+        <p className="mt-1 text-[14px] font-semibold uppercase tracking-wide text-lime/90 sm:text-[15px]">
           {team.seed}
         </p>
       )}
