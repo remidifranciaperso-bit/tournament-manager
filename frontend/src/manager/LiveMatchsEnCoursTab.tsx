@@ -1,8 +1,8 @@
 import { PadelCourtOutline } from "../components/CourtBackground";
 
 /** Taille fixe des terrains (10×20 m → ratio 1:2), indépendante du nombre. */
-const COURT_WIDTH_PX = 360;
-const COURT_HEIGHT_PX = 720;
+const COURT_WIDTH_PX = 280;
+const COURT_HEIGHT_PX = 560;
 
 interface LiveMatchsEnCoursTabProps {
   terrains: string[];
