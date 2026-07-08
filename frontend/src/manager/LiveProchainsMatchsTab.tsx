@@ -23,8 +23,8 @@ export function LiveProchainsMatchsTab({
 
   if (!started) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-        <p className="max-w-md text-center text-sm text-white/40">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-white p-6">
+        <p className="max-w-md text-center text-sm text-arena-600/55">
           Démarrez le tournoi pour afficher les prochains matchs.
         </p>
       </div>
@@ -32,10 +32,13 @@ export function LiveProchainsMatchsTab({
   }
 
   return (
-    <LiveCourtsRow
-      terrains={terrains}
-      matchByTerrain={matchByTerrain}
-      emptyLabel="Aucun match suivant"
-    />
+    <div className="flex min-h-0 flex-1 flex-col bg-white">
+      <LiveCourtsRow
+        terrains={terrains}
+        matchByTerrain={matchByTerrain}
+        emptyLabel="Aucun match suivant"
+        theme="light"
+      />
+    </div>
   );
 }

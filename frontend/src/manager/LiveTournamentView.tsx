@@ -227,6 +227,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     primaryTab === "planning" ||
     primaryTab === "final";
 
+  const isProjectionTab = primaryTab === "live" || primaryTab === "upcoming";
+
   return (
     <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-arena-950 text-white">
       <CourtBackground />
@@ -273,7 +275,10 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
 
         <div
           className={[
-            "mt-3 flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border border-lime/15 bg-arena-900/45 backdrop-blur-xl",
+            "mt-3 flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border",
+            isProjectionTab
+              ? "border-arena-600/15 bg-white"
+              : "border-lime/15 bg-arena-900/45 backdrop-blur-xl",
             primaryTab === "planning" ? "touch-manipulation" : "touch-none",
           ].join(" ")}
         >

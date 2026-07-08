@@ -4,6 +4,7 @@
  * ligne centrale de service sur la largeur (5 m).
  */
 import type { CSSProperties } from "react";
+import { useId } from "react";
 
 const COURT = {
   length: 20,
@@ -80,13 +81,78 @@ function PadelCourtSvg({
 }
 
 /** Tracé padel 20×10 m, traits simples (sans halo). */
-export function PadelCourtOutline({ className = "" }: { className?: string }) {
+export function PadelCourtOutline({
+  className = "",
+  stroke = "#ffffff",
+  strokeOpacity = 0.9,
+}: {
+  className?: string;
+  stroke?: string;
+  strokeOpacity?: number;
+}) {
   return (
     <PadelCourtSvg
       className={className}
-      stroke="#ffffff"
-      strokeOpacity={0.9}
+      stroke={stroke}
+      strokeOpacity={strokeOpacity}
     />
+  );
+}
+
+/** Terrain padel rempli (projection / mode clair). */
+export function PadelCourtFilled({ className = "" }: { className?: string }) {
+  const gradientId = useId();
+  const vbW = 100;
+  const vbL = 200;
+  const {
+    x0,
+    x1,
+    y0,
+    courtW,
+    courtH,
+    cx,
+    yNet,
+    yServiceTop,
+    yServiceBottom,
+  } = padelCourtLines(vbW, vbL, 5);
+
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid meet"
+      viewBox={`0 0 ${vbW} ${vbL}`}
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#0a3d4a" />
+          <stop offset="40%" stopColor="#0d5c5a" />
+          <stop offset="100%" stopColor="#0a4a52" />
+        </linearGradient>
+      </defs>
+      <rect
+        x={x0}
+        y={y0}
+        width={courtW}
+        height={courtH}
+        rx="1"
+        fill={`url(#${gradientId})`}
+      />
+      <g
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity={0.92}
+        strokeWidth="0.4"
+        vectorEffect="non-scaling-stroke"
+      >
+        <rect x={x0} y={y0} width={courtW} height={courtH} rx="1" />
+        <line x1={x0} y1={yNet} x2={x1} y2={yNet} strokeWidth="0.6" />
+        <line x1={x0} y1={yServiceTop} x2={x1} y2={yServiceTop} />
+        <line x1={x0} y1={yServiceBottom} x2={x1} y2={yServiceBottom} />
+        <line x1={cx} y1={yServiceTop} x2={cx} y2={yNet} />
+        <line x1={cx} y1={yNet} x2={cx} y2={yServiceBottom} />
+      </g>
+    </svg>
   );
 }
 
