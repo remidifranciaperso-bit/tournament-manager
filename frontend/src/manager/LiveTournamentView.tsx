@@ -189,6 +189,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         return (
           <LiveMatchsEnCoursTab
             terrains={meta.terrains}
+            matches={matches}
             started={progress.started}
             onStart={progress.startTournament}
           />
