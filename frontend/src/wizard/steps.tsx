@@ -547,7 +547,7 @@ export function FormatStep({
         )}
 
         <div className="flex flex-col items-center gap-1.5">
-          <label className="field-label-tight">Nombre de jours</label>
+          <label className="field-label-section">Nombre de jours</label>
           {multiJoursDisponible ? (
             <div className="grid w-full max-w-md grid-cols-3 gap-1.5 sm:gap-2">
               {(
@@ -576,7 +576,7 @@ export function FormatStep({
       {showMatchFormats && (
         <div className="mt-4 flex min-h-0 flex-1 flex-col border-t border-white/10 pt-4">
           <div className="flex shrink-0 flex-col items-center gap-1.5">
-            <label className="field-label-tight">Formats de match</label>
+            <label className="field-label-section">Formats de match</label>
           </div>
 
           <div
@@ -598,10 +598,11 @@ export function FormatStep({
             />
 
             <MatchFormatPicker
-              label="Classements"
+              label="Matchs de classements"
               value={form.formatMatchClassement}
               onChange={(value) => patch({ formatMatchClassement: value })}
               allowIdentique
+              identiqueOnlyUntilExpanded
               scrollable
               compact
             />
@@ -611,6 +612,7 @@ export function FormatStep({
               value={form.formatMatchFinale}
               onChange={(value) => patch({ formatMatchFinale: value })}
               allowIdentique
+              identiqueOnlyUntilExpanded
               scrollable
               compact
             />
@@ -621,6 +623,7 @@ export function FormatStep({
                 value={form.formatMatchPoule}
                 onChange={(value) => patch({ formatMatchPoule: value })}
                 allowIdentique
+                identiqueOnlyUntilExpanded
                 scrollable
                 compact
               />
