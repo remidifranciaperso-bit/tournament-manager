@@ -5,6 +5,10 @@ function storageKey(liveToken: string): string {
   return `live-progress-${liveToken}`;
 }
 
+function startedAtKey(liveToken: string): string {
+  return `live-started-at-${liveToken}`;
+}
+
 function loadCompleted(liveToken: string): Set<string> {
   try {
     const raw = localStorage.getItem(storageKey(liveToken));
@@ -20,12 +24,19 @@ function saveCompleted(liveToken: string, codes: Set<string>): void {
   localStorage.setItem(storageKey(liveToken), JSON.stringify([...codes]));
 }
 
-function tournamentStartMs(dateTournoi: string, heureDebut: string): number {
-  const [hours, minutes = "0"] = heureDebut.split(":");
-  const start = new Date(dateTournoi);
-  if (Number.isNaN(start.getTime())) return Date.now();
-  start.setHours(Number(hours), Number(minutes), 0, 0);
-  return start.getTime();
+function loadStartedAt(liveToken: string): number | null {
+  try {
+    const raw = localStorage.getItem(startedAtKey(liveToken));
+    if (!raw) return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStartedAt(liveToken: string, startedAt: number): void {
+  localStorage.setItem(startedAtKey(liveToken), String(startedAt));
 }
 
 export function formatElapsed(ms: number): string {
@@ -44,21 +55,31 @@ export function formatElapsed(ms: number): string {
 export function useLiveProgress(
   liveToken: string,
   totalMatches: number,
-  meta: LiveTournamentMeta
+  _meta: LiveTournamentMeta
 ) {
   const [completed, setCompleted] = useState<Set<string>>(() =>
     loadCompleted(liveToken)
+  );
+  const [startedAt, setStartedAt] = useState<number | null>(() =>
+    loadStartedAt(liveToken)
   );
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     setCompleted(loadCompleted(liveToken));
+    setStartedAt(loadStartedAt(liveToken));
   }, [liveToken]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const startTournament = useCallback(() => {
+    const at = Date.now();
+    setStartedAt(at);
+    saveStartedAt(liveToken, at);
+  }, [liveToken]);
 
   const toggleMatch = useCallback(
     (code: string) => {
@@ -77,9 +98,9 @@ export function useLiveProgress(
   const percent = totalMatches > 0 ? Math.round((done / totalMatches) * 100) : 0;
 
   const elapsed = useMemo(() => {
-    const start = tournamentStartMs(meta.date_tournoi, meta.heure_debut);
-    return formatElapsed(now - start);
-  }, [meta.date_tournoi, meta.heure_debut, now]);
+    if (startedAt === null) return "00:00";
+    return formatElapsed(now - startedAt);
+  }, [startedAt, now]);
 
   return {
     completed,
@@ -88,5 +109,7 @@ export function useLiveProgress(
     total: totalMatches,
     percent,
     elapsed,
+    started: startedAt !== null,
+    startTournament,
   };
 }

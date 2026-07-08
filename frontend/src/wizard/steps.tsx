@@ -475,7 +475,7 @@ export function FormatStep({
     <div
       className={[
         "mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden text-center",
-        showMatchFormats ? "max-w-5xl" : "max-w-2xl",
+        showMatchFormats ? "max-w-6xl" : "max-w-2xl",
       ].join(" ")}
     >
       <WizardPageTitle
@@ -581,7 +581,7 @@ export function FormatStep({
 
           <div
             className={[
-              "mt-2 grid min-h-0 flex-1 gap-2 sm:gap-3",
+              "mt-2 grid min-h-0 flex-1 gap-3 sm:gap-4",
               isPoulesMode ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-3",
             ].join(" ")}
           >

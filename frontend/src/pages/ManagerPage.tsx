@@ -270,7 +270,7 @@ export default function ManagerPage() {
             step === 8
               ? "flex max-w-2xl flex-col justify-center overflow-hidden py-4 sm:py-6"
               : step === 5
-                ? "flex max-w-5xl min-h-0 flex-col overflow-hidden py-4 sm:py-5"
+                ? "flex max-w-6xl min-h-0 flex-col overflow-hidden py-4 sm:py-5"
                 : "max-w-2xl overflow-hidden py-8 sm:py-10"
           }`}
         >

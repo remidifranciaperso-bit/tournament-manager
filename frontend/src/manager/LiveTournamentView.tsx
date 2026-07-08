@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { LiveAvancementTab } from "./LiveAvancementTab";
+import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LivePdfViewer } from "./LivePdfViewer";
 import type { LiveTournamentData } from "./liveTypes";
 import {
@@ -67,7 +68,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   );
   const finalPages = useMemo(() => pageEntries(page_map, "final"), [page_map]);
 
-  const [primaryTab, setPrimaryTab] = useState<LivePrimaryTab>("avancement");
+  const [primaryTab, setPrimaryTab] = useState<LivePrimaryTab>("live");
   const [mainPage, setMainPage] = useState(0);
   const [classementPage, setClassementPage] = useState(0);
   const [planningPage, setPlanningPage] = useState(0);
@@ -185,7 +186,13 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           />
         );
       case "live":
-        return <PlaceholderTab label="Matchs en cours" />;
+        return (
+          <LiveMatchsEnCoursTab
+            terrains={meta.terrains}
+            started={progress.started}
+            onStart={progress.startTournament}
+          />
+        );
       case "upcoming":
         return <PlaceholderTab label="Prochains matchs" />;
       case "main":

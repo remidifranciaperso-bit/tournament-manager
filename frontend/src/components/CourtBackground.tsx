@@ -31,9 +31,13 @@ function padelCourtLines(viewW: number, viewL: number, inset = 5) {
 function PadelCourtSvg({
   className = "",
   style,
+  stroke = "#d4ff4a",
+  strokeOpacity = 1,
 }: {
   className?: string;
   style?: CSSProperties;
+  stroke?: string;
+  strokeOpacity?: number;
 }) {
   const vbW = 100;
   const vbL = 200;
@@ -59,7 +63,8 @@ function PadelCourtSvg({
     >
       <g
         fill="none"
-        stroke="#d4ff4a"
+        stroke={stroke}
+        strokeOpacity={strokeOpacity}
         strokeWidth="0.4"
         vectorEffect="non-scaling-stroke"
       >
@@ -71,6 +76,17 @@ function PadelCourtSvg({
         <line x1={cx} y1={yNet} x2={cx} y2={yServiceBottom} />
       </g>
     </svg>
+  );
+}
+
+/** Tracé padel 20×10 m, traits simples (sans halo). */
+export function PadelCourtOutline({ className = "" }: { className?: string }) {
+  return (
+    <PadelCourtSvg
+      className={className}
+      stroke="#ffffff"
+      strokeOpacity={0.9}
+    />
   );
 }
 
