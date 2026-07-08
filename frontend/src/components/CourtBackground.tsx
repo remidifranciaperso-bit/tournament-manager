@@ -4,7 +4,6 @@
  * ligne centrale de service sur la largeur (5 m).
  */
 import type { CSSProperties } from "react";
-import { useId } from "react";
 
 const COURT = {
   length: 20,
@@ -99,9 +98,11 @@ export function PadelCourtOutline({
   );
 }
 
+/** Bleu principal des templates PowerPoint (« templates bleus »). */
+export const TEMPLATE_COURT_BLUE = "#00B0F0";
+
 /** Terrain padel rempli (projection / mode clair). */
 export function PadelCourtFilled({ className = "" }: { className?: string }) {
-  const gradientId = useId();
   const vbW = 100;
   const vbL = 200;
   const {
@@ -123,20 +124,13 @@ export function PadelCourtFilled({ className = "" }: { className?: string }) {
       preserveAspectRatio="xMidYMid meet"
       viewBox={`0 0 ${vbW} ${vbL}`}
     >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#071422" />
-          <stop offset="45%" stopColor="#0c1f35" />
-          <stop offset="100%" stopColor="#122a45" />
-        </linearGradient>
-      </defs>
       <rect
         x={x0}
         y={y0}
         width={courtW}
         height={courtH}
         rx="1"
-        fill={`url(#${gradientId})`}
+        fill={TEMPLATE_COURT_BLUE}
       />
       <g
         fill="none"

@@ -4,6 +4,9 @@ export default {
   theme: {
     extend: {
       colors: {
+        template: {
+          blue: "#00B0F0",
+        },
         arena: {
           950: "#040a12",
           900: "#071422",

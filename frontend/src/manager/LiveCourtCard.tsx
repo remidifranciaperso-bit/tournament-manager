@@ -81,8 +81,9 @@ const COURT_THEME = {
     winnerNames:
       "mt-0.5 text-[12px] font-semibold leading-snug text-arena-800 sm:text-[13px]",
     empty: "text-center text-sm text-arena-400",
-    setActive: "bg-white/90 text-arena-700 ring-1 ring-white/80",
-    setInactive: "bg-white/25 text-white/80 hover:bg-white/40 hover:text-white",
+    setActive: "bg-white text-[#00B0F0] ring-1 ring-white/80 shadow-sm",
+    setInactive:
+      "bg-white/35 text-white hover:bg-white/50 hover:text-white",
     court: "filled" as const,
   },
 } as const;
@@ -248,24 +249,6 @@ export function LiveCourtCard({
       >
         <CourtGraphic className="h-full w-full" />
 
-        {showSetTabs && (
-          <div className="absolute inset-x-0 top-2 z-20 flex justify-center gap-1 px-2">
-            {Array.from({ length: scoring!.setCount }, (_, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => scoring!.onSetChange(index)}
-                className={[
-                  "rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition",
-                  index === activeSet ? theme.setActive : theme.setInactive,
-                ].join(" ")}
-              >
-                {index === 2 ? "STB" : `Set ${index + 1}`}
-              </button>
-            ))}
-          </div>
-        )}
-
         {match && equipe1 && equipe2 ? (
           <>
             <div className="absolute inset-x-0 top-0 z-10 flex h-1/2 items-center justify-center px-2">
@@ -284,9 +267,25 @@ export function LiveCourtCard({
               />
             </div>
 
-            <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+            <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
               {scoringMode && scoring?.winnerTeam ? (
                 <WinnerBadge team={scoring.winnerTeam} theme={theme} />
+              ) : scoringMode && showSetTabs ? (
+                <div className="flex flex-wrap justify-center gap-1">
+                  {Array.from({ length: scoring!.setCount }, (_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => scoring!.onSetChange(index)}
+                      className={[
+                        "rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide transition",
+                        index === activeSet ? theme.setActive : theme.setInactive,
+                      ].join(" ")}
+                    >
+                      {index === 2 ? "STB" : `Set ${index + 1}`}
+                    </button>
+                  ))}
+                </div>
               ) : (
                 !scoringMode && <span className={theme.vs}>vs</span>
               )}
