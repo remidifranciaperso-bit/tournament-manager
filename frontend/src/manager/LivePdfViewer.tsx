@@ -54,6 +54,9 @@ interface LivePdfPageProps {
   checkboxes?: PlanningCheckboxOverlay[];
 }
 
+/** Compense le centrage flex + métriques fonte du ✓ vs la ☐ du PDF. */
+const CHECK_MARK_UPSHIFT_RATIO = 0.16;
+
 function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
   const slotRef = useRef<HTMLDivElement>(null);
   const [renderSize, setRenderSize] = useState<{ w: number; h: number } | null>(
@@ -142,6 +145,12 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
               )
             );
 
+            const cellHeightPx = (box.height / 100) * renderSize.h;
+            const checkOffsetY = Math.max(
+              1.5,
+              cellHeightPx * CHECK_MARK_UPSHIFT_RATIO
+            );
+
             return (
               <button
                 key={box.code}
@@ -167,8 +176,11 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
               >
                 {box.checked ? (
                   <span
-                    className="pointer-events-none font-bold leading-none text-black"
-                    style={{ fontSize: `${markSize}px` }}
+                    className="pointer-events-none block font-bold leading-none text-black"
+                    style={{
+                      fontSize: `${markSize}px`,
+                      transform: `translateY(-${checkOffsetY}px)`,
+                    }}
                     aria-hidden
                   >
                     ✓
