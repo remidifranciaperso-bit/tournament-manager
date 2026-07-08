@@ -33,8 +33,6 @@ import {
   type TournamentForm,
 } from "./types";
 
-const APP_BUILD = "2026-07-07a";
-
 function generationTagline(genre: Genre): string {
   return genre === "Femmes"
     ? "QUE LES MEILLEURES GAGNENT"
@@ -270,9 +268,6 @@ export default function App() {
           </button>
           <p className="text-sm font-medium text-white/55">
             Génération tournoi
-          </p>
-          <p className="mt-2 text-[10px] uppercase tracking-widest text-white/25">
-            build {APP_BUILD}
           </p>
         </div>
         <Stepper
