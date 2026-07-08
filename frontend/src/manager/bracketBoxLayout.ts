@@ -7,9 +7,10 @@ import { STANDARD_MATCH_BOX } from "./bracketTemplateMetrics";
 import type { ParsedMatchSlot } from "./bracketSlideLayout";
 
 const COLUMN_BUCKET_PCT = 6;
-const TOP_MARGIN_PCT = 8;
-const BOTTOM_MARGIN_PCT = 92;
-const QUARTER_COUNT = 4;
+/** Zone utile du slide — espacement x jusqu'aux bords. */
+const PAGE_TOP_PCT = 4;
+const PAGE_BOTTOM_PCT = 96;
+const MIN_GAP_PCT = 1;
 
 const QUARTER_CODES = ["Q1", "Q2", "Q3", "Q4"] as const;
 
@@ -22,24 +23,49 @@ function hSortKey(code: string): number {
   return match ? Number.parseInt(match[1], 10) : 0;
 }
 
-/** Espacement x identique : haut–Q1–Q2–Q3–Q4–bas (n+1 intervalles). */
-function equalGapX(slotCount: number, boxHeight: number): number {
-  const available = BOTTOM_MARGIN_PCT - TOP_MARGIN_PCT;
-  return (available - slotCount * boxHeight) / (slotCount + 1);
+function quarterIndex(code: string): number | null {
+  const match = code.match(/^Q(\d+)$/);
+  if (!match) return null;
+  return Number.parseInt(match[1], 10) - 1;
 }
 
-function topAtGridIndex(index: number, boxHeight: number, slotCount: number): number {
-  const x = equalGapX(slotCount, boxHeight);
-  return TOP_MARGIN_PCT + x + index * (boxHeight + x);
+export interface VerticalGrid {
+  tops: number[];
+  boxHeight: number;
+  gap: number;
 }
 
-/** Grille fixe Q1–Q4 : source de vérité du tableau principal. */
-function computeQuarterGrid(boxHeight: number): Map<string, number> {
-  const grid = new Map<string, number>();
-  QUARTER_CODES.forEach((code, index) => {
-    grid.set(code, topAtGridIndex(index, boxHeight, QUARTER_COUNT));
-  });
-  return grid;
+/**
+ * n boîtes avec (n+1) intervalles égaux x :
+ * haut — x — slot0 — x — … — slot(n-1) — x — bas
+ */
+export function buildEqualGapGrid(
+  slotCount: number,
+  preferredBoxHeight: number,
+  topMargin = PAGE_TOP_PCT,
+  bottomMargin = PAGE_BOTTOM_PCT
+): VerticalGrid {
+  const span = bottomMargin - topMargin;
+  let boxHeight = preferredBoxHeight;
+  let gap = (span - slotCount * boxHeight) / (slotCount + 1);
+
+  if (gap < MIN_GAP_PCT) {
+    gap = MIN_GAP_PCT;
+    boxHeight = (span - (slotCount + 1) * gap) / slotCount;
+  }
+
+  const tops = Array.from({ length: slotCount }, (_, index) =>
+    topMargin + gap + index * (boxHeight + gap)
+  );
+
+  return { tops, boxHeight, gap };
+}
+
+/** 4 quarts sur le tournoi (16 équipes) même si la slide n'en affiche que 2. */
+export function inferQuarterSlotCount(matchCodes: Iterable<string>): number {
+  const codes = new Set(matchCodes);
+  if (codes.has("Q3") || codes.has("Q4")) return 4;
+  return 2;
 }
 
 function boxCenterY(top: number, height: number): number {
@@ -70,21 +96,23 @@ function isClassementCode(code: string): boolean {
 function applyMainBracketPositions(
   codes: Set<string>,
   tops: Map<string, number>,
-  boxHeight: number
+  quarterGrid: VerticalGrid
 ): void {
-  const quarterGrid = computeQuarterGrid(boxHeight);
+  const { tops: qTops, boxHeight } = quarterGrid;
 
   for (const code of QUARTER_CODES) {
+    const index = quarterIndex(code);
+    if (index == null || index >= qTops.length) continue;
     if (codes.has(code)) {
-      tops.set(code, quarterGrid.get(code)!);
+      tops.set(code, qTops[index]);
     }
   }
 
-  const qCenter = (code: (typeof QUARTER_CODES)[number]) =>
-    boxCenterY(quarterGrid.get(code)!, boxHeight);
+  const qTop = (index: number) => qTops[index] ?? qTops[qTops.length - 1];
+  const qCenter = (index: number) => boxCenterY(qTop(index), boxHeight);
 
-  const d1Center = (qCenter("Q1") + qCenter("Q2")) / 2;
-  const d2Center = (qCenter("Q3") + qCenter("Q4")) / 2;
+  const d1Center = (qCenter(0) + qCenter(1)) / 2;
+  const d2Center = (qCenter(2) + qCenter(3)) / 2;
 
   if (codes.has("D1")) {
     tops.set("D1", topForCenter(d1Center, boxHeight));
@@ -96,7 +124,7 @@ function applyMainBracketPositions(
     tops.set("F", topForCenter((d1Center + d2Center) / 2, boxHeight));
   }
   if (codes.has("PF")) {
-    tops.set("PF", quarterGrid.get("Q4")!);
+    tops.set("PF", qTop(3));
   }
 
   const hCodes = [...codes]
@@ -107,8 +135,8 @@ function applyMainBracketPositions(
 
   hCodes.forEach((code) => {
     const index = hSortKey(code) - 1 - hBase;
-    if (index >= 0 && index < QUARTER_COUNT) {
-      tops.set(code, topAtGridIndex(index, boxHeight, QUARTER_COUNT));
+    if (index >= 0 && index < qTops.length) {
+      tops.set(code, qTops[index]);
     }
   });
 }
@@ -132,15 +160,16 @@ function applyClassementColumnPositions(
 
   for (const list of byColumn.values()) {
     list.sort((a, b) => a.top - b.top);
-    const count = list.length;
+    const grid = buildEqualGapGrid(list.length, boxHeight);
     list.forEach((item, index) => {
-      tops.set(item.code, topAtGridIndex(index, boxHeight, count));
+      tops.set(item.code, grid.tops[index]);
     });
   }
 }
 
 export function resolveMatchBoxLayouts(
-  slots: ParsedMatchSlot[]
+  slots: ParsedMatchSlot[],
+  options?: { matchCodes?: Iterable<string> }
 ): Map<string, BoxRectPct> {
   const dim = mapSizeToProjection(
     STANDARD_MATCH_BOX.widthPct,
@@ -151,11 +180,17 @@ export function resolveMatchBoxLayouts(
   const hasMainBracket = [...codes].some(isMainBracketCode);
   const tops = new Map<string, number>();
 
+  const quarterSlotCount = inferQuarterSlotCount(
+    options?.matchCodes ?? codes
+  );
+  const quarterGrid = buildEqualGapGrid(quarterSlotCount, dim.height);
+  const boxHeight = hasMainBracket ? quarterGrid.boxHeight : dim.height;
+
   if (hasMainBracket) {
-    applyMainBracketPositions(codes, tops, dim.height);
+    applyMainBracketPositions(codes, tops, quarterGrid);
   }
 
-  applyClassementColumnPositions(slots, tops, dim.height);
+  applyClassementColumnPositions(slots, tops, boxHeight);
 
   const layouts = new Map<string, BoxRectPct>();
   for (const slot of slots) {
@@ -164,7 +199,7 @@ export function resolveMatchBoxLayouts(
       left: pos.x,
       top: tops.get(slot.code) ?? pos.y,
       width: dim.width,
-      height: dim.height,
+      height: boxHeight,
     });
   }
 

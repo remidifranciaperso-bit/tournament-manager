@@ -219,8 +219,11 @@ export function LiveBracketSlide({
   }, [parsed.matches, matchesByCode]);
 
   const boxLayouts = useMemo(
-    () => resolveMatchBoxLayouts(parsed.matches),
-    [parsed.matches]
+    () =>
+      resolveMatchBoxLayouts(parsed.matches, {
+        matchCodes: matches.map((match) => match.code),
+      }),
+    [parsed.matches, matches]
   );
 
   const connectorPaths = useMemo(
