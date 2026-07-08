@@ -20,25 +20,24 @@ export function LiveBracketViewer({
 }: LiveBracketViewerProps) {
   const { layout, loading, error } = useTemplateLayout(templateId);
   const slotRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
   const [renderWidth, setRenderWidth] = useState(960);
 
   const computeWidth = useCallback(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    const w = frame.clientWidth;
-    const h = frame.clientHeight;
+    const slot = slotRef.current;
+    if (!slot) return;
+    const w = slot.clientWidth;
+    const h = slot.clientHeight;
     if (w <= 0 || h <= 0) return;
     setRenderWidth(Math.floor(Math.min(w, h * SLIDE_ASPECT)));
   }, []);
 
   useEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
+    const slot = slotRef.current;
+    if (!slot) return;
 
     computeWidth();
     const observer = new ResizeObserver(() => computeWidth());
-    observer.observe(frame);
+    observer.observe(slot);
     return () => observer.disconnect();
   }, [computeWidth, layout]);
 
@@ -70,19 +69,14 @@ export function LiveBracketViewer({
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white p-3 sm:p-5"
+      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white p-2 sm:p-4"
     >
-      <div
-        ref={frameRef}
-        className="flex h-full max-h-full w-full max-w-full items-center justify-center rounded-xl border-2 border-template-blue bg-white p-1.5 shadow-[inset_0_0_0_1px_rgba(0,176,240,0.15)] sm:p-2"
-      >
-        <LiveBracketSlide
-          fields={fields}
-          matches={matches}
-          matchResults={matchResults}
-          renderWidth={renderWidth}
-        />
-      </div>
+      <LiveBracketSlide
+        fields={fields}
+        matches={matches}
+        matchResults={matchResults}
+        renderWidth={renderWidth}
+      />
     </div>
   );
 }

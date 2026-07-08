@@ -1,6 +1,5 @@
 import type { LiveLayoutField } from "./liveTypes";
 import {
-  PROJECTION_INSET,
   projectionContentSize,
   STANDARD_MATCH_BOX,
 } from "./bracketTemplateMetrics";
@@ -18,12 +17,11 @@ export interface PointPct {
   y: number;
 }
 
-/** Repère layout template (0–100 %) → zone de projection. */
 export function mapLayoutToProjection(left: number, top: number): PointPct {
   const size = projectionContentSize();
   return {
-    x: PROJECTION_INSET.left + (left / 100) * size.width,
-    y: PROJECTION_INSET.top + (top / 100) * size.height,
+    x: (left / 100) * size.width,
+    y: (top / 100) * size.height,
   };
 }
 

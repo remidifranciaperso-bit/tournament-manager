@@ -11,21 +11,10 @@ export const TEMPLATE_PT = {
   feedLabel: 8,
 } as const;
 
-/**
- * Zone utile à l'intérieur de l'encadré bleu de projection
- * (espace libéré sans bandeau TYPE/DATE).
- */
-export const PROJECTION_INSET = {
-  top: 5,
-  left: 2.5,
-  right: 2.5,
-  bottom: 3,
-} as const;
-
-/** Boîte match — plus haute pour accueillir le score live. */
+/** Boîte match — hauteur augmentée pour noms + zone score (largeur inchangée). */
 export const STANDARD_MATCH_BOX = {
   widthPct: 27.62,
-  heightPct: 19.5,
+  heightPct: 23.5,
 } as const;
 
 const SLIDE_H_IN = SLIDE_H_EMU / 914400;
@@ -36,8 +25,5 @@ export function ptOnSlide(pt: number, slidePixelHeight: number): number {
 }
 
 export function projectionContentSize() {
-  return {
-    width: 100 - PROJECTION_INSET.left - PROJECTION_INSET.right,
-    height: 100 - PROJECTION_INSET.top - PROJECTION_INSET.bottom,
-  };
+  return { width: 100, height: 100 };
 }

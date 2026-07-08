@@ -234,7 +234,7 @@ export function LiveBracketSlide({
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden rounded-[10px] bg-white"
+      className="relative shrink-0 overflow-hidden bg-white"
       style={{ width: renderWidth, height: renderHeight }}
     >
       <BracketConnectors paths={connectorPaths} />
