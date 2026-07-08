@@ -1,8 +1,8 @@
 import { PadelCourtOutline } from "../components/CourtBackground";
 
 /** Taille fixe des terrains (10×20 m → ratio 1:2), indépendante du nombre. */
-const COURT_WIDTH_PX = 200;
-const COURT_HEIGHT_PX = 400;
+const COURT_WIDTH_PX = 360;
+const COURT_HEIGHT_PX = 720;
 
 interface LiveMatchsEnCoursTabProps {
   terrains: string[];
@@ -25,7 +25,7 @@ export function LiveMatchsEnCoursTab({
                 key={name}
                 className="flex shrink-0 flex-col items-center"
               >
-                <p className="field-label-section mb-3 max-w-[200px] truncate px-1 text-center">
+                <p className="field-label-section mb-3 max-w-[360px] truncate px-1 text-center">
                   {name}
                 </p>
                 <div
