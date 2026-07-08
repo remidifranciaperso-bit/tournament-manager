@@ -3,13 +3,12 @@ import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 import {
   parseBracketSlide,
   SLIDE_ASPECT,
-  type ParsedMatchSlot,
 } from "./bracketSlideLayout";
+import { resolveMatchBoxLayouts } from "./bracketBoxLayout";
 import { buildBracketConnectors } from "./bracketConnectors";
-import { mapFieldToProjection, mapSizeToProjection, matchBoxPosition } from "./bracketGeometry";
+import { mapFieldToProjection, type BoxRectPct } from "./bracketGeometry";
 import {
   ptOnSlide,
-  STANDARD_MATCH_BOX,
   TEMPLATE_PT,
 } from "./bracketTemplateMetrics";
 import {
@@ -55,24 +54,19 @@ function resolveTeamDisplay(
 
 function TemplateMatchBox({
   match,
-  slot,
+  box,
   team1,
   team2,
   score,
   scaleH,
 }: {
   match: LiveMatch;
-  slot: ParsedMatchSlot;
+  box: BoxRectPct;
   team1: string;
   team2: string;
   score: string | null;
   scaleH: number;
 }) {
-  const pos = matchBoxPosition(slot);
-  const dim = mapSizeToProjection(
-    STANDARD_MATCH_BOX.widthPct,
-    STANDARD_MATCH_BOX.heightPct
-  );
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const teamPx = ptOnSlide(TEMPLATE_PT.team, scaleH);
   const vsPx = ptOnSlide(TEMPLATE_PT.vs, scaleH);
@@ -82,28 +76,27 @@ function TemplateMatchBox({
     <div
       className="absolute z-10 flex flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm"
       style={{
-        left: `${pos.x}%`,
-        top: `${pos.y}%`,
-        width: `${dim.width}%`,
-        height: `${dim.height}%`,
+        left: `${box.left}%`,
+        top: `${box.top}%`,
+        width: `${box.width}%`,
+        height: `${box.height}%`,
       }}
     >
-      {/* Bannière : code (gauche) · terrain (centre) · heure (droite) */}
       <div
-        className="grid shrink-0 grid-cols-3 items-center rounded-t-lg bg-template-blue px-[0.4em] font-tsl font-semibold leading-none text-white"
+        className="grid shrink-0 grid-cols-3 items-center rounded-t-lg bg-template-blue px-[0.4em] font-tsl leading-none text-white"
         style={{
           height: score ? "20%" : "22%",
           fontSize: codePx,
         }}
       >
-        <span className="truncate text-left">{match.code}</span>
-        <span className="truncate text-center">{match.terrain ?? ""}</span>
-        <span className="truncate text-right">{match.heure ?? ""}</span>
+        <span className="truncate text-left font-semibold">{match.code}</span>
+        <span className="truncate text-center font-bold">{match.terrain ?? ""}</span>
+        <span className="truncate text-right font-semibold">{match.heure ?? ""}</span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div
-          className="flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto font-medium leading-tight text-arena-800"
+          className="flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto font-semibold leading-tight text-arena-800"
           style={{ fontSize: teamPx }}
         >
           <span className="line-clamp-2 break-words">{team1}</span>
@@ -115,7 +108,7 @@ function TemplateMatchBox({
           vs
         </div>
         <div
-          className="flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto font-medium leading-tight text-arena-800"
+          className="flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto font-semibold leading-tight text-arena-800"
           style={{ fontSize: teamPx }}
         >
           <span className="line-clamp-2 break-words">{team2}</span>
@@ -221,15 +214,21 @@ export function LiveBracketSlide({
     return set;
   }, [parsed.matches, matchesByCode]);
 
+  const boxLayouts = useMemo(
+    () => resolveMatchBoxLayouts(parsed.matches),
+    [parsed.matches]
+  );
+
   const connectorPaths = useMemo(
     () =>
       buildBracketConnectors(
         parsed.matches,
         parsed.feeds,
         matchesByCode,
-        consumedFeeds
+        consumedFeeds,
+        boxLayouts
       ),
-    [parsed.matches, parsed.feeds, matchesByCode, consumedFeeds]
+    [parsed.matches, parsed.feeds, matchesByCode, consumedFeeds, boxLayouts]
   );
 
   return (
@@ -243,13 +242,16 @@ export function LiveBracketSlide({
         const match = matchesByCode.get(slot.code);
         if (!match) return null;
 
+        const box = boxLayouts.get(slot.code);
+        if (!box) return null;
+
         const result = matchResults[match.code];
 
         return (
           <TemplateMatchBox
             key={slot.code}
             match={match}
-            slot={slot}
+            box={box}
             team1={resolveTeamDisplay(
               match.equipe1,
               matchesByCode,

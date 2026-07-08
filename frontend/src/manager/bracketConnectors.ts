@@ -2,8 +2,8 @@ import { feedKeyFromTeamLabel } from "./formatBracketLabel";
 import {
   childInlet,
   feedAnchor,
-  matchBoxRect,
   parentOutlet,
+  type BoxRectPct,
   type PointPct,
 } from "./bracketGeometry";
 import type { ParsedMatchSlot } from "./bracketSlideLayout";
@@ -28,7 +28,8 @@ export function buildBracketConnectors(
   slots: ParsedMatchSlot[],
   feeds: LiveLayoutField[],
   matchesByCode: Map<string, LiveMatch>,
-  consumedFeeds: Set<string>
+  consumedFeeds: Set<string>,
+  boxLayouts: Map<string, BoxRectPct>
 ): string[] {
   const slotByCode = new Map(slots.map((s) => [s.code, s]));
   const feedByKey = new Map(feeds.map((f) => [f.key, f]));
@@ -38,7 +39,8 @@ export function buildBracketConnectors(
     const match = matchesByCode.get(slot.code);
     if (!match) continue;
 
-    const childRect = matchBoxRect(slot);
+    const childRect = boxLayouts.get(slot.code);
+    if (!childRect) continue;
     const links: Array<{ parentCode: string; team: 1 | 2 }> = [];
 
     const p1 = parentCodeFromLabel(match.equipe1) ?? match.parents[0];
@@ -52,7 +54,9 @@ export function buildBracketConnectors(
       const to = childInlet(childRect, team);
 
       if (parentSlot) {
-        const from = parentOutlet(matchBoxRect(parentSlot));
+        const parentRect = boxLayouts.get(parentCode);
+        if (!parentRect) continue;
+        const from = parentOutlet(parentRect);
         paths.push(bracketPath(from, to));
         continue;
       }
@@ -82,7 +86,10 @@ export function buildBracketConnectors(
     const parentSlot = slotByCode.get(code);
     if (!parentSlot) continue;
 
-    const from = parentOutlet(matchBoxRect(parentSlot));
+    const parentRect = boxLayouts.get(code);
+    if (!parentRect) continue;
+
+    const from = parentOutlet(parentRect);
     const to = feedAnchor(field, "right");
     if (to.x > from.x) {
       paths.push(bracketPath(from, to));

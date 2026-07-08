@@ -5,16 +5,16 @@ export const SLIDE_W_EMU = 9906000;
 /** Tailles de police en points (fidèles au template). */
 export const TEMPLATE_PT = {
   matchCode: 11,
-  team: 8,
+  team: 10,
   vs: 9,
   score: 9,
   feedLabel: 8,
 } as const;
 
-/** Boîte match — hauteur augmentée pour noms + zone score (largeur inchangée). */
+/** Boîte match — hauteur intermédiaire (noms + zone score). */
 export const STANDARD_MATCH_BOX = {
   widthPct: 27.62,
-  heightPct: 23.5,
+  heightPct: 21.5,
 } as const;
 
 const SLIDE_H_IN = SLIDE_H_EMU / 914400;
