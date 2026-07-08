@@ -46,9 +46,10 @@ const COURT_THEME = {
       "field-label-section max-w-[280px] truncate px-1 text-center",
     matchName:
       "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-white/65 sm:text-[13px]",
-    teamBadge: `${COURT_BADGE_WIDTH_CLASS} shrink-0 rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 text-center shadow-sm`,
-    playerName: "text-[14px] font-medium leading-snug text-white sm:text-[15px]",
-    seed: "mt-1 text-[14px] font-semibold uppercase tracking-wide text-lime/90 sm:text-[15px]",
+    teamBadge: `${COURT_BADGE_WIDTH_CLASS} flex min-h-[5.5rem] shrink-0 flex-col rounded-lg border border-white/30 bg-arena-950/80 px-2.5 py-2 shadow-sm`,
+    playerName:
+      "w-full text-center text-[14px] font-medium leading-snug text-white sm:text-[15px]",
+    seed: "text-[11px] font-semibold uppercase tracking-wide text-template-blue sm:text-[12px]",
     gamesSelect:
       "mt-1.5 w-full max-w-[5.5rem] rounded-md border border-lime/30 bg-arena-950/90 px-1.5 py-1 text-center text-[13px] font-semibold text-lime focus:border-lime/50 focus:outline-none",
     vs: "rounded-full border border-lime/35 bg-arena-950/85 px-2.5 py-0.5 font-display text-sm font-bold uppercase tracking-wider text-lime sm:text-base",
@@ -67,11 +68,10 @@ const COURT_THEME = {
       "max-w-[280px] truncate px-1 text-center text-sm font-semibold uppercase tracking-widest text-arena-700 sm:text-base",
     matchName:
       "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-arena-600 sm:text-[13px]",
-    teamBadge:
-      `${COURT_BADGE_WIDTH_CLASS} shrink-0 rounded-lg border border-arena-600/20 bg-white/95 px-2.5 py-2 text-center shadow-sm`,
+    teamBadge: `${COURT_BADGE_WIDTH_CLASS} flex min-h-[5.5rem] shrink-0 flex-col rounded-lg border border-arena-600/20 bg-white/95 px-2.5 py-2 shadow-sm`,
     playerName:
-      "text-[14px] font-medium leading-snug text-arena-800 sm:text-[15px]",
-    seed: "mt-1 text-[14px] font-semibold uppercase tracking-wide text-arena-600 sm:text-[15px]",
+      "w-full text-center text-[14px] font-medium leading-snug text-arena-800 sm:text-[15px]",
+    seed: "text-[11px] font-semibold uppercase tracking-wide text-template-blue sm:text-[12px]",
     gamesSelect:
       "mt-1.5 w-full max-w-[5.5rem] rounded-md border border-arena-600/30 bg-white px-1.5 py-1 text-center text-[13px] font-semibold text-arena-700 focus:border-arena-600/50 focus:outline-none",
     vs: "rounded-full border border-arena-600/35 bg-white px-2.5 py-0.5 font-display text-sm font-bold uppercase tracking-wider text-arena-700 sm:text-base",
@@ -135,11 +135,15 @@ function TeamBadge({
 }) {
   return (
     <div className={theme.teamBadge}>
-      <p className={`${theme.playerName} break-words`}>{team.player1}</p>
-      {team.player2 && (
-        <p className={`mt-0.5 break-words ${theme.playerName}`}>{team.player2}</p>
-      )}
-      <div className="mt-1 flex min-h-[1.75rem] items-center justify-center">
+      <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <p className={`${theme.playerName} break-words`}>{team.player1}</p>
+        {team.player2 && (
+          <p className={`mt-0.5 break-words ${theme.playerName}`}>
+            {team.player2}
+          </p>
+        )}
+      </div>
+      <div className="flex h-8 items-center justify-center">
         {scoringMode && gameOptions && onGamesChange ? (
           <GamesSelect
             value={games ?? 0}
@@ -149,7 +153,7 @@ function TeamBadge({
             className={`${theme.gamesSelect} mt-0`}
           />
         ) : (
-          team.seed && <p className={`${theme.seed} mt-0`}>{team.seed}</p>
+          team.seed && <p className={theme.seed}>{team.seed}</p>
         )}
       </div>
     </div>
