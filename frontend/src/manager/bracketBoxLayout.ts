@@ -9,14 +9,12 @@ import type { ParsedMatchSlot } from "./bracketSlideLayout";
 const COLUMN_BUCKET_PCT = 6;
 const TOP_MARGIN_PCT = 8;
 const BOTTOM_MARGIN_PCT = 92;
+const QUARTER_COUNT = 4;
+
+const QUARTER_CODES = ["Q1", "Q2", "Q3", "Q4"] as const;
 
 function columnKey(left: number): number {
   return Math.round(left / COLUMN_BUCKET_PCT) * COLUMN_BUCKET_PCT;
-}
-
-function qSortKey(code: string): number {
-  const match = code.match(/^Q(\d+)$/);
-  return match ? Number.parseInt(match[1], 10) : 0;
 }
 
 function hSortKey(code: string): number {
@@ -24,15 +22,24 @@ function hSortKey(code: string): number {
   return match ? Number.parseInt(match[1], 10) : 0;
 }
 
-/** Espacement identique entre boîtes ET entre haut/bas de page. */
-function distributeEqualEdgeGaps(count: number, boxHeight: number): number[] {
-  if (count === 0) return [];
+/** Espacement x identique : haut–Q1–Q2–Q3–Q4–bas (n+1 intervalles). */
+function equalGapX(slotCount: number, boxHeight: number): number {
   const available = BOTTOM_MARGIN_PCT - TOP_MARGIN_PCT;
-  const gap = (available - count * boxHeight) / (count + 1);
-  return Array.from(
-    { length: count },
-    (_, index) => TOP_MARGIN_PCT + gap + index * (boxHeight + gap)
-  );
+  return (available - slotCount * boxHeight) / (slotCount + 1);
+}
+
+function topAtGridIndex(index: number, boxHeight: number, slotCount: number): number {
+  const x = equalGapX(slotCount, boxHeight);
+  return TOP_MARGIN_PCT + x + index * (boxHeight + x);
+}
+
+/** Grille fixe Q1–Q4 : source de vérité du tableau principal. */
+function computeQuarterGrid(boxHeight: number): Map<string, number> {
+  const grid = new Map<string, number>();
+  QUARTER_CODES.forEach((code, index) => {
+    grid.set(code, topAtGridIndex(index, boxHeight, QUARTER_COUNT));
+  });
+  return grid;
 }
 
 function boxCenterY(top: number, height: number): number {
@@ -57,61 +64,53 @@ function isClassementCode(code: string): boolean {
 }
 
 /**
- * Règles tableau principal :
- * - Q : espacement uniforme (marges haut/bas = inter-lignes)
- * - D1 : milieu de Q1–Q2 ; D2 : milieu de Q3–Q4
- * - F : milieu de D1–D2 ; PF : même top que Q4
+ * Tableau principal — les Q imposent la grille, D/F en découlent.
+ * D1 = milieu Q1/Q2, D2 = milieu Q3/Q4, F = milieu D1/D2, PF = top Q4.
  */
 function applyMainBracketPositions(
   codes: Set<string>,
   tops: Map<string, number>,
   boxHeight: number
 ): void {
-  const qCodes = [...codes]
-    .filter((code) => /^Q\d+$/.test(code))
-    .sort((a, b) => qSortKey(a) - qSortKey(b));
+  const quarterGrid = computeQuarterGrid(boxHeight);
 
-  const qTops = distributeEqualEdgeGaps(qCodes.length, boxHeight);
-  qCodes.forEach((code, index) => tops.set(code, qTops[index]));
-
-  const centerOf = (code: string): number | undefined => {
-    const top = tops.get(code);
-    return top === undefined ? undefined : boxCenterY(top, boxHeight);
-  };
-
-  const q1 = centerOf("Q1");
-  const q2 = centerOf("Q2");
-  const q3 = centerOf("Q3");
-  const q4 = centerOf("Q4");
-
-  if (codes.has("D1") && q1 !== undefined && q2 !== undefined) {
-    tops.set("D1", topForCenter((q1 + q2) / 2, boxHeight));
+  for (const code of QUARTER_CODES) {
+    if (codes.has(code)) {
+      tops.set(code, quarterGrid.get(code)!);
+    }
   }
 
-  if (codes.has("D2") && q3 !== undefined && q4 !== undefined) {
-    tops.set("D2", topForCenter((q3 + q4) / 2, boxHeight));
+  const qCenter = (code: (typeof QUARTER_CODES)[number]) =>
+    boxCenterY(quarterGrid.get(code)!, boxHeight);
+
+  const d1Center = (qCenter("Q1") + qCenter("Q2")) / 2;
+  const d2Center = (qCenter("Q3") + qCenter("Q4")) / 2;
+
+  if (codes.has("D1")) {
+    tops.set("D1", topForCenter(d1Center, boxHeight));
   }
-
-  const d1 = centerOf("D1");
-  const d2 = centerOf("D2");
-
-  if (codes.has("F") && d1 !== undefined && d2 !== undefined) {
-    tops.set("F", topForCenter((d1 + d2) / 2, boxHeight));
-  } else if (codes.has("F") && d1 !== undefined && q1 !== undefined) {
-    // Slide partielle (ex. 16 équipes) : prolonge la symétrie Q1→D1→F
-    tops.set("F", topForCenter(d1 + (d1 - q1), boxHeight));
+  if (codes.has("D2")) {
+    tops.set("D2", topForCenter(d2Center, boxHeight));
   }
-
-  if (codes.has("PF") && tops.has("Q4")) {
-    tops.set("PF", tops.get("Q4")!);
+  if (codes.has("F")) {
+    tops.set("F", topForCenter((d1Center + d2Center) / 2, boxHeight));
+  }
+  if (codes.has("PF")) {
+    tops.set("PF", quarterGrid.get("Q4")!);
   }
 
   const hCodes = [...codes]
     .filter((code) => /^H\d+$/.test(code))
     .sort((a, b) => hSortKey(a) - hSortKey(b));
 
-  const hTops = distributeEqualEdgeGaps(hCodes.length, boxHeight);
-  hCodes.forEach((code, index) => tops.set(code, hTops[index]));
+  const hBase = hCodes[0] ? Math.floor((hSortKey(hCodes[0]) - 1) / 4) * 4 : 0;
+
+  hCodes.forEach((code) => {
+    const index = hSortKey(code) - 1 - hBase;
+    if (index >= 0 && index < QUARTER_COUNT) {
+      tops.set(code, topAtGridIndex(index, boxHeight, QUARTER_COUNT));
+    }
+  });
 }
 
 /** Colonnes classement : espacement uniforme par colonne. */
@@ -133,8 +132,10 @@ function applyClassementColumnPositions(
 
   for (const list of byColumn.values()) {
     list.sort((a, b) => a.top - b.top);
-    const columnTops = distributeEqualEdgeGaps(list.length, boxHeight);
-    list.forEach((item, index) => tops.set(item.code, columnTops[index]));
+    const count = list.length;
+    list.forEach((item, index) => {
+      tops.set(item.code, topAtGridIndex(index, boxHeight, count));
+    });
   }
 }
 
