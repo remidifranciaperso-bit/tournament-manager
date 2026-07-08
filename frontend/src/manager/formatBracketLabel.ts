@@ -52,3 +52,48 @@ export function feedKeyFromTeamLabel(label: string): string | null {
   if (third) return `THIRD_${third[1].trim()}`;
   return null;
 }
+
+const PLACEHOLDER_PREFIX =
+  /^(Vainqueur|Perdant|Deuxième|Second|Troisième|Gagnants|Perdants|1er|2e|3 )/i;
+
+/** « Jean DUPONT » → « J. DUPONT » (aligné sur ``Team._nom_court_joueur``). */
+function shortPlayerName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return trimmed;
+
+  const spaceIdx = trimmed.indexOf(" ");
+  if (spaceIdx === -1) return trimmed;
+
+  const prenom = trimmed.slice(0, spaceIdx);
+  const nom = trimmed.slice(spaceIdx + 1).trim();
+  const initial = prenom[0]?.toUpperCase() ?? "";
+  return initial ? `${initial}. ${nom}` : nom;
+}
+
+/**
+ * Affichage bracket : initiales + nom + TS.
+ * Ex. « Jean DUPONT / Marie MARTIN (TS1) » → « J. DUPONT / M. MARTIN (TS1) »
+ */
+export function formatTeamWithInitials(label: string): string {
+  const text = label.trim();
+  if (!text) return "—";
+
+  if (PLACEHOLDER_PREFIX.test(text)) {
+    return formatTeamSlot(text);
+  }
+
+  let seed = "";
+  let body = text;
+  const seedMatch = text.match(/(\(TS\d*\))\s*$/i);
+  if (seedMatch) {
+    seed = ` ${seedMatch[1]}`;
+    body = text.slice(0, seedMatch.index).trim();
+  }
+
+  const parts = body.split(/\s*\/\s*/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts.map(shortPlayerName).join(" / ")}${seed}`;
+  }
+
+  return `${shortPlayerName(body)}${seed}`;
+}

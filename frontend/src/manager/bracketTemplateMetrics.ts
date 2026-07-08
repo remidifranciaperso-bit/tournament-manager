@@ -5,7 +5,7 @@ export const SLIDE_W_EMU = 9906000;
 /** Tailles de police en points (fidèles au template). */
 export const TEMPLATE_PT = {
   matchCode: 11,
-  team: 10,
+  team: 12,
   vs: 9,
   score: 9,
   feedLabel: 8,

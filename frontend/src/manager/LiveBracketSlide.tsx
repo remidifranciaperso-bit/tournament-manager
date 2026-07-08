@@ -15,6 +15,7 @@ import {
   feedKeyFromTeamLabel,
   formatFeedKey,
   formatTeamSlot,
+  formatTeamWithInitials,
 } from "./formatBracketLabel";
 import {
   buildMatchesByCode,
@@ -39,7 +40,8 @@ function resolveFeedContent(
   const side = win ? result.winner : result.loser;
   const raw = side === 1 ? parent.equipe1 : parent.equipe2;
   const resolved = resolveTeamLabelDeep(raw, matchesByCode, matchResults);
-  return resolved || formatFeedKey(key);
+  const text = resolved || formatFeedKey(key);
+  return formatTeamWithInitials(text);
 }
 
 function resolveTeamDisplay(
@@ -48,8 +50,8 @@ function resolveTeamDisplay(
   matchResults: Record<string, StoredMatchResult>
 ): string {
   const resolved = resolveTeamLabelDeep(label, matchesByCode, matchResults);
-  if (resolved !== label.trim()) return resolved;
-  return formatTeamSlot(label);
+  const text = resolved !== label.trim() ? resolved : formatTeamSlot(label);
+  return formatTeamWithInitials(text);
 }
 
 function TemplateMatchBox({
