@@ -241,7 +241,10 @@ function BracketConnectors({
           d={d}
           fill="none"
           stroke="#00B0F0"
-          strokeWidth={Math.max(1.8, width * 0.0048)}
+          strokeWidth={Math.max(0.6, width * 0.0016)}
+          strokeLinejoin="round"
+          strokeLinecap="butt"
+          shapeRendering="geometricPrecision"
         />
       ))}
     </svg>

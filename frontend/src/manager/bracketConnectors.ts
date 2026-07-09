@@ -36,7 +36,7 @@ function bracketPathsToChild(
   const paths: string[] = [];
 
   for (const outlet of outlets) {
-    paths.push(`M ${outlet.x} ${outlet.y} H ${midX}`);
+    paths.push(`M ${outlet.x} ${outlet.y} L ${midX} ${outlet.y}`);
   }
 
   const junctionYs = [...outlets.map((point) => point.y), child.y];
@@ -44,10 +44,10 @@ function bracketPathsToChild(
   const yMax = Math.max(...junctionYs);
 
   if (yMax - yMin > 0.05) {
-    paths.push(`M ${midX} ${yMin} V ${yMax}`);
+    paths.push(`M ${midX} ${yMin} L ${midX} ${yMax}`);
   }
 
-  paths.push(`M ${midX} ${child.y} H ${child.x}`);
+  paths.push(`M ${midX} ${child.y} L ${child.x} ${child.y}`);
 
   return paths;
 }
@@ -58,7 +58,7 @@ function feedBracketPath(from: PointPct, to: PointPct): string {
     return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
   }
   const midX = from.x + gap * 0.5;
-  return `M ${from.x} ${from.y} H ${midX} V ${to.y} H ${to.x}`;
+  return `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
 }
 
 export function buildBracketConnectors(
