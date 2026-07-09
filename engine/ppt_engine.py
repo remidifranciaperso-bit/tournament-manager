@@ -1009,6 +1009,11 @@ def remplir_template_8(
     )
 
 def remplacer_logo(prs, logo_path=None, club=""):
+    logo_size = None
+    if logo_path:
+        with Image.open(logo_path) as img:
+            logo_size = img.size
+
     for slide in prs.slides:
         for shape in list(parcourir_shapes(slide.shapes)):
 
@@ -1023,11 +1028,9 @@ def remplacer_logo(prs, logo_path=None, club=""):
             box_w = shape.width
             box_h = shape.height
 
-            if logo_path:
+            if logo_path and logo_size:
                 marge = 0.05
-
-                with Image.open(logo_path) as img:
-                    img_w, img_h = img.size
+                img_w, img_h = logo_size
 
                 max_w = int(box_w * (1 - marge * 2))
                 max_h = int(box_h * (1 - marge * 2))
