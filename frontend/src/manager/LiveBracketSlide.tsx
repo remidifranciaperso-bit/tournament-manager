@@ -22,6 +22,8 @@ import {
   buildMatchesByCode,
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
+import { LIVE_BRUSH_LABEL_CLASS } from "./LiveTabTitle";
+import { matchPlacementLabel } from "./matchPlacementLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
 
 function resolveFeedContent(
@@ -70,6 +72,7 @@ function TemplateMatchBox({
   score,
   winnerSide,
   scaleH,
+  placementLabel,
 }: {
   match: LiveMatch;
   box: BoxRectPct;
@@ -78,6 +81,7 @@ function TemplateMatchBox({
   score: string | null;
   winnerSide: 1 | 2 | null;
   scaleH: number;
+  placementLabel: string | null;
 }) {
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const team1Px = teamFontSize(team1, scaleH);
@@ -91,7 +95,7 @@ function TemplateMatchBox({
 
   return (
     <div
-      className="absolute z-10 flex flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm"
+      className="absolute z-10"
       style={{
         left: `${box.left}%`,
         top: `${box.top}%`,
@@ -99,6 +103,15 @@ function TemplateMatchBox({
         height: `${box.height}%`,
       }}
     >
+      {placementLabel && (
+        <p
+          className={`pointer-events-none absolute bottom-full left-1/2 w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${LIVE_BRUSH_LABEL_CLASS}`}
+        >
+          {placementLabel}
+        </p>
+      )}
+
+      <div className="flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm">
       <div
         className="grid shrink-0 grid-cols-3 items-center rounded-t-lg bg-template-blue px-[0.4em] font-tsl leading-none text-white"
         style={{
@@ -148,6 +161,7 @@ function TemplateMatchBox({
           aria-hidden
         />
       )}
+      </div>
     </div>
   );
 }
@@ -294,6 +308,7 @@ export function LiveBracketSlide({
             score={result?.display ?? null}
             winnerSide={result?.winner ?? null}
             scaleH={renderHeight}
+            placementLabel={matchPlacementLabel(match.tour)}
           />
         );
       })}
