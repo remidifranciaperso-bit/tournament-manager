@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import base64
-import re
 
 import fitz
 
 TEMPLATE_BLUE = (0, 176, 240)
-_HEADER_RATIO_FALLBACK = 0.083
+_HEADER_RATIO = 0.083
 _CONTENT_MARGIN_PT = 14
 
 
@@ -28,7 +27,7 @@ def _is_template_blue(r: int, g: int, b: int, tolerance: int = 55) -> bool:
 
 
 def detecter_hauteur_entete(page: fitz.Page) -> float:
-    """Détecte la hauteur du bandeau bleu Engine en haut de page."""
+    """Hauteur du bandeau bleu Engine (titre de section uniquement)."""
     rect = page.rect
     pixmap = page.get_pixmap(dpi=96, alpha=False)
     width = pixmap.width
@@ -47,7 +46,7 @@ def detecter_hauteur_entete(page: fitz.Page) -> float:
         if samples and blue_hits / samples < 0.12:
             return (y / height) * rect.height
 
-    return rect.height * _HEADER_RATIO_FALLBACK
+    return rect.height * _HEADER_RATIO
 
 
 def _fit_image_rect(
@@ -78,9 +77,8 @@ def composer_page_export(
     source: fitz.Document,
     slide_index: int,
     capture_data: str,
-    section: str,
 ) -> None:
-    """Colle l'entête Engine + fond + image Manager."""
+    """Entête Engine + fond blanc + image Manager (sans le reste de la page Engine)."""
     engine_page = source[slide_index]
     rect = page.rect
     header_h = detecter_hauteur_entete(engine_page)
@@ -93,34 +91,19 @@ def composer_page_export(
     header_clip = fitz.Rect(0, 0, engine_rect.width, header_h)
     page.show_pdf_page(header_rect, source, slide_index, clip=header_clip)
 
-    use_engine_brackets = section in ("main", "classement")
-    if use_engine_brackets:
-        content_clip = fitz.Rect(0, header_h, engine_rect.width, engine_rect.height)
-        page.show_pdf_page(content_rect, source, slide_index, clip=content_clip)
-    else:
-        page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
+    page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 
     image_bytes = _decode_capture(capture_data)
-    if image_bytes[:8] == b"\x89PNG\r\n\x1a\n":
-        filetype = "png"
-    elif image_bytes[:2] == b"\xff\xd8":
+    if image_bytes[:2] == b"\xff\xd8":
         filetype = "jpeg"
     else:
         filetype = "png"
 
     image = fitz.open(stream=image_bytes, filetype=filetype)
     try:
-        if use_engine_brackets:
-            page.insert_image(content_rect, stream=image_bytes, overlay=True)
-        else:
-            pixmap = image[0].get_pixmap(alpha=True)
-            fit_rect = _fit_image_rect(pixmap.width, pixmap.height, content_rect)
-            page.insert_image(
-                fit_rect,
-                stream=image_bytes,
-                keep_proportion=True,
-                overlay=True,
-            )
+        pixmap = image[0].get_pixmap(alpha=False)
+        fit_rect = _fit_image_rect(pixmap.width, pixmap.height, content_rect)
+        page.insert_image(fit_rect, stream=image_bytes, keep_proportion=True)
     finally:
         image.close()
 

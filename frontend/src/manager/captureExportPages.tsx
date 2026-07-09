@@ -29,8 +29,6 @@ async function renderAndCapture(
   node: ReactNode,
   captures: Record<string, string>,
   options?: {
-    transparent?: boolean;
-    format?: "png" | "jpeg";
     findTarget?: (host: HTMLDivElement) => HTMLElement | null;
   }
 ): Promise<void> {
@@ -53,8 +51,7 @@ async function renderAndCapture(
 
   captures[key] = await domToPng(target, width, {
     height,
-    transparent: options?.transparent,
-    format: options?.format,
+    format: "jpeg",
   });
 }
 
@@ -73,8 +70,6 @@ export async function captureManagerExportPages(
   const root = createRoot(host);
 
   const bracketCaptureOptions = {
-    transparent: true,
-    format: "png" as const,
     findTarget: (container: HTMLDivElement) =>
       container.querySelector("[data-bracket-slide]") as HTMLElement | null,
   };
@@ -91,7 +86,6 @@ export async function captureManagerExportPages(
           matches={payload.matches}
           matchResults={matchResults}
           renderWidth={BRACKET_CAPTURE_WIDTH}
-          forExport
         />,
         captures,
         bracketCaptureOptions
@@ -109,7 +103,6 @@ export async function captureManagerExportPages(
           matches={payload.matches}
           matchResults={matchResults}
           renderWidth={BRACKET_CAPTURE_WIDTH}
-          forExport
         />,
         captures,
         bracketCaptureOptions
@@ -135,8 +128,7 @@ export async function captureManagerExportPages(
             fields={payload.fields}
           />
         </div>,
-        captures,
-        { format: "jpeg" }
+        captures
       );
     }
   } finally {

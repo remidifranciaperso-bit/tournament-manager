@@ -288,7 +288,7 @@ export function LiveBracketSlide({
       className="relative shrink-0 overflow-hidden bg-white"
       style={{ width: renderWidth, height: renderHeight }}
     >
-      {!forExport && <BracketConnectors paths={connectorPaths} />}
+      <BracketConnectors paths={connectorPaths} forExport={forExport} />
 
       {parsed.matches.map((slot) => {
         const match = matchesByCode.get(slot.code);
