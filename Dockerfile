@@ -1,13 +1,5 @@
-# Stage 1 : build du front (Vite + React Router)
-FROM node:20-slim AS frontend-build
-
-WORKDIR /app/frontend
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
-
-# Stage 2 : runtime Python + LibreOffice
+# Runtime Python + LibreOffice.
+# Le frontend est servi depuis frontend/dist (pre-build commité, pas de npm ici).
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -31,11 +23,10 @@ RUN fc-cache -f -v > /dev/null
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-docker.txt .
+RUN pip install --no-cache-dir -r requirements-docker.txt
 
 COPY . .
-COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 RUN test -f frontend/dist/index.html
 
