@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { PlanningCheckboxOverlay } from "./planningOverlays";
-import type { LivePageMap } from "./liveTypes";
+import type { LiveLayoutField, LiveMatch, LivePageMap } from "./liveTypes";
+import type { StoredMatchResult } from "./useLiveProgress";
+
+export interface LivePdfExportPayload {
+  page_map: LivePageMap;
+  template_id: string;
+  matches: LiveMatch[];
+  match_results: Record<string, Pick<StoredMatchResult, "winner" | "loser" | "display">>;
+  completed: string[];
+  fields: Record<string, string>;
+  planning_layout: Record<string, LiveLayoutField[]>;
+  nb_equipes: number;
+}
 
 function triggerPdfDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -245,7 +257,7 @@ export function downloadEnginePdf(liveToken: string, filename: string): void {
 export async function downloadTournamentExportPdf(
   liveToken: string,
   filename: string,
-  pageMap: LivePageMap
+  payload: LivePdfExportPayload
 ): Promise<void> {
   const base = filename.replace(/\.pdf$/i, "");
   const exportName = `${base}-export.pdf`;
@@ -253,7 +265,7 @@ export async function downloadTournamentExportPdf(
   const res = await fetch(`/api/live/${liveToken}/pdf/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page_map: pageMap }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {

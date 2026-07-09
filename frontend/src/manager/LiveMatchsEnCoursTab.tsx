@@ -10,8 +10,7 @@ import { matchQueuesByTerrain } from "./liveCourtMatches";
 import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
-import { downloadTournamentExportPdf } from "./LivePdfViewer";
-import type { LivePageMap } from "./liveTypes";
+import { downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { useMatchScoreDraft } from "./useMatchScoreDraft";
 import type { ValidatedMatchScore } from "./matchScoreRules";
@@ -78,7 +77,7 @@ interface LiveMatchsEnCoursTabProps {
   matchResults: Record<string, StoredMatchResult>;
   liveToken: string;
   pdfFilename: string;
-  pageMap: LivePageMap;
+  exportPayload: LivePdfExportPayload;
   onStart: () => void;
   onCompleteMatch: (
     code: string,
@@ -95,7 +94,7 @@ export function LiveMatchsEnCoursTab({
   matchResults,
   liveToken,
   pdfFilename,
-  pageMap,
+  exportPayload,
   onStart,
   onCompleteMatch,
 }: LiveMatchsEnCoursTabProps) {
@@ -265,7 +264,7 @@ export function LiveMatchsEnCoursTab({
                   await downloadTournamentExportPdf(
                     liveToken,
                     pdfFilename,
-                    pageMap
+                    exportPayload
                   );
                 } finally {
                   setExportingPdf(false);

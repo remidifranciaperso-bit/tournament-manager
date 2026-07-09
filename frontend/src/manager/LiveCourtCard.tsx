@@ -5,8 +5,6 @@ import type { CourtMatchDisplay } from "./liveCourtMatches";
 import { getSetScoreOptions } from "./matchScoreRules";
 import type { SetScore } from "./matchScoreRules";
 import { parseTeamLabel, type ParsedTeam } from "./parseTeamLabel";
-import { LIVE_BRUSH_LABEL_CLASS } from "./LiveTabTitle";
-import { matchPlacementLabel } from "./matchPlacementLabel";
 
 /** Décalage vertical des encarts vers le centre (évite le bord des lignes). */
 const COURT_TEAM_BADGE_TOP_CLASS = "pb-5";
@@ -20,9 +18,9 @@ export const COURT_FOOTER_MIN_H_PX = 76;
 /** Mode compact : Valider + Annuler sur une ligne. */
 export const COURT_FOOTER_COMPACT_MIN_H_PX = 44;
 
-/** Hauteur naturelle d'une carte compacte (terrain + match + libellé places + terrain + footer). */
+/** Hauteur naturelle d'une carte compacte (terrain + match + terrain + footer). */
 export const COMPACT_COURT_CARD_HEIGHT_PX =
-  22 + 20 + 28 + COURT_HEIGHT_PX + 4 + COURT_FOOTER_COMPACT_MIN_H_PX;
+  22 + 20 + COURT_HEIGHT_PX + 4 + COURT_FOOTER_COMPACT_MIN_H_PX;
 
 export type LiveCourtTheme = "dark" | "light";
 
@@ -264,8 +262,6 @@ export function LiveCourtCard({
   const showSetTabs =
     scoringMode && scoring && scoring.setCount > 1;
 
-  const placementLabel = match ? matchPlacementLabel(match.tour) : null;
-
   return (
     <div className="flex w-[280px] shrink-0 flex-col items-center">
       <p className={`${theme.terrainLabel} w-full shrink-0 text-center`}>
@@ -283,14 +279,6 @@ export function LiveCourtCard({
       </div>
 
       <div className="flex w-full flex-col items-center">
-        {placementLabel && (
-          <p
-            className={`mb-1 w-full shrink-0 text-center ${LIVE_BRUSH_LABEL_CLASS}`}
-            style={{ maxWidth: COURT_WIDTH_PX }}
-          >
-            {placementLabel}
-          </p>
-        )}
         <div
           className="relative shrink-0"
           style={{

@@ -1,4 +1,4 @@
-"""Export PDF tournoi live : couverture Engine + pages sélectionnées + titres brush bleu."""
+"""Export PDF tournoi Manager."""
 
 from __future__ import annotations
 
@@ -6,97 +6,91 @@ from pathlib import Path
 
 import fitz
 
-BRUSH_BLUE = (0, 176 / 255, 240 / 255)
-
-SECTION_TITLES: dict[str, str] = {
-    "main": "Tableau principal",
-    "classement": "Matchs classement",
-    "planning": "Planning",
-    "final": "Classement final",
-}
-
-
-def pages_export_tournoi(page_map: dict) -> list[tuple[int, str | None]]:
-    """Pages ordonnées : (index PDF, titre brush ou None pour la couverture)."""
-    pages: list[tuple[int, str | None]] = [(0, None)]
-
-    for key in ("main", "classement", "planning", "final"):
-        title = SECTION_TITLES[key]
-        for entry in page_map.get(key, []):
-            if not isinstance(entry, dict):
-                continue
-            pages.append((int(entry["index"]), title))
-
-    return pages
+from engine.live_participants import trouver_indices_participants
+from engine.live_render_pdf import (
+    SECTION_TITLES,
+    charger_layout_slide,
+    render_bracket_page,
+    render_final_page,
+    render_planning_page,
+)
 
 
-def _chemin_font_grindy(base_dir: Path) -> Path | None:
-    candidats = (
-        base_dir / "fonts" / "GrindyBrush.otf",
-        base_dir / "fonts" / "Grindy Brush.otf",
-        base_dir / "frontend" / "public" / "fonts" / "GrindyBrush.otf",
-        base_dir / "frontend" / "dist" / "fonts" / "GrindyBrush.otf",
-    )
-    for path in candidats:
-        if path.is_file():
-            return path
-    return None
-
-
-def _taille_titre(page_rect: fitz.Rect) -> float:
-    return max(22.0, min(34.0, page_rect.width * 0.035))
-
-
-def _ajouter_titre_brush(
-    page: fitz.Page,
-    titre: str,
-    font_path: Path,
-) -> None:
-    rect = page.rect
-    fontsize = _taille_titre(rect)
-    band_bottom = rect.y0 + 6 + fontsize * 1.65
-
-    page.draw_rect(
-        fitz.Rect(rect.x0, rect.y0, rect.x1, band_bottom + 4),
-        color=None,
-        fill=(1, 1, 1),
-        overlay=True,
-    )
-
-    font = fitz.Font(fontfile=str(font_path))
-    text_width = font.text_length(titre, fontsize=fontsize)
-    x = rect.x0 + max(24.0, (rect.width - text_width) / 2)
-    y = rect.y0 + fontsize * 1.25
-
-    writer = fitz.TextWriter(rect)
-    writer.append((x, y), titre, font=font, fontsize=fontsize)
-    writer.write_text(page, color=BRUSH_BLUE)
-
-
-def exporter_pdf_tournoi(
+def exporter_pdf_tournoi_manager(
     source_pdf: Path,
-    page_map: dict,
     output_pdf: Path,
     base_dir: Path,
+    *,
+    template_id: str,
+    page_map: dict,
+    planning_layout: dict,
+    matches: list[dict],
+    match_results: dict[str, dict],
+    completed: list[str],
+    fields: dict[str, str],
+    nb_equipes: int,
 ) -> None:
-    font_path = _chemin_font_grindy(base_dir)
-    specs = pages_export_tournoi(page_map)
-
     source = fitz.open(str(source_pdf))
     merged = fitz.open()
 
     try:
-        for index, title in specs:
-            if index < 0 or index >= source.page_count:
-                continue
+        if source.page_count == 0:
+            raise RuntimeError("PDF source vide.")
 
-            merged.insert_pdf(source, from_page=index, to_page=index)
+        page_rect = source[0].rect
 
-            if title and font_path:
-                _ajouter_titre_brush(merged[-1], title, font_path)
+        merged.insert_pdf(source, from_page=0, to_page=0)
+        for index in trouver_indices_participants(source_pdf):
+            if 0 < index < source.page_count:
+                merged.insert_pdf(source, from_page=index, to_page=index)
+
+        for section in ("main", "classement", "planning", "final"):
+            title = SECTION_TITLES[section]
+            for entry in page_map.get(section, []):
+                slide_index = int(entry["index"])
+                page = merged.new_page(width=page_rect.width, height=page_rect.height)
+
+                if section in ("main", "classement"):
+                    layout_fields = charger_layout_slide(
+                        template_id, slide_index, base_dir
+                    )
+                    render_bracket_page(
+                        page,
+                        layout_fields,
+                        matches,
+                        match_results,
+                        title,
+                        base_dir,
+                        show_placement_labels=True,
+                    )
+                elif section == "planning":
+                    layout_fields = planning_layout.get(str(slide_index), [])
+                    if not layout_fields:
+                        layout_fields = charger_layout_slide(
+                            template_id, slide_index, base_dir
+                        )
+                    render_planning_page(
+                        page,
+                        layout_fields,
+                        matches,
+                        completed,
+                        match_results,
+                        title,
+                        base_dir,
+                    )
+                else:
+                    render_final_page(
+                        page,
+                        matches,
+                        match_results,
+                        fields,
+                        nb_equipes,
+                        title,
+                        base_dir,
+                    )
 
         if merged.page_count == 0:
-            raise RuntimeError("Aucune page à exporter.")
+            raise RuntimeError("Aucune page dans l'export.")
 
         output_pdf.parent.mkdir(parents=True, exist_ok=True)
         merged.save(str(output_pdf), garbage=4, deflate=True)

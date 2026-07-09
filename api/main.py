@@ -25,7 +25,7 @@ from api.live_store import (
     nom_pdf,
 )
 from engine.excel_reader import lire_excel
-from engine.live_pdf_export import exporter_pdf_tournoi
+from engine.live_pdf_export import exporter_pdf_tournoi_manager
 from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
 from engine.tournament_engine import generate_tournament, generate_tournament_live
@@ -35,6 +35,13 @@ FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
 
 class LivePdfExportBody(BaseModel):
     page_map: dict | None = None
+    template_id: str | None = None
+    matches: list[dict] | None = None
+    match_results: dict[str, dict] | None = None
+    completed: list[str] | None = None
+    fields: dict[str, str] | None = None
+    planning_layout: dict | None = None
+    nb_equipes: int | None = None
 
 
 app = FastAPI(title="Tournament Manager")
@@ -287,12 +294,12 @@ def live_pdf_complet(token: str):
     )
 
 
-def _generer_pdf_export(token: str, page_map: dict | None) -> Path:
+def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Path:
     chemin_source = chemin_pdf_complet(token)
     if chemin_source is None:
         raise HTTPException(status_code=404, detail="PDF live introuvable.")
 
-    carte = page_map or charger_page_map(token)
+    carte = (body.page_map if body else None) or charger_page_map(token)
     if not carte:
         raise HTTPException(
             status_code=404,
@@ -303,10 +310,39 @@ def _generer_pdf_export(token: str, page_map: dict | None) -> Path:
     if session is None:
         raise HTTPException(status_code=404, detail="Session live introuvable.")
 
+    template_id = (body.template_id if body else None) or "Template_16_1J"
+    matches = (body.matches if body else None) or []
+    match_results = (body.match_results if body else None) or {}
+    completed = (body.completed if body else None) or []
+    fields = (body.fields if body else None) or {}
+    planning_layout = (body.planning_layout if body else None) or {}
+    nb_equipes = (body.nb_equipes if body else None) or 0
+    if nb_equipes <= 0 and matches:
+        nb_equipes = len(
+            {
+                team
+                for match in matches
+                for team in (match.get("equipe1", ""), match.get("equipe2", ""))
+                if team and not team.lower().startswith(("vainqueur", "perdant"))
+            }
+        )
+
     chemin_export = session / "export.pdf"
     try:
-        exporter_pdf_tournoi(chemin_source, carte, chemin_export, BASE_DIR)
-    except RuntimeError as exc:
+        exporter_pdf_tournoi_manager(
+            chemin_source,
+            chemin_export,
+            BASE_DIR,
+            template_id=template_id,
+            page_map=carte,
+            planning_layout=planning_layout,
+            matches=matches,
+            match_results=match_results,
+            completed=completed,
+            fields=fields,
+            nb_equipes=nb_equipes or 16,
+        )
+    except (RuntimeError, FileNotFoundError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return chemin_export
@@ -326,7 +362,7 @@ def live_pdf_export(token: str):
 
 @app.post("/api/live/{token}/pdf/export")
 def live_pdf_export_post(token: str, body: LivePdfExportBody):
-    chemin_export = _generer_pdf_export(token, body.page_map)
+    chemin_export = _generer_pdf_export(token, body)
     base = nom_pdf(token).removesuffix(".pdf")
     return FileResponse(
         chemin_export,

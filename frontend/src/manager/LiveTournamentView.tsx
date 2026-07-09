@@ -20,6 +20,7 @@ import {
 } from "./liveTabs";
 import { LiveTabTitle } from "./LiveTabTitle";
 import { useLiveProgress } from "./useLiveProgress";
+import type { LivePdfExportPayload } from "./LivePdfViewer";
 
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide transition sm:px-1.5 sm:py-3 sm:text-[10px]";
@@ -52,6 +53,37 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
 
   const progress = useLiveProgress(live_token, matches.length, meta);
   const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
+
+  const exportPayload = useMemo<LivePdfExportPayload>(() => {
+    const match_results: LivePdfExportPayload["match_results"] = {};
+    for (const [code, result] of Object.entries(progress.matchResults)) {
+      match_results[code] = {
+        winner: result.winner,
+        loser: result.loser,
+        display: result.display,
+      };
+    }
+
+    return {
+      page_map,
+      template_id: templateId,
+      matches,
+      match_results,
+      completed: [...progress.completed],
+      fields,
+      planning_layout: planning_layout ?? {},
+      nb_equipes: meta.nb_equipes,
+    };
+  }, [
+    page_map,
+    templateId,
+    matches,
+    progress.matchResults,
+    progress.completed,
+    fields,
+    planning_layout,
+    meta.nb_equipes,
+  ]);
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -169,7 +201,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             matchResults={progress.matchResults}
             liveToken={live_token}
             pdfFilename={pdf_filename}
-            pageMap={page_map}
+            exportPayload={exportPayload}
             onStart={progress.startTournament}
             onCompleteMatch={progress.completeMatch}
           />
