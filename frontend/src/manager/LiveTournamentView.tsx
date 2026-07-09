@@ -169,6 +169,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             matchResults={progress.matchResults}
             liveToken={live_token}
             pdfFilename={pdf_filename}
+            pageMap={page_map}
             onStart={progress.startTournament}
             onCompleteMatch={progress.completeMatch}
           />

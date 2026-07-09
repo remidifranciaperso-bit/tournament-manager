@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { PlanningCheckboxOverlay } from "./planningOverlays";
+import type { LivePageMap } from "./liveTypes";
+
+function triggerPdfDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 
 function useBlockZoom(containerRef: RefObject<HTMLElement | null>, enabled: boolean) {
   useEffect(() => {
@@ -230,4 +240,29 @@ export function downloadEnginePdf(liveToken: string, filename: string): void {
   anchor.href = `/api/live/${liveToken}/pdf`;
   anchor.download = filename;
   anchor.click();
+}
+
+export async function downloadTournamentExportPdf(
+  liveToken: string,
+  filename: string,
+  pageMap: LivePageMap
+): Promise<void> {
+  const base = filename.replace(/\.pdf$/i, "");
+  const exportName = `${base}-export.pdf`;
+
+  const res = await fetch(`/api/live/${liveToken}/pdf/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page_map: pageMap }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(
+      detail || "Impossible de générer le PDF export du tournoi."
+    );
+  }
+
+  const blob = await res.blob();
+  triggerPdfDownload(blob, exportName);
 }

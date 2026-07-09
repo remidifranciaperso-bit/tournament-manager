@@ -13,14 +13,29 @@ from starlette.middleware.base import BaseHTTPMiddleware
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
+from pydantic import BaseModel
+
 from api.notify_store import chemin_pdf, enregistrer_pdf, supprimer_pdf
-from api.live_store import chemin_page, chemin_page_png, chemin_pdf_complet, nom_pdf
+from api.live_store import (
+    charger_page_map,
+    chemin_page,
+    chemin_page_png,
+    chemin_pdf_complet,
+    chemin_session,
+    nom_pdf,
+)
 from engine.excel_reader import lire_excel
+from engine.live_pdf_export import exporter_pdf_tournoi
 from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
 from engine.tournament_engine import generate_tournament, generate_tournament_live
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
+
+
+class LivePdfExportBody(BaseModel):
+    page_map: dict | None = None
+
 
 app = FastAPI(title="Tournament Manager")
 
@@ -269,6 +284,55 @@ def live_pdf_complet(token: str):
         media_type="application/pdf",
         filename=nom_pdf(token),
         headers={"Cache-Control": "private, max-age=3600"},
+    )
+
+
+def _generer_pdf_export(token: str, page_map: dict | None) -> Path:
+    chemin_source = chemin_pdf_complet(token)
+    if chemin_source is None:
+        raise HTTPException(status_code=404, detail="PDF live introuvable.")
+
+    carte = page_map or charger_page_map(token)
+    if not carte:
+        raise HTTPException(
+            status_code=404,
+            detail="Cartographie des pages introuvable pour l'export.",
+        )
+
+    session = chemin_session(token)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session live introuvable.")
+
+    chemin_export = session / "export.pdf"
+    try:
+        exporter_pdf_tournoi(chemin_source, carte, chemin_export, BASE_DIR)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return chemin_export
+
+
+@app.get("/api/live/{token}/pdf/export")
+def live_pdf_export(token: str):
+    chemin_export = _generer_pdf_export(token, None)
+    base = nom_pdf(token).removesuffix(".pdf")
+    return FileResponse(
+        chemin_export,
+        media_type="application/pdf",
+        filename=f"{base}-export.pdf",
+        headers={"Cache-Control": "private, max-age=300"},
+    )
+
+
+@app.post("/api/live/{token}/pdf/export")
+def live_pdf_export_post(token: str, body: LivePdfExportBody):
+    chemin_export = _generer_pdf_export(token, body.page_map)
+    base = nom_pdf(token).removesuffix(".pdf")
+    return FileResponse(
+        chemin_export,
+        media_type="application/pdf",
+        filename=f"{base}-export.pdf",
+        headers={"Cache-Control": "private, max-age=300"},
     )
 
 

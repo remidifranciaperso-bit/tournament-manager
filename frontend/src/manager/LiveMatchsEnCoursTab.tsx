@@ -10,7 +10,8 @@ import { matchQueuesByTerrain } from "./liveCourtMatches";
 import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
-import { downloadEnginePdf } from "./LivePdfViewer";
+import { downloadTournamentExportPdf } from "./LivePdfViewer";
+import type { LivePageMap } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { useMatchScoreDraft } from "./useMatchScoreDraft";
 import type { ValidatedMatchScore } from "./matchScoreRules";
@@ -77,6 +78,7 @@ interface LiveMatchsEnCoursTabProps {
   matchResults: Record<string, StoredMatchResult>;
   liveToken: string;
   pdfFilename: string;
+  pageMap: LivePageMap;
   onStart: () => void;
   onCompleteMatch: (
     code: string,
@@ -93,10 +95,12 @@ export function LiveMatchsEnCoursTab({
   matchResults,
   liveToken,
   pdfFilename,
+  pageMap,
   onStart,
   onCompleteMatch,
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [scoringState, setScoringState] = useState<CourtScoringState | null>(
     null
   );
@@ -254,10 +258,22 @@ export function LiveMatchsEnCoursTab({
             </span>
             <button
               type="button"
-              onClick={() => downloadEnginePdf(liveToken, pdfFilename)}
-              className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15"
+              disabled={exportingPdf}
+              onClick={async () => {
+                setExportingPdf(true);
+                try {
+                  await downloadTournamentExportPdf(
+                    liveToken,
+                    pdfFilename,
+                    pageMap
+                  );
+                } finally {
+                  setExportingPdf(false);
+                }
+              }}
+              className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15 disabled:cursor-wait disabled:opacity-60"
             >
-              Exporter le PDF du tournoi
+              {exportingPdf ? "Export en cours…" : "Exporter le PDF du tournoi"}
             </button>
           </div>
         </div>
