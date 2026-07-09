@@ -272,7 +272,6 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             slideIndex={slideIndex}
             matches={matches}
             matchResults={progress.matchResults}
-            captureMode={exportCapturing}
           />
         );
       }
@@ -327,28 +326,32 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
       <CourtBackground />
 
       <div className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden px-3 py-3 sm:px-5 sm:py-4">
-        <h1
-          className="shrink-0 whitespace-nowrap text-center font-brush text-[clamp(1.35rem,3.2vw,2.35rem)] leading-none text-lime"
-          style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
-        >
-          PADEL TOURNAMENT MANAGER
-        </h1>
+        {!exportCapturing && (
+          <h1
+            className="shrink-0 whitespace-nowrap text-center font-brush text-[clamp(1.35rem,3.2vw,2.35rem)] leading-none text-lime"
+            style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
+          >
+            PADEL TOURNAMENT MANAGER
+          </h1>
+        )}
 
-        <div className="mt-3 flex shrink-0 gap-0.5 overflow-hidden sm:gap-1">
-          {LIVE_PRIMARY_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => selectPrimary(tab.id)}
-              className={[tabClass(primaryTab === tab.id), "flex-1"].join(" ")}
-              title={tab.label}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {!exportCapturing && (
+          <div className="mt-3 flex shrink-0 gap-0.5 overflow-hidden sm:gap-1">
+            {LIVE_PRIMARY_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => selectPrimary(tab.id)}
+                className={[tabClass(primaryTab === tab.id), "flex-1"].join(" ")}
+                title={tab.label}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {showSubTabs && (
+        {!exportCapturing && showSubTabs && (
           <div className="mt-2 flex shrink-0 justify-center gap-1 overflow-hidden">
             {subTabs.map((tab) => (
               <button
@@ -368,7 +371,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
 
         <div
           className={[
-            "mt-3 flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border",
+            exportCapturing ? "mt-0" : "mt-3",
+            "flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border",
             isWhitePanelTab
               ? "border-arena-600/15 bg-white"
               : "border-lime/15 bg-arena-900/45 backdrop-blur-xl",

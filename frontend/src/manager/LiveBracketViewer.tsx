@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SLIDE_ASPECT } from "./bracketSlideLayout";
-import { EXPORT_BRACKET_WIDTH } from "./exportCapture";
 import type { LiveMatch } from "./liveTypes";
 import { LiveBracketSlide } from "./LiveBracketSlide";
 import { useTemplateLayout } from "./useTemplateLayout";
@@ -11,7 +10,6 @@ interface LiveBracketViewerProps {
   slideIndex: number;
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
-  captureMode?: boolean;
 }
 
 export function LiveBracketViewer({
@@ -19,7 +17,6 @@ export function LiveBracketViewer({
   slideIndex,
   matches,
   matchResults,
-  captureMode = false,
 }: LiveBracketViewerProps) {
   const { layout, loading, error } = useTemplateLayout(templateId);
   const slotRef = useRef<HTMLDivElement>(null);
@@ -35,11 +32,6 @@ export function LiveBracketViewer({
   }, []);
 
   useEffect(() => {
-    if (captureMode) {
-      setRenderWidth(EXPORT_BRACKET_WIDTH);
-      return;
-    }
-
     const slot = slotRef.current;
     if (!slot) return;
 
@@ -47,9 +39,7 @@ export function LiveBracketViewer({
     const observer = new ResizeObserver(() => computeWidth());
     observer.observe(slot);
     return () => observer.disconnect();
-  }, [captureMode, computeWidth, layout]);
-
-  const effectiveWidth = captureMode ? EXPORT_BRACKET_WIDTH : renderWidth;
+  }, [computeWidth, layout]);
 
   if (loading) {
     return (
@@ -79,18 +69,13 @@ export function LiveBracketViewer({
   return (
     <div
       ref={slotRef}
-      className={
-        captureMode
-          ? "flex min-h-0 flex-1 items-start justify-center overflow-visible bg-white"
-          : "flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white px-2 pb-2 pt-0 sm:px-4 sm:pb-4"
-      }
+      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white px-2 pb-2 pt-0 sm:px-4 sm:pb-4"
     >
       <LiveBracketSlide
         fields={fields}
         matches={matches}
         matchResults={matchResults}
-        renderWidth={effectiveWidth}
-        captureMode={captureMode}
+        renderWidth={renderWidth}
       />
     </div>
   );

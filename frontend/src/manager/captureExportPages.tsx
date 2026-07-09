@@ -69,10 +69,7 @@ export async function captureManagerExportPages(
         await waitForPaint();
         const target = await waitForScreenTarget(captureSelector(section));
         const key = captureKey(section, entry.index);
-        captures[key] = await captureElementImage(target, {
-          scale: Math.min(2, window.devicePixelRatio || 1.5),
-          format: "png",
-        });
+        captures[key] = await captureElementImage(target);
       }
     }
   } finally {

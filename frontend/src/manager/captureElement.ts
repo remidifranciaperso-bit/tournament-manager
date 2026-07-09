@@ -1,101 +1,112 @@
 /**
- * Capture DOM → image via html2canvas.
+ * Capture écran WYSIWYG : rasterise le DOM tel qu'affiché par le navigateur.
+ * html-to-image utilise un foreignObject SVG (= rendu natif Chrome/Safari).
  */
 
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 
-const CAPTURE_TIMEOUT_MS = 25_000;
+const CAPTURE_TIMEOUT_MS = 30_000;
 
 export interface DomCaptureOptions {
-  scale?: number;
-  format?: "png" | "jpeg";
+  format?: "png";
 }
 
-function isCanvasMostlyBlank(canvas: HTMLCanvasElement): boolean {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return true;
+async function waitForStableLayout(element: HTMLElement): Promise<void> {
+  let lastWidth = -1;
+  let lastHeight = -1;
+  let stableReads = 0;
+  const started = Date.now();
 
-  const step = Math.max(4, Math.floor(canvas.width / 40));
-  let nonWhite = 0;
-  let samples = 0;
+  while (Date.now() - started < 8_000) {
+    const width = element.offsetWidth;
+    const height = element.offsetHeight;
 
-  for (let y = 0; y < canvas.height; y += step) {
-    for (let x = 0; x < canvas.width; x += step) {
-      samples += 1;
-      const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
-      if (r < 245 || g < 245 || b < 245) {
-        nonWhite += 1;
+    if (
+      width === lastWidth &&
+      height === lastHeight &&
+      width >= 120 &&
+      height >= 120
+    ) {
+      stableReads += 1;
+      if (stableReads >= 5) {
+        return;
       }
+    } else {
+      stableReads = 0;
     }
-  }
 
-  return samples === 0 || nonWhite / samples < 0.004;
+    lastWidth = width;
+    lastHeight = height;
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  }
 }
 
-function normalizeCloneForCapture(clonedRoot: HTMLElement): void {
-  clonedRoot.querySelectorAll<HTMLElement>(".line-clamp-2").forEach((node) => {
-    node.style.display = "block";
-    node.style.overflow = "visible";
-    node.style.webkitLineClamp = "unset";
-    node.style.lineClamp = "unset";
-    node.style.whiteSpace = "normal";
-    node.style.wordBreak = "break-word";
-  });
+function isDataUrlMostlyBlank(dataUrl: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      const step = Math.max(4, Math.floor(image.width / 36));
+      canvas.width = Math.ceil(image.width / step);
+      canvas.height = Math.ceil(image.height / step);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(true);
+        return;
+      }
 
-  clonedRoot.querySelectorAll<HTMLElement>("[data-export-capture]").forEach((node) => {
-    node.style.boxShadow = "none";
-    node.style.transform = "none";
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      let nonWhite = 0;
+      let samples = 0;
+
+      for (let y = 0; y < canvas.height; y += 1) {
+        for (let x = 0; x < canvas.width; x += 1) {
+          samples += 1;
+          const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+          if (r < 245 || g < 245 || b < 245) {
+            nonWhite += 1;
+          }
+        }
+      }
+
+      resolve(samples === 0 || nonWhite / samples < 0.004);
+    };
+    image.onerror = () => resolve(true);
+    image.src = dataUrl;
   });
 }
 
 export async function captureElementImage(
   element: HTMLElement,
-  options: DomCaptureOptions = {}
+  _options: DomCaptureOptions = {}
 ): Promise<string> {
   await document.fonts.ready;
-  element.scrollIntoView({ block: "nearest", inline: "nearest" });
+  await waitForStableLayout(element);
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const scale = options.scale ?? 2;
-  const format = options.format ?? "jpeg";
-  const width = Math.max(1, element.offsetWidth);
-  const height = Math.max(1, element.offsetHeight);
-
-  const capturePromise = html2canvas(element, {
+  const capturePromise = toPng(element, {
+    cacheBust: true,
+    pixelRatio: 1,
     backgroundColor: "#ffffff",
-    scale,
-    width,
-    height,
-    logging: false,
-    useCORS: true,
-    allowTaint: true,
-    imageTimeout: CAPTURE_TIMEOUT_MS,
-    scrollX: -window.scrollX,
-    scrollY: -window.scrollY,
-    windowWidth: document.documentElement.clientWidth,
-    windowHeight: document.documentElement.clientHeight,
-    onclone: (_clonedDoc, clonedElement) => {
-      normalizeCloneForCapture(clonedElement as HTMLElement);
-    },
+    includeQueryParams: true,
+    skipAutoScale: false,
   });
 
-  const timeoutPromise = new Promise<HTMLCanvasElement>((_, reject) => {
+  const timeoutPromise = new Promise<string>((_, reject) => {
     window.setTimeout(
       () => reject(new Error("Délai de capture dépassé.")),
       CAPTURE_TIMEOUT_MS
     );
   });
 
-  const canvas = await Promise.race([capturePromise, timeoutPromise]);
+  const dataUrl = await Promise.race([capturePromise, timeoutPromise]);
 
-  if (isCanvasMostlyBlank(canvas)) {
+  if (await isDataUrlMostlyBlank(dataUrl)) {
     throw new Error("La capture écran est vide.");
   }
 
-  if (format === "png") {
-    return canvas.toDataURL("image/png");
-  }
-  return canvas.toDataURL("image/jpeg", 0.9);
+  return dataUrl;
 }
