@@ -7,6 +7,8 @@ import base64
 import fitz
 
 ENGINE_HEADER_RATIO = 0.083
+FINAL_TOP_GAP_RATIO = 0.028
+BRACKET_IMAGE_SCALE = 0.5
 
 
 def _decode_capture(data: str) -> bytes:
@@ -21,11 +23,19 @@ def composer_page_export(
     source: fitz.Document,
     slide_index: int,
     capture_data: str,
+    *,
+    section: str = "main",
 ) -> None:
     """Fond blanc + bandeau Engine + capture Manager collée en dessous."""
     rect = page.rect
     header_h = rect.height * ENGINE_HEADER_RATIO
-    content_rect = fitz.Rect(rect.x0, rect.y0 + header_h, rect.x1, rect.y1)
+    top_gap = rect.height * FINAL_TOP_GAP_RATIO if section == "final" else 0
+    content_rect = fitz.Rect(
+        rect.x0,
+        rect.y0 + header_h + top_gap,
+        rect.x1,
+        rect.y1,
+    )
 
     page.draw_rect(rect, color=None, fill=(1, 1, 1), overlay=False)
 
@@ -49,6 +59,9 @@ def composer_page_export(
             raise RuntimeError("Capture Manager invalide.")
 
         scale = content_rect.width / image_w
+        if section in ("main", "classement"):
+            scale *= BRACKET_IMAGE_SCALE
+
         draw_h = image_h * scale
         if draw_h > content_rect.height:
             scale = content_rect.height / image_h

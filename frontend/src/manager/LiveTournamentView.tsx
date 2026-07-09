@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { LiveAvancementTab } from "./LiveAvancementTab";
@@ -22,7 +22,8 @@ import { LiveTabTitle } from "./LiveTabTitle";
 import { useLiveProgress } from "./useLiveProgress";
 import type { LivePdfExportPayload } from "./LivePdfViewer";
 import { captureManagerExportPages } from "./captureExportPages";
-import type { ExportPhase } from "./exportCapture";
+import type { ExportCaptureTarget, ExportPhase } from "./exportCapture";
+import { ExportCaptureLayer } from "./ExportCaptureLayer";
 
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide transition sm:px-1.5 sm:py-3 sm:text-[10px]";
@@ -103,40 +104,22 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const [classementPage, setClassementPage] = useState(0);
   const [planningPage, setPlanningPage] = useState(0);
   const [exportPhase, setExportPhase] = useState<ExportPhase>("idle");
+  const [exportCaptureTarget, setExportCaptureTarget] =
+    useState<ExportCaptureTarget | null>(null);
   const exportCapturing = exportPhase === "capture";
   const exportUploading = exportPhase === "upload";
   const exportingPdf = exportPhase !== "idle";
-  const savedViewRef = useRef({
-    tab: "live" as LivePrimaryTab,
-    main: 0,
-    classement: 0,
-    planning: 0,
-  });
 
   const captureExportPages = useCallback(async () => {
-    savedViewRef.current = {
-      tab: primaryTab,
-      main: mainPage,
-      classement: classementPage,
-      planning: planningPage,
-    };
-
     return captureManagerExportPages(page_map, {
       showPage: (tab, subPage) => {
-        setPrimaryTab(tab);
-        if (tab === "main") setMainPage(subPage);
-        else if (tab === "classement") setClassementPage(subPage);
-        else if (tab === "planning") setPlanningPage(subPage);
+        setExportCaptureTarget({ section: tab, subPage });
       },
       restore: () => {
-        const saved = savedViewRef.current;
-        setPrimaryTab(saved.tab);
-        setMainPage(saved.main);
-        setClassementPage(saved.classement);
-        setPlanningPage(saved.planning);
+        setExportCaptureTarget(null);
       },
     });
-  }, [page_map, primaryTab, mainPage, classementPage, planningPage]);
+  }, [page_map]);
 
   const activeSubPages = useMemo(() => {
     switch (primaryTab) {
@@ -326,32 +309,28 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
       <CourtBackground />
 
       <div className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden px-3 py-3 sm:px-5 sm:py-4">
-        {!exportCapturing && (
-          <h1
-            className="shrink-0 whitespace-nowrap text-center font-brush text-[clamp(1.35rem,3.2vw,2.35rem)] leading-none text-lime"
-            style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
-          >
-            PADEL TOURNAMENT MANAGER
-          </h1>
-        )}
+        <h1
+          className="shrink-0 whitespace-nowrap text-center font-brush text-[clamp(1.35rem,3.2vw,2.35rem)] leading-none text-lime"
+          style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
+        >
+          PADEL TOURNAMENT MANAGER
+        </h1>
 
-        {!exportCapturing && (
-          <div className="mt-3 flex shrink-0 gap-0.5 overflow-hidden sm:gap-1">
-            {LIVE_PRIMARY_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => selectPrimary(tab.id)}
-                className={[tabClass(primaryTab === tab.id), "flex-1"].join(" ")}
-                title={tab.label}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="mt-3 flex shrink-0 gap-0.5 overflow-hidden sm:gap-1">
+          {LIVE_PRIMARY_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => selectPrimary(tab.id)}
+              className={[tabClass(primaryTab === tab.id), "flex-1"].join(" ")}
+              title={tab.label}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        {!exportCapturing && showSubTabs && (
+        {showSubTabs && (
           <div className="mt-2 flex shrink-0 justify-center gap-1 overflow-hidden">
             {subTabs.map((tab) => (
               <button
@@ -371,8 +350,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
 
         <div
           className={[
-            exportCapturing ? "mt-0" : "mt-3",
-            "flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border",
+            "mt-3 flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border",
             isWhitePanelTab
               ? "border-arena-600/15 bg-white"
               : "border-lime/15 bg-arena-900/45 backdrop-blur-xl",
@@ -380,9 +358,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           ].join(" ")}
         >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {!exportCapturing && !exportUploading && (
-              <LiveTabTitle label={activeTabLabel} />
-            )}
+            {!exportUploading && <LiveTabTitle label={activeTabLabel} />}
             <div
               className={
                 isBracketTab
@@ -407,6 +383,16 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           </p>
         </div>
       )}
+
+      <ExportCaptureLayer
+        target={exportCaptureTarget}
+        templateId={templateId}
+        pageMap={page_map}
+        matches={matches}
+        matchResults={progress.matchResults}
+        meta={meta}
+        fields={fields}
+      />
     </div>
   );
 }

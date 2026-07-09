@@ -10,6 +10,7 @@ interface LiveBracketViewerProps {
   slideIndex: number;
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
+  fixedRenderWidth?: number;
 }
 
 export function LiveBracketViewer({
@@ -17,6 +18,7 @@ export function LiveBracketViewer({
   slideIndex,
   matches,
   matchResults,
+  fixedRenderWidth,
 }: LiveBracketViewerProps) {
   const { layout, loading, error } = useTemplateLayout(templateId);
   const slotRef = useRef<HTMLDivElement>(null);
@@ -32,6 +34,11 @@ export function LiveBracketViewer({
   }, []);
 
   useEffect(() => {
+    if (fixedRenderWidth) {
+      setRenderWidth(fixedRenderWidth);
+      return;
+    }
+
     const slot = slotRef.current;
     if (!slot) return;
 
@@ -39,7 +46,9 @@ export function LiveBracketViewer({
     const observer = new ResizeObserver(() => computeWidth());
     observer.observe(slot);
     return () => observer.disconnect();
-  }, [computeWidth, layout]);
+  }, [fixedRenderWidth, computeWidth, layout]);
+
+  const effectiveWidth = fixedRenderWidth ?? renderWidth;
 
   if (loading) {
     return (
@@ -69,13 +78,17 @@ export function LiveBracketViewer({
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white px-2 pb-2 pt-0 sm:px-4 sm:pb-4"
+      className={
+        fixedRenderWidth
+          ? "flex items-start justify-center bg-white"
+          : "flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white px-2 pb-2 pt-0 sm:px-4 sm:pb-4"
+      }
     >
       <LiveBracketSlide
         fields={fields}
         matches={matches}
         matchResults={matchResults}
-        renderWidth={renderWidth}
+        renderWidth={effectiveWidth}
       />
     </div>
   );

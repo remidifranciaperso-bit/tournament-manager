@@ -52,6 +52,7 @@ def exporter_pdf_tournoi_manager(
                     source,
                     slide_index,
                     capture_data,
+                    section=section,
                 )
 
         if merged.page_count == 0:

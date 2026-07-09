@@ -45,11 +45,13 @@ async function waitForScreenTarget(
   throw new Error(`Capture écran impossible : ${selector}`);
 }
 
+const EXPORT_LAYER = "#export-capture-layer";
+
 function captureSelector(section: "main" | "classement" | "final"): string {
   if (section === "final") {
-    return '[data-export-capture="final"]';
+    return `${EXPORT_LAYER} [data-export-capture="final"]`;
   }
-  return '[data-export-capture="bracket"]';
+  return `${EXPORT_LAYER} [data-export-capture="bracket"]`;
 }
 
 export async function captureManagerExportPages(
