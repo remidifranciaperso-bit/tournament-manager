@@ -39,7 +39,7 @@ export function LiveProchainsMatchsTab({
       <LiveCourtsRow
         terrains={terrains}
         matchByTerrain={matchByTerrain}
-        emptyLabel="Aucun match suivant"
+        emptyLabel=""
         theme="light"
         compact
         renderFooter={(_terrain, match) =>

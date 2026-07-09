@@ -351,9 +351,11 @@ export function LiveCourtCard({
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center px-4">
-            <p className={theme.empty}>{emptyLabel}</p>
-          </div>
+          emptyLabel ? (
+            <div className="absolute inset-0 flex items-center justify-center px-4">
+              <p className={theme.empty}>{emptyLabel}</p>
+            </div>
+          ) : null
         )}
       </div>
 

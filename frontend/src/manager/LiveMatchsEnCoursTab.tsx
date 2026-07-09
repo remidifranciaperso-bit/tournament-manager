@@ -7,6 +7,7 @@ import {
   type CourtScoringState,
 } from "./LiveCourtCard";
 import { matchQueuesByTerrain } from "./liveCourtMatches";
+import { areCourtTeamsKnown } from "./courtTeamsReady";
 import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
@@ -171,7 +172,7 @@ export function LiveMatchsEnCoursTab({
         <LiveCourtsRow
           terrains={terrains}
           matchByTerrain={matchByTerrain}
-          emptyLabel="Terrain libre"
+          emptyLabel=""
           theme="light"
           compact
           getScoring={(terrain) =>
@@ -220,8 +221,14 @@ export function LiveMatchsEnCoursTab({
               <CourtFooterSlot compact>
                 <button
                   type="button"
+                  disabled={!areCourtTeamsKnown(match.equipe1, match.equipe2)}
                   onClick={() => scoreForm.open(terrain)}
-                  className="flex min-h-[41px] w-full items-center justify-center rounded-xl border border-arena-600/30 bg-arena-600/10 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15"
+                  className={[
+                    "flex min-h-[41px] w-full items-center justify-center rounded-xl border px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide transition",
+                    areCourtTeamsKnown(match.equipe1, match.equipe2)
+                      ? "border-arena-600/30 bg-arena-600/10 text-arena-700 hover:bg-arena-600/15"
+                      : "cursor-not-allowed border-arena-600/10 bg-arena-600/[0.03] text-arena-600/30",
+                  ].join(" ")}
                 >
                   Saisir le score
                 </button>

@@ -93,6 +93,8 @@ def composer_page_export(
     page.show_pdf_page(header_rect, source, slide_index, clip=header_clip)
 
     page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
+    page.add_redact_annot(content_rect, fill=(1, 1, 1))
+    page.apply_redactions()
 
     image_bytes = _decode_capture(capture_data)
     if len(image_bytes) < 4096:

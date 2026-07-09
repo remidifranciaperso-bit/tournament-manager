@@ -4,6 +4,7 @@ import {
   buildMatchesByCode,
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
+import { formatTeamSlot } from "./formatBracketLabel";
 
 export interface CourtMatchDisplay {
   code: string;
@@ -35,8 +36,12 @@ function toDisplay(
   return {
     code: match.code,
     tour: match.tour,
-    equipe1: resolveTeamLabelDeep(equipe1, matchesByCode, matchResults),
-    equipe2: resolveTeamLabelDeep(equipe2, matchesByCode, matchResults),
+    equipe1: formatTeamSlot(
+      resolveTeamLabelDeep(equipe1, matchesByCode, matchResults)
+    ),
+    equipe2: formatTeamSlot(
+      resolveTeamLabelDeep(equipe2, matchesByCode, matchResults)
+    ),
     heure: match.heure?.trim() || null,
   };
 }

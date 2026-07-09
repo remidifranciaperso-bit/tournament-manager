@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { buildExportFormData } from "./captureExportPages";
 import type { PlanningCheckboxOverlay } from "./planningOverlays";
 import type { LiveLayoutField, LiveMatch, LivePageMap, LiveTournamentMeta } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -277,10 +278,15 @@ export async function downloadTournamentExportPdf(
     throw new Error("Aucune capture Manager n'a pu être générée.");
   }
 
+  const { captures: _omit, ...payloadWithoutCaptures } = payload;
+  const form = buildExportFormData(
+    { ...payloadWithoutCaptures },
+    captures
+  );
+
   const res = await fetch(`/api/live/${liveToken}/pdf/export`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, captures }),
+    body: form,
   });
 
   if (!res.ok) {

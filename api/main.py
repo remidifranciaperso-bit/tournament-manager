@@ -2,9 +2,10 @@ import json
 import os
 import sys
 import tempfile
+import base64
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -295,6 +296,26 @@ def live_pdf_complet(token: str):
     )
 
 
+async def _captures_depuis_form(form) -> dict[str, str]:
+    captures: dict[str, str] = {}
+    for field_name, value in form.multi_items():
+        if not field_name.startswith("capture_"):
+            continue
+        if not hasattr(value, "read"):
+            continue
+        key = field_name.removeprefix("capture_").replace("_", ":", 1)
+        raw = await value.read()
+        if len(raw) < 4096:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Capture {key} vide ou trop petite.",
+            )
+        mime = value.content_type or "image/jpeg"
+        encoded = base64.b64encode(raw).decode("ascii")
+        captures[key] = f"data:{mime};base64,{encoded}"
+    return captures
+
+
 def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Path:
     chemin_source = chemin_pdf_complet(token)
     if chemin_source is None:
@@ -358,7 +379,19 @@ def live_pdf_export(token: str):
 
 
 @app.post("/api/live/{token}/pdf/export")
-def live_pdf_export_post(token: str, body: LivePdfExportBody):
+async def live_pdf_export_post(token: str, request: Request):
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        payload_raw = form.get("payload")
+        if not payload_raw:
+            raise HTTPException(status_code=422, detail="Payload export manquant.")
+        payload = json.loads(payload_raw)
+        captures = await _captures_depuis_form(form)
+        body = LivePdfExportBody(**payload, captures=captures)
+    else:
+        body = LivePdfExportBody(**(await request.json()))
+
     _generer_pdf_export(token, body)
     return {"ok": True, "download_url": f"/api/live/{token}/pdf/export"}
 
