@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { LiveAvancementTab } from "./LiveAvancementTab";
@@ -22,7 +22,7 @@ import { LiveTabTitle } from "./LiveTabTitle";
 import { useLiveProgress } from "./useLiveProgress";
 import type { LivePdfExportPayload } from "./LivePdfViewer";
 import { captureManagerExportPages } from "./captureExportPages";
-import { ExportCaptureStage } from "./ExportCaptureStage";
+import type { ExportPhase } from "./exportCapture";
 
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide transition sm:px-1.5 sm:py-3 sm:text-[10px]";
@@ -102,11 +102,41 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const [mainPage, setMainPage] = useState(0);
   const [classementPage, setClassementPage] = useState(0);
   const [planningPage, setPlanningPage] = useState(0);
-  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportPhase, setExportPhase] = useState<ExportPhase>("idle");
+  const exportCapturing = exportPhase === "capture";
+  const exportUploading = exportPhase === "upload";
+  const exportingPdf = exportPhase !== "idle";
+  const savedViewRef = useRef({
+    tab: "live" as LivePrimaryTab,
+    main: 0,
+    classement: 0,
+    planning: 0,
+  });
 
   const captureExportPages = useCallback(async () => {
-    return captureManagerExportPages(page_map);
-  }, [page_map]);
+    savedViewRef.current = {
+      tab: primaryTab,
+      main: mainPage,
+      classement: classementPage,
+      planning: planningPage,
+    };
+
+    return captureManagerExportPages(page_map, {
+      showPage: (tab, subPage) => {
+        setPrimaryTab(tab);
+        if (tab === "main") setMainPage(subPage);
+        else if (tab === "classement") setClassementPage(subPage);
+        else if (tab === "planning") setPlanningPage(subPage);
+      },
+      restore: () => {
+        const saved = savedViewRef.current;
+        setPrimaryTab(saved.tab);
+        setMainPage(saved.main);
+        setClassementPage(saved.classement);
+        setPlanningPage(saved.planning);
+      },
+    });
+  }, [page_map, primaryTab, mainPage, classementPage, planningPage]);
 
   const activeSubPages = useMemo(() => {
     switch (primaryTab) {
@@ -211,7 +241,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             exportPayload={exportPayload}
             captureExportPages={captureExportPages}
             exportingPdf={exportingPdf}
-            onExportingChange={setExportingPdf}
+            onExportPhaseChange={setExportPhase}
             onStart={progress.startTournament}
             onCompleteMatch={progress.completeMatch}
           />
@@ -242,6 +272,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             slideIndex={slideIndex}
             matches={matches}
             matchResults={progress.matchResults}
+            captureMode={exportCapturing}
           />
         );
       }
@@ -345,7 +376,9 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           ].join(" ")}
         >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <LiveTabTitle label={activeTabLabel} />
+            {!exportCapturing && !exportUploading && (
+              <LiveTabTitle label={activeTabLabel} />
+            )}
             <div
               className={
                 isBracketTab
@@ -363,22 +396,13 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         </div>
       </div>
 
-      {exportingPdf && (
+      {exportUploading && (
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-arena-950/55">
           <p className="rounded-xl bg-white px-6 py-4 text-center font-semibold text-arena-800 shadow-lg">
             Génération du PDF…
           </p>
         </div>
       )}
-
-      <ExportCaptureStage
-        templateId={templateId}
-        pageMap={page_map}
-        matches={matches}
-        matchResults={progress.matchResults}
-        meta={meta}
-        fields={fields}
-      />
     </div>
   );
 }

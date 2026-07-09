@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { buildExportFormData } from "./captureExportPages";
+import type { ExportPhase } from "./exportCapture";
 import type { PlanningCheckboxOverlay } from "./planningOverlays";
 import type { LiveLayoutField, LiveMatch, LivePageMap, LiveTournamentMeta } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -271,12 +272,24 @@ export async function downloadTournamentExportPdf(
   liveToken: string,
   _filename: string,
   payload: LivePdfExportPayload,
-  capturePages: () => Promise<Record<string, string>>
+  capturePages: () => Promise<Record<string, string>>,
+  onPhase?: (phase: ExportPhase) => void
 ): Promise<void> {
-  const captures = await capturePages();
+  onPhase?.("capture");
+  let captures: Record<string, string>;
+  try {
+    captures = await capturePages();
+  } catch (error) {
+    onPhase?.("idle");
+    throw error;
+  }
+
   if (Object.keys(captures).length === 0) {
+    onPhase?.("idle");
     throw new Error("Aucune capture Manager n'a pu être générée.");
   }
+
+  onPhase?.("upload");
 
   const { captures: _omit, ...payloadWithoutCaptures } = payload;
   const form = buildExportFormData(
@@ -305,4 +318,5 @@ export async function downloadTournamentExportPdf(
   const result = (await res.json()) as { download_url?: string };
   const downloadUrl = result.download_url ?? `/api/live/${liveToken}/pdf/export`;
   downloadViaHiddenFrame(downloadUrl);
+  onPhase?.("idle");
 }

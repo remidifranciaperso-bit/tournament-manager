@@ -8,7 +8,7 @@ import fitz
 
 TEMPLATE_BLUE = (0, 176, 240)
 _HEADER_RATIO = 0.083
-_CONTENT_MARGIN_PT = 6
+_CONTENT_MARGIN_PT = 0
 
 
 def _decode_capture(data: str) -> bytes:
@@ -107,13 +107,13 @@ def composer_page_export(
 
     image = fitz.open(stream=image_bytes, filetype=filetype)
     try:
-        inner = fitz.Rect(
-            content_rect.x0 + _CONTENT_MARGIN_PT,
-            content_rect.y0 + _CONTENT_MARGIN_PT,
-            content_rect.x1 - _CONTENT_MARGIN_PT,
-            content_rect.y1 - _CONTENT_MARGIN_PT,
-        )
-        page.insert_image(inner, stream=image_bytes, keep_proportion=True)
+        page_w = float(image[0].rect.width)
+        page_h = float(image[0].rect.height)
+        if page_w <= 0 or page_h <= 0:
+            raise RuntimeError("Capture Manager invalide.")
+
+        fit_rect = _fit_image_rect(page_w, page_h, content_rect, _CONTENT_MARGIN_PT)
+        page.insert_image(fit_rect, stream=image_bytes, keep_proportion=True)
     finally:
         image.close()
 

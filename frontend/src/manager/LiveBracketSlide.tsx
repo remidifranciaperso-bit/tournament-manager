@@ -73,6 +73,7 @@ function TemplateMatchBox({
   winnerSide,
   scaleH,
   placementLabel,
+  captureMode = false,
 }: {
   match: LiveMatch;
   box: BoxRectPct;
@@ -82,6 +83,7 @@ function TemplateMatchBox({
   winnerSide: 1 | 2 | null;
   scaleH: number;
   placementLabel: string | null;
+  captureMode?: boolean;
 }) {
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const team1Px = teamFontSize(team1, scaleH);
@@ -92,6 +94,16 @@ function TemplateMatchBox({
     winnerSide == null || winnerSide === 1 ? "font-semibold" : "font-normal";
   const team2Weight =
     winnerSide == null || winnerSide === 2 ? "font-semibold" : "font-normal";
+
+  const boxHeightPx = Math.round((box.height / 100) * scaleH);
+  const headerRatio = score ? 0.2 : 0.22;
+  const headerHeightPx = Math.round(boxHeightPx * headerRatio);
+  const scoreHeightPx = score ? Math.round(boxHeightPx * 0.18) : Math.round(boxHeightPx * 0.14);
+  const vsHeightPx = Math.round(boxHeightPx * 0.11);
+  const teamRowHeightPx = Math.max(
+    12,
+    Math.floor((boxHeightPx - headerHeightPx - vsHeightPx - scoreHeightPx) / 2)
+  );
 
   return (
     <div
@@ -111,12 +123,22 @@ function TemplateMatchBox({
         </p>
       )}
 
-      <div className="flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm">
       <div
-        className="grid shrink-0 grid-cols-3 items-center rounded-t-lg bg-template-blue px-[0.4em] font-tsl leading-none text-white"
+        className={
+          captureMode
+            ? "flex h-full flex-col overflow-visible rounded-lg border border-template-blue/40 bg-white"
+            : "flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm"
+        }
+      >
+      <div
+        className={`grid shrink-0 grid-cols-3 items-center rounded-t-lg bg-template-blue font-tsl leading-none text-white ${
+          captureMode ? "" : "px-[0.4em]"
+        }`}
         style={{
-          height: score ? "20%" : "22%",
+          height: captureMode ? headerHeightPx : score ? "20%" : "22%",
           fontSize: codePx,
+          paddingLeft: captureMode ? Math.round(codePx * 0.4) : undefined,
+          paddingRight: captureMode ? Math.round(codePx * 0.4) : undefined,
         }}
       >
         <span className="truncate text-left font-semibold">{match.code}</span>
@@ -126,38 +148,63 @@ function TemplateMatchBox({
         <span className="truncate text-right font-semibold">{match.heure ?? ""}</span>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div
+        className={captureMode ? "flex flex-col" : "flex min-h-0 flex-1 flex-col"}
+        style={captureMode ? { height: boxHeightPx - headerHeightPx } : undefined}
+      >
         <div
-          className={`flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto leading-tight text-arena-800 ${team1Weight}`}
-          style={{ fontSize: team1Px }}
+          className={`flex items-center justify-center text-center font-noto leading-snug text-arena-800 ${team1Weight} ${
+            captureMode ? "overflow-visible px-1.5" : "flex-1 overflow-hidden px-1.5"
+          }`}
+          style={{
+            fontSize: team1Px,
+            height: captureMode ? teamRowHeightPx : undefined,
+            minHeight: captureMode ? teamRowHeightPx : undefined,
+          }}
         >
-          <span className="line-clamp-2 break-words">{team1}</span>
+          <span className={captureMode ? "break-words" : "line-clamp-2 break-words"}>
+            {team1}
+          </span>
         </div>
         <div
           className="flex shrink-0 items-center justify-center font-noto font-semibold text-arena-600"
-          style={{ height: "11%", fontSize: vsPx }}
+          style={{
+            height: captureMode ? vsHeightPx : "11%",
+            fontSize: vsPx,
+          }}
         >
           vs
         </div>
         <div
-          className={`flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto leading-tight text-arena-800 ${team2Weight}`}
-          style={{ fontSize: team2Px }}
+          className={`flex items-center justify-center text-center font-noto leading-snug text-arena-800 ${team2Weight} ${
+            captureMode ? "overflow-visible px-1.5" : "flex-1 overflow-hidden px-1.5"
+          }`}
+          style={{
+            fontSize: team2Px,
+            height: captureMode ? teamRowHeightPx : undefined,
+            minHeight: captureMode ? teamRowHeightPx : undefined,
+          }}
         >
-          <span className="line-clamp-2 break-words">{team2}</span>
+          <span className={captureMode ? "break-words" : "line-clamp-2 break-words"}>
+            {team2}
+          </span>
         </div>
       </div>
 
       {score ? (
         <div
           className="flex shrink-0 items-center justify-center rounded-b-lg border-t border-template-blue/25 bg-template-blue/[0.07] font-tsl font-semibold text-template-blue"
-          style={{ height: "18%", fontSize: scorePx }}
+          style={{
+            height: captureMode ? scoreHeightPx : "18%",
+            fontSize: scorePx,
+          }}
         >
           {score}
         </div>
       ) : (
         <div
           className="shrink-0 rounded-b-lg border-t border-dashed border-template-blue/15"
-          style={{ height: "14%" }}
+          style={{ height: captureMode ? scoreHeightPx : "14%" }}
           aria-hidden
         />
       )}
@@ -253,6 +300,7 @@ interface LiveBracketSlideProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   renderWidth: number;
+  captureMode?: boolean;
 }
 
 export function LiveBracketSlide({
@@ -260,6 +308,7 @@ export function LiveBracketSlide({
   matches,
   matchResults,
   renderWidth,
+  captureMode = false,
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
@@ -344,6 +393,7 @@ export function LiveBracketSlide({
             winnerSide={result?.winner ?? null}
             scaleH={renderHeight}
             placementLabel={matchPlacementLabel(match.tour)}
+            captureMode={captureMode}
           />
         );
       })}

@@ -81,7 +81,7 @@ interface LiveMatchsEnCoursTabProps {
   exportPayload: LivePdfExportPayload;
   captureExportPages: () => Promise<Record<string, string>>;
   exportingPdf: boolean;
-  onExportingChange: (exporting: boolean) => void;
+  onExportPhaseChange: (phase: ExportPhase) => void;
   onStart: () => void;
   onCompleteMatch: (
     code: string,
@@ -101,7 +101,7 @@ export function LiveMatchsEnCoursTab({
   exportPayload,
   captureExportPages,
   exportingPdf,
-  onExportingChange,
+  onExportPhaseChange,
   onStart,
   onCompleteMatch,
 }: LiveMatchsEnCoursTabProps) {
@@ -272,7 +272,6 @@ export function LiveMatchsEnCoursTab({
               type="button"
               disabled={exportingPdf}
               onClick={() => {
-                onExportingChange(true);
                 setExportError(null);
                 void (async () => {
                   try {
@@ -280,7 +279,8 @@ export function LiveMatchsEnCoursTab({
                       liveToken,
                       pdfFilename,
                       exportPayload,
-                      captureExportPages
+                      captureExportPages,
+                      onExportPhaseChange
                     );
                   } catch (error) {
                     const message =
@@ -289,7 +289,7 @@ export function LiveMatchsEnCoursTab({
                         : "Export PDF impossible.";
                     setExportError(message);
                   } finally {
-                    onExportingChange(false);
+                    onExportPhaseChange("idle");
                   }
                 })();
               }}
