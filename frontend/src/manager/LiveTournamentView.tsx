@@ -243,6 +243,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     primaryTab === "planning";
 
   const isProjectionTab = primaryTab === "live" || primaryTab === "upcoming";
+  const isWhitePanelTab = isProjectionTab || isBracketTab || primaryTab === "avancement";
 
   const activeTabLabel =
     LIVE_PRIMARY_TABS.find((tab) => tab.id === primaryTab)?.label ?? "";
@@ -294,7 +295,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         <div
           className={[
             "mt-3 flex min-h-0 flex-1 select-none flex-col overflow-hidden rounded-2xl border",
-            isProjectionTab || isBracketTab
+            isWhitePanelTab
               ? "border-arena-600/15 bg-white"
               : "border-lime/15 bg-arena-900/45 backdrop-blur-xl",
             primaryTab === "planning" ? "touch-manipulation" : "touch-none",
@@ -308,7 +309,9 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   ? primaryTab === "planning"
                     ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
                     : "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
-                  : "flex min-h-0 flex-1 flex-col overflow-y-auto"
+                  : isProjectionTab
+                    ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
+                    : "flex min-h-0 flex-1 flex-col overflow-y-auto"
               }
             >
               {renderContent()}

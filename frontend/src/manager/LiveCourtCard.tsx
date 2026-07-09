@@ -22,10 +22,19 @@ export function formatMatchName(match: CourtMatchDisplay): string {
   return `${match.code} — ${match.tour}`;
 }
 
-export function CourtFooterSlot({ children }: { children?: ReactNode }) {
+export function CourtFooterSlot({
+  children,
+  compact = false,
+}: {
+  children?: ReactNode;
+  compact?: boolean;
+}) {
   return (
     <div
-      className="mt-3 flex w-full max-w-[280px] flex-col justify-start gap-1.5"
+      className={[
+        "flex w-full max-w-[280px] flex-col justify-start gap-1.5",
+        compact ? "mt-1" : "mt-3",
+      ].join(" ")}
       style={{ minHeight: COURT_FOOTER_MIN_H_PX }}
     >
       {children}
@@ -33,9 +42,15 @@ export function CourtFooterSlot({ children }: { children?: ReactNode }) {
   );
 }
 
-export function CourtScheduledTime({ heure }: { heure: string | null }) {
+export function CourtScheduledTime({
+  heure,
+  compact = false,
+}: {
+  heure: string | null;
+  compact?: boolean;
+}) {
   return (
-    <CourtFooterSlot>
+    <CourtFooterSlot compact={compact}>
       <div className="flex min-h-[41px] w-full items-center justify-center rounded-xl border border-arena-600/30 bg-arena-600/10 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-arena-700">
         {heure ? `Prévu ${heure}` : "Heure à confirmer"}
       </div>
@@ -203,6 +218,7 @@ interface LiveCourtCardProps {
   emptyLabel?: string;
   scoring?: CourtScoringState;
   theme?: LiveCourtTheme;
+  compact?: boolean;
 }
 
 export function LiveCourtCard({
@@ -212,6 +228,7 @@ export function LiveCourtCard({
   emptyLabel = "Aucun match",
   scoring,
   theme: themeName = "dark",
+  compact = false,
 }: LiveCourtCardProps) {
   const theme = COURT_THEME[themeName];
 
@@ -239,7 +256,12 @@ export function LiveCourtCard({
 
   return (
     <div className="flex w-[280px] shrink-0 flex-col items-center">
-      <div className="mb-2 flex w-full flex-col items-center gap-2">
+      <div
+        className={[
+          "flex w-full shrink-0 flex-col items-center",
+          compact ? "gap-1" : "mb-2 gap-2",
+        ].join(" ")}
+      >
         <p className={theme.terrainLabel}>{terrainName}</p>
         <div className="flex h-5 w-full items-center justify-center">
           <p className={theme.matchName}>
@@ -249,12 +271,18 @@ export function LiveCourtCard({
       </div>
 
       <div
-        className="relative shrink-0"
-        style={{
-          width: COURT_WIDTH_PX,
-          height: COURT_HEIGHT_PX,
-        }}
+        className={[
+          "flex w-full flex-col items-center",
+          compact ? "-mt-2 -translate-y-2" : "",
+        ].join(" ")}
       >
+        <div
+          className="relative shrink-0"
+          style={{
+            width: COURT_WIDTH_PX,
+            height: COURT_HEIGHT_PX,
+          }}
+        >
         <CourtGraphic className="h-full w-full" />
 
         {match && equipe1 && equipe2 ? (
@@ -326,7 +354,8 @@ export function LiveCourtCard({
         )}
       </div>
 
-      {footer ?? <CourtFooterSlot />}
+        {footer ?? <CourtFooterSlot compact={compact} />}
+      </div>
     </div>
   );
 }
@@ -341,6 +370,7 @@ interface LiveCourtsRowProps {
   ) => CourtScoringState | undefined;
   emptyLabel?: string;
   theme?: LiveCourtTheme;
+  compact?: boolean;
 }
 
 export function LiveCourtsRow({
@@ -350,9 +380,17 @@ export function LiveCourtsRow({
   getScoring,
   emptyLabel,
   theme = "dark",
+  compact = false,
 }: LiveCourtsRowProps) {
   return (
-    <div className="flex min-h-0 flex-1 items-center justify-center overflow-x-auto overscroll-x-contain px-4 py-6 sm:px-8">
+    <div
+      className={[
+        "flex min-h-0 flex-1 justify-center overflow-x-auto overscroll-x-contain px-4 sm:px-8",
+        compact
+          ? "items-start overflow-y-hidden pt-0 pb-1"
+          : "items-center py-6",
+      ].join(" ")}
+    >
       <div className="flex shrink-0 items-start justify-center gap-8 sm:gap-12">
         {terrains.map((name) => {
           const match = matchByTerrain.get(name) ?? null;
@@ -365,6 +403,7 @@ export function LiveCourtsRow({
               scoring={getScoring?.(name, match)}
               footer={renderFooter?.(name, match)}
               theme={theme}
+              compact={compact}
             />
           );
         })}

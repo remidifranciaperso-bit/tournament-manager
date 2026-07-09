@@ -35,17 +35,18 @@ export function LiveProchainsMatchsTab({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-white">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
       <LiveCourtsRow
         terrains={terrains}
         matchByTerrain={matchByTerrain}
         emptyLabel="Aucun match suivant"
         theme="light"
+        compact
         renderFooter={(_terrain, match) =>
           match ? (
-            <CourtScheduledTime heure={match.heure} />
+            <CourtScheduledTime heure={match.heure} compact />
           ) : (
-            <CourtFooterSlot />
+            <CourtFooterSlot compact />
           )
         }
       />
