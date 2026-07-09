@@ -21,7 +21,8 @@ import {
 import { LiveTabTitle } from "./LiveTabTitle";
 import { useLiveProgress } from "./useLiveProgress";
 import type { LivePdfExportPayload } from "./LivePdfViewer";
-import { captureVisibleManagerPages } from "./captureExportPages";
+import { captureManagerExportPages } from "./captureExportPages";
+import { ExportCaptureStage } from "./ExportCaptureStage";
 
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide transition sm:px-1.5 sm:py-3 sm:text-[10px]";
@@ -104,14 +105,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const [exportingPdf, setExportingPdf] = useState(false);
 
   const captureExportPages = useCallback(async () => {
-    return captureVisibleManagerPages(page_map, {
-      goTo: (tab, subPage) => {
-        setPrimaryTab(tab);
-        if (tab === "main") setMainPage(subPage);
-        else if (tab === "classement") setClassementPage(subPage);
-        else if (tab === "planning") setPlanningPage(subPage);
-      },
-    });
+    return captureManagerExportPages(page_map);
   }, [page_map]);
 
   const activeSubPages = useMemo(() => {
@@ -372,10 +366,19 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
       {exportingPdf && (
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-arena-950/55">
           <p className="rounded-xl bg-white px-6 py-4 text-center font-semibold text-arena-800 shadow-lg">
-            Capture des onglets pour l&apos;export PDF…
+            Génération du PDF…
           </p>
         </div>
       )}
+
+      <ExportCaptureStage
+        templateId={templateId}
+        pageMap={page_map}
+        matches={matches}
+        matchResults={progress.matchResults}
+        meta={meta}
+        fields={fields}
+      />
     </div>
   );
 }

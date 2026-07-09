@@ -81,7 +81,8 @@ def composer_page_export(
     """Entête Engine + fond blanc + image Manager (sans le reste de la page Engine)."""
     engine_page = source[slide_index]
     rect = page.rect
-    header_h = detecter_hauteur_entete(engine_page)
+    detected = detecter_hauteur_entete(engine_page)
+    header_h = min(max(detected, rect.height * 0.055), rect.height * 0.11)
     header_rect = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
     content_rect = fitz.Rect(rect.x0, rect.y0 + header_h, rect.x1, rect.y1)
 
@@ -94,6 +95,9 @@ def composer_page_export(
     page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 
     image_bytes = _decode_capture(capture_data)
+    if len(image_bytes) < 4096:
+        raise RuntimeError("Capture Manager trop petite ou vide.")
+
     if image_bytes[:2] == b"\xff\xd8":
         filetype = "jpeg"
     else:
@@ -101,9 +105,13 @@ def composer_page_export(
 
     image = fitz.open(stream=image_bytes, filetype=filetype)
     try:
-        pixmap = image[0].get_pixmap(alpha=False)
-        fit_rect = _fit_image_rect(pixmap.width, pixmap.height, content_rect)
-        page.insert_image(fit_rect, stream=image_bytes, keep_proportion=True)
+        inner = fitz.Rect(
+            content_rect.x0 + _CONTENT_MARGIN_PT,
+            content_rect.y0 + _CONTENT_MARGIN_PT,
+            content_rect.x1 - _CONTENT_MARGIN_PT,
+            content_rect.y1 - _CONTENT_MARGIN_PT,
+        )
+        page.insert_image(inner, stream=image_bytes, keep_proportion=True)
     finally:
         image.close()
 

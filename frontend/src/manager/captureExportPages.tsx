@@ -1,14 +1,25 @@
 import { captureElementImage } from "./captureElement";
 import type { LivePageMap } from "./liveTypes";
-import type { LivePrimaryTab } from "./liveTabs";
 import { pageEntries } from "./liveTabs";
 
 export function captureKey(section: string, slideIndex: number): string {
   return `${section}:${slideIndex}`;
 }
 
-export interface ExportNavigation {
-  goTo: (tab: LivePrimaryTab, subPage: number) => void;
+async function waitForExportStage(timeoutMs = 12_000): Promise<HTMLElement> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const stage = document.getElementById("manager-export-stage");
+    const firstPage = stage?.querySelector("[data-export-page]") as
+      | HTMLElement
+      | null;
+    if (firstPage && firstPage.offsetWidth > 40 && firstPage.offsetHeight > 40) {
+      return stage as HTMLElement;
+    }
+    await document.fonts.ready;
+    await new Promise((resolve) => setTimeout(resolve, 80));
+  }
+  throw new Error("Le bac de capture export n'est pas prêt.");
 }
 
 async function waitForPaint(): Promise<void> {
@@ -16,55 +27,28 @@ async function waitForPaint(): Promise<void> {
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 350));
 }
 
-async function waitForCaptureTarget(
-  selector: string,
-  timeoutMs = 8000
-): Promise<HTMLElement> {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    const element = document.querySelector(selector) as HTMLElement | null;
-    if (element && element.offsetWidth > 40 && element.offsetHeight > 40) {
-      return element;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 60));
-  }
-  throw new Error(`Élément introuvable pour la capture : ${selector}`);
-}
-
-export async function captureVisibleManagerPages(
-  pageMap: LivePageMap,
-  navigation: ExportNavigation
+export async function captureManagerExportPages(
+  pageMap: LivePageMap
 ): Promise<Record<string, string>> {
+  const stage = await waitForExportStage();
+  await waitForPaint();
+
   const captures: Record<string, string> = {};
 
-  const mainPages = pageEntries(pageMap, "main");
-  for (let page = 0; page < mainPages.length; page += 1) {
-    navigation.goTo("main", page);
-    await waitForPaint();
-    const target = await waitForCaptureTarget('[data-export-capture="bracket"]');
-    captures[captureKey("main", mainPages[page].index)] =
-      await captureElementImage(target);
-  }
-
-  const classementPages = pageEntries(pageMap, "classement");
-  for (let page = 0; page < classementPages.length; page += 1) {
-    navigation.goTo("classement", page);
-    await waitForPaint();
-    const target = await waitForCaptureTarget('[data-export-capture="bracket"]');
-    captures[captureKey("classement", classementPages[page].index)] =
-      await captureElementImage(target);
-  }
-
-  const finalPages = pageEntries(pageMap, "final");
-  for (const entry of finalPages) {
-    navigation.goTo("final", 0);
-    await waitForPaint();
-    const target = await waitForCaptureTarget('[data-export-capture="final"]');
-    captures[captureKey("final", entry.index)] =
-      await captureElementImage(target);
+  for (const section of ["main", "classement", "final"] as const) {
+    for (const entry of pageEntries(pageMap, section)) {
+      const key = captureKey(section, entry.index);
+      const target = stage.querySelector(
+        `[data-export-page="${key}"]`
+      ) as HTMLElement | null;
+      if (!target) {
+        throw new Error(`Page Manager introuvable pour ${key}.`);
+      }
+      captures[key] = await captureElementImage(target, { scale: 2 });
+    }
   }
 
   return captures;
