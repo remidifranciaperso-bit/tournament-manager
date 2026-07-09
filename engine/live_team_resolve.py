@@ -70,6 +70,17 @@ def resolve_team_label_deep(
     return resolve_team_label_deep(resolved, matches_by_code, match_results, depth + 1)
 
 
+def feed_key_from_team_label(label: str) -> str | None:
+    text = label.strip()
+    win = WIN_RE.match(text)
+    if win:
+        return f"WIN_{win.group(1).strip()}"
+    lose = LOSE_RE.match(text)
+    if lose:
+        return f"LOSE_{lose.group(1).strip()}"
+    return None
+
+
 def format_team_slot(label: str) -> str:
     text = label.strip()
     if not text:

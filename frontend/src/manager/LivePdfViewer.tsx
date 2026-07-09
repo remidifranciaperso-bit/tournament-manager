@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import type { PlanningCheckboxOverlay } from "./planningOverlays";
 import type { LiveLayoutField, LiveMatch, LivePageMap, LiveTournamentMeta } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
-import { captureManagerExportPages } from "./captureExportPages";
 
 export interface LivePdfExportPayload {
   page_map: LivePageMap;
@@ -271,17 +270,12 @@ export async function downloadTournamentExportPdf(
   liveToken: string,
   _filename: string,
   payload: LivePdfExportPayload,
-  meta: LiveTournamentMeta
+  _meta: LiveTournamentMeta
 ): Promise<void> {
-  const captures = await captureManagerExportPages(payload, meta);
-  if (Object.keys(captures).length === 0) {
-    throw new Error("Aucune capture Manager n'a pu être générée.");
-  }
-
   const res = await fetch(`/api/live/${liveToken}/pdf/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, captures }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {

@@ -312,10 +312,15 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
         raise HTTPException(status_code=404, detail="Session live introuvable.")
 
     captures = (body.captures if body else None) or {}
-    if not captures:
+    if not body or not body.template_id:
         raise HTTPException(
             status_code=422,
-            detail="Captures Manager requises pour l'export PDF.",
+            detail="template_id requis pour l'export PDF.",
+        )
+    if not body.matches:
+        raise HTTPException(
+            status_code=422,
+            detail="Données matchs requises pour l'export PDF.",
         )
 
     chemin_export = session / "export.pdf"
@@ -323,8 +328,14 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
         exporter_pdf_tournoi_manager(
             chemin_source,
             chemin_export,
+            base_dir=BASE_DIR,
+            template_id=body.template_id,
             page_map=carte,
-            captures=captures,
+            matches=body.matches,
+            match_results=body.match_results or {},
+            fields=body.fields or {},
+            nb_equipes=body.nb_equipes or 0,
+            captures=captures or None,
         )
     except (RuntimeError, FileNotFoundError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
