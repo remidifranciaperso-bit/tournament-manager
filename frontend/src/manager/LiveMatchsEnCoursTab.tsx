@@ -260,7 +260,6 @@ export function LiveMatchsEnCoursTab({
               type="button"
               disabled={exportingPdf}
               onClick={() => {
-                const popup = window.open("", "_blank");
                 setExportingPdf(true);
                 setExportError(null);
                 void (async () => {
@@ -269,11 +268,9 @@ export function LiveMatchsEnCoursTab({
                       liveToken,
                       pdfFilename,
                       exportPayload,
-                      meta,
-                      popup
+                      meta
                     );
                   } catch (error) {
-                    popup?.close();
                     const message =
                       error instanceof Error
                         ? error.message

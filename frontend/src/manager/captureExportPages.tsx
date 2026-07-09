@@ -3,11 +3,10 @@ import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { LiveBracketSlide } from "./LiveBracketSlide";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
-import { LivePlanningTab } from "./LivePlanningTab";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
 import { domToPng } from "./captureElement";
 import type { LivePdfExportPayload } from "./LivePdfViewer";
-import type { LiveLayoutField, LiveTournamentMeta } from "./liveTypes";
+import type { LiveTournamentMeta } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
 
 const BRACKET_CAPTURE_WIDTH = 1000;
@@ -28,29 +27,35 @@ async function renderAndCapture(
   host: HTMLDivElement,
   key: string,
   node: ReactNode,
-  width: number,
-  captures: Record<string, string>
+  captures: Record<string, string>,
+  options?: {
+    transparent?: boolean;
+    format?: "png" | "jpeg";
+    findTarget?: (host: HTMLDivElement) => HTMLElement | null;
+  }
 ): Promise<void> {
   flushSync(() => {
-    root.render(
-      <div
-        data-capture-root
-        style={{ width, background: "#ffffff", margin: 0 }}
-      >
-        {node}
-      </div>
-    );
+    root.render(<div data-capture-root>{node}</div>);
   });
 
   await document.fonts.ready;
-  await new Promise((resolve) => setTimeout(resolve, 250));
+  await new Promise((resolve) => setTimeout(resolve, 300));
 
-  const target = host.querySelector("[data-capture-root]") as HTMLElement | null;
+  const target =
+    options?.findTarget?.(host) ??
+    (host.querySelector("[data-capture-root]") as HTMLElement | null);
   if (!target) {
     throw new Error(`Capture impossible pour ${key}.`);
   }
 
-  captures[key] = await domToPng(target, width);
+  const width = target.offsetWidth || BRACKET_CAPTURE_WIDTH;
+  const height = target.offsetHeight || target.scrollHeight;
+
+  captures[key] = await domToPng(target, width, {
+    height,
+    transparent: options?.transparent,
+    format: options?.format,
+  });
 }
 
 export async function captureManagerExportPages(
@@ -59,7 +64,6 @@ export async function captureManagerExportPages(
 ): Promise<Record<string, string>> {
   const layout = await fetchTemplateLayout(payload.template_id);
   const captures: Record<string, string> = {};
-  const completed = new Set(payload.completed);
   const matchResults = asMatchResults(payload.match_results);
 
   const host = document.createElement("div");
@@ -67,6 +71,13 @@ export async function captureManagerExportPages(
     "position:fixed;left:-14000px;top:0;z-index:-1;opacity:1;pointer-events:none;background:#fff";
   document.body.appendChild(host);
   const root = createRoot(host);
+
+  const bracketCaptureOptions = {
+    transparent: true,
+    format: "png" as const,
+    findTarget: (container: HTMLDivElement) =>
+      container.querySelector("[data-bracket-slide]") as HTMLElement | null,
+  };
 
   try {
     for (const entry of payload.page_map.main) {
@@ -80,9 +91,10 @@ export async function captureManagerExportPages(
           matches={payload.matches}
           matchResults={matchResults}
           renderWidth={BRACKET_CAPTURE_WIDTH}
+          forExport
         />,
-        BRACKET_CAPTURE_WIDTH,
-        captures
+        captures,
+        bracketCaptureOptions
       );
     }
 
@@ -97,33 +109,10 @@ export async function captureManagerExportPages(
           matches={payload.matches}
           matchResults={matchResults}
           renderWidth={BRACKET_CAPTURE_WIDTH}
+          forExport
         />,
-        BRACKET_CAPTURE_WIDTH,
-        captures
-      );
-    }
-
-    for (const entry of payload.page_map.planning) {
-      const layoutFields: LiveLayoutField[] =
-        payload.planning_layout[String(entry.index)] ??
-        layout[String(entry.index)] ??
-        [];
-
-      await renderAndCapture(
-        root,
-        host,
-        captureKey("planning", entry.index),
-        <div style={{ width: TABLE_CAPTURE_WIDTH, background: "#ffffff", padding: "16px 20px" }}>
-          <LivePlanningTab
-            layoutFields={layoutFields}
-            matches={payload.matches}
-            completed={completed}
-            matchResults={matchResults}
-            onToggleDone={() => {}}
-          />
-        </div>,
-        TABLE_CAPTURE_WIDTH,
-        captures
+        captures,
+        bracketCaptureOptions
       );
     }
 
@@ -132,7 +121,13 @@ export async function captureManagerExportPages(
         root,
         host,
         captureKey("final", entry.index),
-        <div style={{ width: TABLE_CAPTURE_WIDTH, background: "#ffffff", padding: "16px 20px" }}>
+        <div
+          style={{
+            width: TABLE_CAPTURE_WIDTH,
+            background: "#ffffff",
+            padding: "16px 20px",
+          }}
+        >
           <LiveFinalRankingTab
             meta={meta}
             matches={payload.matches}
@@ -140,8 +135,8 @@ export async function captureManagerExportPages(
             fields={payload.fields}
           />
         </div>,
-        TABLE_CAPTURE_WIDTH,
-        captures
+        captures,
+        { format: "jpeg" }
       );
     }
   } finally {

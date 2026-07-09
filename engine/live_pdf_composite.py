@@ -78,8 +78,9 @@ def composer_page_export(
     source: fitz.Document,
     slide_index: int,
     capture_data: str,
+    section: str,
 ) -> None:
-    """Colle l'entête Engine + fond blanc + image Manager."""
+    """Colle l'entête Engine + fond + image Manager."""
     engine_page = source[slide_index]
     rect = page.rect
     header_h = detecter_hauteur_entete(engine_page)
@@ -92,15 +93,34 @@ def composer_page_export(
     header_clip = fitz.Rect(0, 0, engine_rect.width, header_h)
     page.show_pdf_page(header_rect, source, slide_index, clip=header_clip)
 
-    page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
+    use_engine_brackets = section in ("main", "classement")
+    if use_engine_brackets:
+        content_clip = fitz.Rect(0, header_h, engine_rect.width, engine_rect.height)
+        page.show_pdf_page(content_rect, source, slide_index, clip=content_clip)
+    else:
+        page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 
     image_bytes = _decode_capture(capture_data)
-    filetype = "jpeg" if image_bytes[:2] == b"\xff\xd8" else "png"
+    if image_bytes[:8] == b"\x89PNG\r\n\x1a\n":
+        filetype = "png"
+    elif image_bytes[:2] == b"\xff\xd8":
+        filetype = "jpeg"
+    else:
+        filetype = "png"
+
     image = fitz.open(stream=image_bytes, filetype=filetype)
     try:
-        pixmap = image[0].get_pixmap(alpha=True)
-        fit_rect = _fit_image_rect(pixmap.width, pixmap.height, content_rect)
-        page.insert_image(fit_rect, stream=image_bytes, keep_proportion=True)
+        if use_engine_brackets:
+            page.insert_image(content_rect, stream=image_bytes, overlay=True)
+        else:
+            pixmap = image[0].get_pixmap(alpha=True)
+            fit_rect = _fit_image_rect(pixmap.width, pixmap.height, content_rect)
+            page.insert_image(
+                fit_rect,
+                stream=image_bytes,
+                keep_proportion=True,
+                overlay=True,
+            )
     finally:
         image.close()
 

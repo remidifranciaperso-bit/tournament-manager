@@ -197,12 +197,18 @@ function FeedLabel({
   );
 }
 
-function BracketConnectors({ paths }: { paths: string[] }) {
+function BracketConnectors({
+  paths,
+  forExport,
+}: {
+  paths: string[];
+  forExport?: boolean;
+}) {
   if (paths.length === 0) return null;
 
   return (
     <svg
-      className="pointer-events-none absolute inset-0 z-[5] h-full w-full"
+      className="pointer-events-none absolute inset-0 z-[5] block h-full w-full"
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
       aria-hidden
@@ -213,8 +219,8 @@ function BracketConnectors({ paths }: { paths: string[] }) {
           d={d}
           fill="none"
           stroke="#00B0F0"
-          strokeWidth="0.48"
-          vectorEffect="non-scaling-stroke"
+          strokeWidth={forExport ? "0.42" : "0.48"}
+          vectorEffect={forExport ? undefined : "non-scaling-stroke"}
         />
       ))}
     </svg>
@@ -226,6 +232,7 @@ interface LiveBracketSlideProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   renderWidth: number;
+  forExport?: boolean;
 }
 
 export function LiveBracketSlide({
@@ -233,6 +240,7 @@ export function LiveBracketSlide({
   matches,
   matchResults,
   renderWidth,
+  forExport = false,
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
@@ -276,10 +284,11 @@ export function LiveBracketSlide({
 
   return (
     <div
+      data-bracket-slide
       className="relative shrink-0 overflow-hidden bg-white"
       style={{ width: renderWidth, height: renderHeight }}
     >
-      <BracketConnectors paths={connectorPaths} />
+      {!forExport && <BracketConnectors paths={connectorPaths} />}
 
       {parsed.matches.map((slot) => {
         const match = matchesByCode.get(slot.code);

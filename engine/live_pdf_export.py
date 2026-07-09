@@ -31,7 +31,7 @@ def exporter_pdf_tournoi_manager(
             if 0 < index < source.page_count:
                 merged.insert_pdf(source, from_page=index, to_page=index)
 
-        for section in ("main", "classement", "planning", "final"):
+        for section in ("main", "classement", "final"):
             for entry in page_map.get(section, []):
                 slide_index = int(entry["index"])
                 key = capture_key(section, slide_index)
@@ -47,7 +47,13 @@ def exporter_pdf_tournoi_manager(
                     )
 
                 page = merged.new_page(width=page_rect.width, height=page_rect.height)
-                composer_page_export(page, source, slide_index, capture_data)
+                composer_page_export(
+                    page,
+                    source,
+                    slide_index,
+                    capture_data,
+                    section,
+                )
 
         if merged.page_count == 0:
             raise RuntimeError("Aucune page dans l'export.")

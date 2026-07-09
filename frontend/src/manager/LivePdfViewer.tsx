@@ -259,12 +259,19 @@ export function downloadEnginePdf(liveToken: string, filename: string): void {
   anchor.click();
 }
 
+function downloadViaHiddenFrame(url: string): void {
+  const frame = document.createElement("iframe");
+  frame.style.cssText = "display:none;width:0;height:0;border:0";
+  frame.src = url;
+  document.body.appendChild(frame);
+  window.setTimeout(() => frame.remove(), 120_000);
+}
+
 export async function downloadTournamentExportPdf(
   liveToken: string,
-  filename: string,
+  _filename: string,
   payload: LivePdfExportPayload,
-  meta: LiveTournamentMeta,
-  popup: Window | null = null
+  meta: LiveTournamentMeta
 ): Promise<void> {
   const captures = await captureManagerExportPages(payload, meta);
   if (Object.keys(captures).length === 0) {
@@ -292,11 +299,5 @@ export async function downloadTournamentExportPdf(
 
   const result = (await res.json()) as { download_url?: string };
   const downloadUrl = result.download_url ?? `/api/live/${liveToken}/pdf/export`;
-
-  if (popup && !popup.closed) {
-    popup.location.href = downloadUrl;
-    return;
-  }
-
-  window.location.assign(downloadUrl);
+  downloadViaHiddenFrame(downloadUrl);
 }

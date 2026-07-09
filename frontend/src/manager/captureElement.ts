@@ -1,9 +1,15 @@
 /**
- * Capture DOM → PNG sans dépendance externe.
+ * Capture DOM → image sans dépendance externe.
  */
 
 const SKIP_PROPS = new Set(["width", "height", "-webkit-locale"]);
 const CAPTURE_TIMEOUT_MS = 20_000;
+
+export interface DomCaptureOptions {
+  height?: number;
+  transparent?: boolean;
+  format?: "png" | "jpeg";
+}
 
 function inlineNodeStyles(source: Element, target: Element): void {
   if (!(source instanceof HTMLElement) || !(target instanceof HTMLElement)) {
@@ -57,25 +63,38 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 export async function domToPng(
   element: HTMLElement,
-  width: number
+  width: number,
+  options: DomCaptureOptions = {}
 ): Promise<string> {
   await document.fonts.ready;
 
+  const height = Math.max(
+    options.height ?? 0,
+    element.offsetHeight,
+    element.scrollHeight,
+    1
+  );
+  const transparent = options.transparent ?? false;
+  const format = options.format ?? (transparent ? "png" : "jpeg");
+
   const clone = cloneWithInlineStyles(element);
   clone.style.width = `${width}px`;
-  clone.style.background = "#ffffff";
+  clone.style.height = `${height}px`;
   clone.style.margin = "0";
   clone.style.boxSizing = "border-box";
-
-  const height = Math.max(element.scrollHeight, element.offsetHeight, 1);
-  clone.style.height = `${height}px`;
+  if (transparent) {
+    clone.style.background = "transparent";
+  } else {
+    clone.style.background = "#ffffff";
+  }
 
   const xmlns = "http://www.w3.org/1999/xhtml";
   const serialized = new XMLSerializer().serializeToString(clone);
+  const background = transparent ? "transparent" : "#ffffff";
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <foreignObject width="100%" height="100%">
-    <div xmlns="${xmlns}" style="width:${width}px;height:${height}px;background:#ffffff;">
+    <div xmlns="${xmlns}" style="width:${width}px;height:${height}px;background:${background};">
       ${serialized}
     </div>
   </foreignObject>
@@ -92,9 +111,14 @@ export async function domToPng(
   if (!ctx) throw new Error("Canvas indisponible.");
 
   ctx.scale(ratio, ratio);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, width, height);
+  if (!transparent) {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+  }
   ctx.drawImage(image, 0, 0, width, height);
 
+  if (format === "png") {
+    return canvas.toDataURL("image/png");
+  }
   return canvas.toDataURL("image/jpeg", 0.9);
 }
