@@ -8,7 +8,7 @@ import fitz
 
 ENGINE_HEADER_RATIO = 0.083
 FINAL_TOP_GAP_RATIO = 0.028
-BRACKET_IMAGE_SCALE = 0.5
+FINAL_IMAGE_MAX_WIDTH_RATIO = 0.72
 
 
 def _decode_capture(data: str) -> bytes:
@@ -59,8 +59,9 @@ def composer_page_export(
             raise RuntimeError("Capture Manager invalide.")
 
         scale = content_rect.width / image_w
-        if section in ("main", "classement"):
-            scale *= BRACKET_IMAGE_SCALE
+        if section == "final":
+            max_draw_w = content_rect.width * FINAL_IMAGE_MAX_WIDTH_RATIO
+            scale = min(scale, max_draw_w / image_w)
 
         draw_h = image_h * scale
         if draw_h > content_rect.height:
