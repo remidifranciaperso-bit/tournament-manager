@@ -68,16 +68,22 @@ export function matchBoxRect(slot: ParsedMatchSlot): BoxRectPct {
 export function parentOutlet(rect: BoxRectPct): PointPct {
   return {
     x: rect.left + rect.width,
-    y: rect.top + rect.height * 0.48,
+    y: rect.top + rect.height / 2,
   };
 }
 
-/** Entrée à gauche du match enfant (équipe 1 ou 2). */
-export function childInlet(rect: BoxRectPct, team: 1 | 2): PointPct {
-  const yFrac = team === 1 ? 0.36 : 0.62;
+/** Entrée à gauche du match enfant (milieu vertical). */
+export function childInlet(rect: BoxRectPct): PointPct {
   return {
     x: rect.left,
-    y: rect.top + rect.height * yFrac,
+    y: rect.top + rect.height / 2,
+  };
+}
+
+export function boxCenter(rect: BoxRectPct): PointPct {
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
   };
 }
 

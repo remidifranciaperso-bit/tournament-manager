@@ -60,6 +60,7 @@ function TemplateMatchBox({
   team1,
   team2,
   score,
+  winnerSide,
   scaleH,
 }: {
   match: LiveMatch;
@@ -67,12 +68,17 @@ function TemplateMatchBox({
   team1: string;
   team2: string;
   score: string | null;
+  winnerSide: 1 | 2 | null;
   scaleH: number;
 }) {
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const teamPx = ptOnSlide(TEMPLATE_PT.team, scaleH);
   const vsPx = ptOnSlide(TEMPLATE_PT.vs, scaleH);
   const scorePx = ptOnSlide(TEMPLATE_PT.score, scaleH);
+  const team1Weight =
+    winnerSide == null || winnerSide === 1 ? "font-semibold" : "font-normal";
+  const team2Weight =
+    winnerSide == null || winnerSide === 2 ? "font-semibold" : "font-normal";
 
   return (
     <div
@@ -100,7 +106,7 @@ function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div
-          className="flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto font-semibold leading-tight text-arena-800"
+          className={`flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto leading-tight text-arena-800 ${team1Weight}`}
           style={{ fontSize: teamPx }}
         >
           <span className="line-clamp-2 break-words">{team1}</span>
@@ -112,7 +118,7 @@ function TemplateMatchBox({
           vs
         </div>
         <div
-          className="flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto font-semibold leading-tight text-arena-800"
+          className={`flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto leading-tight text-arena-800 ${team2Weight}`}
           style={{ fontSize: teamPx }}
         >
           <span className="line-clamp-2 break-words">{team2}</span>
@@ -270,6 +276,7 @@ export function LiveBracketSlide({
               matchResults
             )}
             score={result?.display ?? null}
+            winnerSide={result?.winner ?? null}
             scaleH={renderHeight}
           />
         );
