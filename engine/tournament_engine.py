@@ -255,8 +255,7 @@ def generate_tournament_live(
 ):
     from api.live_store import creer_session, liberer_memoire
     from engine.live_export import construire_payload_live
-    from engine.live_page_map import cartographier_pages_live
-    from engine.pdf_pages import indices_depuis_page_map, lire_tailles_pages
+    from engine.live_page_map import cartographier_slides, indices_depuis_page_map
 
     base_dir = Path(base_dir)
 
@@ -304,20 +303,19 @@ def generate_tournament_live(
         pptx_path=pptx_path,
         output_dir=exports_dir,
     )
+    pptx_path.unlink(missing_ok=True)
     liberer_memoire()
 
-    page_map = cartographier_pages_live(template_path, pptx_path)
+    page_map = cartographier_slides(template_path)
     liberer_memoire()
 
-    live_token, _pages_dir = creer_session(
+    live_token, _pages_dir, page_sizes = creer_session(
         pdf_path,
         pdf_path.name,
         page_map,
         logo_path=logo_path,
-    )
-    page_sizes = lire_tailles_pages(
-        pdf_path,
-        indices_depuis_page_map(page_map),
+        move_pdf=True,
+        page_indices=indices_depuis_page_map(page_map),
     )
     liberer_memoire()
 
@@ -329,5 +327,5 @@ def generate_tournament_live(
         page_sizes=page_sizes,
         pdf_filename=pdf_path.name,
         layout_path=template_path,
-        pdf_path=pdf_path,
+        pdf_path=None,
     )

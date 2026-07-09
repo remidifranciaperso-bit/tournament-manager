@@ -32,13 +32,20 @@ def creer_session(
     pdf_filename: str,
     page_map: dict | None = None,
     logo_path: Path | str | None = None,
-) -> tuple[str, Path]:
+    *,
+    move_pdf: bool = False,
+    page_indices: list[int] | None = None,
+) -> tuple[str, Path, dict[str, dict[str, float]]]:
     nettoyer_sessions_expirees()
     token = uuid.uuid4().hex
     session_dir = _live_root() / token
     pages_dir = session_dir / "pages"
     pages_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(pdf_path, session_dir / "full.pdf")
+    dest_pdf = session_dir / "full.pdf"
+    if move_pdf:
+        shutil.move(str(pdf_path), str(dest_pdf))
+    else:
+        shutil.copy2(pdf_path, dest_pdf)
     (session_dir / "filename.txt").write_text(pdf_filename, encoding="utf-8")
     if page_map is not None:
         (session_dir / "page_map.json").write_text(
@@ -50,7 +57,19 @@ def creer_session(
         if source.is_file():
             ext = source.suffix.lower() or ".png"
             shutil.copy2(source, session_dir / f"logo{ext}")
-    return token, pages_dir
+
+    page_sizes: dict[str, dict[str, float]] = {}
+    if page_indices:
+        from engine.pdf_pages import lire_tailles_pages
+
+        page_sizes = lire_tailles_pages(dest_pdf, page_indices)
+        if page_sizes:
+            (session_dir / "page_sizes.json").write_text(
+                json.dumps(page_sizes, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+    return token, pages_dir, page_sizes
 
 
 def chemin_session(token: str) -> Path | None:
@@ -126,4 +145,5 @@ def chemin_pdf_export(token: str) -> Path | None:
 
 
 def liberer_memoire() -> None:
+    gc.collect()
     gc.collect()
