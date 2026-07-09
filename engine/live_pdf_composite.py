@@ -95,7 +95,8 @@ def composer_page_export(
     page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 
     image_bytes = _decode_capture(capture_data)
-    image = fitz.open(stream=image_bytes, filetype="png")
+    filetype = "jpeg" if image_bytes[:2] == b"\xff\xd8" else "png"
+    image = fitz.open(stream=image_bytes, filetype=filetype)
     try:
         pixmap = image[0].get_pixmap(alpha=True)
         fit_rect = _fit_image_rect(pixmap.width, pixmap.height, content_rect)

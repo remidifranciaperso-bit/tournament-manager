@@ -1,4 +1,4 @@
-import { StrictMode, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { LiveBracketSlide } from "./LiveBracketSlide";
@@ -33,14 +33,12 @@ async function renderAndCapture(
 ): Promise<void> {
   flushSync(() => {
     root.render(
-      <StrictMode>
-        <div
-          data-capture-root
-          style={{ width, background: "#ffffff", margin: 0 }}
-        >
-          {node}
-        </div>
-      </StrictMode>
+      <div
+        data-capture-root
+        style={{ width, background: "#ffffff", margin: 0 }}
+      >
+        {node}
+      </div>
     );
   });
 

@@ -21,8 +21,11 @@ function triggerPdfDownload(blob: Blob, filename: string) {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = filename;
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 function useBlockZoom(containerRef: RefObject<HTMLElement | null>, enabled: boolean) {
@@ -260,12 +263,13 @@ export async function downloadTournamentExportPdf(
   liveToken: string,
   filename: string,
   payload: LivePdfExportPayload,
-  meta: LiveTournamentMeta
+  meta: LiveTournamentMeta,
+  popup: Window | null = null
 ): Promise<void> {
-  const base = filename.replace(/\.pdf$/i, "");
-  const exportName = `${base}-export.pdf`;
-
   const captures = await captureManagerExportPages(payload, meta);
+  if (Object.keys(captures).length === 0) {
+    throw new Error("Aucune capture Manager n'a pu être générée.");
+  }
 
   const res = await fetch(`/api/live/${liveToken}/pdf/export`, {
     method: "POST",
@@ -274,12 +278,25 @@ export async function downloadTournamentExportPdf(
   });
 
   if (!res.ok) {
-    const detail = await res.text().catch(() => "");
+    let detail = "";
+    try {
+      const json = (await res.json()) as { detail?: string };
+      detail = json.detail ?? "";
+    } catch {
+      detail = await res.text().catch(() => "");
+    }
     throw new Error(
       detail || "Impossible de générer le PDF export du tournoi."
     );
   }
 
-  const blob = await res.blob();
-  triggerPdfDownload(blob, exportName);
+  const result = (await res.json()) as { download_url?: string };
+  const downloadUrl = result.download_url ?? `/api/live/${liveToken}/pdf/export`;
+
+  if (popup && !popup.closed) {
+    popup.location.href = downloadUrl;
+    return;
+  }
+
+  window.location.assign(downloadUrl);
 }

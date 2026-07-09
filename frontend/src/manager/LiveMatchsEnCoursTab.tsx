@@ -100,6 +100,7 @@ export function LiveMatchsEnCoursTab({
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [scoringState, setScoringState] = useState<CourtScoringState | null>(
     null
   );
@@ -258,23 +259,38 @@ export function LiveMatchsEnCoursTab({
             <button
               type="button"
               disabled={exportingPdf}
-              onClick={async () => {
+              onClick={() => {
+                const popup = window.open("", "_blank");
                 setExportingPdf(true);
-                try {
-                  await downloadTournamentExportPdf(
-                    liveToken,
-                    pdfFilename,
-                    exportPayload,
-                    meta
-                  );
-                } finally {
-                  setExportingPdf(false);
-                }
+                setExportError(null);
+                void (async () => {
+                  try {
+                    await downloadTournamentExportPdf(
+                      liveToken,
+                      pdfFilename,
+                      exportPayload,
+                      meta,
+                      popup
+                    );
+                  } catch (error) {
+                    popup?.close();
+                    const message =
+                      error instanceof Error
+                        ? error.message
+                        : "Export PDF impossible.";
+                    setExportError(message);
+                  } finally {
+                    setExportingPdf(false);
+                  }
+                })();
               }}
               className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15 disabled:cursor-wait disabled:opacity-60"
             >
               {exportingPdf ? "Export en cours…" : "Exporter le PDF du tournoi"}
             </button>
+            {exportError && (
+              <p className="max-w-md text-sm text-red-600">{exportError}</p>
+            )}
           </div>
         </div>
       )}

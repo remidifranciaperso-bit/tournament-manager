@@ -1,13 +1,9 @@
 /**
  * Capture DOM → PNG sans dépendance externe.
- * Inline les styles calculés pour que le rendu SVG soit fidèle.
  */
 
-const SKIP_PROPS = new Set([
-  "width",
-  "height",
-  "-webkit-locale",
-]);
+const SKIP_PROPS = new Set(["width", "height", "-webkit-locale"]);
+const CAPTURE_TIMEOUT_MS = 20_000;
 
 function inlineNodeStyles(source: Element, target: Element): void {
   if (!(source instanceof HTMLElement) || !(target instanceof HTMLElement)) {
@@ -27,7 +23,9 @@ function inlineNodeStyles(source: Element, target: Element): void {
   const sourceChildren = Array.from(source.children);
   const targetChildren = Array.from(target.children);
   for (let index = 0; index < sourceChildren.length; index += 1) {
-    inlineNodeStyles(sourceChildren[index], targetChildren[index]);
+    if (targetChildren[index]) {
+      inlineNodeStyles(sourceChildren[index], targetChildren[index]);
+    }
   }
 }
 
@@ -35,6 +33,26 @@ function cloneWithInlineStyles(node: HTMLElement): HTMLElement {
   const clone = node.cloneNode(true) as HTMLElement;
   inlineNodeStyles(node, clone);
   return clone;
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const timer = window.setTimeout(() => {
+      reject(new Error("Délai de capture dépassé."));
+    }, CAPTURE_TIMEOUT_MS);
+
+    image.decoding = "async";
+    image.onload = () => {
+      window.clearTimeout(timer);
+      resolve(image);
+    };
+    image.onerror = () => {
+      window.clearTimeout(timer);
+      reject(new Error("Impossible de rasteriser la capture."));
+    };
+    image.src = src;
+  });
 }
 
 export async function domToPng(
@@ -63,33 +81,20 @@ export async function domToPng(
   </foreignObject>
 </svg>`;
 
-  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
+  const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  const image = await loadImage(svgUrl);
 
-  try {
-    const image = new Image();
-    image.decoding = "async";
-    const loaded = new Promise<HTMLImageElement>((resolve, reject) => {
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("Impossible de rasteriser la capture."));
-      image.src = url;
-    });
-    const img = await loaded;
+  const canvas = document.createElement("canvas");
+  const ratio = 1.5;
+  canvas.width = Math.round(width * ratio);
+  canvas.height = Math.round(height * ratio);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas indisponible.");
 
-    const canvas = document.createElement("canvas");
-    const ratio = 2;
-    canvas.width = width * ratio;
-    canvas.height = height * ratio;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas indisponible.");
+  ctx.scale(ratio, ratio);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(image, 0, 0, width, height);
 
-    ctx.scale(ratio, ratio);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
-    ctx.drawImage(img, 0, 0, width, height);
-
-    return canvas.toDataURL("image/png");
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  return canvas.toDataURL("image/jpeg", 0.9);
 }

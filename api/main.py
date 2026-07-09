@@ -332,9 +332,22 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
     return chemin_export
 
 
+def _chemin_export_genere(token: str) -> Path:
+    session = chemin_session(token)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session live introuvable.")
+    chemin_export = session / "export.pdf"
+    if not chemin_export.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Export introuvable. Générez-le depuis le Manager.",
+        )
+    return chemin_export
+
+
 @app.get("/api/live/{token}/pdf/export")
 def live_pdf_export(token: str):
-    chemin_export = _generer_pdf_export(token, None)
+    chemin_export = _chemin_export_genere(token)
     base = nom_pdf(token).removesuffix(".pdf")
     return FileResponse(
         chemin_export,
@@ -346,14 +359,8 @@ def live_pdf_export(token: str):
 
 @app.post("/api/live/{token}/pdf/export")
 def live_pdf_export_post(token: str, body: LivePdfExportBody):
-    chemin_export = _generer_pdf_export(token, body)
-    base = nom_pdf(token).removesuffix(".pdf")
-    return FileResponse(
-        chemin_export,
-        media_type="application/pdf",
-        filename=f"{base}-export.pdf",
-        headers={"Cache-Control": "private, max-age=300"},
-    )
+    _generer_pdf_export(token, body)
+    return {"ok": True, "download_url": f"/api/live/{token}/pdf/export"}
 
 
 @app.post("/api/generate")
