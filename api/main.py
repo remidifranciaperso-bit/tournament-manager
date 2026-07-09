@@ -30,11 +30,9 @@ from engine.excel_reader import lire_excel
 from engine.live_pdf_export import exporter_pdf_tournoi_manager
 from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
-from engine.logo_image import preparer_logo_pour_moteur
 from engine.tournament_engine import generate_tournament, generate_tournament_live
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
-MAX_UPLOAD_LOGO_BYTES = 8 * 1024 * 1024
 
 
 class LivePdfExportBody(BaseModel):
@@ -76,21 +74,6 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(upload.file.read())
         return Path(tmp.name)
-
-
-def _preparer_logo_upload(logo: UploadFile) -> Path:
-    suffix = Path(logo.filename or "").suffix or ".png"
-    brut = _ecrire_fichier_temporaire(logo, suffix)
-    try:
-        if brut.stat().st_size > MAX_UPLOAD_LOGO_BYTES:
-            raise HTTPException(
-                status_code=422,
-                detail="Logo trop volumineux (max 8 Mo).",
-            )
-        prepare = preparer_logo_pour_moteur(brut)
-    finally:
-        brut.unlink(missing_ok=True)
-    return prepare
 
 
 @app.get("/api/health")
@@ -240,7 +223,8 @@ async def generate_live(
 
     logo_path = None
     if logo is not None and logo.filename:
-        logo_path = _preparer_logo_upload(logo)
+        suffix = Path(logo.filename).suffix or ".png"
+        logo_path = _ecrire_fichier_temporaire(logo, suffix)
 
     try:
         payload = generate_tournament_live(
@@ -280,7 +264,20 @@ async def generate_live(
 def live_page_png(token: str, index: int):
     chemin = chemin_page_png(token, index)
     if chemin is None:
-        raise HTTPException(status_code=404, detail="Page live introuvable.")
+        session = chemin_session(token)
+        pdf_complet = chemin_pdf_complet(token)
+        if session is None or pdf_complet is None:
+            raise HTTPException(status_code=404, detail="Page live introuvable.")
+
+        from engine.pdf_pages import generer_page_png
+
+        output = session / "pages" / f"{index}.png"
+        try:
+            generer_page_png(pdf_complet, index, output)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        chemin = output
+
     return FileResponse(
         chemin,
         media_type="image/png",
@@ -292,7 +289,20 @@ def live_page_png(token: str, index: int):
 def live_page_pdf(token: str, index: int):
     chemin = chemin_page(token, index)
     if chemin is None:
-        raise HTTPException(status_code=404, detail="Page live introuvable.")
+        session = chemin_session(token)
+        pdf_complet = chemin_pdf_complet(token)
+        if session is None or pdf_complet is None:
+            raise HTTPException(status_code=404, detail="Page live introuvable.")
+
+        from engine.pdf_pages import generer_page_pdf
+
+        output = session / "pages" / f"{index}.pdf"
+        try:
+            generer_page_pdf(pdf_complet, index, output)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        chemin = output
+
     return FileResponse(
         chemin,
         media_type="application/pdf",
@@ -469,7 +479,8 @@ async def generate(
 
     logo_path = None
     if logo is not None and logo.filename:
-        logo_path = _preparer_logo_upload(logo)
+        suffix = Path(logo.filename).suffix or ".png"
+        logo_path = _ecrire_fichier_temporaire(logo, suffix)
 
     try:
         pdf_path = generate_tournament(
