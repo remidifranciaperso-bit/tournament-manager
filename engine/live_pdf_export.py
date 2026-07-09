@@ -6,7 +6,6 @@ from pathlib import Path
 
 import fitz
 
-from engine.live_export_render import generer_captures_export
 from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import capture_key, composer_page_export
 
@@ -15,14 +14,8 @@ def exporter_pdf_tournoi_manager(
     source_pdf: Path,
     output_pdf: Path,
     *,
-    base_dir: Path,
-    template_id: str,
     page_map: dict,
-    matches: list[dict],
-    match_results: dict[str, dict],
-    fields: dict[str, str],
-    nb_equipes: int,
-    captures: dict[str, str] | None = None,
+    captures: dict[str, str],
 ) -> None:
     source = fitz.open(str(source_pdf))
     merged = fitz.open()
@@ -38,22 +31,11 @@ def exporter_pdf_tournoi_manager(
             if 0 < index < source.page_count:
                 merged.insert_pdf(source, from_page=index, to_page=index)
 
-        rendered_captures = captures or generer_captures_export(
-            base_dir=base_dir,
-            template_id=template_id,
-            page_map=page_map,
-            matches=matches,
-            match_results=match_results,
-            fields=fields,
-            nb_equipes=nb_equipes,
-            page_size=page_rect,
-        )
-
         for section in ("main", "classement", "final"):
             for entry in page_map.get(section, []):
                 slide_index = int(entry["index"])
                 key = capture_key(section, slide_index)
-                capture_data = rendered_captures.get(key)
+                capture_data = captures.get(key)
                 if not capture_data:
                     raise RuntimeError(
                         f"Capture Manager manquante pour la page {key}."

@@ -3,13 +3,14 @@ import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { LiveBracketSlide } from "./LiveBracketSlide";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
+import { SLIDE_ASPECT } from "./bracketSlideLayout";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
 import { domToPng } from "./captureElement";
 import type { LivePdfExportPayload } from "./LivePdfViewer";
 import type { LiveTournamentMeta } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
 
-const BRACKET_CAPTURE_WIDTH = 1000;
+const BRACKET_CAPTURE_WIDTH = 1100;
 const TABLE_CAPTURE_WIDTH = 980;
 
 export function captureKey(section: string, slideIndex: number): string {
@@ -30,6 +31,8 @@ async function renderAndCapture(
   captures: Record<string, string>,
   options?: {
     findTarget?: (host: HTMLDivElement) => HTMLElement | null;
+    width?: number;
+    height?: number;
   }
 ): Promise<void> {
   flushSync(() => {
@@ -37,7 +40,7 @@ async function renderAndCapture(
   });
 
   await document.fonts.ready;
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  await new Promise((resolve) => setTimeout(resolve, 450));
 
   const target =
     options?.findTarget?.(host) ??
@@ -47,14 +50,16 @@ async function renderAndCapture(
   }
 
   const width =
-    target.offsetWidth ||
-    Number.parseInt(target.getAttribute("data-capture-width") ?? "", 10) ||
-    BRACKET_CAPTURE_WIDTH;
+    options?.width ??
+    (target.offsetWidth ||
+      Number.parseInt(target.getAttribute("data-capture-width") ?? "", 10) ||
+      BRACKET_CAPTURE_WIDTH);
   const height =
-    target.offsetHeight ||
-    target.scrollHeight ||
-    Number.parseInt(target.getAttribute("data-capture-height") ?? "", 10) ||
-    Math.round(width / (9906000 / 6858000));
+    options?.height ??
+    (target.offsetHeight ||
+      target.scrollHeight ||
+      Number.parseInt(target.getAttribute("data-capture-height") ?? "", 10) ||
+      Math.round(width / SLIDE_ASPECT));
 
   captures[key] = await domToPng(target, width, {
     height,
@@ -71,14 +76,18 @@ export async function captureManagerExportPages(
   const matchResults = asMatchResults(payload.match_results);
 
   const host = document.createElement("div");
+  host.setAttribute("data-export-capture-host", "true");
   host.style.cssText =
-    "position:fixed;left:0;top:0;z-index:-1;visibility:hidden;pointer-events:none;background:#fff;overflow:visible";
+    "position:fixed;left:0;top:0;z-index:2147483647;background:#fff;pointer-events:none;overflow:visible";
   document.body.appendChild(host);
   const root = createRoot(host);
 
+  const bracketHeight = Math.round(BRACKET_CAPTURE_WIDTH / SLIDE_ASPECT);
   const bracketCaptureOptions = {
     findTarget: (container: HTMLDivElement) =>
       container.querySelector("[data-bracket-slide]") as HTMLElement | null,
+    width: BRACKET_CAPTURE_WIDTH,
+    height: bracketHeight,
   };
 
   try {
@@ -122,6 +131,7 @@ export async function captureManagerExportPages(
         host,
         captureKey("final", entry.index),
         <div
+          data-final-capture
           style={{
             width: TABLE_CAPTURE_WIDTH,
             background: "#ffffff",
@@ -135,7 +145,11 @@ export async function captureManagerExportPages(
             fields={payload.fields}
           />
         </div>,
-        captures
+        captures,
+        {
+          findTarget: (container) =>
+            container.querySelector("[data-final-capture]") as HTMLElement | null,
+        }
       );
     }
   } finally {

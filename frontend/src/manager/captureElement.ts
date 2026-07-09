@@ -1,71 +1,37 @@
 /**
- * Capture DOM → image sans dépendance externe.
+ * Capture DOM → image via html2canvas (fiable pour export PDF).
  */
 
-const SKIP_PROPS = new Set(["width", "height", "-webkit-locale"]);
-const CAPTURE_TIMEOUT_MS = 20_000;
+import html2canvas from "html2canvas";
+
+const CAPTURE_TIMEOUT_MS = 25_000;
 
 export interface DomCaptureOptions {
+  width?: number;
   height?: number;
   transparent?: boolean;
   format?: "png" | "jpeg";
 }
 
-function inlineNodeStyles(source: Element, target: Element): void {
-  if (!(source instanceof HTMLElement) || !(target instanceof HTMLElement)) {
-    return;
-  }
+function isCanvasMostlyBlank(canvas: HTMLCanvasElement): boolean {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return true;
 
-  const computed = window.getComputedStyle(source);
-  let cssText = "";
-  for (let index = 0; index < computed.length; index += 1) {
-    const name = computed.item(index);
-    if (!name || SKIP_PROPS.has(name)) continue;
-    const value = computed.getPropertyValue(name);
-    if (value) cssText += `${name}:${value};`;
-  }
-  target.style.cssText = cssText;
+  const step = Math.max(4, Math.floor(canvas.width / 48));
+  let nonWhite = 0;
+  let samples = 0;
 
-  if (source instanceof SVGElement && target instanceof SVGElement) {
-    for (const attr of Array.from(source.attributes)) {
-      if (attr.name === "class") continue;
-      target.setAttribute(attr.name, attr.value);
+  for (let y = 0; y < canvas.height; y += step) {
+    for (let x = 0; x < canvas.width; x += step) {
+      samples += 1;
+      const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+      if (r < 248 || g < 248 || b < 248) {
+        nonWhite += 1;
+      }
     }
   }
 
-  const sourceChildren = Array.from(source.children);
-  const targetChildren = Array.from(target.children);
-  for (let index = 0; index < sourceChildren.length; index += 1) {
-    if (targetChildren[index]) {
-      inlineNodeStyles(sourceChildren[index], targetChildren[index]);
-    }
-  }
-}
-
-function cloneWithInlineStyles(node: HTMLElement): HTMLElement {
-  const clone = node.cloneNode(true) as HTMLElement;
-  inlineNodeStyles(node, clone);
-  return clone;
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    const timer = window.setTimeout(() => {
-      reject(new Error("Délai de capture dépassé."));
-    }, CAPTURE_TIMEOUT_MS);
-
-    image.decoding = "async";
-    image.onload = () => {
-      window.clearTimeout(timer);
-      resolve(image);
-    };
-    image.onerror = () => {
-      window.clearTimeout(timer);
-      reject(new Error("Impossible de rasteriser la capture."));
-    };
-    image.src = src;
-  });
+  return samples === 0 || nonWhite / samples < 0.002;
 }
 
 export async function domToPng(
@@ -86,52 +52,36 @@ export async function domToPng(
     1
   );
   const transparent = options.transparent ?? false;
-  const format = options.format ?? (transparent ? "png" : "jpeg");
+  const format = options.format ?? "jpeg";
 
-  const clone = cloneWithInlineStyles(element);
-  clone.style.width = `${width}px`;
-  clone.style.height = `${height}px`;
-  clone.style.margin = "0";
-  clone.style.padding = "0";
-  clone.style.boxSizing = "border-box";
-  clone.style.position = "relative";
-  clone.style.left = "0";
-  clone.style.top = "0";
-  clone.style.transform = "none";
-  if (transparent) {
-    clone.style.background = "transparent";
-  } else {
-    clone.style.background = "#ffffff";
+  const capturePromise = html2canvas(element, {
+    backgroundColor: transparent ? null : "#ffffff",
+    scale: 2,
+    width,
+    height,
+    windowWidth: width,
+    windowHeight: height,
+    logging: false,
+    useCORS: true,
+    allowTaint: false,
+    imageTimeout: CAPTURE_TIMEOUT_MS,
+    removeContainer: true,
+  });
+
+  const timeoutPromise = new Promise<HTMLCanvasElement>((_, reject) => {
+    window.setTimeout(
+      () => reject(new Error("Délai de capture dépassé.")),
+      CAPTURE_TIMEOUT_MS
+    );
+  });
+
+  const canvas = await Promise.race([capturePromise, timeoutPromise]);
+
+  if (isCanvasMostlyBlank(canvas)) {
+    throw new Error(
+      "La capture est vide. Réessayez depuis un onglet tableau du Manager."
+    );
   }
-
-  const xmlns = "http://www.w3.org/1999/xhtml";
-  const serialized = new XMLSerializer().serializeToString(clone);
-  const background = transparent ? "transparent" : "#ffffff";
-  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <foreignObject x="0" y="0" width="${width}" height="${height}">
-    <div xmlns="${xmlns}" style="width:${width}px;height:${height}px;margin:0;padding:0;overflow:visible;background:${background};">
-      ${serialized}
-    </div>
-  </foreignObject>
-</svg>`;
-
-  const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  const image = await loadImage(svgUrl);
-
-  const canvas = document.createElement("canvas");
-  const ratio = 2;
-  canvas.width = Math.round(width * ratio);
-  canvas.height = Math.round(height * ratio);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas indisponible.");
-
-  ctx.scale(ratio, ratio);
-  if (!transparent) {
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
-  }
-  ctx.drawImage(image, 0, 0, width, height);
 
   if (format === "png") {
     return canvas.toDataURL("image/png");
