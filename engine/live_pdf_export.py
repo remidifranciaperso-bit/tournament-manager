@@ -7,28 +7,15 @@ from pathlib import Path
 import fitz
 
 from engine.live_participants import trouver_indices_participants
-from engine.live_render_pdf import (
-    SECTION_TITLES,
-    charger_layout_slide,
-    render_bracket_page,
-    render_final_page,
-    render_planning_page,
-)
+from engine.live_pdf_composite import capture_key, composer_page_export
 
 
 def exporter_pdf_tournoi_manager(
     source_pdf: Path,
     output_pdf: Path,
-    base_dir: Path,
     *,
-    template_id: str,
     page_map: dict,
-    planning_layout: dict,
-    matches: list[dict],
-    match_results: dict[str, dict],
-    completed: list[str],
-    fields: dict[str, str],
-    nb_equipes: int,
+    captures: dict[str, str],
 ) -> None:
     source = fitz.open(str(source_pdf))
     merged = fitz.open()
@@ -45,49 +32,22 @@ def exporter_pdf_tournoi_manager(
                 merged.insert_pdf(source, from_page=index, to_page=index)
 
         for section in ("main", "classement", "planning", "final"):
-            title = SECTION_TITLES[section]
             for entry in page_map.get(section, []):
                 slide_index = int(entry["index"])
-                page = merged.new_page(width=page_rect.width, height=page_rect.height)
+                key = capture_key(section, slide_index)
+                capture_data = captures.get(key)
+                if not capture_data:
+                    raise RuntimeError(
+                        f"Capture Manager manquante pour la page {key}."
+                    )
 
-                if section in ("main", "classement"):
-                    layout_fields = charger_layout_slide(
-                        template_id, slide_index, base_dir
+                if slide_index < 0 or slide_index >= source.page_count:
+                    raise RuntimeError(
+                        f"Page Engine introuvable pour l'index {slide_index}."
                     )
-                    render_bracket_page(
-                        page,
-                        layout_fields,
-                        matches,
-                        match_results,
-                        title,
-                        base_dir,
-                        show_placement_labels=True,
-                    )
-                elif section == "planning":
-                    layout_fields = planning_layout.get(str(slide_index), [])
-                    if not layout_fields:
-                        layout_fields = charger_layout_slide(
-                            template_id, slide_index, base_dir
-                        )
-                    render_planning_page(
-                        page,
-                        layout_fields,
-                        matches,
-                        completed,
-                        match_results,
-                        title,
-                        base_dir,
-                    )
-                else:
-                    render_final_page(
-                        page,
-                        matches,
-                        match_results,
-                        fields,
-                        nb_equipes,
-                        title,
-                        base_dir,
-                    )
+
+                page = merged.new_page(width=page_rect.width, height=page_rect.height)
+                composer_page_export(page, source, slide_index, capture_data)
 
         if merged.page_count == 0:
             raise RuntimeError("Aucune page dans l'export.")

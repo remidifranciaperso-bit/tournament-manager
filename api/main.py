@@ -42,6 +42,7 @@ class LivePdfExportBody(BaseModel):
     fields: dict[str, str] | None = None
     planning_layout: dict | None = None
     nb_equipes: int | None = None
+    captures: dict[str, str] | None = None
 
 
 app = FastAPI(title="Tournament Manager")
@@ -310,21 +311,11 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
     if session is None:
         raise HTTPException(status_code=404, detail="Session live introuvable.")
 
-    template_id = (body.template_id if body else None) or "Template_16_1J"
-    matches = (body.matches if body else None) or []
-    match_results = (body.match_results if body else None) or {}
-    completed = (body.completed if body else None) or []
-    fields = (body.fields if body else None) or {}
-    planning_layout = (body.planning_layout if body else None) or {}
-    nb_equipes = (body.nb_equipes if body else None) or 0
-    if nb_equipes <= 0 and matches:
-        nb_equipes = len(
-            {
-                team
-                for match in matches
-                for team in (match.get("equipe1", ""), match.get("equipe2", ""))
-                if team and not team.lower().startswith(("vainqueur", "perdant"))
-            }
+    captures = (body.captures if body else None) or {}
+    if not captures:
+        raise HTTPException(
+            status_code=422,
+            detail="Captures Manager requises pour l'export PDF.",
         )
 
     chemin_export = session / "export.pdf"
@@ -332,15 +323,8 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
         exporter_pdf_tournoi_manager(
             chemin_source,
             chemin_export,
-            BASE_DIR,
-            template_id=template_id,
             page_map=carte,
-            planning_layout=planning_layout,
-            matches=matches,
-            match_results=match_results,
-            completed=completed,
-            fields=fields,
-            nb_equipes=nb_equipes or 16,
+            captures=captures,
         )
     except (RuntimeError, FileNotFoundError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

@@ -264,7 +264,8 @@ export function LiveMatchsEnCoursTab({
                   await downloadTournamentExportPdf(
                     liveToken,
                     pdfFilename,
-                    exportPayload
+                    exportPayload,
+                    meta
                   );
                 } finally {
                   setExportingPdf(false);
