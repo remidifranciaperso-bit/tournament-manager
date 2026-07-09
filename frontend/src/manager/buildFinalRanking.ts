@@ -26,10 +26,13 @@ function parsePlacementTour(
   const match = tour.match(/classement\s+(\d+)\s*-\s*(\d+)/i);
   if (!match) return null;
 
-  return {
-    winnerPlace: Number.parseInt(match[1], 10),
-    loserPlace: Number.parseInt(match[2], 10),
-  };
+  const winnerPlace = Number.parseInt(match[1], 10);
+  const loserPlace = Number.parseInt(match[2], 10);
+
+  // Seuls les matchs feuilles (ex. 5-6, 9-10) attribuent une place — pas les rounds intermédiaires (9-16, 5-8…).
+  if (loserPlace - winnerPlace !== 1) return null;
+
+  return { winnerPlace, loserPlace };
 }
 
 function formatFinalTeamName(

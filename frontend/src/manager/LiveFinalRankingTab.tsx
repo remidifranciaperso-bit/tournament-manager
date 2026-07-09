@@ -16,12 +16,12 @@ interface RankingTypography {
 
 function rankingTypography(nbEquipes: number): RankingTypography {
   if (nbEquipes <= 16) {
-    return { bodySize: 15, headerSize: 13, rowPadY: 8, headerPadY: 10 };
+    return { bodySize: 15, headerSize: 13, rowPadY: 3, headerPadY: 6 };
   }
   if (nbEquipes <= 20) {
-    return { bodySize: 12, headerSize: 11, rowPadY: 5, headerPadY: 7 };
+    return { bodySize: 12, headerSize: 11, rowPadY: 2, headerPadY: 5 };
   }
-  return { bodySize: 10, headerSize: 10, rowPadY: 3, headerPadY: 5 };
+  return { bodySize: 10, headerSize: 10, rowPadY: 1, headerPadY: 4 };
 }
 
 interface LiveFinalRankingTabProps {
@@ -75,11 +75,11 @@ export function LiveFinalRankingTab({
           </span>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden">
           {rows.map((row) => (
             <div
               key={row.place}
-              className="grid min-h-0 flex-1 items-center border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]"
+              className="grid shrink-0 items-center border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]"
               style={{
                 gridTemplateColumns: "22% 1fr 24%",
                 fontSize: typography.bodySize,
