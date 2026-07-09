@@ -13,9 +13,9 @@ export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
   { id: "live", label: "Matchs en cours" },
   { id: "upcoming", label: "Prochains matchs" },
   { id: "main", label: "Tableau principal" },
-  { id: "classement", label: "Classement" },
+  { id: "classement", label: "Matchs classement" },
   { id: "planning", label: "Planning" },
-  { id: "final", label: "Final" },
+  { id: "final", label: "Classement final" },
   { id: "avancement", label: "Avancement" },
 ];
 

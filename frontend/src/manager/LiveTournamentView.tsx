@@ -5,6 +5,7 @@ import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
 import { LiveBracketViewer } from "./LiveBracketViewer";
+import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LivePdfViewer } from "./LivePdfViewer";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { LiveTournamentData } from "./liveTypes";
@@ -223,10 +224,11 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
       }
       case "final":
         return (
-          <LivePdfViewer
-            liveToken={live_token}
-            prefetchIndices={prefetchIndices}
-            slideIndices={slideIndices}
+          <LiveFinalRankingTab
+            meta={meta}
+            matches={matches}
+            matchResults={progress.matchResults}
+            fields={fields}
           />
         );
       case "planning":
@@ -246,10 +248,12 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const isSlideTab =
     primaryTab === "main" ||
     primaryTab === "classement" ||
-    primaryTab === "planning" ||
-    primaryTab === "final";
+    primaryTab === "planning";
 
-  const isBracketTab = primaryTab === "main" || primaryTab === "classement";
+  const isBracketTab =
+    primaryTab === "main" ||
+    primaryTab === "classement" ||
+    primaryTab === "final";
 
   const isProjectionTab = primaryTab === "live" || primaryTab === "upcoming";
 

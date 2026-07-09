@@ -186,7 +186,7 @@ function BracketConnectors({ paths }: { paths: string[] }) {
           d={d}
           fill="none"
           stroke="#00B0F0"
-          strokeWidth="0.35"
+          strokeWidth="0.48"
           vectorEffect="non-scaling-stroke"
         />
       ))}
