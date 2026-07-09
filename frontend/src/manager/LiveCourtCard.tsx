@@ -263,24 +263,32 @@ export function LiveCourtCard({
 
   return (
     <div className="flex w-[280px] shrink-0 flex-col items-center">
-      <div
-        className={[
-          "flex w-full shrink-0 flex-col items-center",
-          compact ? "gap-1" : "mb-2 gap-2",
-        ].join(" ")}
-      >
-        <p className={theme.terrainLabel}>{terrainName}</p>
-        <div className="flex h-5 w-full items-center justify-center">
-          <p className={theme.matchName}>
-            {match ? formatMatchName(match) : "\u00A0"}
+      {compact ? (
+        <>
+          <p className={`${theme.terrainLabel} w-full shrink-0 text-center`}>
+            {terrainName}
           </p>
+          <div className="relative z-20 flex h-5 w-full shrink-0 items-center justify-center bg-white">
+            <p className={theme.matchName}>
+              {match ? formatMatchName(match) : "\u00A0"}
+            </p>
+          </div>
+        </>
+      ) : (
+        <div className="mb-2 flex w-full shrink-0 flex-col items-center gap-2">
+          <p className={theme.terrainLabel}>{terrainName}</p>
+          <div className="flex h-5 w-full items-center justify-center">
+            <p className={theme.matchName}>
+              {match ? formatMatchName(match) : "\u00A0"}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div
         className={[
           "flex w-full flex-col items-center",
-          compact ? COURT_COMPACT_SHIFT_CLASS : "",
+          compact ? `${COURT_COMPACT_SHIFT_CLASS} pt-6` : "",
         ].join(" ")}
       >
         <div
