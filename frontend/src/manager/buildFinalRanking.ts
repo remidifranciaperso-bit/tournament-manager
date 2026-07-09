@@ -96,8 +96,8 @@ export function buildFinalRanking(
 }
 
 export function formatPlaceLabel(place: number): string {
-  if (place === 1) return "🥇 1";
-  if (place === 2) return "🥈 2";
-  if (place === 3) return "🥉 3";
+  if (place === 1) return "1 🥇";
+  if (place === 2) return "2 🥈";
+  if (place === 3) return "3 🥉";
   return String(place);
 }

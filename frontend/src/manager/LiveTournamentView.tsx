@@ -312,7 +312,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         >
           <div
             className={
-              isSlideTab
+              isSlideTab || primaryTab === "final"
                 ? primaryTab === "planning"
                   ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
                   : "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"

@@ -1,3 +1,6 @@
+const ICONE_VAINQUEUR = "🏆 ";
+const ICONE_PERDANT = "❌ ";
+
 /** Formate un libellé d'équipe comme le moteur PPTX (``equipe_label_court``). */
 export function formatTeamSlot(label: string): string {
   const text = label.trim();
@@ -13,10 +16,10 @@ export function formatTeamSlot(label: string): string {
     return `3 ${text.replace("Troisième ", "")}:`;
   }
   if (text.startsWith("Vainqueur ")) {
-    return `Gagnants ${text.replace("Vainqueur ", "")}:`;
+    return `${ICONE_VAINQUEUR}${text.replace("Vainqueur ", "")}:`;
   }
   if (text.startsWith("Perdant ")) {
-    return `Perdants ${text.replace("Perdant ", "")}:`;
+    return `${ICONE_PERDANT}${text.replace("Perdant ", "")}:`;
   }
 
   return text;
@@ -25,10 +28,10 @@ export function formatTeamSlot(label: string): string {
 /** Libellé statique d'une balise WIN_/LOSE_/SECOND_/THIRD_. */
 export function formatFeedKey(key: string): string {
   if (key.startsWith("WIN_")) {
-    return `Gagnants ${key.slice(4)}:`;
+    return `${ICONE_VAINQUEUR}${key.slice(4)}:`;
   }
   if (key.startsWith("LOSE_")) {
-    return `Perdants ${key.slice(5)}:`;
+    return `${ICONE_PERDANT}${key.slice(5)}:`;
   }
   if (key.startsWith("SECOND_")) {
     return `2e ${key.slice(7)}:`;
@@ -54,7 +57,7 @@ export function feedKeyFromTeamLabel(label: string): string | null {
 }
 
 const PLACEHOLDER_PREFIX =
-  /^(Vainqueur|Perdant|Deuxième|Second|Troisième|Gagnants|Perdants|1er|2e|3 )/i;
+  /^(Vainqueur|Perdant|Deuxième|Second|Troisième|🏆|❌|1er|2e|3 )/i;
 
 /** « Jean DUPONT » → « J. DUPONT » (aligné sur ``Team._nom_court_joueur``). */
 function shortPlayerName(name: string): string {
