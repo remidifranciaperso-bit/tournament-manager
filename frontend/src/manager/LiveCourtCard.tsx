@@ -22,6 +22,9 @@ export function formatMatchName(match: CourtMatchDisplay): string {
   return `${match.code} — ${match.tour}`;
 }
 
+/** Espacement symétrique nom terrain ↔ nom match ↔ bord haut du terrain (mode compact). */
+const COURT_HEADER_MATCH_GAP_CLASS = "gap-2.5";
+
 export function CourtFooterSlot({
   children,
   compact = false,
@@ -259,21 +262,27 @@ export function LiveCourtCard({
       <div
         className={[
           "flex w-full shrink-0 flex-col items-center",
-          compact ? "gap-1" : "mb-2 gap-2",
+          compact ? COURT_HEADER_MATCH_GAP_CLASS : "mb-2 gap-2",
         ].join(" ")}
       >
         <p className={theme.terrainLabel}>{terrainName}</p>
-        <div className="flex h-5 w-full items-center justify-center">
+        {compact ? (
           <p className={theme.matchName}>
             {match ? formatMatchName(match) : "\u00A0"}
           </p>
-        </div>
+        ) : (
+          <div className="flex h-5 w-full items-center justify-center">
+            <p className={theme.matchName}>
+              {match ? formatMatchName(match) : "\u00A0"}
+            </p>
+          </div>
+        )}
       </div>
 
       <div
         className={[
           "flex w-full flex-col items-center",
-          compact ? "-mt-2 -translate-y-2" : "",
+          compact ? "mt-2.5" : "",
         ].join(" ")}
       >
         <div
