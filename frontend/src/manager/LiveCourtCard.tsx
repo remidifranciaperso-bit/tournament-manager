@@ -15,6 +15,8 @@ export const COURT_HEIGHT_PX = 560;
 export const COURT_BADGE_WIDTH_CLASS = "w-[78%]";
 /** Hauteur fixe sous le terrain (bouton score ou heure prévue). */
 export const COURT_FOOTER_MIN_H_PX = 76;
+/** Mode compact : place pour Valider + Annuler sans clip. */
+export const COURT_FOOTER_COMPACT_MIN_H_PX = 92;
 
 export type LiveCourtTheme = "dark" | "light";
 
@@ -22,8 +24,8 @@ export function formatMatchName(match: CourtMatchDisplay): string {
   return `${match.code} — ${match.tour}`;
 }
 
-/** Espacement symétrique nom terrain ↔ nom match ↔ bord haut du terrain (mode compact). */
-const COURT_HEADER_MATCH_GAP_CLASS = "gap-2.5";
+/** Décalage vertical du bloc terrain + footer (mode compact, sans réduction). */
+const COURT_COMPACT_SHIFT_CLASS = "-translate-y-6";
 
 export function CourtFooterSlot({
   children,
@@ -38,7 +40,9 @@ export function CourtFooterSlot({
         "flex w-full max-w-[280px] flex-col justify-start gap-1.5",
         compact ? "mt-1" : "mt-3",
       ].join(" ")}
-      style={{ minHeight: COURT_FOOTER_MIN_H_PX }}
+      style={{
+        minHeight: compact ? COURT_FOOTER_COMPACT_MIN_H_PX : COURT_FOOTER_MIN_H_PX,
+      }}
     >
       {children}
     </div>
@@ -262,27 +266,21 @@ export function LiveCourtCard({
       <div
         className={[
           "flex w-full shrink-0 flex-col items-center",
-          compact ? COURT_HEADER_MATCH_GAP_CLASS : "mb-2 gap-2",
+          compact ? "gap-1" : "mb-2 gap-2",
         ].join(" ")}
       >
         <p className={theme.terrainLabel}>{terrainName}</p>
-        {compact ? (
+        <div className="flex h-5 w-full items-center justify-center">
           <p className={theme.matchName}>
             {match ? formatMatchName(match) : "\u00A0"}
           </p>
-        ) : (
-          <div className="flex h-5 w-full items-center justify-center">
-            <p className={theme.matchName}>
-              {match ? formatMatchName(match) : "\u00A0"}
-            </p>
-          </div>
-        )}
+        </div>
       </div>
 
       <div
         className={[
           "flex w-full flex-col items-center",
-          compact ? "mt-2.5" : "",
+          compact ? COURT_COMPACT_SHIFT_CLASS : "",
         ].join(" ")}
       >
         <div
@@ -396,7 +394,7 @@ export function LiveCourtsRow({
       className={[
         "flex min-h-0 flex-1 justify-center overflow-x-auto overscroll-x-contain px-4 sm:px-8",
         compact
-          ? "items-start overflow-y-hidden pt-0 pb-1"
+          ? "items-start overflow-y-hidden pt-0 pb-2"
           : "items-center py-6",
       ].join(" ")}
     >
