@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { PadelCourtFilled, PadelCourtOutline } from "../components/CourtBackground";
 import type { MatchFormatCode } from "./matchFormats";
 import type { CourtMatchDisplay } from "./liveCourtMatches";
@@ -15,17 +15,18 @@ export const COURT_HEIGHT_PX = 560;
 export const COURT_BADGE_WIDTH_CLASS = "w-[78%]";
 /** Hauteur fixe sous le terrain (bouton score ou heure prévue). */
 export const COURT_FOOTER_MIN_H_PX = 76;
-/** Mode compact : place pour Valider + Annuler sans clip. */
-export const COURT_FOOTER_COMPACT_MIN_H_PX = 92;
+/** Mode compact : Valider + Annuler sur une ligne. */
+export const COURT_FOOTER_COMPACT_MIN_H_PX = 44;
+
+/** Hauteur naturelle d'une carte compacte (terrain + match + terrain + footer). */
+export const COMPACT_COURT_CARD_HEIGHT_PX =
+  22 + 20 + COURT_HEIGHT_PX + 4 + COURT_FOOTER_COMPACT_MIN_H_PX;
 
 export type LiveCourtTheme = "dark" | "light";
 
 export function formatMatchName(match: CourtMatchDisplay): string {
   return `${match.code} — ${match.tour}`;
 }
-
-/** Décalage vertical du bloc terrain + footer (mode compact, sans réduction). */
-const COURT_COMPACT_SHIFT_CLASS = "-translate-y-6";
 
 export function CourtFooterSlot({
   children,
@@ -263,34 +264,21 @@ export function LiveCourtCard({
 
   return (
     <div className="flex w-[280px] shrink-0 flex-col items-center">
-      {compact ? (
-        <>
-          <p className={`${theme.terrainLabel} w-full shrink-0 text-center`}>
-            {terrainName}
-          </p>
-          <div className="relative z-20 flex h-5 w-full shrink-0 items-center justify-center bg-white">
-            <p className={theme.matchName}>
-              {match ? formatMatchName(match) : "\u00A0"}
-            </p>
-          </div>
-        </>
-      ) : (
-        <div className="mb-2 flex w-full shrink-0 flex-col items-center gap-2">
-          <p className={theme.terrainLabel}>{terrainName}</p>
-          <div className="flex h-5 w-full items-center justify-center">
-            <p className={theme.matchName}>
-              {match ? formatMatchName(match) : "\u00A0"}
-            </p>
-          </div>
-        </div>
-      )}
-
+      <p className={`${theme.terrainLabel} w-full shrink-0 text-center`}>
+        {terrainName}
+      </p>
       <div
         className={[
-          "flex w-full flex-col items-center",
-          compact ? `${COURT_COMPACT_SHIFT_CLASS} pt-6` : "",
+          "flex w-full shrink-0 items-center justify-center",
+          compact ? "h-5" : "mb-2 h-5",
         ].join(" ")}
       >
+        <p className={theme.matchName}>
+          {match ? formatMatchName(match) : "\u00A0"}
+        </p>
+      </div>
+
+      <div className="flex w-full flex-col items-center">
         <div
           className="relative shrink-0"
           style={{
@@ -397,31 +385,75 @@ export function LiveCourtsRow({
   theme = "dark",
   compact = false,
 }: LiveCourtsRowProps) {
+  const slotRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  const updateScale = useCallback(() => {
+    const slot = slotRef.current;
+    if (!slot) return;
+    if (!compact) {
+      setScale(1);
+      return;
+    }
+    const height = slot.clientHeight;
+    if (height <= 0) return;
+    setScale(Math.min(1, height / COMPACT_COURT_CARD_HEIGHT_PX));
+  }, [compact]);
+
+  useEffect(() => {
+    const slot = slotRef.current;
+    if (!slot) return;
+
+    updateScale();
+    const observer = new ResizeObserver(() => updateScale());
+    observer.observe(slot);
+    return () => observer.disconnect();
+  }, [updateScale]);
+
+  const scaledHeight = COMPACT_COURT_CARD_HEIGHT_PX * scale;
+
   return (
     <div
+      ref={slotRef}
       className={[
-        "flex min-h-0 flex-1 justify-center overflow-x-auto overscroll-x-contain px-4 sm:px-8",
-        compact
-          ? "items-start overflow-y-hidden pt-0 pb-2"
-          : "items-center py-6",
+        "flex min-h-0 flex-1 justify-center overflow-hidden px-4 sm:px-8",
+        compact ? "items-start pt-0" : "items-center py-6",
       ].join(" ")}
     >
-      <div className="flex shrink-0 items-start justify-center gap-8 sm:gap-12">
-        {terrains.map((name) => {
-          const match = matchByTerrain.get(name) ?? null;
-          return (
-            <LiveCourtCard
-              key={name}
-              terrainName={name}
-              match={match}
-              emptyLabel={emptyLabel}
-              scoring={getScoring?.(name, match)}
-              footer={renderFooter?.(name, match)}
-              theme={theme}
-              compact={compact}
-            />
-          );
-        })}
+      <div
+        className={[
+          "flex w-full justify-center overflow-x-auto overscroll-x-contain",
+          compact ? "overflow-y-hidden" : "",
+        ].join(" ")}
+        style={compact ? { height: scaledHeight } : undefined}
+      >
+        <div
+          className="flex shrink-0 items-start justify-center gap-8 sm:gap-12"
+          style={
+            compact
+              ? {
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top center",
+                }
+              : undefined
+          }
+        >
+          {terrains.map((name) => {
+            const match = matchByTerrain.get(name) ?? null;
+            return (
+              <LiveCourtCard
+                key={name}
+                terrainName={name}
+                match={match}
+                emptyLabel={emptyLabel}
+                scoring={getScoring?.(name, match)}
+                footer={renderFooter?.(name, match)}
+                theme={theme}
+                compact={compact}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );
