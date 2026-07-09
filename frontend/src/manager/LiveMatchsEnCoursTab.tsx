@@ -10,6 +10,7 @@ import { matchQueuesByTerrain } from "./liveCourtMatches";
 import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
+import { downloadEnginePdf } from "./LivePdfViewer";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { useMatchScoreDraft } from "./useMatchScoreDraft";
 import type { ValidatedMatchScore } from "./matchScoreRules";
@@ -74,6 +75,8 @@ interface LiveMatchsEnCoursTabProps {
   started: boolean;
   completed: Set<string>;
   matchResults: Record<string, StoredMatchResult>;
+  liveToken: string;
+  pdfFilename: string;
   onStart: () => void;
   onCompleteMatch: (
     code: string,
@@ -88,6 +91,8 @@ export function LiveMatchsEnCoursTab({
   started,
   completed,
   matchResults,
+  liveToken,
+  pdfFilename,
   onStart,
   onCompleteMatch,
 }: LiveMatchsEnCoursTabProps) {
@@ -121,6 +126,9 @@ export function LiveMatchsEnCoursTab({
     ? resolveFormatForMatch(openLiveMatch, meta)
     : "A1";
 
+  const finished =
+    started && matches.length > 0 && completed.size >= matches.length;
+
   const closeScoring = () => {
     scoreForm.close();
     setScoringState(null);
@@ -150,7 +158,7 @@ export function LiveMatchsEnCoursTab({
         />
       )}
 
-      {started ? (
+      {started && !finished ? (
         <LiveCourtsRow
           terrains={terrains}
           matchByTerrain={matchByTerrain}
@@ -209,6 +217,8 @@ export function LiveMatchsEnCoursTab({
             );
           }}
         />
+      ) : started ? (
+        <div className="min-h-0 flex-1" aria-hidden />
       ) : (
         <div className="min-h-0 flex-1" aria-hidden />
       )}
@@ -227,6 +237,26 @@ export function LiveMatchsEnCoursTab({
               Commencer le tournoi
             </span>
           </button>
+        </div>
+      )}
+
+      {finished && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
+          <div className="flex flex-col items-center gap-5 rounded-2xl border border-arena-600/25 bg-white px-8 py-6 text-center shadow-md sm:px-12 sm:py-8">
+            <span
+              className="font-brush text-[clamp(2rem,8vw,3.5rem)] leading-none text-arena-700"
+              style={{ textShadow: "0 0 24px rgba(26,58,92,0.12)" }}
+            >
+              Tournoi terminé
+            </span>
+            <button
+              type="button"
+              onClick={() => downloadEnginePdf(liveToken, pdfFilename)}
+              className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15"
+            >
+              Exporter le PDF du tournoi
+            </button>
+          </div>
         </div>
       )}
     </div>

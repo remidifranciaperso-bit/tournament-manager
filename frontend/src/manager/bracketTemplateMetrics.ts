@@ -6,6 +6,7 @@ export const SLIDE_W_EMU = 9906000;
 export const TEMPLATE_PT = {
   matchCode: 11,
   team: 12,
+  teamPlaceholder: 8.5,
   vs: 9,
   score: 9,
   feedLabel: 8,

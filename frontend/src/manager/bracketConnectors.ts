@@ -66,8 +66,10 @@ export function buildBracketConnectors(
   feeds: LiveLayoutField[],
   matchesByCode: Map<string, LiveMatch>,
   consumedFeeds: Set<string>,
-  boxLayouts: Map<string, BoxRectPct>
+  boxLayouts: Map<string, BoxRectPct>,
+  options?: { includeFeedConnectors?: boolean }
 ): string[] {
+  const includeFeedConnectors = options?.includeFeedConnectors ?? true;
   const slotByCode = new Map(slots.map((slot) => [slot.code, slot]));
   const feedByKey = new Map(feeds.map((field) => [field.key, field]));
   const paths: string[] = [];
@@ -114,7 +116,7 @@ export function buildBracketConnectors(
           ? feedByKey.get(feedKey)
           : feedByKey.get(winKey) ?? feedByKey.get(loseKey);
 
-      if (feedField) {
+      if (feedField && includeFeedConnectors) {
         feedToChildLinks.push({
           from: feedAnchor(feedField, "left"),
           to: childPoint,
@@ -131,6 +133,10 @@ export function buildBracketConnectors(
 
   for (const { from, to } of feedToChildLinks) {
     paths.push(feedBracketPath(from, to));
+  }
+
+  if (!includeFeedConnectors) {
+    return paths;
   }
 
   for (const field of feeds) {

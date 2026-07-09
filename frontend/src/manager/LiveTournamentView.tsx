@@ -6,20 +6,18 @@ import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
 import { LiveBracketViewer } from "./LiveBracketViewer";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
-import { LivePdfViewer } from "./LivePdfViewer";
+import { LivePlanningTab } from "./LivePlanningTab";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { LiveTournamentData } from "./liveTypes";
 import {
   LIVE_PRIMARY_TABS,
   LIVE_TAB_WIDTH_CLASS,
-  allSlideIndices,
   pageEntries,
   planningIndicesForPage,
   slideIndexAt,
   subTabLabels,
   type LivePrimaryTab,
 } from "./liveTabs";
-import { buildPlanningCheckOverlays } from "./planningOverlays";
 import { useLiveProgress } from "./useLiveProgress";
 
 const TAB_BASE =
@@ -41,16 +39,18 @@ interface LiveTournamentViewProps {
 }
 
 export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
-  const { page_map, live_token, matches, meta, fields, planning_layout = {} } =
-    liveData;
+  const {
+    page_map,
+    live_token,
+    matches,
+    meta,
+    fields,
+    planning_layout = {},
+    pdf_filename,
+  } = liveData;
 
   const progress = useLiveProgress(live_token, matches.length, meta);
   const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
-
-  const prefetchIndices = useMemo(
-    () => allSlideIndices(page_map),
-    [page_map]
-  );
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -146,29 +146,6 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     planningPages,
   ]);
 
-  const planningCheckboxes = useMemo(() => {
-    if (primaryTab !== "planning" || slideIndices.length === 0) return [];
-
-    const slideKey = String(slideIndices[0]);
-    const layoutFields = planning_layout[slideKey] ?? [];
-
-    return buildPlanningCheckOverlays(
-      layoutFields,
-      fields,
-      matches,
-      progress.completed,
-      progress.toggleMatch
-    );
-  }, [
-    primaryTab,
-    slideIndices,
-    planning_layout,
-    fields,
-    matches,
-    progress.completed,
-    progress.toggleMatch,
-  ]);
-
   const renderContent = () => {
     switch (primaryTab) {
       case "avancement":
@@ -189,6 +166,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             started={progress.started}
             completed={progress.completed}
             matchResults={progress.matchResults}
+            liveToken={live_token}
+            pdfFilename={pdf_filename}
             onStart={progress.startTournament}
             onCompleteMatch={progress.completeMatch}
           />
@@ -231,29 +210,36 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             fields={fields}
           />
         );
-      case "planning":
+      case "planning": {
+        const slideIndex = slideIndices[0];
+        if (slideIndex === undefined) {
+          return (
+            <p className="py-8 text-center text-sm text-arena-600/55">
+              Aucune page disponible pour cet onglet.
+            </p>
+          );
+        }
+        const layoutFields = planning_layout[String(slideIndex)] ?? [];
         return (
-          <LivePdfViewer
-            liveToken={live_token}
-            prefetchIndices={prefetchIndices}
-            slideIndices={slideIndices}
-            checkboxes={planningCheckboxes}
+          <LivePlanningTab
+            layoutFields={layoutFields}
+            matches={matches}
+            completed={progress.completed}
+            matchResults={progress.matchResults}
+            onToggleDone={progress.toggleMatch}
           />
         );
+      }
       default:
         return null;
     }
   };
 
-  const isSlideTab =
-    primaryTab === "main" ||
-    primaryTab === "classement" ||
-    primaryTab === "planning";
-
   const isBracketTab =
     primaryTab === "main" ||
     primaryTab === "classement" ||
-    primaryTab === "final";
+    primaryTab === "final" ||
+    primaryTab === "planning";
 
   const isProjectionTab = primaryTab === "live" || primaryTab === "upcoming";
 
@@ -312,7 +298,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         >
           <div
             className={
-              isSlideTab || primaryTab === "final"
+              isBracketTab
                 ? primaryTab === "planning"
                   ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
                   : "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"

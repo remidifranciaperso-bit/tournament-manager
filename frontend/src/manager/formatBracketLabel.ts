@@ -59,6 +59,10 @@ export function feedKeyFromTeamLabel(label: string): string | null {
 const PLACEHOLDER_PREFIX =
   /^(Vainqueur|Perdant|Deuxième|Second|Troisième|🏆|❌|1er|2e|3 )/i;
 
+export function isBracketPlaceholder(text: string): boolean {
+  return PLACEHOLDER_PREFIX.test(text.trim());
+}
+
 /** « Jean DUPONT » → « J. DUPONT » (aligné sur ``Team._nom_court_joueur``). */
 function shortPlayerName(name: string): string {
   const trimmed = name.trim();

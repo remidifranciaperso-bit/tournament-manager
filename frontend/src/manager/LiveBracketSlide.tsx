@@ -16,6 +16,7 @@ import {
   formatFeedKey,
   formatTeamSlot,
   formatTeamWithInitials,
+  isBracketPlaceholder,
 } from "./formatBracketLabel";
 import {
   buildMatchesByCode,
@@ -54,6 +55,13 @@ function resolveTeamDisplay(
   return formatTeamWithInitials(text);
 }
 
+function teamFontSize(text: string, scaleH: number): number {
+  const pt = isBracketPlaceholder(text)
+    ? TEMPLATE_PT.teamPlaceholder
+    : TEMPLATE_PT.team;
+  return ptOnSlide(pt, scaleH);
+}
+
 function TemplateMatchBox({
   match,
   box,
@@ -72,7 +80,8 @@ function TemplateMatchBox({
   scaleH: number;
 }) {
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
-  const teamPx = ptOnSlide(TEMPLATE_PT.team, scaleH);
+  const team1Px = teamFontSize(team1, scaleH);
+  const team2Px = teamFontSize(team2, scaleH);
   const vsPx = ptOnSlide(TEMPLATE_PT.vs, scaleH);
   const scorePx = ptOnSlide(TEMPLATE_PT.score, scaleH);
   const team1Weight =
@@ -107,7 +116,7 @@ function TemplateMatchBox({
       <div className="flex min-h-0 flex-1 flex-col">
         <div
           className={`flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto leading-tight text-arena-800 ${team1Weight}`}
-          style={{ fontSize: teamPx }}
+          style={{ fontSize: team1Px }}
         >
           <span className="line-clamp-2 break-words">{team1}</span>
         </div>
@@ -119,7 +128,7 @@ function TemplateMatchBox({
         </div>
         <div
           className={`flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto leading-tight text-arena-800 ${team2Weight}`}
-          style={{ fontSize: teamPx }}
+          style={{ fontSize: team2Px }}
         >
           <span className="line-clamp-2 break-words">{team2}</span>
         </div>
@@ -153,6 +162,10 @@ function FeedLabel({
   scaleH: number;
 }) {
   const mapped = mapFieldToProjection(field);
+  const fontPx = ptOnSlide(
+    isBracketPlaceholder(text) ? TEMPLATE_PT.teamPlaceholder : TEMPLATE_PT.team,
+    scaleH
+  );
 
   return (
     <div
@@ -162,7 +175,7 @@ function FeedLabel({
         top: `${mapped.top}%`,
         width: `${mapped.width}%`,
         height: `${mapped.height}%`,
-        fontSize: ptOnSlide(TEMPLATE_PT.feedLabel, scaleH),
+        fontSize: fontPx,
       }}
     >
       <span className="line-clamp-2 break-words">{text}</span>
@@ -232,17 +245,20 @@ export function LiveBracketSlide({
     [parsed.matches, matches]
   );
 
-  const connectorPaths = useMemo(
-    () =>
-      buildBracketConnectors(
-        parsed.matches,
-        parsed.feeds,
-        matchesByCode,
-        consumedFeeds,
-        boxLayouts
-      ),
-    [parsed.matches, parsed.feeds, matchesByCode, consumedFeeds, boxLayouts]
-  );
+  const connectorPaths = useMemo(() => {
+    const isClassementSlide =
+      parsed.matches.length > 0 &&
+      parsed.matches.every((slot) => /^C[\d_]+$/.test(slot.code));
+
+    return buildBracketConnectors(
+      parsed.matches,
+      parsed.feeds,
+      matchesByCode,
+      consumedFeeds,
+      boxLayouts,
+      { includeFeedConnectors: !isClassementSlide }
+    );
+  }, [parsed.matches, parsed.feeds, matchesByCode, consumedFeeds, boxLayouts]);
 
   return (
     <div
