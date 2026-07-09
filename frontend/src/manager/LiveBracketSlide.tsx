@@ -241,7 +241,7 @@ function BracketConnectors({
           d={d}
           fill="none"
           stroke="#00B0F0"
-          strokeWidth={Math.max(0.6, width * 0.0016)}
+          strokeWidth={Math.max(0.3, width * 0.0008)}
           strokeLinejoin="round"
           strokeLinecap="butt"
           shapeRendering="geometricPrecision"
