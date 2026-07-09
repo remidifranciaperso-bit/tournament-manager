@@ -69,7 +69,7 @@ export function LiveBracketViewer({
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white p-2 sm:p-4"
+      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white px-2 pb-2 pt-0 sm:px-4 sm:pb-4"
     >
       <LiveBracketSlide
         fields={fields}

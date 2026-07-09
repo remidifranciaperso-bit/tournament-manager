@@ -1,7 +1,7 @@
 import { isBracketPlaceholder } from "./formatBracketLabel";
 
 export const LIVE_TABLE_PAGE =
-  "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white p-4 sm:p-6";
+  "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-4 pb-4 sm:px-6 sm:pb-6";
 
 export const LIVE_TABLE_CARD =
   "mx-auto w-full max-w-5xl overflow-hidden rounded-xl border border-template-blue/35 shadow-sm";

@@ -18,6 +18,7 @@ import {
   subTabLabels,
   type LivePrimaryTab,
 } from "./liveTabs";
+import { LiveTabTitle } from "./LiveTabTitle";
 import { useLiveProgress } from "./useLiveProgress";
 
 const TAB_BASE =
@@ -243,6 +244,9 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
 
   const isProjectionTab = primaryTab === "live" || primaryTab === "upcoming";
 
+  const activeTabLabel =
+    LIVE_PRIMARY_TABS.find((tab) => tab.id === primaryTab)?.label ?? "";
+
   return (
     <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-arena-950 text-white">
       <CourtBackground />
@@ -296,16 +300,19 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             primaryTab === "planning" ? "touch-manipulation" : "touch-none",
           ].join(" ")}
         >
-          <div
-            className={
-              isBracketTab
-                ? primaryTab === "planning"
-                  ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
-                  : "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
-                : "flex min-h-0 flex-1 flex-col overflow-y-auto"
-            }
-          >
-            {renderContent()}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <LiveTabTitle label={activeTabLabel} />
+            <div
+              className={
+                isBracketTab
+                  ? primaryTab === "planning"
+                    ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
+                    : "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
+                  : "flex min-h-0 flex-1 flex-col overflow-y-auto"
+              }
+            >
+              {renderContent()}
+            </div>
           </div>
         </div>
       </div>
