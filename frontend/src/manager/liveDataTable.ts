@@ -23,7 +23,10 @@ export const LIVE_TABLE_CELL_NOTO =
   "px-2 py-2 font-noto text-arena-800 sm:px-3";
 
 export const LIVE_TABLE_CELL_NOTO_BOLD =
-  "px-2 py-2 font-noto font-semibold text-arena-800 sm:px-3";
+  "px-2 py-2 font-noto font-bold text-arena-800 sm:px-3";
+
+export const LIVE_TABLE_CELL_POINTS =
+  "live-table-points px-2 py-2 text-right text-template-blue sm:px-3";
 
 /** Placeholder 🏆/❌ plus petit ; nom d'équipe en taille tableau normale. */
 export function liveTeamTextClass(text: string): string {

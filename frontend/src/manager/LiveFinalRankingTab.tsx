@@ -10,7 +10,7 @@ import {
   LIVE_TABLE,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_NOTO,
-  LIVE_TABLE_CELL_NOTO_BOLD,
+  LIVE_TABLE_CELL_POINTS,
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
   LIVE_TABLE_PAGE,
@@ -68,9 +68,7 @@ export function LiveFinalRankingTab({
                     <span className="text-arena-600/35">—</span>
                   )}
                 </td>
-                <td
-                  className={`${LIVE_TABLE_CELL_TSL_BOLD} text-right text-template-blue`}
-                >
+                <td className={LIVE_TABLE_CELL_POINTS}>
                   {row.points || (
                     <span className="text-arena-600/35">—</span>
                   )}

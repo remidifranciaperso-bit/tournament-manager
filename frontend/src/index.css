@@ -104,6 +104,11 @@ body {
   .step-num {
     @apply font-display text-7xl leading-none text-white/[0.06];
   }
+
+  .live-table-points {
+    font-family: "Noto Sans", "Sora", system-ui, sans-serif;
+    font-weight: 700;
+  }
 }
 
 /* Scrollbar discrète */
