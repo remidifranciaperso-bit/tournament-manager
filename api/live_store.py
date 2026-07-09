@@ -31,6 +31,7 @@ def creer_session(
     pdf_path: Path,
     pdf_filename: str,
     page_map: dict | None = None,
+    logo_path: Path | str | None = None,
 ) -> tuple[str, Path]:
     nettoyer_sessions_expirees()
     token = uuid.uuid4().hex
@@ -44,6 +45,11 @@ def creer_session(
             json.dumps(page_map, ensure_ascii=False),
             encoding="utf-8",
         )
+    if logo_path is not None:
+        source = Path(logo_path)
+        if source.is_file():
+            ext = source.suffix.lower() or ".png"
+            shutil.copy2(source, session_dir / f"logo{ext}")
     return token, pages_dir
 
 
@@ -99,6 +105,16 @@ def charger_page_map(token: str) -> dict | None:
         return json.loads(fichier.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return None
+
+
+def chemin_logo(token: str) -> Path | None:
+    session = chemin_session(token)
+    if session is None:
+        return None
+    for candidate in sorted(session.glob("logo.*")):
+        if candidate.is_file():
+            return candidate
+    return None
 
 
 def chemin_pdf_export(token: str) -> Path | None:

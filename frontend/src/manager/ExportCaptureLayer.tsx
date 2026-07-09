@@ -1,6 +1,7 @@
 import { EXPORT_CAPTURE_WIDTH, type ExportCaptureTarget } from "./exportCapture";
 import { LiveBracketViewer } from "./LiveBracketViewer";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
+import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
 import { pageEntries, slideIndexAt } from "./liveTabs";
 import type { LivePageMap, LiveTournamentMeta, LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -36,12 +37,18 @@ export function ExportCaptureLayer({
         style={{ width: EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
-        <LiveFinalRankingTab
-          meta={meta}
-          matches={matches}
-          matchResults={matchResults}
-          fields={fields}
-        />
+        <LiveManagerDocumentPage
+          club={meta.club}
+          logoUrl={meta.logo_url}
+          capture="final"
+        >
+          <LiveFinalRankingTab
+            meta={meta}
+            matches={matches}
+            matchResults={matchResults}
+            fields={fields}
+          />
+        </LiveManagerDocumentPage>
       </div>
     );
   }
@@ -57,13 +64,19 @@ export function ExportCaptureLayer({
       style={{ width: EXPORT_CAPTURE_WIDTH }}
       aria-hidden
     >
-      <LiveBracketViewer
-        templateId={templateId}
-        slideIndex={slideIndex}
-        matches={matches}
-        matchResults={matchResults}
-        fixedRenderWidth={EXPORT_CAPTURE_WIDTH}
-      />
+      <LiveManagerDocumentPage
+        club={meta.club}
+        logoUrl={meta.logo_url}
+        capture="bracket"
+      >
+        <LiveBracketViewer
+          templateId={templateId}
+          slideIndex={slideIndex}
+          matches={matches}
+          matchResults={matchResults}
+          fixedRenderWidth={EXPORT_CAPTURE_WIDTH}
+        />
+      </LiveManagerDocumentPage>
     </div>
   );
 }

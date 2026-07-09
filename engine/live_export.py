@@ -43,6 +43,7 @@ def serialiser_tournoi(tournoi) -> dict:
 
     return {
         "club": tournoi.club,
+        "logo_url": None,
         "date_tournoi": tournoi.date_tournoi,
         "type_tournoi": tournoi.type_tournoi,
         "genre_tournoi": getattr(tournoi, "genre_tournoi", None),
@@ -110,8 +111,14 @@ def construire_payload_live(
             planning_layout = calibrer_planning_layout_pdf(planning_layout, pdf_path)
         planning_layout = _enrichir_planning_layout(planning_layout, fields)
 
+    from api.live_store import chemin_logo
+
+    meta = serialiser_tournoi(tournoi)
+    if chemin_logo(live_token) is not None:
+        meta["logo_url"] = f"/api/live/{live_token}/logo"
+
     return {
-        "meta": serialiser_tournoi(tournoi),
+        "meta": meta,
         "matches": [serialiser_match(match) for match in matchs],
         "page_map": page_map,
         "fields": fields,

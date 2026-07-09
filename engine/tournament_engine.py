@@ -307,7 +307,12 @@ def generate_tournament_live(
     liberer_memoire()
 
     page_map = cartographier_pages_live(template_path, pptx_path)
-    live_token, pages_dir = creer_session(pdf_path, pdf_path.name, page_map)
+    live_token, pages_dir = creer_session(
+        pdf_path,
+        pdf_path.name,
+        page_map,
+        logo_path=logo_path,
+    )
     page_sizes = extraire_pages_sur_disque(
         pdf_path,
         indices_depuis_page_map(page_map),

@@ -39,6 +39,7 @@ export interface LivePageMap {
 
 export interface LiveTournamentMeta {
   club: string;
+  logo_url?: string | null;
   date_tournoi: string;
   type_tournoi: string;
   genre_tournoi: string | null;

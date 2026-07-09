@@ -24,6 +24,7 @@ import type { LivePdfExportPayload } from "./LivePdfViewer";
 import { captureManagerExportPages } from "./captureExportPages";
 import type { ExportCaptureTarget, ExportPhase } from "./exportCapture";
 import { ExportCaptureLayer } from "./ExportCaptureLayer";
+import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
 
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide transition sm:px-1.5 sm:py-3 sm:text-[10px]";
@@ -250,22 +251,26 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           );
         }
         return (
-          <LiveBracketViewer
-            templateId={templateId}
-            slideIndex={slideIndex}
-            matches={matches}
-            matchResults={progress.matchResults}
-          />
+          <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+            <LiveBracketViewer
+              templateId={templateId}
+              slideIndex={slideIndex}
+              matches={matches}
+              matchResults={progress.matchResults}
+            />
+          </LiveManagerDocumentPage>
         );
       }
       case "final":
         return (
-          <LiveFinalRankingTab
-            meta={meta}
-            matches={matches}
-            matchResults={progress.matchResults}
-            fields={fields}
-          />
+          <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+            <LiveFinalRankingTab
+              meta={meta}
+              matches={matches}
+              matchResults={progress.matchResults}
+              fields={fields}
+            />
+          </LiveManagerDocumentPage>
         );
       case "planning": {
         const slideIndex = slideIndices[0];
@@ -278,13 +283,15 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         }
         const layoutFields = planning_layout[String(slideIndex)] ?? [];
         return (
-          <LivePlanningTab
-            layoutFields={layoutFields}
-            matches={matches}
-            completed={progress.completed}
-            matchResults={progress.matchResults}
-            onToggleDone={progress.toggleMatch}
-          />
+          <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+            <LivePlanningTab
+              layoutFields={layoutFields}
+              matches={matches}
+              completed={progress.completed}
+              matchResults={progress.matchResults}
+              onToggleDone={progress.toggleMatch}
+            />
+          </LiveManagerDocumentPage>
         );
       }
       default:

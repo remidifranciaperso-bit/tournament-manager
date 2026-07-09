@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from api.notify_store import chemin_pdf, enregistrer_pdf, supprimer_pdf
 from api.live_store import (
     charger_page_map,
+    chemin_logo,
     chemin_page,
     chemin_page_png,
     chemin_pdf_complet,
@@ -280,6 +281,26 @@ def live_page_pdf(token: str, index: int):
         chemin,
         media_type="application/pdf",
         headers={"Cache-Control": "private, max-age=3600"},
+    )
+
+
+@app.get("/api/live/{token}/logo")
+def live_logo(token: str):
+    chemin = chemin_logo(token)
+    if chemin is None:
+        raise HTTPException(status_code=404, detail="Logo live introuvable.")
+    media = "image/png"
+    suffix = chemin.suffix.lower()
+    if suffix in {".jpg", ".jpeg"}:
+        media = "image/jpeg"
+    elif suffix == ".webp":
+        media = "image/webp"
+    elif suffix == ".gif":
+        media = "image/gif"
+    return FileResponse(
+        chemin,
+        media_type=media,
+        headers={"Cache-Control": "private, max-age=86400"},
     )
 
 
