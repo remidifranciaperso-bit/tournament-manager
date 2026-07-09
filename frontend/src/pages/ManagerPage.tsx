@@ -25,7 +25,7 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-11";
+const MANAGER_BUILD = "manager-preview-12";
 
 /** 0 accueil · 1 mode · 2-8 paramètres · 9 génération live */
 const STEP_PARTICIPANTS = 2;

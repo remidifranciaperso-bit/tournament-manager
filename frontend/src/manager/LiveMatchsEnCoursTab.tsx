@@ -78,6 +78,9 @@ interface LiveMatchsEnCoursTabProps {
   liveToken: string;
   pdfFilename: string;
   exportPayload: LivePdfExportPayload;
+  captureExportPages: () => Promise<Record<string, string>>;
+  exportingPdf: boolean;
+  onExportingChange: (exporting: boolean) => void;
   onStart: () => void;
   onCompleteMatch: (
     code: string,
@@ -95,11 +98,13 @@ export function LiveMatchsEnCoursTab({
   liveToken,
   pdfFilename,
   exportPayload,
+  captureExportPages,
+  exportingPdf,
+  onExportingChange,
   onStart,
   onCompleteMatch,
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
-  const [exportingPdf, setExportingPdf] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [scoringState, setScoringState] = useState<CourtScoringState | null>(
     null
@@ -260,7 +265,7 @@ export function LiveMatchsEnCoursTab({
               type="button"
               disabled={exportingPdf}
               onClick={() => {
-                setExportingPdf(true);
+                onExportingChange(true);
                 setExportError(null);
                 void (async () => {
                   try {
@@ -268,7 +273,7 @@ export function LiveMatchsEnCoursTab({
                       liveToken,
                       pdfFilename,
                       exportPayload,
-                      meta
+                      captureExportPages
                     );
                   } catch (error) {
                     const message =
@@ -277,7 +282,7 @@ export function LiveMatchsEnCoursTab({
                         : "Export PDF impossible.";
                     setExportError(message);
                   } finally {
-                    setExportingPdf(false);
+                    onExportingChange(false);
                   }
                 })();
               }}

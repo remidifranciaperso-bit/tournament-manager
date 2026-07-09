@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { LiveAvancementTab } from "./LiveAvancementTab";
@@ -21,6 +21,7 @@ import {
 import { LiveTabTitle } from "./LiveTabTitle";
 import { useLiveProgress } from "./useLiveProgress";
 import type { LivePdfExportPayload } from "./LivePdfViewer";
+import { captureVisibleManagerPages } from "./captureExportPages";
 
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide transition sm:px-1.5 sm:py-3 sm:text-[10px]";
@@ -100,6 +101,18 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const [mainPage, setMainPage] = useState(0);
   const [classementPage, setClassementPage] = useState(0);
   const [planningPage, setPlanningPage] = useState(0);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const captureExportPages = useCallback(async () => {
+    return captureVisibleManagerPages(page_map, {
+      goTo: (tab, subPage) => {
+        setPrimaryTab(tab);
+        if (tab === "main") setMainPage(subPage);
+        else if (tab === "classement") setClassementPage(subPage);
+        else if (tab === "planning") setPlanningPage(subPage);
+      },
+    });
+  }, [page_map]);
 
   const activeSubPages = useMemo(() => {
     switch (primaryTab) {
@@ -202,6 +215,9 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             liveToken={live_token}
             pdfFilename={pdf_filename}
             exportPayload={exportPayload}
+            captureExportPages={captureExportPages}
+            exportingPdf={exportingPdf}
+            onExportingChange={setExportingPdf}
             onStart={progress.startTournament}
             onCompleteMatch={progress.completeMatch}
           />
@@ -352,6 +368,14 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           </div>
         </div>
       </div>
+
+      {exportingPdf && (
+        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-arena-950/55">
+          <p className="rounded-xl bg-white px-6 py-4 text-center font-semibold text-arena-800 shadow-lg">
+            Capture des onglets pour l&apos;export PDF…
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -43,7 +43,7 @@ export function LiveFinalRankingTab({
   );
 
   return (
-    <div className={LIVE_TABLE_PAGE}>
+    <div className={LIVE_TABLE_PAGE} data-export-capture="final">
       <div className={LIVE_TABLE_CARD}>
         <table className={LIVE_TABLE}>
           <thead>

@@ -304,6 +304,7 @@ export function LiveBracketSlide({
   return (
     <div
       data-bracket-slide
+      data-export-capture="bracket"
       data-capture-width={renderWidth}
       data-capture-height={renderHeight}
       className="relative shrink-0 overflow-hidden bg-white"

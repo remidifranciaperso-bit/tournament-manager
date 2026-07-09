@@ -8,7 +8,7 @@ import fitz
 
 TEMPLATE_BLUE = (0, 176, 240)
 _HEADER_RATIO = 0.083
-_CONTENT_MARGIN_PT = 14
+_CONTENT_MARGIN_PT = 6
 
 
 def _decode_capture(data: str) -> bytes:
@@ -68,7 +68,7 @@ def _fit_image_rect(
     width = image_width * scale
     height = image_height * scale
     x0 = inner.x0 + (inner.width - width) / 2
-    y0 = inner.y0 + (inner.height - height) / 2
+    y0 = inner.y0
     return fitz.Rect(x0, y0, x0 + width, y0 + height)
 
 
