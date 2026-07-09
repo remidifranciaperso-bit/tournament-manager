@@ -197,30 +197,51 @@ function FeedLabel({
   );
 }
 
+function pathPctToPx(d: string, width: number, height: number): string {
+  const sx = width / 100;
+  const sy = height / 100;
+  return d.replace(
+    /([MHVL])\s*(-?\d*\.?\d+)(?:\s+(-?\d*\.?\d+))?/g,
+    (_, cmd: string, a: string, b?: string) => {
+      if (cmd === "H") return `H ${parseFloat(a) * sx}`;
+      if (cmd === "V") return `V ${parseFloat(a) * sy}`;
+      return `${cmd} ${parseFloat(a) * sx} ${parseFloat(b ?? "0") * sy}`;
+    }
+  );
+}
+
 function BracketConnectors({
   paths,
-  forExport,
+  width,
+  height,
 }: {
   paths: string[];
-  forExport?: boolean;
+  width: number;
+  height: number;
 }) {
   if (paths.length === 0) return null;
 
+  const scaledPaths = useMemo(
+    () => paths.map((path) => pathPctToPx(path, width, height)),
+    [paths, width, height]
+  );
+
   return (
     <svg
-      className="pointer-events-none absolute inset-0 z-[5] block h-full w-full"
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
+      className="pointer-events-none absolute left-0 top-0 z-[5] block"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      style={{ width, height }}
       aria-hidden
     >
-      {paths.map((d, index) => (
+      {scaledPaths.map((d, index) => (
         <path
           key={index}
           d={d}
           fill="none"
           stroke="#00B0F0"
-          strokeWidth={forExport ? "0.42" : "0.48"}
-          vectorEffect={forExport ? undefined : "non-scaling-stroke"}
+          strokeWidth={Math.max(1.8, width * 0.0048)}
         />
       ))}
     </svg>
@@ -232,7 +253,6 @@ interface LiveBracketSlideProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   renderWidth: number;
-  forExport?: boolean;
 }
 
 export function LiveBracketSlide({
@@ -240,7 +260,6 @@ export function LiveBracketSlide({
   matches,
   matchResults,
   renderWidth,
-  forExport = false,
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
@@ -285,10 +304,16 @@ export function LiveBracketSlide({
   return (
     <div
       data-bracket-slide
+      data-capture-width={renderWidth}
+      data-capture-height={renderHeight}
       className="relative shrink-0 overflow-hidden bg-white"
       style={{ width: renderWidth, height: renderHeight }}
     >
-      <BracketConnectors paths={connectorPaths} forExport={forExport} />
+      <BracketConnectors
+        paths={connectorPaths}
+        width={renderWidth}
+        height={renderHeight}
+      />
 
       {parsed.matches.map((slot) => {
         const match = matchesByCode.get(slot.code);

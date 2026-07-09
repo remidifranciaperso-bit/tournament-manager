@@ -26,6 +26,13 @@ function inlineNodeStyles(source: Element, target: Element): void {
   }
   target.style.cssText = cssText;
 
+  if (source instanceof SVGElement && target instanceof SVGElement) {
+    for (const attr of Array.from(source.attributes)) {
+      if (attr.name === "class") continue;
+      target.setAttribute(attr.name, attr.value);
+    }
+  }
+
   const sourceChildren = Array.from(source.children);
   const targetChildren = Array.from(target.children);
   for (let index = 0; index < sourceChildren.length; index += 1) {
@@ -67,11 +74,15 @@ export async function domToPng(
   options: DomCaptureOptions = {}
 ): Promise<string> {
   await document.fonts.ready;
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
 
   const height = Math.max(
     options.height ?? 0,
     element.offsetHeight,
     element.scrollHeight,
+    Math.round(element.getBoundingClientRect().height),
     1
   );
   const transparent = options.transparent ?? false;
@@ -81,7 +92,12 @@ export async function domToPng(
   clone.style.width = `${width}px`;
   clone.style.height = `${height}px`;
   clone.style.margin = "0";
+  clone.style.padding = "0";
   clone.style.boxSizing = "border-box";
+  clone.style.position = "relative";
+  clone.style.left = "0";
+  clone.style.top = "0";
+  clone.style.transform = "none";
   if (transparent) {
     clone.style.background = "transparent";
   } else {
@@ -93,8 +109,8 @@ export async function domToPng(
   const background = transparent ? "transparent" : "#ffffff";
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <foreignObject width="100%" height="100%">
-    <div xmlns="${xmlns}" style="width:${width}px;height:${height}px;background:${background};">
+  <foreignObject x="0" y="0" width="${width}" height="${height}">
+    <div xmlns="${xmlns}" style="width:${width}px;height:${height}px;margin:0;padding:0;overflow:visible;background:${background};">
       ${serialized}
     </div>
   </foreignObject>
@@ -104,7 +120,7 @@ export async function domToPng(
   const image = await loadImage(svgUrl);
 
   const canvas = document.createElement("canvas");
-  const ratio = 1.5;
+  const ratio = 2;
   canvas.width = Math.round(width * ratio);
   canvas.height = Math.round(height * ratio);
   const ctx = canvas.getContext("2d");
@@ -120,5 +136,5 @@ export async function domToPng(
   if (format === "png") {
     return canvas.toDataURL("image/png");
   }
-  return canvas.toDataURL("image/jpeg", 0.9);
+  return canvas.toDataURL("image/jpeg", 0.92);
 }

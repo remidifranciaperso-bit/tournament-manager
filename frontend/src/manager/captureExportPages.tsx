@@ -46,8 +46,15 @@ async function renderAndCapture(
     throw new Error(`Capture impossible pour ${key}.`);
   }
 
-  const width = target.offsetWidth || BRACKET_CAPTURE_WIDTH;
-  const height = target.offsetHeight || target.scrollHeight;
+  const width =
+    target.offsetWidth ||
+    Number.parseInt(target.getAttribute("data-capture-width") ?? "", 10) ||
+    BRACKET_CAPTURE_WIDTH;
+  const height =
+    target.offsetHeight ||
+    target.scrollHeight ||
+    Number.parseInt(target.getAttribute("data-capture-height") ?? "", 10) ||
+    Math.round(width / (9906000 / 6858000));
 
   captures[key] = await domToPng(target, width, {
     height,
@@ -65,7 +72,7 @@ export async function captureManagerExportPages(
 
   const host = document.createElement("div");
   host.style.cssText =
-    "position:fixed;left:-14000px;top:0;z-index:-1;opacity:1;pointer-events:none;background:#fff";
+    "position:fixed;left:0;top:0;z-index:-1;visibility:hidden;pointer-events:none;background:#fff;overflow:visible";
   document.body.appendChild(host);
   const root = createRoot(host);
 
