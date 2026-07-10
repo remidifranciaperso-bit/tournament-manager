@@ -228,7 +228,10 @@ interface LiveCourtCardProps {
   theme?: LiveCourtTheme;
   compact?: boolean;
   /** Après validation du score : invite à lancer le match suivant sur ce terrain. */
-  terrainLibrePrompt?: { onLaunch: () => void };
+  terrainLibrePrompt?: {
+    onLaunch: () => void;
+    blockedMessage?: string | null;
+  };
 }
 
 export function LiveCourtCard({
@@ -301,9 +304,15 @@ export function LiveCourtCard({
               <span className="font-brush text-2xl leading-none text-arena-700 sm:text-3xl">
                 Terrain libre
               </span>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-arena-600/80 sm:text-[11px]">
-                Lancer le match suivant
-              </span>
+              {terrainLibrePrompt.blockedMessage ? (
+                <span className="max-w-[220px] text-[10px] font-semibold leading-snug text-amber-700 sm:text-[11px]">
+                  {terrainLibrePrompt.blockedMessage}
+                </span>
+              ) : (
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-arena-600/80 sm:text-[11px]">
+                  Lancer le match suivant
+                </span>
+              )}
             </button>
           </div>
         ) : match && equipe1 && equipe2 ? (
@@ -393,7 +402,7 @@ interface LiveCourtsRowProps {
   ) => CourtScoringState | undefined;
   getTerrainLibrePrompt?: (
     terrain: string
-  ) => { onLaunch: () => void } | undefined;
+  ) => { onLaunch: () => void; blockedMessage?: string | null } | undefined;
   emptyLabel?: string;
   theme?: LiveCourtTheme;
   compact?: boolean;

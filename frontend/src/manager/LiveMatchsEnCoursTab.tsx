@@ -7,7 +7,7 @@ import {
   type CourtScoringState,
 } from "./LiveCourtCard";
 import { matchQueuesByTerrain, type CourtMatchDisplay } from "./liveCourtMatches";
-import { areCourtTeamsKnown } from "./courtTeamsReady";
+import { areCourtTeamsKnown, canLaunchNextMatch, TEAMS_UNAVAILABLE_MESSAGE } from "./courtTeamsReady";
 import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
@@ -110,6 +110,9 @@ export function LiveMatchsEnCoursTab({
   const [awaitingLaunch, setAwaitingLaunch] = useState<Set<string>>(
     () => new Set()
   );
+  const [launchBlockedMessage, setLaunchBlockedMessage] = useState<
+    Map<string, string>
+  >(() => new Map());
   const [scoringState, setScoringState] = useState<CourtScoringState | null>(
     null
   );
@@ -135,19 +138,93 @@ export function LiveMatchsEnCoursTab({
     return map;
   }, [terrains, awaitingLaunch, matchByTerrain]);
 
+  const matchLookup = useMemo(() => {
+    const map = new Map<string, LiveMatch>();
+    for (const match of matches) map.set(match.code, match);
+    return map;
+  }, [matches]);
+
   const launchNextOnTerrain = useCallback((terrain: string) => {
     setAwaitingLaunch((prev) => {
       const next = new Set(prev);
       next.delete(terrain);
       return next;
     });
+    setLaunchBlockedMessage((prev) => {
+      if (!prev.has(terrain)) return prev;
+      const next = new Map(prev);
+      next.delete(terrain);
+      return next;
+    });
   }, []);
 
-  const matchLookup = useMemo(() => {
-    const map = new Map<string, LiveMatch>();
-    for (const match of matches) map.set(match.code, match);
-    return map;
-  }, [matches]);
+  const handleLaunchNextOnTerrain = useCallback(
+    (terrain: string) => {
+      const pending = matchByTerrain.get(terrain);
+      const liveMatch = pending ? matchLookup.get(pending.code) : undefined;
+      const ready = canLaunchNextMatch(
+        pending?.equipe1 ?? "",
+        pending?.equipe2 ?? "",
+        liveMatch,
+        completed,
+        matchResults
+      );
+
+      if (!ready) {
+        setLaunchBlockedMessage((prev) =>
+          new Map(prev).set(terrain, TEAMS_UNAVAILABLE_MESSAGE)
+        );
+        return;
+      }
+
+      launchNextOnTerrain(terrain);
+    },
+    [
+      matchByTerrain,
+      matchLookup,
+      completed,
+      matchResults,
+      launchNextOnTerrain,
+    ]
+  );
+
+  useEffect(() => {
+    setLaunchBlockedMessage((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+
+      for (const terrain of prev.keys()) {
+        if (!awaitingLaunch.has(terrain)) {
+          next.delete(terrain);
+          changed = true;
+          continue;
+        }
+
+        const pending = matchByTerrain.get(terrain);
+        const liveMatch = pending ? matchLookup.get(pending.code) : undefined;
+        if (
+          canLaunchNextMatch(
+            pending?.equipe1 ?? "",
+            pending?.equipe2 ?? "",
+            liveMatch,
+            completed,
+            matchResults
+          )
+        ) {
+          next.delete(terrain);
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [
+    awaitingLaunch,
+    matchByTerrain,
+    matchLookup,
+    completed,
+    matchResults,
+  ]);
 
   const openTerrain = scoreForm.openTerrain;
   const openMatch = openTerrain
@@ -201,7 +278,10 @@ export function LiveMatchsEnCoursTab({
           compact
           getTerrainLibrePrompt={(terrain) =>
             awaitingLaunch.has(terrain)
-              ? { onLaunch: () => launchNextOnTerrain(terrain) }
+              ? {
+                  onLaunch: () => handleLaunchNextOnTerrain(terrain),
+                  blockedMessage: launchBlockedMessage.get(terrain) ?? null,
+                }
               : undefined
           }
           getScoring={(terrain) =>
