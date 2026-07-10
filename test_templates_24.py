@@ -57,7 +57,7 @@ def main():
         label = f"24 éq. · {mode} · {jours}J"
         heures = ["09:00", "09:00", "09:00"][:jours]
         try:
-            pdf = te.generate_tournament(
+            pdf, _snapshot = te.generate_tournament(
                 excel_path=str(EXCEL),
                 club="Club Test",
                 date_tournoi="2026-09-12",

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from engine.live_snapshot import construire_snapshot_engine
+from engine.live_template_cache import charger_cache_live
 from engine.ppt_engine import remplir_template
 from engine.pdf_engine import convertir_pptx_en_pdf
 from engine.tournament_build import (
@@ -55,6 +57,7 @@ def generate_tournament(
     )
 
     template_path = chemin_template(tournoi, base_dir)
+    cache = charger_cache_live(template_path)
     exports_dir = base_dir / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
 
@@ -62,6 +65,14 @@ def generate_tournament(
         type_tournoi=tournoi.type_tournoi,
         club=tournoi.club,
         date_tournoi=tournoi.date_tournoi,
+    )
+    pdf_filename = f"{nom_export}.pdf"
+
+    snapshot = construire_snapshot_engine(
+        tournoi,
+        matchs,
+        cache,
+        pdf_filename,
     )
 
     pptx_path = exports_dir / f"{nom_export}.pptx"
@@ -74,10 +85,12 @@ def generate_tournament(
         logo_path=logo_path,
     )
 
-    return convertir_pptx_en_pdf(
+    pdf_path = convertir_pptx_en_pdf(
         pptx_path=pptx_path,
         output_dir=exports_dir,
     )
+
+    return pdf_path, snapshot
 
 
 # Rétrocompat tests / scripts

@@ -228,7 +228,7 @@ if st.button(
                 tmp_logo.write(logo_file.getvalue())
                 logo_path = Path(tmp_logo.name)
 
-        pdf_path = generate_tournament(
+        pdf_path, _snapshot = generate_tournament(
             excel_path=excel_path,
             club=club,
             date_tournoi=date_tournoi,

@@ -168,7 +168,12 @@ export async function generateLiveTournament(
 
 export async function generateTournament(
   form: TournamentForm
-): Promise<{ blob: Blob; filename: string; notifyToken: string | null }> {
+): Promise<{
+  blob: Blob;
+  filename: string;
+  notifyToken: string | null;
+  liveSnapshotAvailable: boolean;
+}> {
   if (!form.excelFile) throw new Error("Fichier Excel manquant.");
 
   const body = new FormData();
@@ -182,7 +187,45 @@ export async function generateTournament(
   const match = disposition.match(/filename="?([^"]+)"?/);
   const filename = match ? match[1] : "tournoi.pdf";
   const notifyToken = res.headers.get("X-Notify-Token");
-  return { blob, filename, notifyToken };
+  const liveSnapshotAvailable =
+    res.headers.get("X-Live-Snapshot-Available") === "1";
+  return { blob, filename, notifyToken, liveSnapshotAvailable };
+}
+
+export async function initLiveFromPack(packFile: File): Promise<LiveTournamentData> {
+  await assertLiveApiReady();
+
+  const body = new FormData();
+  body.append("pack", packFile);
+
+  const res = await fetch("/api/live/init-from-pack", { method: "POST", body });
+  if (!res.ok) throw new Error(await readError(res));
+
+  const data = (await res.json()) as LiveTournamentData;
+
+  if (!data.live_token || !data.page_map || !data.page_sizes) {
+    throw new Error(
+      "Réponse live incomplète. Vérifiez le pack ZIP et réessayez."
+    );
+  }
+
+  return data;
+}
+
+export async function downloadManagerLiveBundle(
+  token: string,
+  filename: string
+): Promise<void> {
+  const res = await fetch(`/api/notify/${token}/manager-live`);
+  if (!res.ok) throw new Error(await readError(res));
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export function notifyOwnerAfterDownload(

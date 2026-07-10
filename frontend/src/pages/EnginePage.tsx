@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { generateTournament, previewExcel, notifyOwnerAfterDownload, buildTournamentResume } from "../api";
+import { generateTournament, previewExcel, notifyOwnerAfterDownload, buildTournamentResume, downloadManagerLiveBundle } from "../api";
 import { CourtBackground } from "../components/CourtBackground";
 import { PadelBall } from "../components/PadelBall";
 import { RacketProgress } from "../components/RacketProgress";
@@ -44,6 +44,7 @@ export default function EnginePage() {
   const [genError, setGenError] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState("tournoi.pdf");
+  const [liveSnapshotAvailable, setLiveSnapshotAvailable] = useState(false);
   const notifyTokenRef = useRef<string | null>(null);
   const genStartedRef = useRef(false);
 
@@ -150,12 +151,15 @@ export default function EnginePage() {
       URL.revokeObjectURL(pdfUrl);
       setPdfUrl(null);
     }
+    setLiveSnapshotAvailable(false);
     try {
-      const { blob, filename, notifyToken } = await generateTournament(form);
+      const { blob, filename, notifyToken, liveSnapshotAvailable: snapshot } =
+        await generateTournament(form);
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
       setPdfFilename(filename);
       notifyTokenRef.current = notifyToken;
+      setLiveSnapshotAvailable(snapshot);
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -181,6 +185,28 @@ export default function EnginePage() {
       buildTournamentResume(form, preview, pdfFilename)
     );
     notifyTokenRef.current = null;
+    setLiveSnapshotAvailable(false);
+  }, [form, preview, pdfFilename]);
+
+  const handleDownloadManagerLive = useCallback(async () => {
+    const token = notifyTokenRef.current;
+    if (!token) return;
+    const base = pdfFilename.replace(/\.pdf$/i, "");
+    try {
+      await downloadManagerLiveBundle(token, `${base}-manager-live.zip`);
+      notifyOwnerAfterDownload(
+        token,
+        buildTournamentResume(form, preview, pdfFilename)
+      );
+      notifyTokenRef.current = null;
+      setLiveSnapshotAvailable(false);
+    } catch (err) {
+      setGenError(
+        err instanceof Error
+          ? err.message
+          : "Impossible de télécharger le pack Manager Live."
+      );
+    }
   }, [form, preview, pdfFilename]);
 
   const slideVariants = {
@@ -303,7 +329,9 @@ export default function EnginePage() {
                   pdfUrl={pdfUrl}
                   pdfFilename={pdfFilename}
                   genreTournoi={form.genreTournoi}
-                  onDownload={handleDownloadNotify}
+                  liveSnapshotAvailable={liveSnapshotAvailable}
+                  onDownloadPdf={handleDownloadNotify}
+                  onDownloadManagerLive={handleDownloadManagerLive}
                 />
               )}
             </motion.div>

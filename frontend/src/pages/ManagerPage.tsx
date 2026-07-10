@@ -9,6 +9,7 @@ import { GhostButton, PrimaryButton } from "../components/ui";
 import { LiveTournamentView } from "../manager/LiveTournamentView";
 import type { LiveTournamentData } from "../manager/liveTypes";
 import { ManagerLiveGenerationStep } from "../manager/ManagerLiveGenerationStep";
+import { ManagerPackImportStep } from "../manager/ManagerPackImportStep";
 import { ManagerStartStep } from "../manager/ManagerStartStep";
 import { defaultForm, type PreviewResult, type TournamentForm } from "../types";
 import { MANAGER_WIZARD_STEPS } from "../wizard/constants";
@@ -25,11 +26,14 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-25";
+const MANAGER_BUILD = "manager-preview-26";
 
-/** 0 accueil · 1 mode · 2-8 paramètres · 9 génération live */
+/** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack */
 const STEP_PARTICIPANTS = 2;
 const STEP_GENERATE = 9;
+const STEP_PACK_IMPORT = 10;
+
+/** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack */
 
 export default function ManagerPage() {
   const [phase, setPhase] = useState<"setup" | "live">("setup");
@@ -121,7 +125,13 @@ export default function ManagerPage() {
   }, [step, form, preview, previewLoading, previewError]);
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEP_GENERATE));
-  const goBack = () => setStep((s) => Math.max(s - 1, 0));
+  const goBack = () => {
+    if (step === STEP_PACK_IMPORT) {
+      setStep(1);
+      return;
+    }
+    setStep((s) => Math.max(s - 1, 0));
+  };
   const goHome = () => setStep(0);
 
   const handleValidateSummary = () => {
@@ -197,7 +207,29 @@ export default function ManagerPage() {
       <div className="relative flex h-dvh w-full flex-col overflow-hidden">
         <CourtBackground />
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-          <ManagerStartStep onExcelStart={() => setStep(STEP_PARTICIPANTS)} />
+          <ManagerStartStep
+            onExcelStart={() => setStep(STEP_PARTICIPANTS)}
+            onPackStart={() => setStep(STEP_PACK_IMPORT)}
+          />
+        </div>
+        <div className="absolute bottom-6 left-6 z-20">
+          <GhostButton onClick={goBack}>← Retour</GhostButton>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === STEP_PACK_IMPORT) {
+    return (
+      <div className="relative flex h-dvh w-full flex-col overflow-hidden">
+        <CourtBackground />
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-8 sm:px-8">
+          <ManagerPackImportStep
+            onReady={(data) => {
+              setLiveData(data);
+              setPhase("live");
+            }}
+          />
         </div>
         <div className="absolute bottom-6 left-6 z-20">
           <GhostButton onClick={goBack}>← Retour</GhostButton>

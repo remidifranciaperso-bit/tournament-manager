@@ -5,6 +5,50 @@ from engine.live_template_cache import charger_cache_live
 from engine.tournament_build import chemin_template, construire_tournoi_et_matchs
 
 
+def init_live_from_snapshot(
+    pdf_path,
+    snapshot: dict,
+    logo_path=None,
+) -> dict:
+    """Session live depuis un snapshot Engine figé — sans re-tirage ni Excel."""
+    from api.live_store import chemin_logo, creer_session
+
+    pdf_path = Path(pdf_path)
+    pdf_filename = snapshot.get("pdf_filename") or pdf_path.name
+    page_map = snapshot["page_map"]
+    page_sizes = snapshot.get("page_sizes") or {}
+
+    if not page_map.get("main") and not page_map.get("classement"):
+        raise ValueError(
+            "Snapshot invalide : aucune page tableau pour le live."
+        )
+
+    live_token, _pages_dir, page_sizes = creer_session(
+        pdf_path,
+        pdf_filename,
+        page_map,
+        logo_path=logo_path,
+        move_pdf=True,
+        page_sizes=page_sizes,
+    )
+
+    meta = dict(snapshot["meta"])
+    if chemin_logo(live_token) is not None:
+        meta["logo_url"] = f"/api/live/{live_token}/logo"
+
+    return {
+        "meta": meta,
+        "matches": snapshot["matches"],
+        "page_map": page_map,
+        "fields": snapshot["fields"],
+        "planning_layout": snapshot.get("planning_layout") or {},
+        "live_token": live_token,
+        "page_sizes": page_sizes,
+        "pdf_filename": pdf_filename,
+        "live_version": "engine-pdf",
+    }
+
+
 def init_live_session(
     pdf_path,
     pdf_filename: str,

@@ -920,14 +920,18 @@ export function GenerationStep({
   pdfUrl,
   pdfFilename,
   genreTournoi,
-  onDownload,
+  liveSnapshotAvailable = false,
+  onDownloadPdf,
+  onDownloadManagerLive,
 }: {
   generating: boolean;
   genError: string | null;
   pdfUrl: string | null;
   pdfFilename: string;
   genreTournoi: Genre;
-  onDownload: () => void;
+  liveSnapshotAvailable?: boolean;
+  onDownloadPdf: () => void;
+  onDownloadManagerLive?: () => void;
 }) {
   const done = !!pdfUrl && !generating;
 
@@ -984,18 +988,34 @@ export function GenerationStep({
           animate={{ opacity: 1, y: 0 }}
           className="mt-8"
         >
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <div className="flex flex-col items-center gap-4">
             <span className="font-display text-lg tracking-wide text-lime sm:text-xl">
               DOSSIER PRÊT
             </span>
-            <a
-              href={pdfUrl}
-              download={pdfFilename}
-              onClick={onDownload}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
-            >
-              Télécharger ↓
-            </a>
+
+            <div className="flex w-full max-w-md flex-col gap-3">
+              <a
+                href={pdfUrl}
+                download={pdfFilename}
+                onClick={onDownloadPdf}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime px-5 py-3 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
+              >
+                Télécharger le PDF
+              </a>
+
+              {liveSnapshotAvailable && onDownloadManagerLive && (
+                <button
+                  type="button"
+                  onClick={onDownloadManagerLive}
+                  className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15"
+                >
+                  <span>PDF + pack Manager Live</span>
+                  <span className="text-[11px] font-normal text-lime/70">
+                    Conserve le tableau et les convocations pour un live ultérieur
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
           <p
             className="mt-14 font-brush text-[clamp(2rem,6.5vw,3.75rem)] leading-none text-lime sm:mt-20"

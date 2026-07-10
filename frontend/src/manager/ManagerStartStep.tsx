@@ -4,8 +4,10 @@ import { OptionCard } from "../components/ui";
 
 export function ManagerStartStep({
   onExcelStart,
+  onPackStart,
 }: {
   onExcelStart: () => void;
+  onPackStart: () => void;
 }) {
   return (
     <div className="relative flex min-h-full w-full flex-col items-center justify-center overflow-hidden px-4 py-16 sm:px-6">
@@ -33,12 +35,11 @@ export function ManagerStartStep({
           />
           <OptionCard
             variant="lime"
-            active={false}
-            onClick={() => undefined}
-            title="Démarrer à partir d'un PDF généré"
-            subtitle="Bientôt disponible"
+            active
+            onClick={onPackStart}
+            title="Reprendre un tournoi Engine"
+            subtitle="Pack ZIP PDF + Manager Live"
             icon={<IconUpload />}
-            disabled
           />
         </div>
       </motion.div>

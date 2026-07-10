@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 import tempfile
 import base64
@@ -16,7 +17,13 @@ sys.path.append(str(BASE_DIR))
 
 from pydantic import BaseModel
 
-from api.notify_store import chemin_pdf, enregistrer_pdf, supprimer_pdf
+from api.notify_store import (
+    chemin_pdf,
+    creer_archive_manager_live,
+    enregistrer_pdf,
+    enregistrer_snapshot,
+    supprimer_pdf,
+)
 from api.live_store import (
     charger_page_map,
     chemin_logo,
@@ -158,6 +165,31 @@ async def notify_owner(
     return {"ok": True}
 
 
+@app.get("/api/notify/{token}/manager-live")
+async def telecharger_pack_manager_live(
+    token: str,
+    background_tasks: BackgroundTasks,
+):
+    """Archive ZIP : PDF Engine + snapshot .live.json pour Manager live."""
+    archive = creer_archive_manager_live(token)
+    if archive is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Pack Manager live introuvable ou expiré.",
+        )
+
+    pdf_path = chemin_pdf(token)
+    base = pdf_path.stem if pdf_path is not None else "tournoi"
+    filename = f"{base}-manager-live.zip"
+
+    background_tasks.add_task(archive.unlink, True)
+    return FileResponse(
+        path=str(archive),
+        media_type="application/zip",
+        filename=filename,
+    )
+
+
 @app.post("/api/preview")
 async def preview(excel: UploadFile = File(...)):
     """
@@ -289,6 +321,57 @@ async def init_live(
         if logo_path is not None:
             logo_path.unlink(missing_ok=True)
         supprimer_pdf(pdf_token)
+
+    return payload
+
+
+@app.post("/api/live/init-from-pack")
+async def init_live_from_pack(
+    pack: UploadFile = File(...),
+    logo: UploadFile | None = File(None),
+):
+    """
+    Manager live depuis un pack ZIP Engine (PDF + .live.json).
+    Reprend le tableau et le planning figés — sans re-tirage.
+    """
+    suffix = Path(pack.filename or "").suffix.lower()
+    if suffix not in {".zip"}:
+        raise HTTPException(
+            status_code=422,
+            detail="Importez le pack ZIP téléchargé depuis Engine.",
+        )
+
+    archive_path = _ecrire_fichier_temporaire(pack, suffix)
+
+    logo_path = None
+    if logo is not None and logo.filename:
+        logo_suffix = Path(logo.filename).suffix or ".png"
+        logo_path = _ecrire_logo_temporaire(logo, logo_suffix)
+
+    temp_dir = None
+    try:
+        from engine.live_pack import extraire_pack_manager_live
+        from engine.live_init import init_live_from_snapshot
+
+        pdf_path, snapshot, temp_dir = extraire_pack_manager_live(archive_path)
+        payload = init_live_from_snapshot(
+            pdf_path=pdf_path,
+            snapshot=snapshot,
+            logo_path=logo_path,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur import pack Manager live : {exc}",
+        )
+    finally:
+        archive_path.unlink(missing_ok=True)
+        if logo_path is not None:
+            logo_path.unlink(missing_ok=True)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
     return payload
 
@@ -583,6 +666,7 @@ async def generate(
     exports_dir.mkdir(parents=True, exist_ok=True)
 
     try:
+        snapshot = None
         if remote_engine:
             pdf_path = generer_pdf_via_engine(
                 remote_engine,
@@ -594,7 +678,7 @@ async def generate(
         else:
             from engine.tournament_engine import generate_tournament
 
-            pdf_path = generate_tournament(
+            pdf_path, snapshot = generate_tournament(
                 excel_path=excel_path,
                 club=club,
                 date_tournoi=date_tournoi,
@@ -628,6 +712,8 @@ async def generate(
 
     pdf_path = Path(pdf_path)
     notify_token = enregistrer_pdf(pdf_path)
+    if snapshot is not None:
+        enregistrer_snapshot(notify_token, snapshot)
 
     response = FileResponse(
         path=str(pdf_path),
@@ -635,6 +721,8 @@ async def generate(
         filename=pdf_path.name,
     )
     response.headers["X-Notify-Token"] = notify_token
+    if snapshot is not None:
+        response.headers["X-Live-Snapshot-Available"] = "1"
     return response
 
 
