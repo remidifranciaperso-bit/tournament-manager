@@ -6,7 +6,7 @@ import {
   useScoreFormToggle,
   type CourtScoringState,
 } from "./LiveCourtCard";
-import { matchQueuesByTerrain } from "./liveCourtMatches";
+import { matchQueuesByTerrain, type CourtMatchDisplay } from "./liveCourtMatches";
 import { areCourtTeamsKnown } from "./courtTeamsReady";
 import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
@@ -107,6 +107,9 @@ export function LiveMatchsEnCoursTab({
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
   const [exportError, setExportError] = useState<string | null>(null);
+  const [awaitingLaunch, setAwaitingLaunch] = useState<Set<string>>(
+    () => new Set()
+  );
   const [scoringState, setScoringState] = useState<CourtScoringState | null>(
     null
   );
@@ -118,6 +121,27 @@ export function LiveMatchsEnCoursTab({
     () => matchQueuesByTerrain(matches, terrains, completed, matchResults),
     [matches, terrains, completed, matchResults]
   );
+
+  const displayMatchByTerrain = useMemo(() => {
+    const map = new Map<string, CourtMatchDisplay | null>();
+    for (const terrain of terrains) {
+      map.set(
+        terrain,
+        awaitingLaunch.has(terrain)
+          ? null
+          : matchByTerrain.get(terrain) ?? null
+      );
+    }
+    return map;
+  }, [terrains, awaitingLaunch, matchByTerrain]);
+
+  const launchNextOnTerrain = useCallback((terrain: string) => {
+    setAwaitingLaunch((prev) => {
+      const next = new Set(prev);
+      next.delete(terrain);
+      return next;
+    });
+  }, []);
 
   const matchLookup = useMemo(() => {
     const map = new Map<string, LiveMatch>();
@@ -171,14 +195,23 @@ export function LiveMatchsEnCoursTab({
       {started && !finished ? (
         <LiveCourtsRow
           terrains={terrains}
-          matchByTerrain={matchByTerrain}
+          matchByTerrain={displayMatchByTerrain}
           emptyLabel=""
           theme="light"
           compact
+          getTerrainLibrePrompt={(terrain) =>
+            awaitingLaunch.has(terrain)
+              ? { onLaunch: () => launchNextOnTerrain(terrain) }
+              : undefined
+          }
           getScoring={(terrain) =>
             scoreForm.isOpen(terrain) ? scoringState ?? undefined : undefined
           }
           renderFooter={(terrain, match) => {
+            if (awaitingLaunch.has(terrain)) {
+              return <CourtFooterSlot compact />;
+            }
+
             if (!match) return <CourtFooterSlot compact />;
 
             if (scoreForm.isOpen(terrain)) {
@@ -194,6 +227,7 @@ export function LiveMatchsEnCoursTab({
                         const result = submitScore?.();
                         if (!result) return;
                         onCompleteMatch(match.code, result);
+                        setAwaitingLaunch((prev) => new Set(prev).add(terrain));
                         closeScoring();
                       }}
                       className={[

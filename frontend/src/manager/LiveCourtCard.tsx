@@ -227,6 +227,8 @@ interface LiveCourtCardProps {
   scoring?: CourtScoringState;
   theme?: LiveCourtTheme;
   compact?: boolean;
+  /** Après validation du score : invite à lancer le match suivant sur ce terrain. */
+  terrainLibrePrompt?: { onLaunch: () => void };
 }
 
 export function LiveCourtCard({
@@ -237,6 +239,7 @@ export function LiveCourtCard({
   scoring,
   theme: themeName = "dark",
   compact = false,
+  terrainLibrePrompt,
 }: LiveCourtCardProps) {
   const theme = COURT_THEME[themeName];
 
@@ -288,7 +291,22 @@ export function LiveCourtCard({
         >
         <CourtGraphic className="h-full w-full" />
 
-        {match && equipe1 && equipe2 ? (
+        {terrainLibrePrompt ? (
+          <div className="absolute inset-0 z-30 flex items-center justify-center px-3">
+            <button
+              type="button"
+              onClick={terrainLibrePrompt.onLaunch}
+              className="flex max-w-[92%] flex-col items-center gap-2 rounded-2xl border border-arena-600/25 bg-white/95 px-5 py-4 text-center shadow-lg transition hover:border-arena-600/45 hover:shadow-xl"
+            >
+              <span className="font-brush text-2xl leading-none text-arena-700 sm:text-3xl">
+                Terrain libre
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-arena-600/80 sm:text-[11px]">
+                Lancer le match suivant
+              </span>
+            </button>
+          </div>
+        ) : match && equipe1 && equipe2 ? (
           <>
             <div
               className={`absolute inset-x-0 top-0 z-10 flex h-1/2 items-center justify-center ${COURT_TEAM_BADGE_TOP_CLASS}`}
@@ -373,6 +391,9 @@ interface LiveCourtsRowProps {
     terrain: string,
     match: CourtMatchDisplay | null
   ) => CourtScoringState | undefined;
+  getTerrainLibrePrompt?: (
+    terrain: string
+  ) => { onLaunch: () => void } | undefined;
   emptyLabel?: string;
   theme?: LiveCourtTheme;
   compact?: boolean;
@@ -383,6 +404,7 @@ export function LiveCourtsRow({
   matchByTerrain,
   renderFooter,
   getScoring,
+  getTerrainLibrePrompt,
   emptyLabel,
   theme = "dark",
   compact = false,
@@ -442,16 +464,22 @@ export function LiveCourtsRow({
         >
           {terrains.map((name) => {
             const match = matchByTerrain.get(name) ?? null;
+            const terrainLibrePrompt = getTerrainLibrePrompt?.(name);
             return (
               <LiveCourtCard
                 key={name}
                 terrainName={name}
                 match={match}
                 emptyLabel={emptyLabel}
-                scoring={getScoring?.(name, match)}
+                scoring={
+                  terrainLibrePrompt
+                    ? undefined
+                    : getScoring?.(name, match)
+                }
                 footer={renderFooter?.(name, match)}
                 theme={theme}
                 compact={compact}
+                terrainLibrePrompt={terrainLibrePrompt}
               />
             );
           })}

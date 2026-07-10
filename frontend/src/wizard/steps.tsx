@@ -337,11 +337,11 @@ export function ClubStep({
                 animate={{ opacity: 1, y: 0 }}
                 className="lime-panel flex flex-col items-center gap-4 p-8 text-center"
               >
-                <div className="flex h-36 w-full items-center justify-center rounded-xl bg-white/[0.04] p-4">
+                <div className="flex h-28 w-full items-center justify-center rounded-xl bg-white/[0.04] p-4">
                   <img
                     src={logoPreviewUrl}
                     alt="Aperçu du logo"
-                    className="max-h-full max-w-full object-contain"
+                    className="h-full w-auto max-w-full object-contain object-center"
                   />
                 </div>
                 <p className="text-sm text-white/50">{form.logoFile.name}</p>
