@@ -1,5 +1,6 @@
 from copy import deepcopy
 from datetime import datetime, timedelta
+from io import BytesIO
 import re
 
 from engine.points_engine import get_points
@@ -1008,11 +1009,49 @@ def remplir_template_8(
         matchs=matchs,
     )
 
+EMU_PER_INCH = 914400
+# Résolution d'embarquement : identique au rendu PDF à la taille affichée.
+_LOGO_EMBED_DPI = 150
+
+
+def _pixels_pour_affichage_emu(width_emu: int, height_emu: int) -> tuple[int, int]:
+    px_w = max(1, round(width_emu / EMU_PER_INCH * _LOGO_EMBED_DPI))
+    px_h = max(1, round(height_emu / EMU_PER_INCH * _LOGO_EMBED_DPI))
+    return px_w, px_h
+
+
+def _preparer_logo_pour_diapo(
+    image: Image.Image,
+    box_w: int,
+    box_h: int,
+) -> tuple[BytesIO, int, int, int, int]:
+    """Rasterise le logo à la taille affichée (pas la résolution fichier source)."""
+    marge = 0.05
+    img_w, img_h = image.size
+
+    max_w = int(box_w * (1 - marge * 2))
+    max_h = int(box_h * (1 - marge * 2))
+
+    ratio = min(max_w / img_w, max_h / img_h)
+    logo_w = int(img_w * ratio)
+    logo_h = int(img_h * ratio)
+
+    px_w, px_h = _pixels_pour_affichage_emu(logo_w, logo_h)
+    resized = image.resize((px_w, px_h), Image.Resampling.LANCZOS)
+
+    buffer = BytesIO()
+    resized.save(buffer, format="PNG", optimize=True)
+    buffer.seek(0)
+    return buffer, logo_w, logo_h, box_w, box_h
+
+
 def remplacer_logo(prs, logo_path=None, club=""):
-    logo_size = None
+    logo_image = None
+    logo_embed_cache: dict[tuple[int, int], tuple[BytesIO, int, int]] = {}
+
     if logo_path:
         with Image.open(logo_path) as img:
-            logo_size = img.size
+            logo_image = img.convert("RGBA") if img.mode in ("RGBA", "P") else img.convert("RGB")
 
     for slide in prs.slides:
         for shape in list(parcourir_shapes(slide.shapes)):
@@ -1028,20 +1067,18 @@ def remplacer_logo(prs, logo_path=None, club=""):
             box_w = shape.width
             box_h = shape.height
 
-            if logo_path and logo_size:
-                marge = 0.05
-                img_w, img_h = logo_size
+            if logo_path and logo_image is not None:
+                cache_key = (box_w, box_h)
+                if cache_key not in logo_embed_cache:
+                    buffer, logo_w, logo_h, _, _ = _preparer_logo_pour_diapo(
+                        logo_image,
+                        box_w,
+                        box_h,
+                    )
+                    logo_embed_cache[cache_key] = (buffer, logo_w, logo_h)
 
-                max_w = int(box_w * (1 - marge * 2))
-                max_h = int(box_h * (1 - marge * 2))
-
-                ratio = min(
-                    max_w / img_w,
-                    max_h / img_h,
-                )
-
-                logo_w = int(img_w * ratio)
-                logo_h = int(img_h * ratio)
+                buffer, logo_w, logo_h = logo_embed_cache[cache_key]
+                buffer.seek(0)
 
                 logo_left = int(box_left + (box_w - logo_w) / 2)
                 logo_top = int(box_top + (box_h - logo_h) / 2)
@@ -1050,7 +1087,7 @@ def remplacer_logo(prs, logo_path=None, club=""):
                 element.getparent().remove(element)
 
                 slide.shapes.add_picture(
-                    str(logo_path),
+                    buffer,
                     logo_left,
                     logo_top,
                     width=logo_w,
