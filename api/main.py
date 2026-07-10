@@ -30,6 +30,7 @@ from engine.excel_reader import lire_excel
 from engine.live_pdf_export import exporter_pdf_tournoi_manager
 from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
+from engine.remote_generate import engine_generate_url, generer_pdf_via_engine
 from engine.tournament_engine import generate_tournament, init_live_session
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
@@ -94,14 +95,18 @@ def health():
     except Exception:
         pass
 
+    remote_engine = engine_generate_url()
+    live_ready = bool(soffice) or bool(remote_engine)
+
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-10a",
-        "live": "engine-pdf" if soffice else None,
+        "version": "2026-07-10b",
+        "live": "engine-pdf" if live_ready else None,
         "pymupdf": pymupdf_ok,
         "soffice": bool(soffice),
         "deploy": os.environ.get("DEPLOY_TARGET", "engine"),
+        "engine_generate_url": remote_engine,
         "notify": mode_notification(),
     }
 
@@ -531,30 +536,64 @@ async def generate(
         suffix = Path(logo.filename).suffix or ".png"
         logo_path = _ecrire_fichier_temporaire(logo, suffix)
 
+    form_fields = {
+        "club": club,
+        "date_tournoi": date_tournoi,
+        "type_tournoi": type_tournoi,
+        "genre_tournoi": genre_tournoi,
+        "mode_tournoi": mode_tournoi,
+        "methode_poules": methode_poules,
+        "nb_jours": str(nb_jours),
+        "heures_debut_jours": heures_debut_jours,
+        "duree_match": str(duree_match),
+        "terrains": terrains,
+        "terrain_principal": terrain_principal,
+        "format_match_classement": format_match_classement,
+        "format_match_finale": format_match_finale,
+        "format_match_poule": format_match_poule,
+    }
+    if format_match_tableau_principal:
+        form_fields["format_match_tableau_principal"] = format_match_tableau_principal
+
+    remote_engine = engine_generate_url()
+    exports_dir = BASE_DIR / "exports"
+    exports_dir.mkdir(parents=True, exist_ok=True)
+
     try:
-        pdf_path = generate_tournament(
-            excel_path=excel_path,
-            club=club,
-            date_tournoi=date_tournoi,
-            type_tournoi=type_tournoi,
-            genre_tournoi=genre_tournoi,
-            heure_debut=heures[0],
-            duree_match=duree_match,
-            terrains=liste_terrains,
-            terrain_principal=terrain_principal,
-            base_dir=BASE_DIR,
-            mode_tournoi=mode_tournoi,
-            nb_jours=nb_jours,
-            heures_debut_jours=heures,
-            logo_path=logo_path,
-            methode_poules=methode_poules,
-            format_match_tableau_principal=format_match_tableau_principal,
-            format_match_classement=format_match_classement,
-            format_match_finale=format_match_finale,
-            format_match_poule=format_match_poule,
-        )
+        if remote_engine:
+            pdf_path = generer_pdf_via_engine(
+                remote_engine,
+                excel_path=excel_path,
+                logo_path=logo_path,
+                form_fields=form_fields,
+                output_dir=exports_dir,
+            )
+        else:
+            pdf_path = generate_tournament(
+                excel_path=excel_path,
+                club=club,
+                date_tournoi=date_tournoi,
+                type_tournoi=type_tournoi,
+                genre_tournoi=genre_tournoi,
+                heure_debut=heures[0],
+                duree_match=duree_match,
+                terrains=liste_terrains,
+                terrain_principal=terrain_principal,
+                base_dir=BASE_DIR,
+                mode_tournoi=mode_tournoi,
+                nb_jours=nb_jours,
+                heures_debut_jours=heures,
+                logo_path=logo_path,
+                methode_poules=methode_poules,
+                format_match_tableau_principal=format_match_tableau_principal,
+                format_match_classement=format_match_classement,
+                format_match_finale=format_match_finale,
+                format_match_poule=format_match_poule,
+            )
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Erreur de generation : {exc}")
     finally:

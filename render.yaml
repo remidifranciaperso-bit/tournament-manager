@@ -44,6 +44,8 @@ services:
     envVars:
       - key: DEPLOY_TARGET
         value: manager-preview
+      - key: ENGINE_GENERATE_URL
+        value: https://tournament-manager.onrender.com
       - key: PDF_CONVERTER
         value: libreoffice
       - key: OWNER_EMAIL
