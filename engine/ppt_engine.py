@@ -995,6 +995,7 @@ def remplir_template(
             )
 
     prs.save(output_path)
+    del prs, valeurs
 
 def remplir_template_8(
     template_path,

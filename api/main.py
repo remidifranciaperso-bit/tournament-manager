@@ -19,10 +19,6 @@ from api.notify_store import (
     enregistrer_snapshot,
     supprimer_pdf,
 )
-from engine.excel_reader import lire_excel
-from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
-from engine.team_builder import construire_paires
-from engine.tournament_engine import generate_tournament
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
 
@@ -57,15 +53,19 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 @app.get("/api/health")
 def health():
+    from engine.notify_engine import mode_notification
+
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-10e",
+        "version": "2026-07-10f",
         "notify": mode_notification(),
     }
 
 
 def _envoyer_notification_arriere_plan(token: str, resume: dict) -> None:
+    from engine.notify_engine import envoyer_notification_proprietaire
+
     pdf_path = chemin_pdf(token)
     if pdf_path is None:
         print(f"Notify: token inconnu ou expiré ({token})")
@@ -136,6 +136,9 @@ async def preview(excel: UploadFile = File(...)):
     excel_path = _ecrire_fichier_temporaire(excel, ".xlsx")
 
     try:
+        from engine.excel_reader import lire_excel
+        from engine.team_builder import construire_paires
+
         df = lire_excel(excel_path)
         equipes_df = construire_paires(df)
     except Exception as exc:
@@ -208,6 +211,8 @@ async def generate(
         logo_path = _ecrire_fichier_temporaire(logo, suffix)
 
     try:
+        from engine.tournament_engine import generate_tournament
+
         pdf_path, snapshot = generate_tournament(
             excel_path=excel_path,
             club=club,

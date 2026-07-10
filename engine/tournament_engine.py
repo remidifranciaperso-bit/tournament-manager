@@ -1,4 +1,5 @@
 from pathlib import Path
+import gc
 import re
 from datetime import datetime
 
@@ -9,8 +10,6 @@ from engine.models.converter import dataframe_to_teams
 from engine.models.tournament import Tournament
 from engine.bracket_generator import generer_tableau
 from engine.schedule_engine import ajouter_planning
-from engine.live_snapshot import construire_snapshot_engine
-from engine.live_template_cache import charger_cache_live
 from engine.ppt_engine import remplir_template
 from engine.pdf_engine import convertir_pptx_en_pdf
 
@@ -86,6 +85,8 @@ def generate_tournament(
     equipes_df = calculer_tetes_de_serie(equipes_df)
 
     teams = dataframe_to_teams(equipes_df)
+    del df, equipes_df
+    gc.collect()
 
     tournoi = Tournament(
         club=club,
@@ -157,7 +158,6 @@ def generate_tournament(
 
     template_path = base_dir / dossier_templates / template_nom
     verifier_template_existe(template_path)
-    cache = charger_cache_live(template_path)
 
     exports_dir = base_dir / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
@@ -166,13 +166,6 @@ def generate_tournament(
         type_tournoi=tournoi.type_tournoi,
         club=tournoi.club,
         date_tournoi=tournoi.date_tournoi,
-    )
-    pdf_filename = f"{nom_export}.pdf"
-    snapshot = construire_snapshot_engine(
-        tournoi,
-        matchs,
-        cache,
-        pdf_filename,
     )
 
     pptx_path = exports_dir / f"{nom_export}.pptx"
@@ -184,10 +177,26 @@ def generate_tournament(
         matchs=matchs,
         logo_path=logo_path,
     )
+    gc.collect()
 
     pdf_path = convertir_pptx_en_pdf(
         pptx_path=pptx_path,
         output_dir=exports_dir,
     )
+    gc.collect()
+
+    from engine.live_snapshot import construire_snapshot_engine
+    from engine.live_template_cache import charger_cache_live
+
+    cache = charger_cache_live(template_path)
+    pdf_filename = f"{nom_export}.pdf"
+    snapshot = construire_snapshot_engine(
+        tournoi,
+        matchs,
+        cache,
+        pdf_filename,
+    )
+    del cache
+    gc.collect()
 
     return pdf_path, snapshot
