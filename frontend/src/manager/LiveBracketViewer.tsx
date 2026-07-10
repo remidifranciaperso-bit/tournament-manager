@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { SLIDE_ASPECT } from "./bracketSlideLayout";
 import type { LiveMatch } from "./liveTypes";
 import { LiveBracketSlide } from "./LiveBracketSlide";
@@ -33,7 +33,7 @@ export function LiveBracketViewer({
     setRenderWidth(Math.floor(Math.min(w, h * SLIDE_ASPECT)));
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (fixedRenderWidth) {
       setRenderWidth(fixedRenderWidth);
       return;

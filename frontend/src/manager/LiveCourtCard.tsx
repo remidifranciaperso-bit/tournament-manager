@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { PadelCourtFilled, PadelCourtOutline } from "../components/CourtBackground";
 import type { MatchFormatCode } from "./matchFormats";
 import type { CourtMatchDisplay } from "./liveCourtMatches";
@@ -424,7 +424,7 @@ export function LiveCourtsRow({
     setScale(Math.min(1, height / COMPACT_COURT_CARD_HEIGHT_PX));
   }, [compact]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const slot = slotRef.current;
     if (!slot) return;
 
@@ -452,7 +452,7 @@ export function LiveCourtsRow({
         style={compact ? { height: scaledHeight } : undefined}
       >
         <div
-          className="flex shrink-0 items-start justify-center gap-8 sm:gap-12"
+          className="flex shrink-0 items-start justify-center gap-8 transition-none sm:gap-12"
           style={
             compact
               ? {

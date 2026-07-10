@@ -12,6 +12,7 @@ import type { LiveTournamentData } from "./liveTypes";
 import {
   LIVE_PRIMARY_TABS,
   LIVE_TAB_WIDTH_CLASS,
+  activeTabBrushLabel,
   pageEntries,
   planningIndicesForPage,
   slideIndexAt,
@@ -27,7 +28,13 @@ import { ExportCaptureLayer } from "./ExportCaptureLayer";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
 
 const TAB_BASE =
-  "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide transition sm:px-1.5 sm:py-3 sm:text-[10px]";
+  "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide sm:px-1.5 sm:py-3 sm:text-[10px]";
+
+function panelClass(active: boolean) {
+  return active
+    ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+    : "hidden";
+}
 
 function tabClass(active: boolean) {
   return [
@@ -200,46 +207,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     planningPages,
   ]);
 
-  const renderContent = () => {
+  const renderDocumentTab = () => {
     switch (primaryTab) {
-      case "avancement":
-        return (
-          <LiveAvancementTab
-            elapsed={progress.elapsed}
-            done={progress.done}
-            total={progress.total}
-            percent={progress.percent}
-          />
-        );
-      case "live":
-        return (
-          <LiveMatchsEnCoursTab
-            terrains={meta.terrains}
-            matches={matches}
-            meta={meta}
-            started={progress.started}
-            completed={progress.completed}
-            matchResults={progress.matchResults}
-            liveToken={live_token}
-            pdfFilename={pdf_filename}
-            exportPayload={exportPayload}
-            captureExportPages={captureExportPages}
-            exportingPdf={exportingPdf}
-            onExportPhaseChange={setExportPhase}
-            onStart={progress.startTournament}
-            onCompleteMatch={progress.completeMatch}
-          />
-        );
-      case "upcoming":
-        return (
-          <LiveProchainsMatchsTab
-            terrains={meta.terrains}
-            matches={matches}
-            completed={progress.completed}
-            matchResults={progress.matchResults}
-            started={progress.started}
-          />
-        );
       case "main":
       case "classement": {
         const slideIndex = slideIndices[0];
@@ -308,8 +277,26 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const isProjectionTab = primaryTab === "live" || primaryTab === "upcoming";
   const isWhitePanelTab = isProjectionTab || isBracketTab || primaryTab === "avancement";
 
-  const activeTabLabel =
-    LIVE_PRIMARY_TABS.find((tab) => tab.id === primaryTab)?.label ?? "";
+  const activeTabLabel = useMemo(
+    () =>
+      activeTabBrushLabel(primaryTab, {
+        main: mainPages,
+        classement: classementPages,
+        planning: planningPages,
+        mainPage,
+        classementPage,
+        planningPage,
+      }),
+    [
+      primaryTab,
+      mainPages,
+      classementPages,
+      planningPages,
+      mainPage,
+      classementPage,
+      planningPage,
+    ]
+  );
 
   return (
     <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-arena-950 text-white">
@@ -370,14 +357,52 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
               className={
                 isBracketTab
                   ? primaryTab === "planning"
-                    ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
-                    : "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
+                    ? "relative flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
+                    : "relative flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
                   : isProjectionTab
-                    ? "flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
-                    : "flex min-h-0 flex-1 flex-col overflow-y-auto"
+                    ? "relative flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
+                    : "relative flex min-h-0 flex-1 flex-col overflow-y-auto"
               }
             >
-              {renderContent()}
+              <div className={panelClass(primaryTab === "live")}>
+                <LiveMatchsEnCoursTab
+                  terrains={meta.terrains}
+                  matches={matches}
+                  meta={meta}
+                  started={progress.started}
+                  completed={progress.completed}
+                  matchResults={progress.matchResults}
+                  liveToken={live_token}
+                  pdfFilename={pdf_filename}
+                  exportPayload={exportPayload}
+                  captureExportPages={captureExportPages}
+                  exportingPdf={exportingPdf}
+                  onExportPhaseChange={setExportPhase}
+                  onStart={progress.startTournament}
+                  onCompleteMatch={progress.completeMatch}
+                />
+              </div>
+
+              <div className={panelClass(primaryTab === "upcoming")}>
+                <LiveProchainsMatchsTab
+                  terrains={meta.terrains}
+                  matches={matches}
+                  completed={progress.completed}
+                  matchResults={progress.matchResults}
+                  started={progress.started}
+                />
+              </div>
+
+              {primaryTab === "avancement" && (
+                <LiveAvancementTab
+                  elapsed={progress.elapsed}
+                  done={progress.done}
+                  total={progress.total}
+                  percent={progress.percent}
+                />
+              )}
+
+              {isBracketTab && renderDocumentTab()}
             </div>
           </div>
         </div>

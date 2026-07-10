@@ -14,6 +14,7 @@ import {
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
   LIVE_TABLE_PAGE,
+  LIVE_TABLE_PAGE_INNER,
   LIVE_TABLE_ROW,
   liveTeamTextClass,
 } from "./liveDataTable";
@@ -44,7 +45,8 @@ export function LiveFinalRankingTab({
 
   return (
     <div className={LIVE_TABLE_PAGE}>
-      <div className={LIVE_TABLE_CARD}>
+      <div className={LIVE_TABLE_PAGE_INNER}>
+        <div className={LIVE_TABLE_CARD}>
         <table className={LIVE_TABLE}>
           <thead>
             <tr className="bg-template-blue text-white">
@@ -77,6 +79,7 @@ export function LiveFinalRankingTab({
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

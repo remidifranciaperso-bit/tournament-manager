@@ -13,11 +13,58 @@ export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
   { id: "live", label: "Matchs en cours" },
   { id: "upcoming", label: "Prochains matchs" },
   { id: "main", label: "Tableau principal" },
-  { id: "classement", label: "Matchs classement" },
+  { id: "classement", label: "Matchs de classement" },
   { id: "planning", label: "Planning" },
   { id: "final", label: "Classement final" },
   { id: "avancement", label: "Avancement" },
 ];
+
+/** Libellé brush affiché en tête de page (ex. « Classement 5-8 »). */
+export function formatPageBrushLabel(label: string | undefined): string | null {
+  if (!label?.trim()) return null;
+  const normalized = label.trim().replace(/\s+/g, " ");
+  if (/^classement\b/i.test(normalized)) {
+    const suffix = normalized.replace(/^classement\s*/i, "").trim();
+    return suffix ? `Classement ${suffix}` : "Classement";
+  }
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+export function activeTabBrushLabel(
+  tab: LivePrimaryTab,
+  pages: {
+    main: LivePageEntry[];
+    classement: LivePageEntry[];
+    planning: LivePageEntry[];
+    mainPage: number;
+    classementPage: number;
+    planningPage: number;
+  }
+): string {
+  const primary =
+    LIVE_PRIMARY_TABS.find((entry) => entry.id === tab)?.label ?? "";
+
+  switch (tab) {
+    case "main": {
+      const label = formatPageBrushLabel(pages.main[pages.mainPage]?.label);
+      return label ?? primary;
+    }
+    case "classement": {
+      const label = formatPageBrushLabel(
+        pages.classement[pages.classementPage]?.label
+      );
+      return label ?? primary;
+    }
+    case "planning": {
+      const label = formatPageBrushLabel(
+        pages.planning[pages.planningPage]?.label
+      );
+      return label ?? primary;
+    }
+    default:
+      return primary;
+  }
+}
 
 export const LIVE_PRIMARY_TAB_COUNT = LIVE_PRIMARY_TABS.length;
 
