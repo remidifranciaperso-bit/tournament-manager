@@ -1,3 +1,17 @@
+# Deux services Render sur le MEME repo GitHub :
+#
+# 1) tournament-manager        → branche main            → ENGINE prod
+#    URL : https://tournament-manager.onrender.com
+#    Chat "Engine" : push sur main, manual deploy ce service
+#
+# 2) tournament-manager-preview → branche feature/manager → HUB + Manager preview
+#    URL : https://tournament-manager-preview.onrender.com
+#    Chat "Manager" : push sur feature/manager, manual deploy ce service
+#
+# Creer le service preview : Render Dashboard → New → Web Service → meme repo,
+# branche feature/manager, runtime Docker, copier les env vars du service Engine
+# (RESEND_API_KEY, OWNER_EMAIL, EMAIL_FROM, PDF_CONVERTER).
+#
 services:
   - type: web
     name: tournament-manager
@@ -9,6 +23,29 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
+      - key: DEPLOY_TARGET
+        value: engine
+      - key: PDF_CONVERTER
+        value: libreoffice
+      - key: OWNER_EMAIL
+        value: remi.difrancia.perso@gmail.com
+      - key: EMAIL_FROM
+        value: Padel Tournament Engine <onboarding@resend.dev>
+
+  - type: web
+    name: tournament-manager-preview
+    runtime: docker
+    plan: starter
+    branch: feature/manager
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DEPLOY_TARGET
+        value: manager-preview
+      - key: ENGINE_GENERATE_URL
+        value: https://tournament-manager.onrender.com
       - key: PDF_CONVERTER
         value: libreoffice
       - key: OWNER_EMAIL

@@ -1,5 +1,6 @@
 from copy import deepcopy
 from datetime import datetime, timedelta
+from pathlib import Path
 import re
 
 from engine.points_engine import get_points
@@ -7,6 +8,13 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
 from PIL import Image
+
+# Libellés texte TSL Sans (zéro image, zéro police extra).
+ICONE_VAINQUEUR = "Gagnants "
+ICONE_PERDANT = "Perdants "
+ICONE_PREMIER = "1er "
+ICONE_DEUXIEME = "2e "
+ICONE_TROISIEME = "3 "
 
 
 def format_date(date_str):
@@ -31,19 +39,22 @@ def equipe_label_court(equipe):
     texte = equipe.strip()
 
     if texte.startswith("Vainqueur Poule "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_PREMIER + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Deuxième Poule "):
-        return "🥈 " + texte.replace("Deuxième ", "") + ":"
+        return ICONE_DEUXIEME + texte.replace("Deuxième ", "") + ":"
+
+    if texte.startswith("Troisième Poule "):
+        return ICONE_TROISIEME + texte.replace("Troisième ", "") + ":"
 
     if texte.startswith("Second Poule "):
-        return "🥈 " + texte.replace("Second ", "") + ":"
+        return ICONE_DEUXIEME + texte.replace("Second ", "") + ":"
 
     if texte.startswith("Vainqueur "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_VAINQUEUR + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Perdant "):
-        return "❌ " + texte.replace("Perdant ", "") + ":"
+        return ICONE_PERDANT + texte.replace("Perdant ", "") + ":"
 
     return texte
 
@@ -54,19 +65,22 @@ def equipe_label_planning(equipe):
     texte = equipe.strip()
 
     if texte.startswith("Vainqueur Poule "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_PREMIER + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Deuxième Poule "):
-        return "🥈 " + texte.replace("Deuxième ", "") + ":"
+        return ICONE_DEUXIEME + texte.replace("Deuxième ", "") + ":"
+
+    if texte.startswith("Troisième Poule "):
+        return ICONE_TROISIEME + texte.replace("Troisième ", "") + ":"
 
     if texte.startswith("Second Poule "):
-        return "🥈 " + texte.replace("Second ", "") + ":"
+        return ICONE_DEUXIEME + texte.replace("Second ", "") + ":"
 
     if texte.startswith("Vainqueur "):
-        return "🏆 " + texte.replace("Vainqueur ", "") + ":"
+        return ICONE_VAINQUEUR + texte.replace("Vainqueur ", "") + ":"
 
     if texte.startswith("Perdant "):
-        return "❌ " + texte.replace("Perdant ", "") + ":"
+        return ICONE_PERDANT + texte.replace("Perdant ", "") + ":"
 
     return texte
 
@@ -75,10 +89,16 @@ def valeur_balise_speciale(balise):
     nom = balise.strip().replace("{{", "").replace("}}", "")
 
     if nom.startswith("WIN_"):
-        return "🏆 " + nom.replace("WIN_", "", 1) + ":"
+        return ICONE_VAINQUEUR + nom.replace("WIN_", "", 1) + ":"
 
     if nom.startswith("LOSE_"):
-        return "❌ " + nom.replace("LOSE_", "", 1) + ":"
+        return ICONE_PERDANT + nom.replace("LOSE_", "", 1) + ":"
+
+    if nom.startswith("SECOND_"):
+        return ICONE_DEUXIEME + nom.replace("SECOND_", "", 1) + ":"
+
+    if nom.startswith("THIRD_"):
+        return ICONE_TROISIEME + nom.replace("THIRD_", "", 1) + ":"
 
     return None
 
@@ -230,7 +250,7 @@ def remplacer_dans_paragraphe(paragraphe, valeurs):
         return balise
 
     nouveau = re.sub(
-        r"\{\{(?:WIN|LOSE)_[A-Z0-9_]+\}\}",
+        r"\{\{(?:WIN|LOSE|SECOND|THIRD)_[A-Z0-9_]+\}\}",
         repl,
         nouveau,
     )
@@ -536,15 +556,15 @@ def construire_valeurs_poules(tournoi):
         for i, equipe in enumerate(equipes, start=1):
             valeurs[f"{{{{POULE_{nom_poule}_{i}_EQ}}}}"] = equipe_label_court(equipe)
 
-    valeurs["{{WIN_POULE_A}}"] = "🏆 Poule A:"
-    valeurs["{{WIN_POULE_B}}"] = "🏆 Poule B:"
-    valeurs["{{WIN_POULE_C}}"] = "🏆 Poule C:"
-    valeurs["{{WIN_POULE_D}}"] = "🏆 Poule D:"
+    valeurs["{{WIN_POULE_A}}"] = ICONE_PREMIER + "Poule A:"
+    valeurs["{{WIN_POULE_B}}"] = ICONE_PREMIER + "Poule B:"
+    valeurs["{{WIN_POULE_C}}"] = ICONE_PREMIER + "Poule C:"
+    valeurs["{{WIN_POULE_D}}"] = ICONE_PREMIER + "Poule D:"
 
-    valeurs["{{SECOND_POULE_A}}"] = "🥈 Poule A:"
-    valeurs["{{SECOND_POULE_B}}"] = "🥈 Poule B:"
-    valeurs["{{SECOND_POULE_C}}"] = "🥈 Poule C:"
-    valeurs["{{SECOND_POULE_D}}"] = "🥈 Poule D:"
+    valeurs["{{SECOND_POULE_A}}"] = ICONE_DEUXIEME + "Poule A:"
+    valeurs["{{SECOND_POULE_B}}"] = ICONE_DEUXIEME + "Poule B:"
+    valeurs["{{SECOND_POULE_C}}"] = ICONE_DEUXIEME + "Poule C:"
+    valeurs["{{SECOND_POULE_D}}"] = ICONE_DEUXIEME + "Poule D:"
 
     return valeurs
 def construire_convocations(
@@ -990,6 +1010,14 @@ def remplir_template_8(
     )
 
 def remplacer_logo(prs, logo_path=None, club=""):
+    logo_size = None
+    if logo_path:
+        from engine.logo_trim import rogner_logo_fichier
+
+        logo_path = rogner_logo_fichier(Path(logo_path))
+        with Image.open(logo_path) as img:
+            logo_size = img.size
+
     for slide in prs.slides:
         for shape in list(parcourir_shapes(slide.shapes)):
 
@@ -1004,11 +1032,9 @@ def remplacer_logo(prs, logo_path=None, club=""):
             box_w = shape.width
             box_h = shape.height
 
-            if logo_path:
+            if logo_path and logo_size:
                 marge = 0.05
-
-                with Image.open(logo_path) as img:
-                    img_w, img_h = img.size
+                img_w, img_h = logo_size
 
                 max_w = int(box_w * (1 - marge * 2))
                 max_h = int(box_h * (1 - marge * 2))

@@ -37,62 +37,89 @@ def trouver_soffice():
     return None
 
 
-def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin):
+def _environnement_libreoffice_silencieux():
+    env = os.environ.copy()
+    env["SAL_USE_VCLPLUGIN"] = "svp"
+    env.setdefault("LANG", "C.UTF-8")
+    return env
+
+
+def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess.CompletedProcess:
     """
-    Conversion PPTX -> PDF via LibreOffice en mode headless.
+    Lance LibreOffice sans fenêtre ni bruit terminal si possible.
+    """
+    kwargs = {
+        "check": True,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.PIPE,
+        "stdin": subprocess.DEVNULL,
+        "timeout": timeout,
+        "env": _environnement_libreoffice_silencieux(),
+    }
 
-    Fonctionne sur un serveur Linux (déploiement en ligne) sans
-    aucune interface graphique ni Microsoft Office.
+    if sys.platform != "win32":
+        kwargs["start_new_session"] = True
+
+    try:
+        return subprocess.run(commande, **kwargs)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(
+            "La conversion via LibreOffice a dépassé le délai imparti."
+        )
+    except subprocess.CalledProcessError as exc:
+        detail = exc.stderr.decode("utf-8", errors="replace") if exc.stderr else ""
+        raise RuntimeError(
+            "Échec de la conversion via LibreOffice.\n"
+            f"Erreur : {detail}"
+        )
+
+
+def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie="pdf"):
+    """
+    Conversion PPTX -> PDF (ou autre) via LibreOffice en mode headless/invisible.
     """
 
-    pdf_path = output_dir / f"{pptx_path.stem}.pdf"
+    pptx_path = Path(pptx_path)
+    output_dir = Path(output_dir)
+    suffix = "pdf" if format_sortie == "pdf" else format_sortie
+    fichier_sortie = output_dir / f"{pptx_path.stem}.{suffix}"
 
-    # Profil LibreOffice isolé et jetable : évite les blocages de verrou
-    # lorsque plusieurs conversions tournent en parallèle (multi-utilisateurs).
     with tempfile.TemporaryDirectory(prefix="lo_profile_") as profil_tmp:
         user_installation = Path(profil_tmp).as_uri()
 
         commande = [
             soffice_bin,
             "--headless",
+            "--invisible",
+            "--nodefault",
+            "--nolockcheck",
             "--nologo",
             "--nofirststartwizard",
             "--norestore",
             f"-env:UserInstallation={user_installation}",
             "--convert-to",
-            "pdf",
+            (
+                "pdf:impress_pdf_Export:"
+                "{"
+                '"SelectPdfVersion":{"type":"long","value":"1"},'
+                '"Quality":{"type":"long","value":"100"},'
+                '"ReduceImageResolution":{"type":"boolean","value":"false"},'
+                '"MaxImageResolution":{"type":"long","value":"600"}'
+                "}"
+            ),
             "--outdir",
             str(output_dir),
             str(pptx_path),
         ]
 
-        try:
-            resultat = subprocess.run(
-                commande,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=180,
-            )
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(
-                "La conversion PDF via LibreOffice a dépassé le délai imparti."
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(
-                "Échec de la conversion PDF via LibreOffice.\n"
-                f"Sortie standard : {e.stdout}\n"
-                f"Erreur : {e.stderr}"
-            )
+        _executer_libreoffice(commande)
 
-    if not pdf_path.exists():
+    if not fichier_sortie.exists():
         raise RuntimeError(
-            "PDF non généré par LibreOffice : "
-            f"{pdf_path}\nSortie : {getattr(resultat, 'stdout', '')}"
+            f"Fichier non généré par LibreOffice : {fichier_sortie}"
         )
 
-    return pdf_path
+    return fichier_sortie
 
 
 def convertir_avec_powerpoint_macos(pptx_path, output_dir):
@@ -124,9 +151,10 @@ def convertir_avec_powerpoint_macos(pptx_path, output_dir):
     subprocess.run(
         ["osascript", "-e", script],
         check=True,
-        stdout=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
-        text=True,
+        stdin=subprocess.DEVNULL,
+        start_new_session=True,
     )
 
     time.sleep(1)
@@ -142,7 +170,7 @@ def convertir_pptx_en_pdf(pptx_path, output_dir):
     Convertit un PowerPoint en PDF de manière portable.
 
     Stratégie :
-      1. LibreOffice headless (par défaut, fonctionne en ligne / Linux).
+      1. LibreOffice headless/invisible (par défaut, fonctionne en ligne / Linux).
       2. Repli sur Microsoft PowerPoint via AppleScript (macOS local).
 
     La variable d'environnement PDF_CONVERTER permet de forcer un moteur :
@@ -162,19 +190,14 @@ def convertir_pptx_en_pdf(pptx_path, output_dir):
     if moteur_force == "powerpoint":
         return convertir_avec_powerpoint_macos(pptx_path, output_dir)
 
-    if moteur_force == "libreoffice":
-        soffice_bin = trouver_soffice()
+    soffice_bin = trouver_soffice()
+
+    if moteur_force == "libreoffice" or soffice_bin:
         if not soffice_bin:
             raise RuntimeError(
                 "PDF_CONVERTER=libreoffice mais aucun binaire LibreOffice "
                 "n'a été trouvé. Installez LibreOffice ou définissez SOFFICE_BIN."
             )
-        return convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin)
-
-    # Choix automatique.
-    soffice_bin = trouver_soffice()
-
-    if soffice_bin:
         return convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin)
 
     if sys.platform == "darwin":

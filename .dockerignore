@@ -16,11 +16,29 @@ anciennes et autres versions/
 pour bosser les plannifs/
 points/
 *.docx
+_*.py
 
 # Environnements virtuels
 .venv/
 venv/
 env/
 
-# Frontend (reconstruit localement avant commit : npm run build)
+# Frontend : dist pre-build commité, pas de rebuild Docker
 frontend/node_modules/
+frontend/src/
+frontend/package.json
+frontend/package-lock.json
+frontend/tsconfig.json
+frontend/tsconfig.node.json
+frontend/tsconfig.tsbuildinfo
+frontend/vite.config.ts
+frontend/postcss.config.js
+frontend/tailwind.config.js
+frontend/index.html
+
+# Streamlit (non utilisé en production Docker)
+app/
+.streamlit/
+
+# Scripts locaux
+scripts/

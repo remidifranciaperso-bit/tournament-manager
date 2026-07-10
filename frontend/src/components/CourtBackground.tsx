@@ -31,9 +31,13 @@ function padelCourtLines(viewW: number, viewL: number, inset = 5) {
 function PadelCourtSvg({
   className = "",
   style,
+  stroke = "#d4ff4a",
+  strokeOpacity = 1,
 }: {
   className?: string;
   style?: CSSProperties;
+  stroke?: string;
+  strokeOpacity?: number;
 }) {
   const vbW = 100;
   const vbL = 200;
@@ -59,7 +63,79 @@ function PadelCourtSvg({
     >
       <g
         fill="none"
-        stroke="#d4ff4a"
+        stroke={stroke}
+        strokeOpacity={strokeOpacity}
+        strokeWidth="0.4"
+        vectorEffect="non-scaling-stroke"
+      >
+        <rect x={x0} y={y0} width={courtW} height={courtH} rx="1" />
+        <line x1={x0} y1={yNet} x2={x1} y2={yNet} strokeWidth="0.6" />
+        <line x1={x0} y1={yServiceTop} x2={x1} y2={yServiceTop} />
+        <line x1={x0} y1={yServiceBottom} x2={x1} y2={yServiceBottom} />
+        <line x1={cx} y1={yServiceTop} x2={cx} y2={yNet} />
+        <line x1={cx} y1={yNet} x2={cx} y2={yServiceBottom} />
+      </g>
+    </svg>
+  );
+}
+
+/** Tracé padel 20×10 m, traits simples (sans halo). */
+export function PadelCourtOutline({
+  className = "",
+  stroke = "#ffffff",
+  strokeOpacity = 0.9,
+}: {
+  className?: string;
+  stroke?: string;
+  strokeOpacity?: number;
+}) {
+  return (
+    <PadelCourtSvg
+      className={className}
+      stroke={stroke}
+      strokeOpacity={strokeOpacity}
+    />
+  );
+}
+
+/** Bleu principal des templates PowerPoint (« templates bleus »). */
+export const TEMPLATE_COURT_BLUE = "#00B0F0";
+
+/** Terrain padel rempli (projection / mode clair). */
+export function PadelCourtFilled({ className = "" }: { className?: string }) {
+  const vbW = 100;
+  const vbL = 200;
+  const {
+    x0,
+    x1,
+    y0,
+    courtW,
+    courtH,
+    cx,
+    yNet,
+    yServiceTop,
+    yServiceBottom,
+  } = padelCourtLines(vbW, vbL, 5);
+
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid meet"
+      viewBox={`0 0 ${vbW} ${vbL}`}
+    >
+      <rect
+        x={x0}
+        y={y0}
+        width={courtW}
+        height={courtH}
+        rx="1"
+        fill={TEMPLATE_COURT_BLUE}
+      />
+      <g
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity={0.92}
         strokeWidth="0.4"
         vectorEffect="non-scaling-stroke"
       >

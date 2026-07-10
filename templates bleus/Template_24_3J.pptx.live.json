@@ -1,0 +1,2408 @@
+{
+  "page_map": {
+    "main": [
+      {
+        "index": 3,
+        "label": "Tour préliminaire"
+      },
+      {
+        "index": 4,
+        "label": "Partie haute"
+      },
+      {
+        "index": 5,
+        "label": "Partie basse"
+      }
+    ],
+    "classement": [
+      {
+        "index": 6,
+        "label": "CLASSEMENT 5-8"
+      },
+      {
+        "index": 7,
+        "label": "CLASSEMENT 9-12"
+      },
+      {
+        "index": 8,
+        "label": "CLASSEMENT 13-16"
+      },
+      {
+        "index": 9,
+        "label": "CLASSEMENT 17-20"
+      },
+      {
+        "index": 10,
+        "label": "CLASSEMENT 21-24"
+      }
+    ],
+    "planning": [
+      {
+        "index": 11,
+        "label": "PLANNING – JOUR 1 - 1/2"
+      },
+      {
+        "index": 12,
+        "label": "PLANNING – JOUR 1 - 2/2"
+      },
+      {
+        "index": 13,
+        "label": "PLANNING – JOUR 2"
+      },
+      {
+        "index": 14,
+        "label": "PLANNING – JOUR 3"
+      }
+    ],
+    "planning_groups": [
+      [
+        11,
+        12
+      ],
+      [
+        13
+      ],
+      [
+        14
+      ]
+    ],
+    "final": [
+      {
+        "index": 15,
+        "label": "Classement final"
+      }
+    ]
+  },
+  "planning_layout": {
+    "11": [
+      {
+        "key": "J1_PL1_CODE",
+        "left": 1.499,
+        "top": 25.681,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL1_HEURE",
+        "left": 12.92,
+        "top": 25.681,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL1_TERRAIN",
+        "left": 24.498,
+        "top": 25.681,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL1_EQ1",
+        "left": 39.831,
+        "top": 25.681,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL1_EQ2",
+        "left": 62.673,
+        "top": 25.681,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL1_DONE",
+        "left": 87.236,
+        "top": 25.681,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL2_CODE",
+        "left": 1.499,
+        "top": 31.052,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL2_HEURE",
+        "left": 12.92,
+        "top": 31.052,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL2_TERRAIN",
+        "left": 24.498,
+        "top": 31.052,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL2_EQ1",
+        "left": 39.831,
+        "top": 31.052,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL2_EQ2",
+        "left": 62.673,
+        "top": 31.052,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL2_DONE",
+        "left": 87.236,
+        "top": 31.052,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL3_CODE",
+        "left": 1.499,
+        "top": 36.423,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL3_HEURE",
+        "left": 12.92,
+        "top": 36.423,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL3_TERRAIN",
+        "left": 24.498,
+        "top": 36.423,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL3_EQ1",
+        "left": 39.831,
+        "top": 36.423,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL3_EQ2",
+        "left": 62.673,
+        "top": 36.423,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL3_DONE",
+        "left": 87.236,
+        "top": 36.423,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL4_CODE",
+        "left": 1.499,
+        "top": 41.794,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL4_HEURE",
+        "left": 12.92,
+        "top": 41.794,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL4_TERRAIN",
+        "left": 24.498,
+        "top": 41.794,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL4_EQ1",
+        "left": 39.831,
+        "top": 41.794,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL4_EQ2",
+        "left": 62.673,
+        "top": 41.794,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL4_DONE",
+        "left": 87.236,
+        "top": 41.794,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL5_CODE",
+        "left": 1.499,
+        "top": 47.165,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL5_HEURE",
+        "left": 12.92,
+        "top": 47.165,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL5_TERRAIN",
+        "left": 24.498,
+        "top": 47.165,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL5_EQ1",
+        "left": 39.831,
+        "top": 47.165,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL5_EQ2",
+        "left": 62.673,
+        "top": 47.165,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL5_DONE",
+        "left": 87.236,
+        "top": 47.165,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL6_CODE",
+        "left": 1.499,
+        "top": 52.536,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL6_HEURE",
+        "left": 12.92,
+        "top": 52.536,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL6_TERRAIN",
+        "left": 24.498,
+        "top": 52.536,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL6_EQ1",
+        "left": 39.831,
+        "top": 52.536,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL6_EQ2",
+        "left": 62.673,
+        "top": 52.536,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL6_DONE",
+        "left": 87.236,
+        "top": 52.536,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL7_CODE",
+        "left": 1.499,
+        "top": 57.907,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL7_HEURE",
+        "left": 12.92,
+        "top": 57.907,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL7_TERRAIN",
+        "left": 24.498,
+        "top": 57.907,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL7_EQ1",
+        "left": 39.831,
+        "top": 57.907,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL7_EQ2",
+        "left": 62.673,
+        "top": 57.907,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL7_DONE",
+        "left": 87.236,
+        "top": 57.907,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL8_CODE",
+        "left": 1.499,
+        "top": 63.278,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL8_HEURE",
+        "left": 12.92,
+        "top": 63.278,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL8_TERRAIN",
+        "left": 24.498,
+        "top": 63.278,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL8_EQ1",
+        "left": 39.831,
+        "top": 63.278,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL8_EQ2",
+        "left": 62.673,
+        "top": 63.278,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL8_DONE",
+        "left": 87.236,
+        "top": 63.278,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL9_CODE",
+        "left": 1.499,
+        "top": 68.649,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL9_HEURE",
+        "left": 12.92,
+        "top": 68.649,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL9_TERRAIN",
+        "left": 24.498,
+        "top": 68.649,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL9_EQ1",
+        "left": 39.831,
+        "top": 68.649,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL9_EQ2",
+        "left": 62.673,
+        "top": 68.649,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL9_DONE",
+        "left": 87.236,
+        "top": 68.649,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL10_CODE",
+        "left": 1.499,
+        "top": 74.02,
+        "width": 11.421,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL10_HEURE",
+        "left": 12.92,
+        "top": 74.02,
+        "width": 11.578,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL10_TERRAIN",
+        "left": 24.498,
+        "top": 74.02,
+        "width": 15.332,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL10_EQ1",
+        "left": 39.831,
+        "top": 74.02,
+        "width": 22.842,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL10_EQ2",
+        "left": 62.673,
+        "top": 74.02,
+        "width": 24.563,
+        "height": 5.371
+      },
+      {
+        "key": "J1_PL10_DONE",
+        "left": 87.236,
+        "top": 74.02,
+        "width": 11.265,
+        "height": 5.371
+      },
+      {
+        "key": "TYPE",
+        "left": -0.0,
+        "top": 1.467,
+        "width": 32.707,
+        "height": 5.385
+      },
+      {
+        "key": "DATE",
+        "left": 67.273,
+        "top": 1.443,
+        "width": 32.707,
+        "height": 5.385
+      },
+      {
+        "key": "LOGO",
+        "left": 37.341,
+        "top": 96.576,
+        "width": 23.979,
+        "height": 2.917
+      }
+    ],
+    "12": [
+      {
+        "key": "J1_PL11_CODE",
+        "left": 1.499,
+        "top": 24.92,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL11_HEURE",
+        "left": 12.92,
+        "top": 24.92,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL11_TERRAIN",
+        "left": 24.498,
+        "top": 24.92,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL11_EQ1",
+        "left": 39.831,
+        "top": 24.92,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL11_EQ2",
+        "left": 62.673,
+        "top": 24.92,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL11_DONE",
+        "left": 87.236,
+        "top": 24.92,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL12_CODE",
+        "left": 1.499,
+        "top": 30.459,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL12_HEURE",
+        "left": 12.92,
+        "top": 30.459,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL12_TERRAIN",
+        "left": 24.498,
+        "top": 30.459,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL12_EQ1",
+        "left": 39.831,
+        "top": 30.459,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL12_EQ2",
+        "left": 62.673,
+        "top": 30.459,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL12_DONE",
+        "left": 87.236,
+        "top": 30.459,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL13_CODE",
+        "left": 1.499,
+        "top": 35.998,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL13_HEURE",
+        "left": 12.92,
+        "top": 35.998,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL13_TERRAIN",
+        "left": 24.498,
+        "top": 35.998,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL13_EQ1",
+        "left": 39.831,
+        "top": 35.998,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL13_EQ2",
+        "left": 62.673,
+        "top": 35.998,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL13_DONE",
+        "left": 87.236,
+        "top": 35.998,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL14_CODE",
+        "left": 1.499,
+        "top": 41.538,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL14_HEURE",
+        "left": 12.92,
+        "top": 41.538,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL14_TERRAIN",
+        "left": 24.498,
+        "top": 41.538,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL14_EQ1",
+        "left": 39.831,
+        "top": 41.538,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL14_EQ2",
+        "left": 62.673,
+        "top": 41.538,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL14_DONE",
+        "left": 87.236,
+        "top": 41.538,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL15_CODE",
+        "left": 1.499,
+        "top": 47.077,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL15_HEURE",
+        "left": 12.92,
+        "top": 47.077,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL15_TERRAIN",
+        "left": 24.498,
+        "top": 47.077,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL15_EQ1",
+        "left": 39.831,
+        "top": 47.077,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL15_EQ2",
+        "left": 62.673,
+        "top": 47.077,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL15_DONE",
+        "left": 87.236,
+        "top": 47.077,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL16_CODE",
+        "left": 1.499,
+        "top": 52.616,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL16_HEURE",
+        "left": 12.92,
+        "top": 52.616,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL16_TERRAIN",
+        "left": 24.498,
+        "top": 52.616,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL16_EQ1",
+        "left": 39.831,
+        "top": 52.616,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL16_EQ2",
+        "left": 62.673,
+        "top": 52.616,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL16_DONE",
+        "left": 87.236,
+        "top": 52.616,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL17_CODE",
+        "left": 1.499,
+        "top": 58.155,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL17_HEURE",
+        "left": 12.92,
+        "top": 58.155,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL17_TERRAIN",
+        "left": 24.498,
+        "top": 58.155,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL17_EQ1",
+        "left": 39.831,
+        "top": 58.155,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL17_EQ2",
+        "left": 62.673,
+        "top": 58.155,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL17_DONE",
+        "left": 87.236,
+        "top": 58.155,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL18_CODE",
+        "left": 1.499,
+        "top": 63.694,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL18_HEURE",
+        "left": 12.92,
+        "top": 63.694,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL18_TERRAIN",
+        "left": 24.498,
+        "top": 63.694,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL18_EQ1",
+        "left": 39.831,
+        "top": 63.694,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL18_EQ2",
+        "left": 62.673,
+        "top": 63.694,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL18_DONE",
+        "left": 87.236,
+        "top": 63.694,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL19_CODE",
+        "left": 1.499,
+        "top": 69.233,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL19_HEURE",
+        "left": 12.92,
+        "top": 69.233,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL19_TERRAIN",
+        "left": 24.498,
+        "top": 69.233,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL19_EQ1",
+        "left": 39.831,
+        "top": 69.233,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL19_EQ2",
+        "left": 62.673,
+        "top": 69.233,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL19_DONE",
+        "left": 87.236,
+        "top": 69.233,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL20_CODE",
+        "left": 1.499,
+        "top": 74.772,
+        "width": 11.421,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL20_HEURE",
+        "left": 12.92,
+        "top": 74.772,
+        "width": 11.578,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL20_TERRAIN",
+        "left": 24.498,
+        "top": 74.772,
+        "width": 15.332,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL20_EQ1",
+        "left": 39.831,
+        "top": 74.772,
+        "width": 22.842,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL20_EQ2",
+        "left": 62.673,
+        "top": 74.772,
+        "width": 24.563,
+        "height": 5.539
+      },
+      {
+        "key": "J1_PL20_DONE",
+        "left": 87.236,
+        "top": 74.772,
+        "width": 11.265,
+        "height": 5.539
+      },
+      {
+        "key": "TYPE",
+        "left": -0.0,
+        "top": 1.467,
+        "width": 32.707,
+        "height": 5.385
+      },
+      {
+        "key": "DATE",
+        "left": 67.273,
+        "top": 1.443,
+        "width": 32.707,
+        "height": 5.385
+      },
+      {
+        "key": "LOGO",
+        "left": 37.341,
+        "top": 96.576,
+        "width": 23.979,
+        "height": 2.917
+      }
+    ],
+    "13": [
+      {
+        "key": "J2_PL1_CODE",
+        "left": 1.565,
+        "top": 15.905,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL1_HEURE",
+        "left": 12.986,
+        "top": 15.905,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL1_TERRAIN",
+        "left": 24.563,
+        "top": 15.905,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL1_EQ1",
+        "left": 39.896,
+        "top": 15.905,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL1_EQ2",
+        "left": 62.738,
+        "top": 15.905,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL1_DONE",
+        "left": 87.301,
+        "top": 15.905,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL2_CODE",
+        "left": 1.565,
+        "top": 20.146,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL2_HEURE",
+        "left": 12.986,
+        "top": 20.146,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL2_TERRAIN",
+        "left": 24.563,
+        "top": 20.146,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL2_EQ1",
+        "left": 39.896,
+        "top": 20.146,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL2_EQ2",
+        "left": 62.738,
+        "top": 20.146,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL2_DONE",
+        "left": 87.301,
+        "top": 20.146,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL3_CODE",
+        "left": 1.565,
+        "top": 24.387,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL3_HEURE",
+        "left": 12.986,
+        "top": 24.387,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL3_TERRAIN",
+        "left": 24.563,
+        "top": 24.387,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL3_EQ1",
+        "left": 39.896,
+        "top": 24.387,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL3_EQ2",
+        "left": 62.738,
+        "top": 24.387,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL3_DONE",
+        "left": 87.301,
+        "top": 24.387,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL4_CODE",
+        "left": 1.565,
+        "top": 28.628,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL4_HEURE",
+        "left": 12.986,
+        "top": 28.628,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL4_TERRAIN",
+        "left": 24.563,
+        "top": 28.628,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL4_EQ1",
+        "left": 39.896,
+        "top": 28.628,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL4_EQ2",
+        "left": 62.738,
+        "top": 28.628,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL4_DONE",
+        "left": 87.301,
+        "top": 28.628,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL5_CODE",
+        "left": 1.565,
+        "top": 32.869,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL5_HEURE",
+        "left": 12.986,
+        "top": 32.869,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL5_TERRAIN",
+        "left": 24.563,
+        "top": 32.869,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL5_EQ1",
+        "left": 39.896,
+        "top": 32.869,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL5_EQ2",
+        "left": 62.738,
+        "top": 32.869,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL5_DONE",
+        "left": 87.301,
+        "top": 32.869,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL6_CODE",
+        "left": 1.565,
+        "top": 37.11,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL6_HEURE",
+        "left": 12.986,
+        "top": 37.11,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL6_TERRAIN",
+        "left": 24.563,
+        "top": 37.11,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL6_EQ1",
+        "left": 39.896,
+        "top": 37.11,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL6_EQ2",
+        "left": 62.738,
+        "top": 37.11,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL6_DONE",
+        "left": 87.301,
+        "top": 37.11,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL7_CODE",
+        "left": 1.565,
+        "top": 41.351,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL7_HEURE",
+        "left": 12.986,
+        "top": 41.351,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL7_TERRAIN",
+        "left": 24.563,
+        "top": 41.351,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL7_EQ1",
+        "left": 39.896,
+        "top": 41.351,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL7_EQ2",
+        "left": 62.738,
+        "top": 41.351,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL7_DONE",
+        "left": 87.301,
+        "top": 41.351,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL8_CODE",
+        "left": 1.565,
+        "top": 45.592,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL8_HEURE",
+        "left": 12.986,
+        "top": 45.592,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL8_TERRAIN",
+        "left": 24.563,
+        "top": 45.592,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL8_EQ1",
+        "left": 39.896,
+        "top": 45.592,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL8_EQ2",
+        "left": 62.738,
+        "top": 45.592,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL8_DONE",
+        "left": 87.301,
+        "top": 45.592,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL9_CODE",
+        "left": 1.565,
+        "top": 49.833,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL9_HEURE",
+        "left": 12.986,
+        "top": 49.833,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL9_TERRAIN",
+        "left": 24.563,
+        "top": 49.833,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL9_EQ1",
+        "left": 39.896,
+        "top": 49.833,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL9_EQ2",
+        "left": 62.738,
+        "top": 49.833,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL9_DONE",
+        "left": 87.301,
+        "top": 49.833,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL10_CODE",
+        "left": 1.565,
+        "top": 54.074,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL10_HEURE",
+        "left": 12.986,
+        "top": 54.074,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL10_TERRAIN",
+        "left": 24.563,
+        "top": 54.074,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL10_EQ1",
+        "left": 39.896,
+        "top": 54.074,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL10_EQ2",
+        "left": 62.738,
+        "top": 54.074,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL10_DONE",
+        "left": 87.301,
+        "top": 54.074,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL11_CODE",
+        "left": 1.565,
+        "top": 58.315,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL11_HEURE",
+        "left": 12.986,
+        "top": 58.315,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL11_TERRAIN",
+        "left": 24.563,
+        "top": 58.315,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL11_EQ1",
+        "left": 39.896,
+        "top": 58.315,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL11_EQ2",
+        "left": 62.738,
+        "top": 58.315,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL11_DONE",
+        "left": 87.301,
+        "top": 58.315,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL12_CODE",
+        "left": 1.565,
+        "top": 62.556,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL12_HEURE",
+        "left": 12.986,
+        "top": 62.556,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL12_TERRAIN",
+        "left": 24.563,
+        "top": 62.556,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL12_EQ1",
+        "left": 39.896,
+        "top": 62.556,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL12_EQ2",
+        "left": 62.738,
+        "top": 62.556,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL12_DONE",
+        "left": 87.301,
+        "top": 62.556,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL13_CODE",
+        "left": 1.565,
+        "top": 66.797,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL13_HEURE",
+        "left": 12.986,
+        "top": 66.797,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL13_TERRAIN",
+        "left": 24.563,
+        "top": 66.797,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL13_EQ1",
+        "left": 39.896,
+        "top": 66.797,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL13_EQ2",
+        "left": 62.738,
+        "top": 66.797,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL13_DONE",
+        "left": 87.301,
+        "top": 66.797,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL14_CODE",
+        "left": 1.565,
+        "top": 71.039,
+        "width": 11.421,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL14_HEURE",
+        "left": 12.986,
+        "top": 71.039,
+        "width": 11.578,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL14_TERRAIN",
+        "left": 24.563,
+        "top": 71.039,
+        "width": 15.332,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL14_EQ1",
+        "left": 39.896,
+        "top": 71.039,
+        "width": 22.842,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL14_EQ2",
+        "left": 62.738,
+        "top": 71.039,
+        "width": 24.563,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL14_DONE",
+        "left": 87.301,
+        "top": 71.039,
+        "width": 11.265,
+        "height": 4.241
+      },
+      {
+        "key": "J2_PL15_CODE",
+        "left": 1.565,
+        "top": 75.28,
+        "width": 11.421,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL15_HEURE",
+        "left": 12.986,
+        "top": 75.28,
+        "width": 11.578,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL15_TERRAIN",
+        "left": 24.563,
+        "top": 75.28,
+        "width": 15.332,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL15_EQ1",
+        "left": 39.896,
+        "top": 75.28,
+        "width": 22.842,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL15_EQ2",
+        "left": 62.738,
+        "top": 75.28,
+        "width": 24.563,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL15_DONE",
+        "left": 87.301,
+        "top": 75.28,
+        "width": 11.265,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL16_CODE",
+        "left": 1.565,
+        "top": 79.906,
+        "width": 11.421,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL16_HEURE",
+        "left": 12.986,
+        "top": 79.906,
+        "width": 11.578,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL16_TERRAIN",
+        "left": 24.563,
+        "top": 79.906,
+        "width": 15.332,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL16_EQ1",
+        "left": 39.896,
+        "top": 79.906,
+        "width": 22.842,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL16_EQ2",
+        "left": 62.738,
+        "top": 79.906,
+        "width": 24.563,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL16_DONE",
+        "left": 87.301,
+        "top": 79.906,
+        "width": 11.265,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL17_CODE",
+        "left": 1.565,
+        "top": 84.533,
+        "width": 11.421,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL17_HEURE",
+        "left": 12.986,
+        "top": 84.533,
+        "width": 11.578,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL17_TERRAIN",
+        "left": 24.563,
+        "top": 84.533,
+        "width": 15.332,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL17_EQ1",
+        "left": 39.896,
+        "top": 84.533,
+        "width": 22.842,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL17_EQ2",
+        "left": 62.738,
+        "top": 84.533,
+        "width": 24.563,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL17_DONE",
+        "left": 87.301,
+        "top": 84.533,
+        "width": 11.265,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL18_CODE",
+        "left": 1.565,
+        "top": 89.159,
+        "width": 11.421,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL18_HEURE",
+        "left": 12.986,
+        "top": 89.159,
+        "width": 11.578,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL18_TERRAIN",
+        "left": 24.563,
+        "top": 89.159,
+        "width": 15.332,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL18_EQ1",
+        "left": 39.896,
+        "top": 89.159,
+        "width": 22.842,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL18_EQ2",
+        "left": 62.738,
+        "top": 89.159,
+        "width": 24.563,
+        "height": 4.627
+      },
+      {
+        "key": "J2_PL18_DONE",
+        "left": 87.301,
+        "top": 89.159,
+        "width": 11.265,
+        "height": 4.627
+      },
+      {
+        "key": "TYPE",
+        "left": -0.0,
+        "top": 1.467,
+        "width": 32.707,
+        "height": 5.385
+      },
+      {
+        "key": "DATE",
+        "left": 67.273,
+        "top": 1.443,
+        "width": 32.707,
+        "height": 5.385
+      },
+      {
+        "key": "LOGO",
+        "left": 37.341,
+        "top": 96.576,
+        "width": 23.979,
+        "height": 2.917
+      }
+    ],
+    "14": [
+      {
+        "key": "J3_PL1_CODE",
+        "left": 1.565,
+        "top": 17.014,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL1_HEURE",
+        "left": 12.986,
+        "top": 17.014,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL1_TERRAIN",
+        "left": 24.563,
+        "top": 17.014,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL1_EQ1",
+        "left": 39.896,
+        "top": 17.014,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL1_EQ2",
+        "left": 62.738,
+        "top": 17.014,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL1_DONE",
+        "left": 87.301,
+        "top": 17.014,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL2_CODE",
+        "left": 1.565,
+        "top": 22.544,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL2_HEURE",
+        "left": 12.986,
+        "top": 22.544,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL2_TERRAIN",
+        "left": 24.563,
+        "top": 22.544,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL2_EQ1",
+        "left": 39.896,
+        "top": 22.544,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL2_EQ2",
+        "left": 62.738,
+        "top": 22.544,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL2_DONE",
+        "left": 87.301,
+        "top": 22.544,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL3_CODE",
+        "left": 1.565,
+        "top": 28.073,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL3_HEURE",
+        "left": 12.986,
+        "top": 28.073,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL3_TERRAIN",
+        "left": 24.563,
+        "top": 28.073,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL3_EQ1",
+        "left": 39.896,
+        "top": 28.073,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL3_EQ2",
+        "left": 62.738,
+        "top": 28.073,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL3_DONE",
+        "left": 87.301,
+        "top": 28.073,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL4_CODE",
+        "left": 1.565,
+        "top": 33.602,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL4_HEURE",
+        "left": 12.986,
+        "top": 33.602,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL4_TERRAIN",
+        "left": 24.563,
+        "top": 33.602,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL4_EQ1",
+        "left": 39.896,
+        "top": 33.602,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL4_EQ2",
+        "left": 62.738,
+        "top": 33.602,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL4_DONE",
+        "left": 87.301,
+        "top": 33.602,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL5_CODE",
+        "left": 1.565,
+        "top": 39.131,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL5_HEURE",
+        "left": 12.986,
+        "top": 39.131,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL5_TERRAIN",
+        "left": 24.563,
+        "top": 39.131,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL5_EQ1",
+        "left": 39.896,
+        "top": 39.131,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL5_EQ2",
+        "left": 62.738,
+        "top": 39.131,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL5_DONE",
+        "left": 87.301,
+        "top": 39.131,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL6_CODE",
+        "left": 1.565,
+        "top": 44.66,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL6_HEURE",
+        "left": 12.986,
+        "top": 44.66,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL6_TERRAIN",
+        "left": 24.563,
+        "top": 44.66,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL6_EQ1",
+        "left": 39.896,
+        "top": 44.66,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL6_EQ2",
+        "left": 62.738,
+        "top": 44.66,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL6_DONE",
+        "left": 87.301,
+        "top": 44.66,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL7_CODE",
+        "left": 1.565,
+        "top": 50.189,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL7_HEURE",
+        "left": 12.986,
+        "top": 50.189,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL7_TERRAIN",
+        "left": 24.563,
+        "top": 50.189,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL7_EQ1",
+        "left": 39.896,
+        "top": 50.189,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL7_EQ2",
+        "left": 62.738,
+        "top": 50.189,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL7_DONE",
+        "left": 87.301,
+        "top": 50.189,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL8_CODE",
+        "left": 1.565,
+        "top": 55.718,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL8_HEURE",
+        "left": 12.986,
+        "top": 55.718,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL8_TERRAIN",
+        "left": 24.563,
+        "top": 55.718,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL8_EQ1",
+        "left": 39.896,
+        "top": 55.718,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL8_EQ2",
+        "left": 62.738,
+        "top": 55.718,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL8_DONE",
+        "left": 87.301,
+        "top": 55.718,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL9_CODE",
+        "left": 1.565,
+        "top": 61.247,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL9_HEURE",
+        "left": 12.986,
+        "top": 61.247,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL9_TERRAIN",
+        "left": 24.563,
+        "top": 61.247,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL9_EQ1",
+        "left": 39.896,
+        "top": 61.247,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL9_EQ2",
+        "left": 62.738,
+        "top": 61.247,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL9_DONE",
+        "left": 87.301,
+        "top": 61.247,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL10_CODE",
+        "left": 1.565,
+        "top": 66.776,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL10_HEURE",
+        "left": 12.986,
+        "top": 66.776,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL10_TERRAIN",
+        "left": 24.563,
+        "top": 66.776,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL10_EQ1",
+        "left": 39.896,
+        "top": 66.776,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL10_EQ2",
+        "left": 62.738,
+        "top": 66.776,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL10_DONE",
+        "left": 87.301,
+        "top": 66.776,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL11_CODE",
+        "left": 1.565,
+        "top": 72.305,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL11_HEURE",
+        "left": 12.986,
+        "top": 72.305,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL11_TERRAIN",
+        "left": 24.563,
+        "top": 72.305,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL11_EQ1",
+        "left": 39.896,
+        "top": 72.305,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL11_EQ2",
+        "left": 62.738,
+        "top": 72.305,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL11_DONE",
+        "left": 87.301,
+        "top": 72.305,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL12_CODE",
+        "left": 1.565,
+        "top": 77.834,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL12_HEURE",
+        "left": 12.986,
+        "top": 77.834,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL12_TERRAIN",
+        "left": 24.563,
+        "top": 77.834,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL12_EQ1",
+        "left": 39.896,
+        "top": 77.834,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL12_EQ2",
+        "left": 62.738,
+        "top": 77.834,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL12_DONE",
+        "left": 87.301,
+        "top": 77.834,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL13_CODE",
+        "left": 1.565,
+        "top": 83.363,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL13_HEURE",
+        "left": 12.986,
+        "top": 83.363,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL13_TERRAIN",
+        "left": 24.563,
+        "top": 83.363,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL13_EQ1",
+        "left": 39.896,
+        "top": 83.363,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL13_EQ2",
+        "left": 62.738,
+        "top": 83.363,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL13_DONE",
+        "left": 87.301,
+        "top": 83.363,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL14_CODE",
+        "left": 1.565,
+        "top": 88.892,
+        "width": 11.421,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL14_HEURE",
+        "left": 12.986,
+        "top": 88.892,
+        "width": 11.578,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL14_TERRAIN",
+        "left": 24.563,
+        "top": 88.892,
+        "width": 15.332,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL14_EQ1",
+        "left": 39.896,
+        "top": 88.892,
+        "width": 22.842,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL14_EQ2",
+        "left": 62.738,
+        "top": 88.892,
+        "width": 24.563,
+        "height": 5.529
+      },
+      {
+        "key": "J3_PL14_DONE",
+        "left": 87.301,
+        "top": 88.892,
+        "width": 11.265,
+        "height": 5.529
+      },
+      {
+        "key": "TYPE",
+        "left": -0.0,
+        "top": 1.467,
+        "width": 32.707,
+        "height": 5.385
+      },
+      {
+        "key": "DATE",
+        "left": 67.273,
+        "top": 1.443,
+        "width": 32.707,
+        "height": 5.385
+      },
+      {
+        "key": "LOGO",
+        "left": 37.341,
+        "top": 96.576,
+        "width": 23.979,
+        "height": 2.917
+      }
+    ]
+  },
+  "page_sizes": {
+    "3": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "4": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "5": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "6": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "7": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "8": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "9": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "10": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "11": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "12": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "13": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "14": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "15": {
+      "width": 780.0,
+      "height": 540.0
+    }
+  }
+}

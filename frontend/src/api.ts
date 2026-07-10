@@ -1,4 +1,5 @@
 import type { PreviewResult, TournamentForm } from "./types";
+import type { LiveTournamentData } from "./manager/liveTypes";
 
 export interface TournamentResume {
   club: string;
@@ -51,12 +52,46 @@ export function buildTournamentResume(
 }
 
 async function readError(res: Response): Promise<string> {
+  if (res.status === 405) {
+    return (
+      "L'API locale n'est pas à jour (route generate-live absente). " +
+      "Fermez tous les terminaux du projet puis relancez ./scripts/run-local.sh."
+    );
+  }
+
   try {
     const data = await res.json();
     if (typeof data?.detail === "string") return data.detail;
     return JSON.stringify(data?.detail ?? data);
   } catch {
     return `Erreur ${res.status}`;
+  }
+}
+
+export const EXPECTED_LIVE_API = "engine-pdf";
+
+export interface ApiHealth {
+  status: string;
+  version?: string;
+  live?: string;
+}
+
+export async function fetchApiHealth(): Promise<ApiHealth> {
+  const res = await fetch("/api/health");
+  if (!res.ok) throw new Error(`API injoignable (${res.status}).`);
+  return res.json();
+}
+
+export async function assertLiveApiReady(): Promise<void> {
+  const health = await fetchApiHealth();
+  if (health.live !== EXPECTED_LIVE_API) {
+    const hint =
+      health.live == null
+        ? "LibreOffice est requis côté serveur pour le Manager live."
+        : `Version live=${health.live}.`;
+    throw new Error(
+      `API obsolète (live=${health.live ?? "absent"}). ${hint} Relancez ./scripts/run-local.sh.`
+    );
   }
 }
 
@@ -69,13 +104,8 @@ export async function previewExcel(file: File): Promise<PreviewResult> {
   return res.json();
 }
 
-export async function generateTournament(
-  form: TournamentForm
-): Promise<{ blob: Blob; filename: string; notifyToken: string | null }> {
-  if (!form.excelFile) throw new Error("Fichier Excel manquant.");
-
-  const body = new FormData();
-  body.append("excel", form.excelFile);
+function appendTournamentFormFields(body: FormData, form: TournamentForm): void {
+  body.append("excel", form.excelFile!);
   if (form.logoFile && !form.pasDeLogo) {
     body.append("logo", form.logoFile);
   }
@@ -90,6 +120,64 @@ export async function generateTournament(
   body.append("duree_match", String(form.dureeMatch));
   body.append("terrains", JSON.stringify(form.terrains));
   body.append("terrain_principal", form.terrainPrincipal);
+  if (form.formatMatchTableauPrincipal) {
+    body.append(
+      "format_match_tableau_principal",
+      form.formatMatchTableauPrincipal
+    );
+  }
+  body.append("format_match_classement", form.formatMatchClassement);
+  body.append("format_match_finale", form.formatMatchFinale);
+  body.append("format_match_poule", form.formatMatchPoule);
+}
+
+export async function generateLiveTournament(
+  form: TournamentForm
+): Promise<LiveTournamentData> {
+  if (!form.excelFile) throw new Error("Fichier Excel manquant.");
+
+  await assertLiveApiReady();
+
+  // Étape 1 — identique à Engine (POST /api/generate), libère la RAM avant le live.
+  const { notifyToken, filename } = await generateTournament(form);
+  if (!notifyToken) {
+    throw new Error(
+      "Génération PDF Engine sans jeton. Relancez l'API ou réessayez."
+    );
+  }
+
+  // Étape 2 — session live légère (Excel + cache template, pas de LibreOffice).
+  const body = new FormData();
+  body.append("pdf_token", notifyToken);
+  body.append("pdf_filename", filename);
+  appendTournamentFormFields(body, form);
+
+  const res = await fetch("/api/live/init", { method: "POST", body });
+  if (!res.ok) throw new Error(await readError(res));
+
+  const data = (await res.json()) as LiveTournamentData;
+
+  if (!data.live_token || !data.page_map || !data.page_sizes) {
+    throw new Error(
+      "Réponse live incomplète. Vérifiez l'API et relancez la génération."
+    );
+  }
+
+  return data;
+}
+
+export async function generateTournament(
+  form: TournamentForm
+): Promise<{
+  blob: Blob;
+  filename: string;
+  notifyToken: string | null;
+  liveSnapshotAvailable: boolean;
+}> {
+  if (!form.excelFile) throw new Error("Fichier Excel manquant.");
+
+  const body = new FormData();
+  appendTournamentFormFields(body, form);
 
   const res = await fetch("/api/generate", { method: "POST", body });
   if (!res.ok) throw new Error(await readError(res));
@@ -99,7 +187,45 @@ export async function generateTournament(
   const match = disposition.match(/filename="?([^"]+)"?/);
   const filename = match ? match[1] : "tournoi.pdf";
   const notifyToken = res.headers.get("X-Notify-Token");
-  return { blob, filename, notifyToken };
+  const liveSnapshotAvailable =
+    res.headers.get("X-Live-Snapshot-Available") === "1";
+  return { blob, filename, notifyToken, liveSnapshotAvailable };
+}
+
+export async function initLiveFromPack(packFile: File): Promise<LiveTournamentData> {
+  await assertLiveApiReady();
+
+  const body = new FormData();
+  body.append("pack", packFile);
+
+  const res = await fetch("/api/live/init-from-pack", { method: "POST", body });
+  if (!res.ok) throw new Error(await readError(res));
+
+  const data = (await res.json()) as LiveTournamentData;
+
+  if (!data.live_token || !data.page_map || !data.page_sizes) {
+    throw new Error(
+      "Réponse live incomplète. Vérifiez le pack ZIP et réessayez."
+    );
+  }
+
+  return data;
+}
+
+export async function downloadManagerLiveBundle(
+  token: string,
+  filename: string
+): Promise<void> {
+  const res = await fetch(`/api/notify/${token}/manager-live`);
+  if (!res.ok) throw new Error(await readError(res));
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export function notifyOwnerAfterDownload(

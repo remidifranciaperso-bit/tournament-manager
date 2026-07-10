@@ -14,6 +14,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "TSL Sans";
+  src: url("/fonts/TSLSans.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 html,
 body,
 #root {
@@ -56,6 +64,10 @@ body {
     @apply mb-0 block text-center text-xs font-semibold uppercase tracking-widest text-white/45;
   }
 
+  .field-label-section {
+    @apply mb-0 block text-center text-sm font-semibold uppercase tracking-widest text-lime sm:text-base;
+  }
+
   .lime-panel {
     @apply rounded-2xl border-2 border-lime/40 bg-lime/5 shadow-lime;
   }
@@ -91,6 +103,11 @@ body {
 
   .step-num {
     @apply font-display text-7xl leading-none text-white/[0.06];
+  }
+
+  .live-table-points {
+    font-family: "Noto Sans", "Sora", system-ui, sans-serif;
+    font-weight: 700;
   }
 }
 
