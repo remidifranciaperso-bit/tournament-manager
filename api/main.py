@@ -101,7 +101,7 @@ def health():
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-10c",
+        "version": "2026-07-10d",
         "live": "engine-pdf" if live_ready else None,
         "pymupdf": _PYMUPDF_OK,
         "soffice": soffice,

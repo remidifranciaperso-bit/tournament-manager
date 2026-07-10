@@ -1,3 +1,4 @@
+# Alias pour Render si le dashboard pointe encore sur Dockerfile.preview
 # Runtime Python + LibreOffice.
 # Le frontend est servi depuis frontend/dist (pre-build commité, pas de npm ici).
 # Preview Manager : PDF généré par Engine prod (ENGINE_GENERATE_URL), pas en local.
