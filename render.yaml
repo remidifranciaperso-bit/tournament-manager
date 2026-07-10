@@ -37,7 +37,7 @@ services:
     runtime: docker
     plan: starter
     branch: feature/manager
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./Dockerfile.preview
     dockerContext: .
     healthCheckPath: /api/health
     autoDeploy: true

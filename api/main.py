@@ -26,14 +26,10 @@ from api.live_store import (
     chemin_session,
     nom_pdf,
 )
-from engine.excel_reader import lire_excel
-from engine.live_pdf_export import exporter_pdf_tournoi_manager
-from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
-from engine.team_builder import construire_paires
-from engine.remote_generate import engine_generate_url, generer_pdf_via_engine
-from engine.tournament_engine import generate_tournament, init_live_session
+from engine.remote_generate import engine_generate_url, generer_pdf_via_engine, preview_mode
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
+_PYMUPDF_OK: bool | None = None
 
 
 class LivePdfExportBody(BaseModel):
@@ -79,39 +75,46 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 @app.get("/api/health")
 def health():
-    pymupdf_ok = False
-    try:
-        import fitz  # noqa: F401
+    global _PYMUPDF_OK
+    if _PYMUPDF_OK is None:
+        try:
+            import fitz  # noqa: F401
 
-        pymupdf_ok = True
-    except ImportError:
-        pass
+            _PYMUPDF_OK = True
+        except ImportError:
+            _PYMUPDF_OK = False
 
-    soffice = None
-    try:
-        from engine.pdf_engine import trouver_soffice
+    soffice = False
+    if not preview_mode():
+        try:
+            from engine.pdf_engine import trouver_soffice
 
-        soffice = trouver_soffice()
-    except Exception:
-        pass
+            soffice = bool(trouver_soffice())
+        except Exception:
+            pass
 
     remote_engine = engine_generate_url()
-    live_ready = bool(soffice) or bool(remote_engine)
+    live_ready = soffice or bool(remote_engine)
+
+    from engine.notify_engine import mode_notification
 
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-10b",
+        "version": "2026-07-10c",
         "live": "engine-pdf" if live_ready else None,
-        "pymupdf": pymupdf_ok,
-        "soffice": bool(soffice),
+        "pymupdf": _PYMUPDF_OK,
+        "soffice": soffice,
         "deploy": os.environ.get("DEPLOY_TARGET", "engine"),
         "engine_generate_url": remote_engine,
+        "preview_mode": preview_mode(),
         "notify": mode_notification(),
     }
 
 
 def _envoyer_notification_arriere_plan(token: str, resume: dict) -> None:
+    from engine.notify_engine import envoyer_notification_proprietaire
+
     pdf_path = chemin_pdf(token)
     if pdf_path is None:
         print(f"Notify: token inconnu ou expiré ({token})")
@@ -157,6 +160,9 @@ async def preview(excel: UploadFile = File(...)):
     excel_path = _ecrire_fichier_temporaire(excel, ".xlsx")
 
     try:
+        from engine.excel_reader import lire_excel
+        from engine.team_builder import construire_paires
+
         df = lire_excel(excel_path)
         equipes_df = construire_paires(df)
     except Exception as exc:
@@ -242,6 +248,8 @@ async def init_live(
         logo_path = _ecrire_fichier_temporaire(logo, suffix)
 
     try:
+        from engine.live_init import init_live_session
+
         payload = init_live_session(
             pdf_path=pdf_path,
             pdf_filename=pdf_filename,
@@ -438,6 +446,8 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
 
     chemin_export = session / "export.pdf"
     try:
+        from engine.live_pdf_export import exporter_pdf_tournoi_manager
+
         exporter_pdf_tournoi_manager(
             chemin_source,
             chemin_export,
@@ -556,6 +566,12 @@ async def generate(
         form_fields["format_match_tableau_principal"] = format_match_tableau_principal
 
     remote_engine = engine_generate_url()
+    if preview_mode() and not remote_engine:
+        raise HTTPException(
+            status_code=500,
+            detail="Preview Manager : ENGINE_GENERATE_URL est requis.",
+        )
+
     exports_dir = BASE_DIR / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
 
@@ -569,6 +585,8 @@ async def generate(
                 output_dir=exports_dir,
             )
         else:
+            from engine.tournament_engine import generate_tournament
+
             pdf_path = generate_tournament(
                 excel_path=excel_path,
                 club=club,

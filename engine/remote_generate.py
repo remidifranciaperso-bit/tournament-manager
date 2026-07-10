@@ -14,6 +14,10 @@ def engine_generate_url() -> str | None:
     return None
 
 
+def preview_mode() -> bool:
+    return os.environ.get("DEPLOY_TARGET") == "manager-preview"
+
+
 def _filename_from_disposition(header: str | None, fallback: str) -> str:
     if not header:
         return fallback
@@ -40,9 +44,7 @@ def generer_pdf_via_engine(
     form_fields: dict[str, str],
     output_dir: Path,
 ) -> Path:
-    """
-    Délègue la génération PDF au service Engine (LibreOffice hors du preview).
-    """
+    """Délègue la génération PDF au service Engine (LibreOffice hors du preview)."""
     output_dir.mkdir(parents=True, exist_ok=True)
     files: list[tuple[str, tuple[str, bytes, str]]] = [
         (
@@ -70,21 +72,26 @@ def generer_pdf_via_engine(
 
     timeout = httpx.Timeout(300.0, connect=60.0)
     with httpx.Client(timeout=timeout) as client:
-        response = client.post(
+        with client.stream(
+            "POST",
             f"{engine_url.rstrip('/')}/api/generate",
             data=form_fields,
             files=files,
-        )
+        ) as response:
+            if response.status_code != 200:
+                response.read()
+                raise RuntimeError(
+                    f"Génération Engine distante échouée : {_detail_from_response(response)}"
+                )
 
-    if response.status_code != 200:
-        raise RuntimeError(
-            f"Génération Engine distante échouée : {_detail_from_response(response)}"
-        )
+            filename = _filename_from_disposition(
+                response.headers.get("content-disposition"),
+                "tournoi.pdf",
+            )
+            destination = output_dir / filename
+            with destination.open("wb") as handle:
+                for chunk in response.iter_bytes(65536):
+                    if chunk:
+                        handle.write(chunk)
 
-    filename = _filename_from_disposition(
-        response.headers.get("content-disposition"),
-        "tournoi.pdf",
-    )
-    destination = output_dir / filename
-    destination.write_bytes(response.content)
     return destination

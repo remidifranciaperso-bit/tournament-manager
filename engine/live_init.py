@@ -1,17 +1,13 @@
 from pathlib import Path
 
-from engine.ppt_engine import remplir_template
-from engine.pdf_engine import convertir_pptx_en_pdf
-from engine.tournament_build import (
-    chemin_template,
-    construire_nom_export,
-    construire_tournoi_et_matchs,
-)
-
-FORMATS_DISPONIBLES = [8, 12, 16, 20, 24]
+from engine.live_export import construire_payload_live
+from engine.live_template_cache import charger_cache_live
+from engine.tournament_build import chemin_template, construire_tournoi_et_matchs
 
 
-def generate_tournament(
+def init_live_session(
+    pdf_path,
+    pdf_filename: str,
     excel_path,
     club,
     date_tournoi,
@@ -32,7 +28,11 @@ def generate_tournament(
     format_match_finale="identique",
     format_match_poule="identique",
 ):
+    """Session live depuis un PDF Engine — sans python-pptx ni LibreOffice."""
+    from api.live_store import creer_session
+
     base_dir = Path(base_dir)
+    pdf_path = Path(pdf_path)
 
     tournoi, matchs = construire_tournoi_et_matchs(
         excel_path=excel_path,
@@ -55,39 +55,25 @@ def generate_tournament(
     )
 
     template_path = chemin_template(tournoi, base_dir)
-    exports_dir = base_dir / "exports"
-    exports_dir.mkdir(parents=True, exist_ok=True)
+    cache = charger_cache_live(template_path)
 
-    nom_export = construire_nom_export(
-        type_tournoi=tournoi.type_tournoi,
-        club=tournoi.club,
-        date_tournoi=tournoi.date_tournoi,
+    live_token, _pages_dir, page_sizes = creer_session(
+        pdf_path,
+        pdf_filename,
+        cache["page_map"],
+        logo_path=logo_path,
+        move_pdf=True,
+        page_sizes=cache["page_sizes"],
     )
 
-    pptx_path = exports_dir / f"{nom_export}.pptx"
-
-    remplir_template(
-        template_path=template_path,
-        output_path=pptx_path,
+    return construire_payload_live(
         tournoi=tournoi,
         matchs=matchs,
-        logo_path=logo_path,
-    )
-
-    return convertir_pptx_en_pdf(
-        pptx_path=pptx_path,
-        output_dir=exports_dir,
-    )
-
-
-# Rétrocompat tests / scripts
-def init_live_session(*args, **kwargs):
-    from engine.live_init import init_live_session as _init
-
-    return _init(*args, **kwargs)
-
-
-def generate_tournament_live(*args, **kwargs):
-    raise RuntimeError(
-        "generate_tournament_live est obsolète : utilisez generate_tournament + init_live_session."
+        page_map=cache["page_map"],
+        live_token=live_token,
+        page_sizes=page_sizes,
+        pdf_filename=pdf_filename,
+        layout_path=None,
+        pdf_path=None,
+        planning_layout=cache.get("planning_layout") or {},
     )
