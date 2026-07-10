@@ -1,5 +1,6 @@
 from copy import deepcopy
 from datetime import datetime, timedelta
+from pathlib import Path
 import re
 
 from engine.points_engine import get_points
@@ -1011,6 +1012,9 @@ def remplir_template_8(
 def remplacer_logo(prs, logo_path=None, club=""):
     logo_size = None
     if logo_path:
+        from engine.logo_trim import rogner_logo_fichier
+
+        logo_path = rogner_logo_fichier(Path(logo_path))
         with Image.open(logo_path) as img:
             logo_size = img.size
 

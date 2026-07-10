@@ -73,6 +73,13 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
         return Path(tmp.name)
 
 
+def _ecrire_logo_temporaire(upload: UploadFile, suffix: str) -> Path:
+    from engine.logo_trim import rogner_logo_fichier
+
+    chemin = _ecrire_fichier_temporaire(upload, suffix)
+    return rogner_logo_fichier(chemin)
+
+
 @app.get("/api/health")
 def health():
     global _PYMUPDF_OK
@@ -245,7 +252,7 @@ async def init_live(
     logo_path = None
     if logo is not None and logo.filename:
         suffix = Path(logo.filename).suffix or ".png"
-        logo_path = _ecrire_fichier_temporaire(logo, suffix)
+        logo_path = _ecrire_logo_temporaire(logo, suffix)
 
     try:
         from engine.live_init import init_live_session
@@ -544,7 +551,7 @@ async def generate(
     logo_path = None
     if logo is not None and logo.filename:
         suffix = Path(logo.filename).suffix or ".png"
-        logo_path = _ecrire_fichier_temporaire(logo, suffix)
+        logo_path = _ecrire_logo_temporaire(logo, suffix)
 
     form_fields = {
         "club": club,

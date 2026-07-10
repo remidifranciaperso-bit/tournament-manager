@@ -1,5 +1,9 @@
+/** Taille des libellés brush bleus (onglets Manager) et des logos pied de page. */
 export const LIVE_BRUSH_LABEL_SIZE_CLASS =
-  "text-[clamp(1.35rem,3vw,2rem)]";
+  "text-[clamp(1.85rem,4.2vw,2.85rem)]";
+
+export const LIVE_LOGO_HEIGHT_CLASS =
+  "h-[clamp(1.85rem,4.2vw,2.85rem)]";
 
 export const LIVE_BRUSH_LABEL_CLASS = [
   "font-brush leading-none text-template-blue",

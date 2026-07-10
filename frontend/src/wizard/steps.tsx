@@ -12,6 +12,8 @@ import {
   WizardPageTitle,
 } from "../components/Icons";
 import { PadelBall } from "../components/PadelBall";
+import { LIVE_LOGO_HEIGHT_CLASS } from "../manager/LiveTabTitle";
+import { trimLogoFile } from "../utils/trimLogoImage";
 import {
   GhostButton,
   LimeChoice,
@@ -294,6 +296,7 @@ export function ClubStep({
   patch: (p: Partial<TournamentForm>) => void;
 }) {
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [logoTrimming, setLogoTrimming] = useState(false);
 
   useEffect(() => {
     if (!form.logoFile || form.pasDeLogo) {
@@ -341,7 +344,7 @@ export function ClubStep({
                   <img
                     src={logoPreviewUrl}
                     alt="Aperçu du logo"
-                    className="h-full w-auto max-w-full object-contain object-center"
+                    className={`${LIVE_LOGO_HEIGHT_CLASS} w-auto max-w-full object-contain object-center`}
                   />
                 </div>
                 <p className="text-sm text-white/50">{form.logoFile.name}</p>
@@ -355,10 +358,17 @@ export function ClubStep({
               <FileDrop
                 accept=".png,.jpg,.jpeg"
                 file={null}
-                onFile={(f) => {
-                  if (f) patch({ logoFile: f, pasDeLogo: false });
+                onFile={async (f) => {
+                  if (!f) return;
+                  setLogoTrimming(true);
+                  try {
+                    const trimmed = await trimLogoFile(f);
+                    patch({ logoFile: trimmed, pasDeLogo: false });
+                  } finally {
+                    setLogoTrimming(false);
+                  }
                 }}
-                title="Glissez votre logo ici"
+                title={logoTrimming ? "Préparation du logo…" : "Glissez votre logo ici"}
                 hint="PNG ou JPG"
                 icon={<IconLogo className="h-7 w-7" />}
                 variant="lime"
@@ -817,7 +827,7 @@ export function SummaryStep({
           <img
             src={logoPreviewUrl}
             alt="Logo du club"
-            className="ml-auto h-10 max-w-[88px] object-contain"
+            className={`${LIVE_LOGO_HEIGHT_CLASS} ml-auto max-w-[88px] object-contain`}
           />
         ),
     },
