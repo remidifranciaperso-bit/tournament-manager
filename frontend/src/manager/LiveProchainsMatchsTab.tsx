@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import { CourtFooterSlot, CourtScheduledTime, LiveCourtsRow } from "./LiveCourtCard";
-import { matchQueuesByTerrain } from "./liveCourtMatches";
+import {
+  matchQueuesByTerrain,
+  upcomingDisplayByTerrain,
+} from "./liveCourtMatches";
 import type { LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
 
@@ -10,6 +13,7 @@ interface LiveProchainsMatchsTabProps {
   completed: Set<string>;
   matchResults: Record<string, StoredMatchResult>;
   started: boolean;
+  awaitingLaunch: Set<string>;
 }
 
 export function LiveProchainsMatchsTab({
@@ -18,11 +22,17 @@ export function LiveProchainsMatchsTab({
   completed,
   matchResults,
   started,
+  awaitingLaunch,
 }: LiveProchainsMatchsTabProps) {
-  const { upcoming: matchByTerrain } = useMemo(
-    () => matchQueuesByTerrain(matches, terrains, completed, matchResults),
-    [matches, terrains, completed, matchResults]
-  );
+  const matchByTerrain = useMemo(() => {
+    const queues = matchQueuesByTerrain(
+      matches,
+      terrains,
+      completed,
+      matchResults
+    );
+    return upcomingDisplayByTerrain(queues, terrains, awaitingLaunch);
+  }, [matches, terrains, completed, matchResults, awaitingLaunch]);
 
   if (!started) {
     return (

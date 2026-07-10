@@ -87,6 +87,8 @@ interface LiveMatchsEnCoursTabProps {
     code: string,
     score: Omit<StoredMatchResult, "code" | "validatedAt">
   ) => void;
+  awaitingLaunch: Set<string>;
+  setAwaitingLaunch: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
 export function LiveMatchsEnCoursTab({
@@ -104,12 +106,11 @@ export function LiveMatchsEnCoursTab({
   onExportPhaseChange,
   onStart,
   onCompleteMatch,
+  awaitingLaunch,
+  setAwaitingLaunch,
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
   const [exportError, setExportError] = useState<string | null>(null);
-  const [awaitingLaunch, setAwaitingLaunch] = useState<Set<string>>(
-    () => new Set()
-  );
   const [launchBlockedMessage, setLaunchBlockedMessage] = useState<
     Map<string, string>
   >(() => new Map());

@@ -4,6 +4,7 @@ import type { MatchFormatCode } from "./matchFormats";
 import type { CourtMatchDisplay } from "./liveCourtMatches";
 import { getSetScoreOptions } from "./matchScoreRules";
 import type { SetScore } from "./matchScoreRules";
+import { hasAnyCourtTeam } from "./courtTeamsReady";
 import { parseTeamLabel, type ParsedTeam } from "./parseTeamLabel";
 
 /** Décalage vertical des encarts vers le centre (évite le bord des lignes). */
@@ -315,7 +316,7 @@ export function LiveCourtCard({
               )}
             </button>
           </div>
-        ) : match && equipe1 && equipe2 ? (
+        ) : match && hasAnyCourtTeam(match.equipe1, match.equipe2) ? (
           <>
             <div
               className={`absolute inset-x-0 top-0 z-10 flex h-1/2 items-center justify-center ${COURT_TEAM_BADGE_TOP_CLASS}`}

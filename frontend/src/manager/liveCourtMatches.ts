@@ -79,6 +79,30 @@ export function matchQueuesByTerrain(
   return { current, upcoming };
 }
 
+/**
+ * Prochains matchs affichés par terrain :
+ * - terrain en attente de lancement → le match retenu (file[0])
+ * - sinon → le match d'après celui en cours (file[1])
+ */
+export function upcomingDisplayByTerrain(
+  queues: TerrainMatchQueues,
+  terrains: string[],
+  awaitingLaunch: Set<string>
+): Map<string, CourtMatchDisplay | null> {
+  const result = new Map<string, CourtMatchDisplay | null>();
+
+  for (const terrain of terrains) {
+    result.set(
+      terrain,
+      awaitingLaunch.has(terrain)
+        ? queues.current.get(terrain) ?? null
+        : queues.upcoming.get(terrain) ?? null
+    );
+  }
+
+  return result;
+}
+
 /** @deprecated Utiliser matchQueuesByTerrain */
 export function firstMatchByTerrain(
   matches: LiveMatch[],

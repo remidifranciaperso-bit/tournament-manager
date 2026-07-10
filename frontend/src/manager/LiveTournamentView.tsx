@@ -111,6 +111,9 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const [mainPage, setMainPage] = useState(0);
   const [classementPage, setClassementPage] = useState(0);
   const [planningPage, setPlanningPage] = useState(0);
+  const [awaitingLaunch, setAwaitingLaunch] = useState<Set<string>>(
+    () => new Set()
+  );
   const [exportPhase, setExportPhase] = useState<ExportPhase>("idle");
   const [exportCaptureTarget, setExportCaptureTarget] =
     useState<ExportCaptureTarget | null>(null);
@@ -380,6 +383,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   onExportPhaseChange={setExportPhase}
                   onStart={progress.startTournament}
                   onCompleteMatch={progress.completeMatch}
+                  awaitingLaunch={awaitingLaunch}
+                  setAwaitingLaunch={setAwaitingLaunch}
                 />
               </div>
 
@@ -390,6 +395,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   completed={progress.completed}
                   matchResults={progress.matchResults}
                   started={progress.started}
+                  awaitingLaunch={awaitingLaunch}
                 />
               </div>
 
