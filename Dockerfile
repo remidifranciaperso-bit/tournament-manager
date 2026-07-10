@@ -1,6 +1,6 @@
-# Runtime Python + LibreOffice.
-# Le frontend est servi depuis frontend/dist (pre-build commité, pas de npm ici).
-# Preview Manager : PDF généré par Engine prod (ENGINE_GENERATE_URL), pas en local.
+# Runtime Python + LibreOffice
+# Le front est pre-compile (frontend/dist) et versionne dans git
+# pour garantir que chaque deploy Render sert la bonne version.
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -24,8 +24,8 @@ RUN fc-cache -f -v > /dev/null
 
 WORKDIR /app
 
-COPY requirements-docker.txt .
-RUN pip install --no-cache-dir -r requirements-docker.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
