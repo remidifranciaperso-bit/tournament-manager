@@ -35,6 +35,7 @@ def creer_session(
     *,
     move_pdf: bool = False,
     page_indices: list[int] | None = None,
+    page_sizes: dict[str, dict[str, float]] | None = None,
 ) -> tuple[str, Path, dict[str, dict[str, float]]]:
     nettoyer_sessions_expirees()
     token = uuid.uuid4().hex
@@ -58,8 +59,8 @@ def creer_session(
             ext = source.suffix.lower() or ".png"
             shutil.copy2(source, session_dir / f"logo{ext}")
 
-    page_sizes: dict[str, dict[str, float]] = {}
-    if page_indices:
+    page_sizes = page_sizes or {}
+    if not page_sizes and page_indices:
         from engine.pdf_pages import lire_tailles_pages
 
         page_sizes = lire_tailles_pages(dest_pdf, page_indices)

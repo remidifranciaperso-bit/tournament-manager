@@ -84,6 +84,7 @@ def construire_payload_live(
     pdf_filename: str,
     layout_path=None,
     pdf_path=None,
+    planning_layout: dict | None = None,
 ) -> dict:
     """
     Manager live = PDF Engine découpé par onglet (``/api/live/{token}/page/N``).
@@ -99,8 +100,7 @@ def construire_payload_live(
 
     fields = construire_champs_live(tournoi, matchs)
 
-    planning_layout: dict = {}
-    if layout_path is not None:
+    if planning_layout is None and layout_path is not None:
         from engine.live_layout import (
             calibrer_planning_layout_pdf,
             extraire_layout_planning,
@@ -109,6 +109,9 @@ def construire_payload_live(
         planning_layout = extraire_layout_planning(layout_path, page_map)
         if pdf_path is not None:
             planning_layout = calibrer_planning_layout_pdf(planning_layout, pdf_path)
+
+    planning_layout = planning_layout or {}
+    if planning_layout:
         planning_layout = _enrichir_planning_layout(planning_layout, fields)
 
     from api.live_store import chemin_logo
