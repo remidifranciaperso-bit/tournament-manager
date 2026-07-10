@@ -30,7 +30,7 @@ from engine.excel_reader import lire_excel
 from engine.live_pdf_export import exporter_pdf_tournoi_manager
 from engine.notify_engine import envoyer_notification_proprietaire, mode_notification
 from engine.team_builder import construire_paires
-from engine.tournament_engine import generate_tournament, generate_tournament_live
+from engine.tournament_engine import generate_tournament, init_live_session
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
 
@@ -97,7 +97,7 @@ def health():
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-07e",
+        "version": "2026-07-10a",
         "live": "engine-pdf" if soffice else None,
         "pymupdf": pymupdf_ok,
         "soffice": bool(soffice),
@@ -184,8 +184,10 @@ async def preview(excel: UploadFile = File(...)):
     }
 
 
-@app.post("/api/generate-live")
-async def generate_live(
+@app.post("/api/live/init")
+async def init_live(
+    pdf_token: str = Form(...),
+    pdf_filename: str = Form("tournoi.pdf"),
     excel: UploadFile = File(...),
     logo: UploadFile | None = File(None),
     club: str = Form(""),
@@ -205,8 +207,16 @@ async def generate_live(
     format_match_poule: str = Form("identique"),
 ):
     """
-    Génère le tournoi (PDF) et renvoie les données structurées pour le Manager live.
+    Étape 2 du Manager live : session + données structurées à partir du PDF
+    déjà généré par ``POST /api/generate`` (même chemin qu'Engine).
     """
+    pdf_path = chemin_pdf(pdf_token)
+    if pdf_path is None:
+        raise HTTPException(
+            status_code=404,
+            detail="PDF Engine introuvable ou expiré. Regénérez le tournoi.",
+        )
+
     try:
         heures = json.loads(heures_debut_jours)
         liste_terrains = json.loads(terrains)
@@ -227,7 +237,9 @@ async def generate_live(
         logo_path = _ecrire_fichier_temporaire(logo, suffix)
 
     try:
-        payload = generate_tournament_live(
+        payload = init_live_session(
+            pdf_path=pdf_path,
+            pdf_filename=pdf_filename,
             excel_path=excel_path,
             club=club,
             date_tournoi=date_tournoi,
@@ -251,13 +263,46 @@ async def generate_live(
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Erreur de generation : {exc}")
+        raise HTTPException(status_code=500, detail=f"Erreur live init : {exc}")
     finally:
         excel_path.unlink(missing_ok=True)
         if logo_path is not None:
             logo_path.unlink(missing_ok=True)
+        supprimer_pdf(pdf_token)
 
     return payload
+
+
+@app.post("/api/generate-live")
+async def generate_live(
+    excel: UploadFile = File(...),
+    logo: UploadFile | None = File(None),
+    club: str = Form(""),
+    date_tournoi: str = Form(...),
+    type_tournoi: str = Form(...),
+    genre_tournoi: str = Form(...),
+    mode_tournoi: str = Form("Élimination directe"),
+    methode_poules: str = Form("Méthode du serpentin"),
+    nb_jours: int = Form(1),
+    heures_debut_jours: str = Form("[]"),
+    duree_match: int = Form(40),
+    terrains: str = Form("[]"),
+    terrain_principal: str = Form(...),
+    format_match_tableau_principal: str | None = Form(None),
+    format_match_classement: str = Form("identique"),
+    format_match_finale: str = Form("identique"),
+    format_match_poule: str = Form("identique"),
+):
+    """
+    Déprécié : le Manager utilise POST /api/generate puis POST /api/live/init.
+    """
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "Endpoint obsolète. Le Manager live passe par /api/generate "
+            "(Engine) puis /api/live/init."
+        ),
+    )
 
 
 @app.get("/api/live/{token}/page/{index}.png")
@@ -458,6 +503,10 @@ async def generate(
     duree_match: int = Form(40),
     terrains: str = Form("[]"),
     terrain_principal: str = Form(...),
+    format_match_tableau_principal: str | None = Form(None),
+    format_match_classement: str = Form("identique"),
+    format_match_finale: str = Form("identique"),
+    format_match_poule: str = Form("identique"),
 ):
     """
     Genere le dossier tournoi (PPTX -> PDF) et renvoie le PDF.
@@ -499,6 +548,10 @@ async def generate(
             heures_debut_jours=heures,
             logo_path=logo_path,
             methode_poules=methode_poules,
+            format_match_tableau_principal=format_match_tableau_principal,
+            format_match_classement=format_match_classement,
+            format_match_finale=format_match_finale,
+            format_match_poule=format_match_poule,
         )
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))

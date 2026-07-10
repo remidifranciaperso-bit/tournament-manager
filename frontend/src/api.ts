@@ -104,15 +104,8 @@ export async function previewExcel(file: File): Promise<PreviewResult> {
   return res.json();
 }
 
-export async function generateLiveTournament(
-  form: TournamentForm
-): Promise<LiveTournamentData> {
-  if (!form.excelFile) throw new Error("Fichier Excel manquant.");
-
-  await assertLiveApiReady();
-
-  const body = new FormData();
-  body.append("excel", form.excelFile);
+function appendTournamentFormFields(body: FormData, form: TournamentForm): void {
+  body.append("excel", form.excelFile!);
   if (form.logoFile && !form.pasDeLogo) {
     body.append("logo", form.logoFile);
   }
@@ -136,15 +129,37 @@ export async function generateLiveTournament(
   body.append("format_match_classement", form.formatMatchClassement);
   body.append("format_match_finale", form.formatMatchFinale);
   body.append("format_match_poule", form.formatMatchPoule);
+}
 
-  const res = await fetch("/api/generate-live", { method: "POST", body });
+export async function generateLiveTournament(
+  form: TournamentForm
+): Promise<LiveTournamentData> {
+  if (!form.excelFile) throw new Error("Fichier Excel manquant.");
+
+  await assertLiveApiReady();
+
+  // Étape 1 — identique à Engine (POST /api/generate), libère la RAM avant le live.
+  const { notifyToken, filename } = await generateTournament(form);
+  if (!notifyToken) {
+    throw new Error(
+      "Génération PDF Engine sans jeton. Relancez l'API ou réessayez."
+    );
+  }
+
+  // Étape 2 — session live légère (Excel + cache template, pas de LibreOffice).
+  const body = new FormData();
+  body.append("pdf_token", notifyToken);
+  body.append("pdf_filename", filename);
+  appendTournamentFormFields(body, form);
+
+  const res = await fetch("/api/live/init", { method: "POST", body });
   if (!res.ok) throw new Error(await readError(res));
 
   const data = (await res.json()) as LiveTournamentData;
 
   if (!data.live_token || !data.page_map || !data.page_sizes) {
     throw new Error(
-      "Réponse live incomplète. Vérifiez LibreOffice sur le serveur et relancez l'API."
+      "Réponse live incomplète. Vérifiez l'API et relancez la génération."
     );
   }
 
@@ -157,21 +172,7 @@ export async function generateTournament(
   if (!form.excelFile) throw new Error("Fichier Excel manquant.");
 
   const body = new FormData();
-  body.append("excel", form.excelFile);
-  if (form.logoFile && !form.pasDeLogo) {
-    body.append("logo", form.logoFile);
-  }
-  body.append("club", form.club);
-  body.append("date_tournoi", form.dateTournoi);
-  body.append("type_tournoi", form.typeTournoi);
-  body.append("genre_tournoi", form.genreTournoi);
-  body.append("mode_tournoi", form.modeTournoi);
-  body.append("methode_poules", form.methodePoules);
-  body.append("nb_jours", String(form.nbJours));
-  body.append("heures_debut_jours", JSON.stringify(form.heuresDebutJours));
-  body.append("duree_match", String(form.dureeMatch));
-  body.append("terrains", JSON.stringify(form.terrains));
-  body.append("terrain_principal", form.terrainPrincipal);
+  appendTournamentFormFields(body, form);
 
   const res = await fetch("/api/generate", { method: "POST", body });
   if (!res.ok) throw new Error(await readError(res));
