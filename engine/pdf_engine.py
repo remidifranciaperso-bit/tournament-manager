@@ -40,6 +40,7 @@ def trouver_soffice():
 def _environnement_libreoffice_silencieux():
     env = os.environ.copy()
     env["SAL_USE_VCLPLUGIN"] = "svp"
+    env["SAL_DISABLE_OPENCL"] = "1"
     env.setdefault("LANG", "C.UTF-8")
     return env
 
@@ -98,26 +99,7 @@ def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie
             "--norestore",
             f"-env:UserInstallation={user_installation}",
             "--convert-to",
-            (
-                "pdf:impress_pdf_Export:"
-                "{"
-                '"SelectPdfVersion":{"type":"long","value":"1"},'
-                '"Quality":{"type":"long","value":"90"},'
-                '"ReduceImageResolution":{"type":"boolean","value":"true"},'
-                '"MaxImageResolution":{"type":"long","value":"150"}'
-                "}"
-            )
-            if os.environ.get("RENDER_LOW_MEMORY", "1").strip().lower()
-            not in ("0", "false", "no")
-            else (
-                "pdf:impress_pdf_Export:"
-                "{"
-                '"SelectPdfVersion":{"type":"long","value":"1"},'
-                '"Quality":{"type":"long","value":"100"},'
-                '"ReduceImageResolution":{"type":"boolean","value":"false"},'
-                '"MaxImageResolution":{"type":"long","value":"600"}'
-                "}"
-            ),
+            "pdf",
             "--outdir",
             str(output_dir),
             str(pptx_path),
