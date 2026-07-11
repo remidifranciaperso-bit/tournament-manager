@@ -98,7 +98,26 @@ def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie
             "--norestore",
             f"-env:UserInstallation={user_installation}",
             "--convert-to",
-            "pdf",
+            (
+                "pdf:impress_pdf_Export:"
+                "{"
+                '"SelectPdfVersion":{"type":"long","value":"1"},'
+                '"Quality":{"type":"long","value":"90"},'
+                '"ReduceImageResolution":{"type":"boolean","value":"true"},'
+                '"MaxImageResolution":{"type":"long","value":"150"}'
+                "}"
+            )
+            if os.environ.get("RENDER_LOW_MEMORY", "1").strip().lower()
+            not in ("0", "false", "no")
+            else (
+                "pdf:impress_pdf_Export:"
+                "{"
+                '"SelectPdfVersion":{"type":"long","value":"1"},'
+                '"Quality":{"type":"long","value":"100"},'
+                '"ReduceImageResolution":{"type":"boolean","value":"false"},'
+                '"MaxImageResolution":{"type":"long","value":"600"}'
+                "}"
+            ),
             "--outdir",
             str(output_dir),
             str(pptx_path),

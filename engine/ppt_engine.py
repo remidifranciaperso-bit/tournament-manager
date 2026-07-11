@@ -7,6 +7,7 @@ from engine.points_engine import get_points
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
+from pptx.util import Pt
 from PIL import Image
 
 # Emojis Noto Color (Dockerfile installe fonts-noto-color-emoji).
@@ -15,6 +16,38 @@ ICONE_PERDANT = "❌ "
 ICONE_PREMIER = "🏆 "
 ICONE_DEUXIEME = "🥈 "
 ICONE_TROISIEME = "🥉 "
+
+# Tailles template (TEMPLATES_24_BLEUS_SPEC) : placeholder plus petit que équipe.
+TEMPLATE_PT_TEAM = 12
+TEMPLATE_PT_PLACEHOLDER = 8.5
+_PREFIXES_PLACEHOLDER = (ICONE_VAINQUEUR, ICONE_PERDANT, ICONE_DEUXIEME, ICONE_TROISIEME)
+
+
+def _est_libelle_placeholder(texte: str) -> bool:
+    return any(texte.startswith(prefixe) for prefixe in _PREFIXES_PLACEHOLDER)
+
+
+def _taille_max_runs(paragraphe) -> int | None:
+    max_size = None
+    for run in paragraphe.runs:
+        if run.font.size is not None:
+            if max_size is None or run.font.size > max_size:
+                max_size = run.font.size
+    return max_size
+
+
+def _ajuster_police_cellule(paragraphe, texte: str, taille_template_max: int | None) -> None:
+    """Placeholder 🏆/❌ → 8.5 pt ; nom d'équipe qualifiée → taille max template."""
+    if not paragraphe.runs:
+        return
+
+    run = paragraphe.runs[0]
+    if _est_libelle_placeholder(texte):
+        run.font.size = Pt(TEMPLATE_PT_PLACEHOLDER)
+    elif taille_template_max is not None:
+        run.font.size = taille_template_max
+    else:
+        run.font.size = Pt(TEMPLATE_PT_TEAM)
 
 
 def format_date(date_str):
@@ -256,11 +289,14 @@ def remplacer_dans_paragraphe(paragraphe, valeurs):
     )
 
     if nouveau != texte_original:
+        taille_template_max = _taille_max_runs(paragraphe)
         if paragraphe.runs:
             paragraphe.runs[0].text = nouveau
 
             for run in paragraphe.runs[1:]:
                 run.text = ""
+
+            _ajuster_police_cellule(paragraphe, nouveau, taille_template_max)
         else:
             paragraphe.text = nouveau
 
