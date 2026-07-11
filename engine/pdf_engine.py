@@ -74,23 +74,6 @@ def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess
         )
 
 
-def _options_export_pdf_impress():
-    """Réduit la RAM LibreOffice sur hébergement 512 Mo (Render starter)."""
-    if os.environ.get("RENDER_LOW_MEMORY", "1").strip().lower() not in (
-        "0",
-        "false",
-        "no",
-    ):
-        return (
-            '"ReduceImageResolution":{"type":"boolean","value":"true"},'
-            '"MaxImageResolution":{"type":"long","value":"150"}'
-        )
-    return (
-        '"ReduceImageResolution":{"type":"boolean","value":"false"},'
-        '"MaxImageResolution":{"type":"long","value":"600"}'
-    )
-
-
 def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie="pdf"):
     """
     Conversion PPTX -> PDF (ou autre) via LibreOffice en mode headless/invisible.
@@ -115,14 +98,7 @@ def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie
             "--norestore",
             f"-env:UserInstallation={user_installation}",
             "--convert-to",
-            (
-                "pdf:impress_pdf_Export:"
-                "{"
-                '"SelectPdfVersion":{"type":"long","value":"1"},'
-                '"Quality":{"type":"long","value":"90"},'
-                + _options_export_pdf_impress()
-                + "}"
-            ),
+            "pdf",
             "--outdir",
             str(output_dir),
             str(pptx_path),

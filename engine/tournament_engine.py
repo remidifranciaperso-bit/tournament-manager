@@ -48,6 +48,7 @@ def verifier_template_existe(template_path):
             f"Template introuvable : {template_path}"
         )
 
+
 def generate_tournament(
     excel_path,
     club,
@@ -167,8 +168,18 @@ def generate_tournament(
         club=tournoi.club,
         date_tournoi=tournoi.date_tournoi,
     )
-
+    pdf_filename = f"{nom_export}.pdf"
     pptx_path = exports_dir / f"{nom_export}.pptx"
+
+    from engine.pack_snapshot import ecrire_snapshot_temporaire, lire_snapshot
+
+    snapshot_path = ecrire_snapshot_temporaire(
+        tournoi,
+        matchs,
+        template_path,
+        pdf_filename,
+    )
+    gc.collect()
 
     remplir_template(
         template_path=template_path,
@@ -177,26 +188,18 @@ def generate_tournament(
         matchs=matchs,
         logo_path=logo_path,
     )
+
+    del tournoi, matchs, teams
     gc.collect()
 
     pdf_path = convertir_pptx_en_pdf(
         pptx_path=pptx_path,
         output_dir=exports_dir,
     )
+    pptx_path.unlink(missing_ok=True)
     gc.collect()
 
-    from engine.live_snapshot import construire_snapshot_engine
-    from engine.live_template_cache import charger_cache_live
-
-    cache = charger_cache_live(template_path)
-    pdf_filename = f"{nom_export}.pdf"
-    snapshot = construire_snapshot_engine(
-        tournoi,
-        matchs,
-        cache,
-        pdf_filename,
-    )
-    del cache
-    gc.collect()
+    snapshot = lire_snapshot(snapshot_path)
+    snapshot_path.unlink(missing_ok=True)
 
     return pdf_path, snapshot

@@ -1011,14 +1011,6 @@ def remplir_template_8(
     )
 
 def remplacer_logo(prs, logo_path=None, club=""):
-    logo_size = None
-    if logo_path:
-        from engine.logo_trim import rogner_logo_fichier
-
-        logo_path = rogner_logo_fichier(Path(logo_path))
-        with Image.open(logo_path) as img:
-            logo_size = img.size
-
     for slide in prs.slides:
         for shape in list(parcourir_shapes(slide.shapes)):
 
@@ -1033,9 +1025,11 @@ def remplacer_logo(prs, logo_path=None, club=""):
             box_w = shape.width
             box_h = shape.height
 
-            if logo_path and logo_size:
+            if logo_path:
                 marge = 0.05
-                img_w, img_h = logo_size
+
+                with Image.open(logo_path) as img:
+                    img_w, img_h = img.size
 
                 max_w = int(box_w * (1 - marge * 2))
                 max_h = int(box_h * (1 - marge * 2))
