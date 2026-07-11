@@ -9,12 +9,12 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
 from PIL import Image
 
-# Libellés texte TSL Sans (zéro image, zéro police extra).
-ICONE_VAINQUEUR = "Gagnants "
-ICONE_PERDANT = "Perdants "
-ICONE_PREMIER = "1er "
-ICONE_DEUXIEME = "2e "
-ICONE_TROISIEME = "3 "
+# Emojis Noto Color (Dockerfile installe fonts-noto-color-emoji).
+ICONE_VAINQUEUR = "🏆 "
+ICONE_PERDANT = "❌ "
+ICONE_PREMIER = "🏆 "
+ICONE_DEUXIEME = "🥈 "
+ICONE_TROISIEME = "🥉 "
 
 
 def format_date(date_str):
