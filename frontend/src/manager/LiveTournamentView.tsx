@@ -117,8 +117,6 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const [exportPhase, setExportPhase] = useState<ExportPhase>("idle");
   const [exportCaptureTarget, setExportCaptureTarget] =
     useState<ExportCaptureTarget | null>(null);
-  const exportCapturing = exportPhase === "capture";
-  const exportUploading = exportPhase === "upload";
   const exportingPdf = exportPhase !== "idle";
 
   const captureExportPages = useCallback(async () => {
@@ -355,7 +353,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           ].join(" ")}
         >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {!exportUploading && <LiveTabTitle label={activeTabLabel} />}
+            <LiveTabTitle label={activeTabLabel} />
             <div
               className={
                 isBracketTab
@@ -419,14 +417,6 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           </div>
         </div>
       </div>
-
-      {exportUploading && (
-        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-arena-950/55">
-          <p className="rounded-xl bg-white px-6 py-4 text-center font-semibold text-arena-800 shadow-lg">
-            Génération du PDF…
-          </p>
-        </div>
-      )}
 
       <ExportCaptureLayer
         target={exportCaptureTarget}

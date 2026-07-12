@@ -11,6 +11,7 @@ import { areCourtTeamsKnown, canLaunchNextMatch, TEAMS_UNAVAILABLE_MESSAGE } fro
 import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
+import type { ExportPhase } from "./exportCapture";
 import { downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
 import { LiveProjectionPage } from "./LiveProjectionPage";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -438,7 +439,7 @@ export function LiveMatchsEnCoursTab({
               }}
               className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15 disabled:cursor-wait disabled:opacity-60"
             >
-              {exportingPdf ? "Export en cours…" : "Exporter le PDF du tournoi"}
+              {exportingPdf ? "Téléchargement…" : "Exporter le PDF du tournoi"}
             </button>
             {exportError && (
               <p className="max-w-md text-sm text-red-600">{exportError}</p>
