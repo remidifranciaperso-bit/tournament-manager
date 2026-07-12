@@ -56,6 +56,7 @@ def composer_page_export(
     capture_data: str,
     *,
     section: str = "main",
+    footer_index: int = 0,
 ) -> None:
     """Fond blanc + bandeaux Engine (slide courante) + capture Manager."""
     rect = page.rect
@@ -74,6 +75,10 @@ def composer_page_export(
     if slide_index < 0 or slide_index >= source.page_count:
         raise RuntimeError(f"Page Engine introuvable pour l'index {slide_index}.")
 
+    footer_slide = footer_index
+    if footer_slide < 0 or footer_slide >= source.page_count:
+        footer_slide = 0
+
     engine_page = source[slide_index]
     engine_rect = engine_page.rect
     header_clip = fitz.Rect(
@@ -82,10 +87,14 @@ def composer_page_export(
     header_dest = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
     _fit_pdf_clip(page, source, slide_index, header_clip, header_dest)
 
-    footer_top = engine_rect.height * (1 - ENGINE_FOOTER_RATIO)
-    footer_clip = fitz.Rect(0, footer_top, engine_rect.width, engine_rect.height)
+    footer_engine_page = source[footer_slide]
+    footer_engine_rect = footer_engine_page.rect
+    footer_top = footer_engine_rect.height * (1 - ENGINE_FOOTER_RATIO)
+    footer_clip = fitz.Rect(
+        0, footer_top, footer_engine_rect.width, footer_engine_rect.height
+    )
     footer_dest = fitz.Rect(rect.x0, rect.y1 - footer_h, rect.x1, rect.y1)
-    _fit_pdf_clip(page, source, slide_index, footer_clip, footer_dest)
+    _fit_pdf_clip(page, source, footer_slide, footer_clip, footer_dest)
 
     page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 
@@ -119,6 +128,15 @@ def composer_page_export(
             stream=image_bytes,
             keep_proportion=True,
         )
+
+        gap_top = y0 + draw_h
+        if gap_top < content_rect.y1 - 0.5:
+            page.draw_rect(
+                fitz.Rect(content_rect.x0, gap_top, content_rect.x1, content_rect.y1),
+                color=None,
+                fill=(1, 1, 1),
+                overlay=False,
+            )
     finally:
         image.close()
 
