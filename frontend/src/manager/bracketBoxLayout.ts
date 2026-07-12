@@ -95,8 +95,8 @@ function isPrelimOnlySlide(codes: Set<string>): boolean {
 }
 
 /**
- * Tour préliminaire seul (P1…Pn) : colonne(s) centrée(s) horizontalement.
- * Les tops template sont conservés ; décalage vertical minimal si débordement bas.
+ * Tour préliminaire seul (P1…Pn) : colonne(s) centrée(s) horizontalement
+ * et verticalement (grille à espacement uniforme, même hauteur de boîte).
  */
 function applyPrelimColumnPositions(
   slots: ParsedMatchSlot[],
@@ -105,43 +105,35 @@ function applyPrelimColumnPositions(
   boxWidth: number,
   boxHeight: number
 ): void {
-  const MAX_BOTTOM_PCT = 100;
   const prelimSlots = slots.filter((slot) => isPrelimCode(slot.code));
   if (prelimSlots.length === 0) return;
 
-  const byColumn = new Map<number, Array<{ code: string; top: number }>>();
+  const byColumn = new Map<number, ParsedMatchSlot[]>();
   for (const slot of prelimSlots) {
     const pos = matchBoxPosition(slot);
     const key = columnKey(pos.x);
     const list = byColumn.get(key) ?? [];
-    list.push({ code: slot.code, top: pos.y });
+    list.push(slot);
     byColumn.set(key, list);
   }
 
   const columnKeys = [...byColumn.keys()].sort((a, b) => a - b);
 
   columnKeys.forEach((key, columnIndex) => {
-    const list = byColumn.get(key)!;
-    list.sort((a, b) => a.top - b.top);
+    const colSlots = byColumn.get(key)!;
+    colSlots.sort(
+      (a, b) => matchBoxPosition(a).y - matchBoxPosition(b).y
+    );
 
+    const grid = buildEqualGapGrid(colSlots.length, boxHeight);
     const spanWidth = PAGE_SPAN_PCT / columnKeys.length;
     const spanStart = columnIndex * spanWidth;
     const centeredLeft = spanStart + (spanWidth - boxWidth) / 2;
 
-    for (const item of list) {
-      tops.set(item.code, item.top);
-      lefts.set(item.code, centeredLeft);
-    }
-
-    const last = list[list.length - 1];
-    const lastTop = tops.get(last.code) ?? last.top;
-    const overflow = lastTop + boxHeight - MAX_BOTTOM_PCT;
-    if (overflow > 0) {
-      for (const item of list) {
-        const currentTop = tops.get(item.code) ?? item.top;
-        tops.set(item.code, Math.max(0, currentTop - overflow));
-      }
-    }
+    colSlots.forEach((slot, slotIndex) => {
+      tops.set(slot.code, grid.tops[slotIndex]);
+      lefts.set(slot.code, centeredLeft);
+    });
   });
 }
 

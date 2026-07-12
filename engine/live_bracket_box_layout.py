@@ -154,7 +154,6 @@ def _apply_prelim_column_positions(
     box_width: float,
     box_height: float,
 ) -> None:
-    max_bottom_pct = 100.0
     prelim_slots = [slot for slot in slots if _is_prelim_code(slot["code"])]
     if not prelim_slots:
         return
@@ -163,29 +162,24 @@ def _apply_prelim_column_positions(
     for slot in prelim_slots:
         pos = match_box_position(slot)
         key = _column_key(pos["x"])
-        by_column.setdefault(key, []).append({"code": slot["code"], "top": pos["y"]})
+        by_column.setdefault(key, []).append(slot)
 
     column_keys = sorted(by_column.keys())
 
     for column_index, key in enumerate(column_keys):
-        items = by_column[key]
-        items.sort(key=lambda item: item["top"])
+        col_slots = by_column[key]
+        col_slots.sort(
+            key=lambda slot: match_box_position(slot)["y"]
+        )
 
+        grid = build_equal_gap_grid(len(col_slots), box_height)
         span_width = PAGE_SPAN_PCT / len(column_keys)
         span_start = column_index * span_width
         centered_left = span_start + (span_width - box_width) / 2
 
-        for item in items:
-            tops[item["code"]] = item["top"]
-            lefts[item["code"]] = centered_left
-
-        last = items[-1]
-        last_top = tops.get(last["code"], last["top"])
-        overflow = last_top + box_height - max_bottom_pct
-        if overflow > 0:
-            for item in items:
-                current_top = tops.get(item["code"], item["top"])
-                tops[item["code"]] = max(0.0, current_top - overflow)
+        for slot_index, slot in enumerate(col_slots):
+            tops[slot["code"]] = grid["tops"][slot_index]
+            lefts[slot["code"]] = centered_left
 
 
 def resolve_match_box_layouts(
