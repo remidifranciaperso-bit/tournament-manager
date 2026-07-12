@@ -146,6 +146,13 @@ function GamesSelect({
   );
 }
 
+function footnoteUsesTwoLines(footnote: string): boolean {
+  const terrain = footnote.replace(/^Match en cours\s+/i, "").trim();
+  if (/^\d+$/.test(terrain)) return false;
+  if (/^terrain\s+\d+$/i.test(terrain)) return false;
+  return terrain.length > 14;
+}
+
 function TeamBadge({
   team,
   scoringMode,
@@ -169,6 +176,7 @@ function TeamBadge({
     isBracketPlaceholder(team.player1) &&
     !team.player2 &&
     !team.seed;
+  const longFootnote = Boolean(footnote && footnoteUsesTwoLines(footnote));
 
   if (centerPlaceholder) {
     return (
@@ -187,7 +195,7 @@ function TeamBadge({
       <div
         className={[
           "absolute inset-x-2.5 top-2 flex items-center justify-center",
-          footnote ? "bottom-[3.25rem]" : "bottom-9",
+          longFootnote ? "bottom-[3.25rem]" : "bottom-9",
         ].join(" ")}
       >
         <div className="flex max-w-full flex-col items-center gap-0.5">
@@ -197,7 +205,12 @@ function TeamBadge({
           )}
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-1.5 flex min-h-[2.75rem] items-center justify-center px-1">
+      <div
+        className={[
+          "absolute inset-x-0 flex items-center justify-center px-1",
+          longFootnote ? "bottom-1.5 min-h-[2.75rem]" : "bottom-2 h-7",
+        ].join(" ")}
+      >
         {scoringMode && gameOptions && onGamesChange ? (
           <GamesSelect
             value={games ?? 0}
@@ -208,8 +221,8 @@ function TeamBadge({
           />
         ) : footnote ? (
           <p
-            className={`${theme.seed} max-w-full text-center leading-tight`}
-            style={{ fontSize: "10px" }}
+            className={`${theme.seed} max-w-full text-center ${longFootnote ? "leading-tight" : ""}`}
+            style={longFootnote ? { fontSize: "10px" } : undefined}
           >
             {footnote}
           </p>
