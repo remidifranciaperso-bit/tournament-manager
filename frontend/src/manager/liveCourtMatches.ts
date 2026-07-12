@@ -7,8 +7,11 @@ import {
 import {
   feedKeyFromTeamLabel,
   formatCourtTeamSlot,
+  formatTeamSlot,
   isBracketPlaceholder,
 } from "./formatBracketLabel";
+
+export type CourtTeamSlotFormat = "bracket" | "upcoming";
 
 export interface CourtMatchDisplay {
   code: string;
@@ -18,8 +21,6 @@ export interface CourtMatchDisplay {
   heure: string | null;
   equipe1Footnote?: string | null;
   equipe2Footnote?: string | null;
-  equipe1IsPlaceholder?: boolean;
-  equipe2IsPlaceholder?: boolean;
 }
 
 export function sortMatchesForTerrain(
@@ -62,11 +63,21 @@ export function inProgressTerrainByMatchCode(
   return result;
 }
 
+function formatTeamForCourt(
+  resolved: string,
+  slotFormat: CourtTeamSlotFormat
+): string {
+  return slotFormat === "bracket"
+    ? formatTeamSlot(resolved)
+    : formatCourtTeamSlot(resolved);
+}
+
 function toDisplay(
   match: LiveMatch,
   matchesByCode: Map<string, LiveMatch>,
   matchResults: Record<string, StoredMatchResult>,
-  inProgressByCode: Map<string, string>
+  inProgressByCode: Map<string, string>,
+  slotFormat: CourtTeamSlotFormat
 ): CourtMatchDisplay {
   const rawEquipe1 = match.equipe1?.trim() || "—";
   const rawEquipe2 = match.equipe2?.trim() || "—";
@@ -99,11 +110,9 @@ function toDisplay(
   return {
     code: match.code,
     tour: match.tour,
-    equipe1: formatCourtTeamSlot(resolved1),
-    equipe2: formatCourtTeamSlot(resolved2),
+    equipe1: formatTeamForCourt(resolved1, slotFormat),
+    equipe2: formatTeamForCourt(resolved2, slotFormat),
     heure: match.heure?.trim() || null,
-    equipe1IsPlaceholder: isPlaceholder1,
-    equipe2IsPlaceholder: isPlaceholder2,
     equipe1Footnote: inProgressTerrain1
       ? `Match en cours ${inProgressTerrain1}`
       : null,
@@ -123,7 +132,8 @@ export function matchQueuesByTerrain(
   terrains: string[],
   completed: Set<string>,
   matchResults: Record<string, StoredMatchResult> = {},
-  awaitingLaunch: Set<string> = new Set()
+  awaitingLaunch: Set<string> = new Set(),
+  slotFormat: CourtTeamSlotFormat = "bracket"
 ): TerrainMatchQueues {
   const matchesByCode = buildMatchesByCode(matches);
   const inProgressByCode = inProgressTerrainByMatchCode(
@@ -143,13 +153,25 @@ export function matchQueuesByTerrain(
     current.set(
       terrain,
       queue[0]
-        ? toDisplay(queue[0], matchesByCode, matchResults, inProgressByCode)
+        ? toDisplay(
+            queue[0],
+            matchesByCode,
+            matchResults,
+            inProgressByCode,
+            slotFormat
+          )
         : null
     );
     upcoming.set(
       terrain,
       queue[1]
-        ? toDisplay(queue[1], matchesByCode, matchResults, inProgressByCode)
+        ? toDisplay(
+            queue[1],
+            matchesByCode,
+            matchResults,
+            inProgressByCode,
+            slotFormat
+          )
         : null
     );
   }

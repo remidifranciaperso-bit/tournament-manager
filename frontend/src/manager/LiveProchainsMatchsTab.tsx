@@ -25,13 +25,14 @@ export function LiveProchainsMatchsTab({
   awaitingLaunch,
 }: LiveProchainsMatchsTabProps) {
   const matchByTerrain = useMemo(() => {
-    const queues = matchQueuesByTerrain(
-      matches,
-      terrains,
-      completed,
-      matchResults,
-      awaitingLaunch
-    );
+    const queues =       matchQueuesByTerrain(
+        matches,
+        terrains,
+        completed,
+        matchResults,
+        awaitingLaunch,
+        "upcoming"
+      );
     return upcomingDisplayByTerrain(queues, terrains, awaitingLaunch);
   }, [matches, terrains, completed, matchResults, awaitingLaunch]);
 
