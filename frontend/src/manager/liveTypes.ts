@@ -73,4 +73,8 @@ export interface LiveTournamentData {
   page_sizes: Record<string, { width: number; height: number }>;
   pdf_filename: string;
   live_version?: string;
+  /** Logo en data URL (racine API, repli si meta.logo_url absent). */
+  logo_data_url?: string | null;
+  /** Logo base64 du snapshot Engine (repli ultime). */
+  logo_png?: string | null;
 }

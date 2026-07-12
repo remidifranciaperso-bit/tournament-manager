@@ -14,30 +14,92 @@ def _pixmap_to_png(pix: fitz.Pixmap, output_path: Path) -> None:
     pix.save(str(output_path))
 
 
-def _footer_candidates(page: fitz.Page) -> list[tuple[float, int]]:
-    footer_y = page.rect.height * 0.88
-    candidates: list[tuple[float, int]] = []
+def _iter_page_images(page: fitz.Page, doc: fitz.Document) -> list[tuple[int, int, int, fitz.Rect | None]]:
+    """(xref, width_px, height_px, bbox_en_points ou None)."""
+    images: list[tuple[int, int, int, fitz.Rect | None]] = []
+    seen: set[int] = set()
 
     try:
         for info in page.get_image_info(xrefs=True):
+            xref = int(info["xref"])
+            if xref in seen:
+                continue
+            seen.add(xref)
             bbox = fitz.Rect(info["bbox"])
+            images.append(
+                (
+                    xref,
+                    int(info["width"]),
+                    int(info["height"]),
+                    bbox,
+                )
+            )
+    except (AttributeError, TypeError, ValueError):
+        pass
+
+    for entry in page.get_images(full=True):
+        xref = int(entry[0])
+        if xref in seen:
+            continue
+        seen.add(xref)
+        try:
+            pix = fitz.Pixmap(doc, xref)
+        except Exception:
+            continue
+        images.append((xref, pix.width, pix.height, None))
+
+    return images
+
+
+def _footer_candidates(page: fitz.Page, doc: fitz.Document) -> list[tuple[float, int]]:
+    footer_y = page.rect.height * 0.88
+    candidates: list[tuple[float, int]] = []
+
+    for xref, width_px, height_px, bbox in _iter_page_images(page, doc):
+        if bbox is not None:
             if bbox.y0 < footer_y:
                 continue
-            width = int(info["width"])
-            height = int(info["height"])
-            if width < 16 or height < 16 or width > 320 or height > 320:
+            width_pt = bbox.width
+            height_pt = bbox.height
+            if width_pt < 8 or height_pt < 8:
                 continue
-            candidates.append((float(width * height), int(info["xref"])))
-    except (AttributeError, TypeError, ValueError):
-        for entry in page.get_images(full=True):
-            xref = int(entry[0])
-            try:
-                pix = fitz.Pixmap(page.parent, xref)
-            except Exception:
+            if width_pt > 220 or height_pt > 120:
                 continue
-            if pix.width < 16 or pix.height < 16 or pix.width > 320 or pix.height > 320:
+            area = float(width_pt * height_pt)
+        else:
+            if width_px < 16 or height_px < 16:
                 continue
-            candidates.append((float(pix.width * pix.height), xref))
+            if width_px > 512 or height_px > 512:
+                continue
+            area = float(width_px * height_px)
+
+        candidates.append((area, xref))
+
+    return candidates
+
+
+def _smallest_logo_candidates(page: fitz.Page, doc: fitz.Document) -> list[tuple[float, int]]:
+    """Repli : plus petite image raisonnable (en-tête ou pied de page)."""
+    page_area = page.rect.width * page.rect.height
+    candidates: list[tuple[float, int]] = []
+
+    for xref, width_px, height_px, bbox in _iter_page_images(page, doc):
+        if width_px < 16 or height_px < 16:
+            continue
+        if width_px > 512 or height_px > 512:
+            continue
+
+        if bbox is not None:
+            bbox_area = bbox.width * bbox.height
+            if bbox_area > page_area * 0.2:
+                continue
+            area = float(bbox_area)
+        else:
+            if float(width_px * height_px) > page_area * 0.2:
+                continue
+            area = float(width_px * height_px)
+
+        candidates.append((area, xref))
 
     return candidates
 
@@ -46,7 +108,7 @@ def extraire_logo_embarque_pdf(
     pdf_path: Path,
     output_path: Path,
 ) -> bool:
-    """Extrait le logo embarqué du pied de page PDF (image PNG, pas bandeau raster)."""
+    """Extrait le logo embarqué du PDF (pied de page, sinon plus petite image utile)."""
     pdf_path = Path(pdf_path)
     output_path = Path(output_path)
 
@@ -56,10 +118,17 @@ def extraire_logo_embarque_pdf(
         best_area = float("inf")
 
         for page_index in range(doc.page_count):
-            for area, xref in _footer_candidates(doc[page_index]):
+            for area, xref in _footer_candidates(doc[page_index], doc):
                 if area < best_area:
                     best_area = area
                     best_xref = xref
+
+        if best_xref is None:
+            for page_index in range(doc.page_count):
+                for area, xref in _smallest_logo_candidates(doc[page_index], doc):
+                    if area < best_area:
+                        best_area = area
+                        best_xref = xref
 
         if best_xref is None:
             return False

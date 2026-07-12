@@ -45,7 +45,7 @@ def init_live_from_snapshot(
     if logo_url is not None:
         meta["logo_url"] = logo_url
 
-    return {
+    payload = {
         "meta": meta,
         "matches": snapshot["matches"],
         "page_map": page_map,
@@ -56,6 +56,12 @@ def init_live_from_snapshot(
         "pdf_filename": pdf_filename,
         "live_version": "engine-pdf",
     }
+    if logo_url is not None:
+        payload["logo_data_url"] = logo_url
+    logo_png = snapshot.get("logo_png")
+    if logo_png:
+        payload["logo_png"] = logo_png
+    return payload
 
 
 def init_live_session(
@@ -140,5 +146,6 @@ def init_live_session(
     logo_url = logo_url_pour_meta(live_token)
     if logo_url is not None:
         payload["meta"]["logo_url"] = logo_url
+        payload["logo_data_url"] = logo_url
 
     return payload

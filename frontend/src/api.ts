@@ -1,6 +1,20 @@
 import type { PreviewResult, TournamentForm } from "./types";
 import type { LiveTournamentData } from "./manager/liveTypes";
 
+function normalizeLiveTournamentData(data: LiveTournamentData): LiveTournamentData {
+  const meta = { ...data.meta };
+  if (!meta.logo_url && data.logo_data_url) {
+    meta.logo_url = data.logo_data_url;
+  }
+  if (!meta.logo_url && data.logo_png) {
+    meta.logo_url = `data:image/png;base64,${data.logo_png}`;
+  }
+  if (!meta.logo_url && data.live_token) {
+    meta.logo_url = `/api/live/${data.live_token}/logo`;
+  }
+  return { ...data, meta };
+}
+
 export interface TournamentResume {
   club: string;
   date: string;
@@ -155,7 +169,9 @@ export async function generateLiveTournament(
   const res = await fetch("/api/live/init", { method: "POST", body });
   if (!res.ok) throw new Error(await readError(res));
 
-  const data = (await res.json()) as LiveTournamentData;
+  const data = normalizeLiveTournamentData(
+    (await res.json()) as LiveTournamentData
+  );
 
   if (!data.live_token || !data.page_map || !data.page_sizes) {
     throw new Error(
@@ -201,7 +217,9 @@ export async function initLiveFromPack(packFile: File): Promise<LiveTournamentDa
   const res = await fetch("/api/live/init-from-pack", { method: "POST", body });
   if (!res.ok) throw new Error(await readError(res));
 
-  const data = (await res.json()) as LiveTournamentData;
+  const data = normalizeLiveTournamentData(
+    (await res.json()) as LiveTournamentData
+  );
 
   if (!data.live_token || !data.page_map || !data.page_sizes) {
     throw new Error(
