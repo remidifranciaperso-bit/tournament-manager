@@ -7,7 +7,7 @@ import base64
 import fitz
 
 ENGINE_HEADER_RATIO = 0.083
-ENGINE_FOOTER_RATIO = 0.029
+ENGINE_FOOTER_RATIO = 0.042
 FINAL_TOP_GAP_RATIO = 0.028
 FINAL_IMAGE_MAX_WIDTH_RATIO = 0.72
 
@@ -19,6 +19,36 @@ def _decode_capture(data: str) -> bytes:
     return base64.b64decode(data)
 
 
+def _fit_pdf_clip(
+    page: fitz.Page,
+    source: fitz.Document,
+    slide_index: int,
+    clip: fitz.Rect,
+    dest: fitz.Rect,
+) -> None:
+    """Colle une bande Engine dans dest sans rognage (contain + centré)."""
+    clip_w = float(clip.width)
+    clip_h = float(clip.height)
+    if clip_w <= 0 or clip_h <= 0:
+        return
+
+    page.draw_rect(dest, color=None, fill=(1, 1, 1), overlay=False)
+
+    scale = min(dest.width / clip_w, dest.height / clip_h)
+    draw_w = clip_w * scale
+    draw_h = clip_h * scale
+    x0 = dest.x0 + (dest.width - draw_w) / 2
+    y0 = dest.y0 + (dest.height - draw_h) / 2
+    fit_dest = fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
+    page.show_pdf_page(
+        fit_dest,
+        source,
+        slide_index,
+        clip=clip,
+        keep_proportion=True,
+    )
+
+
 def composer_page_export(
     page: fitz.Page,
     source: fitz.Document,
@@ -26,6 +56,7 @@ def composer_page_export(
     capture_data: str,
     *,
     section: str = "main",
+    header_footer_index: int = 0,
 ) -> None:
     """Fond blanc + bandeau Engine + capture Manager collée en dessous."""
     rect = page.rect
@@ -41,16 +72,24 @@ def composer_page_export(
 
     page.draw_rect(rect, color=None, fill=(1, 1, 1), overlay=False)
 
-    engine_page = source[slide_index]
+    hf_index = header_footer_index
+    if hf_index < 0 or hf_index >= source.page_count:
+        hf_index = 0
+
+    engine_page = source[hf_index]
     engine_rect = engine_page.rect
-    header_clip = fitz.Rect(0, 0, engine_rect.width, engine_rect.height * ENGINE_HEADER_RATIO)
+    header_clip = fitz.Rect(
+        0, 0, engine_rect.width, engine_rect.height * ENGINE_HEADER_RATIO
+    )
     header_dest = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
-    page.show_pdf_page(header_dest, source, slide_index, clip=header_clip)
+    _fit_pdf_clip(page, source, hf_index, header_clip, header_dest)
 
     footer_top = engine_rect.height * (1 - ENGINE_FOOTER_RATIO)
     footer_clip = fitz.Rect(0, footer_top, engine_rect.width, engine_rect.height)
     footer_dest = fitz.Rect(rect.x0, rect.y1 - footer_h, rect.x1, rect.y1)
-    page.show_pdf_page(footer_dest, source, slide_index, clip=footer_clip)
+    _fit_pdf_clip(page, source, hf_index, footer_clip, footer_dest)
+
+    page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 
     image_bytes = _decode_capture(capture_data)
     if len(image_bytes) < 4096:

@@ -51,18 +51,29 @@ export function LivePlanningTab({
   }, [matches]);
 
   return (
-    <div className={LIVE_TABLE_PAGE}>
-      <div className={LIVE_TABLE_PAGE_INNER}>
-        <div className={LIVE_TABLE_CARD}>
-        <table className={LIVE_TABLE}>
+    <div className={exportMode ? "bg-white px-3 py-4" : LIVE_TABLE_PAGE}>
+      <div className={exportMode ? "w-full" : LIVE_TABLE_PAGE_INNER}>
+        <div
+          className={
+            exportMode
+              ? "mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm"
+              : LIVE_TABLE_CARD
+          }
+        >
+        <table
+          className={[
+            LIVE_TABLE,
+            exportMode ? "w-full table-fixed text-xs" : "",
+          ].join(" ")}
+        >
           <thead>
             <tr className="bg-template-blue text-white">
-              <th className={`w-[10%] ${LIVE_TABLE_HEAD}`}>Code</th>
-              <th className={`w-[10%] ${LIVE_TABLE_HEAD}`}>Heure</th>
-              <th className={`w-[10%] ${LIVE_TABLE_HEAD}`}>Terrain</th>
-              <th className={LIVE_TABLE_HEAD}>Équipe 1</th>
-              <th className={LIVE_TABLE_HEAD}>Équipe 2</th>
-              <th className={`w-[8%] text-center ${LIVE_TABLE_HEAD}`}>
+              <th className={`w-[7%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Code</th>
+              <th className={`w-[8%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Heure</th>
+              <th className={`w-[11%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Terrain</th>
+              <th className={`w-[30%] ${LIVE_TABLE_HEAD}`}>Équipe 1</th>
+              <th className={`w-[30%] ${LIVE_TABLE_HEAD}`}>Équipe 2</th>
+              <th className={`w-[8%] whitespace-nowrap text-center ${LIVE_TABLE_HEAD}`}>
                 {exportMode ? "Temps" : "Fait"}
               </th>
             </tr>
@@ -71,30 +82,31 @@ export function LivePlanningTab({
             {rows.map((row) => {
               const match = matchByCode.get(row.code);
               const code = match?.code ?? row.code;
+              const nowrap = exportMode ? "whitespace-nowrap" : "";
 
               return (
                 <tr
                   key={`${row.code}-${row.heure}`}
                   className={LIVE_TABLE_ROW}
                 >
-                  <td className={LIVE_TABLE_CELL_TSL_BOLD}>{row.code}</td>
-                  <td className={LIVE_TABLE_CELL_TSL}>
+                  <td className={`${LIVE_TABLE_CELL_TSL_BOLD} ${nowrap}`}>{row.code}</td>
+                  <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap}`}>
                     {row.heure || "—"}
                   </td>
-                  <td className={LIVE_TABLE_CELL_NOTO_BOLD}>
+                  <td className={`${LIVE_TABLE_CELL_NOTO_BOLD} ${nowrap}`}>
                     {row.terrain || "—"}
                   </td>
                   <td
-                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)}`}
+                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} ${exportMode ? "truncate" : ""}`}
                   >
                     {row.equipe1}
                   </td>
                   <td
-                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)}`}
+                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} ${exportMode ? "truncate" : ""}`}
                   >
                     {row.equipe2}
                   </td>
-                  <td className="px-2 py-2 text-center sm:px-3">
+                  <td className={`px-2 py-2 text-center sm:px-3 ${nowrap}`}>
                     {exportMode ? (
                       <span className={LIVE_TABLE_CELL_TSL}>{row.duration}</span>
                     ) : (
