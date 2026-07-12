@@ -85,6 +85,66 @@ function isClassementCode(code: string): boolean {
   return /^C[\d_]+$/.test(code);
 }
 
+function isPrelimCode(code: string): boolean {
+  return /^P\d+$/.test(code);
+}
+
+function isPrelimOnlySlide(codes: Set<string>): boolean {
+  const list = [...codes];
+  return list.length > 0 && list.every(isPrelimCode);
+}
+
+/**
+ * Tour préliminaire seul (P1…Pn) : colonne(s) centrée(s) horizontalement.
+ * Les tops template sont conservés ; décalage vertical minimal si débordement bas.
+ */
+function applyPrelimColumnPositions(
+  slots: ParsedMatchSlot[],
+  tops: Map<string, number>,
+  lefts: Map<string, number>,
+  boxWidth: number,
+  boxHeight: number
+): void {
+  const MAX_BOTTOM_PCT = 100;
+  const prelimSlots = slots.filter((slot) => isPrelimCode(slot.code));
+  if (prelimSlots.length === 0) return;
+
+  const byColumn = new Map<number, Array<{ code: string; top: number }>>();
+  for (const slot of prelimSlots) {
+    const pos = matchBoxPosition(slot);
+    const key = columnKey(pos.x);
+    const list = byColumn.get(key) ?? [];
+    list.push({ code: slot.code, top: pos.y });
+    byColumn.set(key, list);
+  }
+
+  const columnKeys = [...byColumn.keys()].sort((a, b) => a - b);
+
+  columnKeys.forEach((key, columnIndex) => {
+    const list = byColumn.get(key)!;
+    list.sort((a, b) => a.top - b.top);
+
+    const spanWidth = PAGE_SPAN_PCT / columnKeys.length;
+    const spanStart = columnIndex * spanWidth;
+    const centeredLeft = spanStart + (spanWidth - boxWidth) / 2;
+
+    for (const item of list) {
+      tops.set(item.code, item.top);
+      lefts.set(item.code, centeredLeft);
+    }
+
+    const last = list[list.length - 1];
+    const lastTop = tops.get(last.code) ?? last.top;
+    const overflow = lastTop + boxHeight - MAX_BOTTOM_PCT;
+    if (overflow > 0) {
+      for (const item of list) {
+        const currentTop = tops.get(item.code) ?? item.top;
+        tops.set(item.code, Math.max(0, currentTop - overflow));
+      }
+    }
+  });
+}
+
 /**
  * Tableau principal — les Q imposent la grille, D/F en découlent.
  * D1 = milieu Q1/Q2, D2 = milieu Q3/Q4, F = milieu D1/D2, PF = top Q4.
@@ -174,7 +234,9 @@ export function resolveMatchBoxLayouts(
 
   const codes = new Set(slots.map((slot) => slot.code));
   const hasMainBracket = [...codes].some(isMainBracketCode);
+  const prelimOnly = isPrelimOnlySlide(codes);
   const tops = new Map<string, number>();
+  const lefts = new Map<string, number>();
 
   const quarterSlotCount = inferQuarterSlotCount(
     options?.matchCodes ?? codes
@@ -186,13 +248,17 @@ export function resolveMatchBoxLayouts(
     applyMainBracketPositions(codes, tops, quarterGrid);
   }
 
-  applyClassementColumnPositions(slots, tops, boxHeight);
+  if (prelimOnly) {
+    applyPrelimColumnPositions(slots, tops, lefts, dim.width, boxHeight);
+  } else {
+    applyClassementColumnPositions(slots, tops, boxHeight);
+  }
 
   const layouts = new Map<string, BoxRectPct>();
   for (const slot of slots) {
     const pos = matchBoxPosition(slot);
     layouts.set(slot.code, {
-      left: pos.x,
+      left: lefts.get(slot.code) ?? pos.x,
       top: tops.get(slot.code) ?? pos.y,
       width: dim.width,
       height: boxHeight,

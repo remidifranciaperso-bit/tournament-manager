@@ -70,6 +70,14 @@ def _is_classement_code(code: str) -> bool:
     return bool(re.match(r"^C[\d_]+$", code))
 
 
+def _is_prelim_code(code: str) -> bool:
+    return bool(re.match(r"^P\d+$", code))
+
+
+def _is_prelim_only_slide(codes: set[str]) -> bool:
+    return bool(codes) and all(_is_prelim_code(code) for code in codes)
+
+
 def match_box_position(slot: dict) -> dict[str, float]:
     anchor = slot.get("code_field") or slot.get("terrain_field") or slot["bounds"]
     return {"x": anchor["left"], "y": anchor["top"]}
@@ -139,6 +147,47 @@ def _apply_classement_column_positions(
             tops[item["code"]] = grid["tops"][index]
 
 
+def _apply_prelim_column_positions(
+    slots: list[dict],
+    tops: dict[str, float],
+    lefts: dict[str, float],
+    box_width: float,
+    box_height: float,
+) -> None:
+    max_bottom_pct = 100.0
+    prelim_slots = [slot for slot in slots if _is_prelim_code(slot["code"])]
+    if not prelim_slots:
+        return
+
+    by_column: dict[float, list[dict]] = {}
+    for slot in prelim_slots:
+        pos = match_box_position(slot)
+        key = _column_key(pos["x"])
+        by_column.setdefault(key, []).append({"code": slot["code"], "top": pos["y"]})
+
+    column_keys = sorted(by_column.keys())
+
+    for column_index, key in enumerate(column_keys):
+        items = by_column[key]
+        items.sort(key=lambda item: item["top"])
+
+        span_width = PAGE_SPAN_PCT / len(column_keys)
+        span_start = column_index * span_width
+        centered_left = span_start + (span_width - box_width) / 2
+
+        for item in items:
+            tops[item["code"]] = item["top"]
+            lefts[item["code"]] = centered_left
+
+        last = items[-1]
+        last_top = tops.get(last["code"], last["top"])
+        overflow = last_top + box_height - max_bottom_pct
+        if overflow > 0:
+            for item in items:
+                current_top = tops.get(item["code"], item["top"])
+                tops[item["code"]] = max(0.0, current_top - overflow)
+
+
 def resolve_match_box_layouts(
     slots: list[dict],
     *,
@@ -146,7 +195,9 @@ def resolve_match_box_layouts(
 ) -> dict[str, dict]:
     codes = {slot["code"] for slot in slots}
     has_main_bracket = any(_is_main_bracket_code(code) for code in codes)
+    prelim_only = _is_prelim_only_slide(codes)
     tops: dict[str, float] = {}
+    lefts: dict[str, float] = {}
 
     quarter_slot_count = infer_quarter_slot_count(match_codes or codes)
     quarter_grid = build_equal_gap_grid(
@@ -158,13 +209,18 @@ def resolve_match_box_layouts(
     if has_main_bracket:
         _apply_main_bracket_positions(codes, tops, quarter_grid)
 
-    _apply_classement_column_positions(slots, tops, box_height)
+    if prelim_only:
+        _apply_prelim_column_positions(
+            slots, tops, lefts, STANDARD_MATCH_BOX["widthPct"], box_height
+        )
+    else:
+        _apply_classement_column_positions(slots, tops, box_height)
 
     layouts: dict[str, dict] = {}
     for slot in slots:
         pos = match_box_position(slot)
         layouts[slot["code"]] = {
-            "left": pos["x"],
+            "left": lefts.get(slot["code"], pos["x"]),
             "top": tops.get(slot["code"], pos["y"]),
             "width": STANDARD_MATCH_BOX["widthPct"],
             "height": box_height,
