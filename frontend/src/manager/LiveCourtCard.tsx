@@ -19,12 +19,10 @@ export const COURT_BADGE_WIDTH_CLASS = "w-[78%]";
 export const COURT_FOOTER_MIN_H_PX = 76;
 /** Mode compact : Valider + Annuler sur une ligne. */
 export const COURT_FOOTER_COMPACT_MIN_H_PX = 44;
-/** Espace terrain → boutons / heure prévue (compact). */
-export const COURT_FOOTER_COMPACT_GAP_PX = 2;
 
 /** Hauteur naturelle d'une carte compacte (terrain + match + terrain + footer). */
 export const COMPACT_COURT_CARD_HEIGHT_PX =
-  22 + 20 + COURT_HEIGHT_PX + COURT_FOOTER_COMPACT_GAP_PX + COURT_FOOTER_COMPACT_MIN_H_PX;
+  22 + 20 + COURT_HEIGHT_PX + 2 + COURT_FOOTER_COMPACT_MIN_H_PX;
 
 export type LiveCourtTheme = "dark" | "light";
 
@@ -43,12 +41,11 @@ export function CourtFooterSlot({
     <div
       className={[
         "flex w-full flex-col justify-start gap-1.5",
-        compact ? "" : "mt-3",
+        compact ? "mt-0" : "mt-3",
       ].join(" ")}
       style={{
         width: COURT_WIDTH_PX,
         minHeight: compact ? COURT_FOOTER_COMPACT_MIN_H_PX : COURT_FOOTER_MIN_H_PX,
-        marginTop: compact ? COURT_FOOTER_COMPACT_GAP_PX : undefined,
       }}
     >
       {children}
@@ -514,55 +511,31 @@ export function LiveCourtsRow({
 
   const scaledHeight = COMPACT_COURT_CARD_HEIGHT_PX * scale;
 
-  if (!compact) {
-    return (
-      <div
-        ref={slotRef}
-        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-4 py-6 sm:px-8"
-      >
-        <div className="flex w-full justify-center overflow-x-auto overscroll-x-contain">
-          <div className="flex shrink-0 items-start justify-center gap-8 sm:gap-12">
-            {terrains.map((name) => {
-              const match = matchByTerrain.get(name) ?? null;
-              const terrainLibrePrompt = getTerrainLibrePrompt?.(name);
-              return (
-                <LiveCourtCard
-                  key={name}
-                  terrainName={name}
-                  match={match}
-                  emptyLabel={emptyLabel}
-                  scoring={
-                    terrainLibrePrompt
-                      ? undefined
-                      : getScoring?.(name, match)
-                  }
-                  footer={renderFooter?.(name, match)}
-                  theme={theme}
-                  terrainLibrePrompt={terrainLibrePrompt}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-1 sm:px-8"
+      className={[
+        "flex min-h-0 flex-1 justify-center overflow-hidden px-4 sm:px-8",
+        compact ? "items-start pt-0" : "items-center py-6",
+      ].join(" ")}
     >
       <div
-        className="flex shrink-0 justify-center overflow-x-auto overscroll-x-contain overflow-y-hidden"
-        style={{ height: scaledHeight }}
+        className={[
+          "flex w-full justify-center overflow-x-auto overscroll-x-contain",
+          compact ? "overflow-y-hidden" : "",
+        ].join(" ")}
+        style={compact ? { height: scaledHeight } : undefined}
       >
         <div
           className="flex shrink-0 items-start justify-center gap-8 transition-none sm:gap-12"
-          style={{
-            transform: `scale(${scale})`,
-            transformOrigin: "top center",
-          }}
+          style={
+            compact
+              ? {
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top center",
+                }
+              : undefined
+          }
         >
           {terrains.map((name) => {
             const match = matchByTerrain.get(name) ?? null;
@@ -587,7 +560,6 @@ export function LiveCourtsRow({
           })}
         </div>
       </div>
-      <div className="min-h-0 flex-[2]" aria-hidden />
     </div>
   );
 }
