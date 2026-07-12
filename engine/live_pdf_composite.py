@@ -65,6 +65,7 @@ def composer_page_export(
     capture_data: str,
     *,
     section: str = "main",
+    footer_slide_index: int | None = None,
 ) -> None:
     """Fond blanc + bandeaux Engine (slide courante) + capture Manager."""
     rect = page.rect
@@ -83,6 +84,10 @@ def composer_page_export(
     if slide_index < 0 or slide_index >= source.page_count:
         raise RuntimeError(f"Page Engine introuvable pour l'index {slide_index}.")
 
+    footer_index = footer_slide_index if footer_slide_index is not None else slide_index
+    if footer_index < 0 or footer_index >= source.page_count:
+        footer_index = slide_index
+
     engine_page = source[slide_index]
     engine_rect = engine_page.rect
     header_clip = fitz.Rect(
@@ -91,9 +96,11 @@ def composer_page_export(
     header_dest = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
     _fit_pdf_clip(page, source, slide_index, header_clip, header_dest)
 
-    footer_clip = _footer_logo_clip(engine_rect)
+    footer_engine_page = source[footer_index]
+    footer_engine_rect = footer_engine_page.rect
+    footer_clip = _footer_logo_clip(footer_engine_rect)
     footer_dest = fitz.Rect(rect.x0, rect.y1 - footer_h, rect.x1, rect.y1)
-    _fit_pdf_clip(page, source, slide_index, footer_clip, footer_dest)
+    _fit_pdf_clip(page, source, footer_index, footer_clip, footer_dest)
 
     page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 

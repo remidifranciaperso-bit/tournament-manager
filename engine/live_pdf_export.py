@@ -2,12 +2,34 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import fitz
 
 from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import capture_key, composer_page_export
+
+_PRELIM_LABEL = re.compile(r"préliminaire|preliminaire", re.IGNORECASE)
+
+
+def _footer_reference_slide_index(page_map: dict, source: fitz.Document) -> int:
+    """Diapo Engine avec logo en pied (hors garde et planning)."""
+    for entry in page_map.get("main", []):
+        slide_index = int(entry["index"])
+        if slide_index <= 0 or slide_index >= source.page_count:
+            continue
+        if _PRELIM_LABEL.search(entry.get("label", "")):
+            continue
+        return slide_index
+
+    for section in ("main", "classement", "final"):
+        for entry in page_map.get(section, []):
+            slide_index = int(entry["index"])
+            if slide_index > 0 and slide_index < source.page_count:
+                return slide_index
+
+    return min(1, max(0, source.page_count - 1))
 
 
 def exporter_pdf_tournoi_manager(
@@ -31,6 +53,8 @@ def exporter_pdf_tournoi_manager(
             if 0 < index < source.page_count:
                 merged.insert_pdf(source, from_page=index, to_page=index)
 
+        footer_reference = _footer_reference_slide_index(page_map, source)
+
         for section in ("main", "classement", "planning", "final"):
             for entry in page_map.get(section, []):
                 slide_index = int(entry["index"])
@@ -53,6 +77,9 @@ def exporter_pdf_tournoi_manager(
                     slide_index,
                     capture_data,
                     section=section,
+                    footer_slide_index=(
+                        footer_reference if section == "planning" else None
+                    ),
                 )
 
         if merged.page_count == 0:

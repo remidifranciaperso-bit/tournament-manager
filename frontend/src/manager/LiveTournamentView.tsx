@@ -17,6 +17,7 @@ import {
   planningIndicesForPage,
   slideIndexAt,
   subTabLabels,
+  defaultMainSubPage,
   type LivePrimaryTab,
 } from "./liveTabs";
 import { LiveTabTitle } from "./LiveTabTitle";
@@ -167,7 +168,9 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
 
   const selectPrimary = (id: LivePrimaryTab) => {
     setPrimaryTab(id);
-    if (id === "main") setMainPage(0);
+    if (id === "main") {
+      setMainPage(defaultMainSubPage(mainPages, matches, progress.completed));
+    }
     if (id === "classement") setClassementPage(0);
     if (id === "planning") setPlanningPage(0);
   };

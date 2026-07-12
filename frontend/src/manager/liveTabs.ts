@@ -100,6 +100,40 @@ export function planningIndicesForPage(
   return entry ? [entry.index] : [];
 }
 
+const PRELIM_LABEL_RE = /préliminaire|preliminaire/i;
+
+/** Codes match tour préliminaire (P1, P2, …). */
+export function prelimMatchCodes(matches: { code: string }[]): string[] {
+  return matches
+    .map((match) => match.code)
+    .filter((code) => /^P\d+$/.test(code));
+}
+
+export function allPrelimMatchesDone(
+  matches: { code: string }[],
+  completed: Set<string> | string[]
+): boolean {
+  const codes = prelimMatchCodes(matches);
+  if (codes.length === 0) return false;
+  const done = completed instanceof Set ? completed : new Set(completed);
+  return codes.every((code) => done.has(code));
+}
+
+/** Sous-onglet « Tableau principal » : préliminaire tant que P* en cours, sinon tableau. */
+export function defaultMainSubPage(
+  mainPages: LivePageEntry[],
+  matches: { code: string }[],
+  completed: Set<string> | string[]
+): number {
+  if (mainPages.length <= 1) return 0;
+  if (!allPrelimMatchesDone(matches, completed)) return 0;
+
+  const bracketPage = mainPages.findIndex(
+    (entry) => !PRELIM_LABEL_RE.test(entry.label)
+  );
+  return bracketPage >= 0 ? bracketPage : 0;
+}
+
 export function allSlideIndices(pageMap: LivePageMap): number[] {
   const indices = new Set<number>();
 
