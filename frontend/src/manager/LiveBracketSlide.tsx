@@ -113,17 +113,23 @@ function TemplateMatchBox({
 
       <div className="flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm">
       <div
-        className="grid shrink-0 grid-cols-3 items-center rounded-t-lg bg-template-blue px-[0.4em] font-tsl leading-none text-white"
+        className="relative shrink-0 rounded-t-lg bg-template-blue px-[0.4em] font-tsl leading-none text-white"
         style={{
           height: score ? "20%" : "22%",
           fontSize: codePx,
         }}
       >
-        <span className="truncate text-left font-semibold">{match.code}</span>
-        <span className="truncate text-center font-noto font-bold">
+        <span className="absolute inset-0 flex items-center justify-center px-1 text-center font-noto font-bold leading-none">
           {match.terrain ?? ""}
         </span>
-        <span className="truncate text-right font-semibold">{match.heure ?? ""}</span>
+        <div className="relative z-10 flex h-full items-center justify-between gap-1">
+          <span className="max-w-[42%] shrink-0 truncate bg-template-blue pr-0.5 text-left font-semibold">
+            {match.code}
+          </span>
+          <span className="max-w-[42%] shrink-0 truncate bg-template-blue pl-0.5 text-right font-semibold">
+            {match.heure ?? ""}
+          </span>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
