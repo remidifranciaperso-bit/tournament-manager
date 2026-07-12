@@ -7,6 +7,7 @@ from engine.points_engine import get_points
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
+from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 from PIL import Image
 
@@ -17,14 +18,21 @@ ICONE_PREMIER = "🏆 "
 ICONE_DEUXIEME = "🥈 "
 ICONE_TROISIEME = "🥉 "
 
-# Tailles template (TEMPLATES_24_BLEUS_SPEC) : placeholder plus petit que équipe.
-TEMPLATE_PT_TEAM = 12
-TEMPLATE_PT_PLACEHOLDER = 8.5
+# Tailles template bleus : équipes Noto 10 pt, placeholders emoji Noto 8 pt.
+TEMPLATE_PT_TEAM = 10
+TEMPLATE_PT_PLACEHOLDER = 8
 _PREFIXES_PLACEHOLDER = (ICONE_VAINQUEUR, ICONE_PERDANT, ICONE_DEUXIEME, ICONE_TROISIEME)
 
 
 def _est_libelle_placeholder(texte: str) -> bool:
     return any(texte.startswith(prefixe) for prefixe in _PREFIXES_PLACEHOLDER)
+
+
+def _prefixe_placeholder(texte: str) -> str | None:
+    for prefixe in _PREFIXES_PLACEHOLDER:
+        if texte.startswith(prefixe):
+            return prefixe
+    return None
 
 
 def _taille_max_runs(paragraphe) -> int | None:
@@ -36,18 +44,119 @@ def _taille_max_runs(paragraphe) -> int | None:
     return max_size
 
 
-def _ajuster_police_cellule(paragraphe, texte: str, taille_template_max: int | None) -> None:
-    """Placeholder 🏆/❌ → 8.5 pt ; nom d'équipe qualifiée → taille max template."""
+def _emu_vers_pt(taille_emu: int | None) -> float | None:
+    if taille_emu is None:
+        return None
+    return round(taille_emu / 12700, 2)
+
+
+def _taille_equipe_pt(taille_template_max: int | None) -> float:
+    """Équipe qualifiée → taille du template (10 pt en standard)."""
+    if taille_template_max is not None:
+        return _emu_vers_pt(taille_template_max) or float(TEMPLATE_PT_TEAM)
+    return float(TEMPLATE_PT_TEAM)
+
+
+def _taille_placeholder_pt(taille_template_max: int | None) -> float:
+    """Placeholder emoji → 8 pt, ou proportionnel si la cellule template est plus petite."""
+    if taille_template_max is None:
+        return float(TEMPLATE_PT_PLACEHOLDER)
+
+    template_pt = _emu_vers_pt(taille_template_max)
+    if template_pt is None:
+        return float(TEMPLATE_PT_PLACEHOLDER)
+
+    if template_pt >= TEMPLATE_PT_TEAM:
+        return float(TEMPLATE_PT_PLACEHOLDER)
+
+    return round(
+        template_pt * TEMPLATE_PT_PLACEHOLDER / TEMPLATE_PT_TEAM,
+        2,
+    )
+
+
+def _forcer_taille_run(run, pt: float) -> None:
+    run.font.size = Pt(pt)
+    r_pr = run._r.get_or_add_rPr()
+    r_pr.set("sz", str(int(round(pt * 100))))
+
+
+def _desactiver_autofit_text_frame(text_frame) -> None:
+    """spAutoFit agrandit les placeholders courts (🏆 H3:) — on force la taille fixe."""
+    body_pr = text_frame._txBody.find(qn("a:bodyPr"))
+    if body_pr is None:
+        return
+
+    for tag in ("a:spAutoFit", "a:normAutofit", "a:fontNormAutofit"):
+        element = body_pr.find(qn(tag))
+        if element is not None:
+            body_pr.remove(element)
+
+    if body_pr.find(qn("a:noAutofit")) is None:
+        body_pr.append(OxmlElement("a:noAutofit"))
+
+
+def _vider_runs_apres(paragraphe, garder: int) -> None:
+    for run in paragraphe.runs[garder:]:
+        run.text = ""
+
+
+def _assurer_run_index(paragraphe, index: int):
+    runs = list(paragraphe.runs)
+    while len(runs) <= index:
+        source = runs[-1]._r
+        nouveau = deepcopy(source)
+        for texte in nouveau.findall(qn("a:t")):
+            nouveau.remove(texte)
+        nouveau.append(OxmlElement("a:t"))
+        source.addnext(nouveau)
+        runs = list(paragraphe.runs)
+    return runs[index]
+
+
+def _appliquer_police_equipe(
+    paragraphe,
+    texte: str,
+    taille_template_max: int | None,
+) -> None:
+    """Placeholder 🏆/❌ → 8 pt ; équipe qualifiée → 10 pt (template)."""
     if not paragraphe.runs:
         return
 
+    prefixe = _prefixe_placeholder(texte)
+    if prefixe:
+        suffixe = texte[len(prefixe) :]
+        taille_texte = _taille_placeholder_pt(taille_template_max)
+        taille_emoji = max(5.0, round(taille_texte * 0.65, 2))
+
+        run_emoji = paragraphe.runs[0]
+        run_emoji.text = prefixe[:-1] if prefixe.endswith(" ") else prefixe
+        _forcer_taille_run(run_emoji, taille_emoji)
+
+        run_texte = _assurer_run_index(paragraphe, 1)
+        run_texte.text = (" " if prefixe.endswith(" ") else "") + suffixe
+        _forcer_taille_run(run_texte, taille_texte)
+
+        _vider_runs_apres(paragraphe, 2)
+        return
+
     run = paragraphe.runs[0]
-    if _est_libelle_placeholder(texte):
-        run.font.size = Pt(TEMPLATE_PT_PLACEHOLDER)
-    elif taille_template_max is not None:
-        run.font.size = taille_template_max
-    else:
-        run.font.size = Pt(TEMPLATE_PT_TEAM)
+    run.text = texte
+    _vider_runs_apres(paragraphe, 1)
+    _forcer_taille_run(run, _taille_equipe_pt(taille_template_max))
+
+
+def _est_cellule_equipe(texte_original: str, nouveau: str) -> bool:
+    if _est_libelle_placeholder(nouveau):
+        return True
+
+    return bool(
+        re.search(
+            r"\{\{(?:PL\d+|[A-Z0-9_]+)_(?:EQ1|EQ2)\}\}"
+            r"|\{\{(?:WIN|LOSE|SECOND|THIRD)_",
+            texte_original,
+        )
+    )
 
 
 def format_date(date_str):
@@ -290,13 +399,20 @@ def remplacer_dans_paragraphe(paragraphe, valeurs):
 
     if nouveau != texte_original:
         taille_template_max = _taille_max_runs(paragraphe)
+
         if paragraphe.runs:
-            paragraphe.runs[0].text = nouveau
+            if _est_cellule_equipe(texte_original, nouveau):
+                _desactiver_autofit_text_frame(paragraphe._parent)
+                _appliquer_police_equipe(
+                    paragraphe,
+                    nouveau,
+                    taille_template_max,
+                )
+            else:
+                paragraphe.runs[0].text = nouveau
 
-            for run in paragraphe.runs[1:]:
-                run.text = ""
-
-            _ajuster_police_cellule(paragraphe, nouveau, taille_template_max)
+                for run in paragraphe.runs[1:]:
+                    run.text = ""
         else:
             paragraphe.text = nouveau
 

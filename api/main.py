@@ -58,7 +58,7 @@ def health():
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-11c",
+        "version": "2026-07-12a",
         "notify": mode_notification(),
     }
 
