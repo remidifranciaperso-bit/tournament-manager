@@ -65,7 +65,7 @@ export function GhostButton({
 }
 
 export function OptionCard({
-  active,
+  active = false,
   onClick,
   title,
   subtitle,
@@ -73,7 +73,7 @@ export function OptionCard({
   disabled,
   variant = "neon",
 }: {
-  active: boolean;
+  active?: boolean;
   onClick: () => void;
   title: string;
   subtitle?: string;
@@ -128,7 +128,7 @@ export function OptionCard({
         <motion.span
           layoutId={isLime ? "option-active-ring-lime" : "option-active-ring"}
           className={[
-            "absolute inset-0 rounded-2xl ring-1",
+            "pointer-events-none absolute inset-0 rounded-2xl ring-1",
             isLime ? "ring-lime/30" : "ring-neon/30",
           ].join(" ")}
         />

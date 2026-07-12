@@ -35,7 +35,6 @@ export function ManagerStartStep({
           />
           <OptionCard
             variant="lime"
-            active
             onClick={onPackStart}
             title="Reprendre un tournoi Engine"
             subtitle="Pack ZIP PDF + Manager Live"
