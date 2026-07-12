@@ -72,7 +72,7 @@ export function CourtScheduledTime({
 const COURT_THEME = {
   dark: {
     terrainLabel:
-      "field-label-section w-full truncate px-1 text-center",
+      "w-full px-1 text-center text-sm font-semibold uppercase tracking-wide text-lime sm:text-base",
     matchName:
       "w-full truncate px-1 text-center text-[12px] font-medium text-white/65 sm:text-[13px]",
     teamBadge: `${COURT_BADGE_WIDTH_CLASS} relative min-h-[5.5rem] shrink-0 rounded-lg border border-white/30 bg-arena-950/80 shadow-sm`,
@@ -94,7 +94,7 @@ const COURT_THEME = {
   },
   light: {
     terrainLabel:
-      "w-full truncate px-1 text-center text-sm font-semibold uppercase tracking-widest text-arena-700 sm:text-base",
+      "w-full px-1 text-center text-sm font-semibold uppercase tracking-wide text-arena-700 sm:text-base",
     matchName:
       "w-full truncate px-1 text-center text-[12px] font-medium text-arena-600 sm:text-[13px]",
     teamBadge: `${COURT_BADGE_WIDTH_CLASS} relative min-h-[5.5rem] shrink-0 rounded-lg border border-arena-600/20 bg-white/95 shadow-sm`,
