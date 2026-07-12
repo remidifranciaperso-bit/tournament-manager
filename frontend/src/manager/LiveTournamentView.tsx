@@ -386,6 +386,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   onRecordMatchLaunch={progress.recordMatchLaunch}
                   awaitingLaunch={awaitingLaunch}
                   setAwaitingLaunch={setAwaitingLaunch}
+                  forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
+                  clearForcedForTerrain={progress.clearForcedForTerrain}
                 />
               </div>
 
@@ -398,6 +400,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   matchResults={progress.matchResults}
                   started={progress.started}
                   awaitingLaunch={awaitingLaunch}
+                  forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
+                  applyForcedUpcoming={progress.applyForcedUpcoming}
                 />
               </div>
 

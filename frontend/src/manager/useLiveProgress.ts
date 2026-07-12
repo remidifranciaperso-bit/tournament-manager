@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ValidatedMatchScore } from "./matchScoreRules";
 import type { LiveTournamentMeta } from "./liveTypes";
 
@@ -12,6 +12,7 @@ interface ProgressState {
   completed: string[];
   results: Record<string, StoredMatchResult>;
   launches?: Record<string, number>;
+  forcedUpcoming?: Record<string, string>;
 }
 
 function storageKey(liveToken: string): string {
@@ -29,21 +30,22 @@ function finishedAtKey(liveToken: string): string {
 function loadState(liveToken: string): ProgressState {
   try {
     const raw = localStorage.getItem(storageKey(liveToken));
-    if (!raw) return { completed: [], results: {}, launches: {} };
+    if (!raw) return { completed: [], results: {}, launches: {}, forcedUpcoming: {} };
 
     const parsed = JSON.parse(raw) as ProgressState | string[];
 
     if (Array.isArray(parsed)) {
-      return { completed: parsed, results: {}, launches: {} };
+      return { completed: parsed, results: {}, launches: {}, forcedUpcoming: {} };
     }
 
     return {
       completed: Array.isArray(parsed.completed) ? parsed.completed : [],
       results: parsed.results ?? {},
       launches: parsed.launches ?? {},
+      forcedUpcoming: parsed.forcedUpcoming ?? {},
     };
   } catch {
-    return { completed: [], results: {}, launches: {} };
+    return { completed: [], results: {}, launches: {}, forcedUpcoming: {} };
   }
 }
 
@@ -146,6 +148,11 @@ export function useLiveProgress(
   const [matchLaunches, setMatchLaunches] = useState<Record<string, number>>(
     () => loadState(liveToken).launches ?? {}
   );
+  const [forcedUpcomingByTerrain, setForcedUpcomingByTerrain] = useState<
+    Record<string, string>
+  >(() => loadState(liveToken).forcedUpcoming ?? {});
+  const forcedUpcomingRef = useRef(forcedUpcomingByTerrain);
+  forcedUpcomingRef.current = forcedUpcomingByTerrain;
   const [startedAt, setStartedAt] = useState<number | null>(() =>
     loadStartedAt(liveToken)
   );
@@ -166,6 +173,7 @@ export function useLiveProgress(
     setCompleted(new Set(state.completed));
     setMatchResults(state.results);
     setMatchLaunches(state.launches ?? {});
+    setForcedUpcomingByTerrain(state.forcedUpcoming ?? {});
     const nextStartedAt = loadStartedAt(liveToken);
     setStartedAt(nextStartedAt);
     setFinishedAt(
@@ -234,9 +242,67 @@ export function useLiveProgress(
         completed: [...completedNext],
         results: resultsNext,
         launches: launchesNext,
+        forcedUpcoming: forcedUpcomingRef.current,
       });
     },
     [liveToken]
+  );
+
+  const applyForcedUpcoming = useCallback(
+    (next: Record<string, string>) => {
+      setForcedUpcomingByTerrain(next);
+      forcedUpcomingRef.current = next;
+      setCompleted((completedPrev) => {
+        setMatchResults((resultsPrev) => {
+          persistState(completedPrev, resultsPrev, matchLaunches);
+          return resultsPrev;
+        });
+        return completedPrev;
+      });
+    },
+    [matchLaunches, persistState]
+  );
+
+  const forceUpcomingMatch = useCallback(
+    (terrain: string, matchCode: string) => {
+      setForcedUpcomingByTerrain((prev) => {
+        const next = { ...prev };
+        for (const [name, code] of Object.entries(next)) {
+          if (code === matchCode) delete next[name];
+        }
+        next[terrain] = matchCode;
+        forcedUpcomingRef.current = next;
+        setCompleted((completedPrev) => {
+          setMatchResults((resultsPrev) => {
+            persistState(completedPrev, resultsPrev, matchLaunches);
+            return resultsPrev;
+          });
+          return completedPrev;
+        });
+        return next;
+      });
+    },
+    [matchLaunches, persistState]
+  );
+
+  const clearForcedForTerrain = useCallback(
+    (terrain: string) => {
+      setForcedUpcomingByTerrain((prev) => {
+        if (!(terrain in prev)) return prev;
+        const next = { ...prev };
+        delete next[terrain];
+        forcedUpcomingRef.current = next;
+        setCompleted((completedPrev) => {
+          setMatchResults((resultsPrev) => {
+            persistState(completedPrev, resultsPrev, matchLaunches);
+            return resultsPrev;
+          });
+          return completedPrev;
+        });
+        return next;
+      });
+    },
+    [matchLaunches, persistState]
   );
 
   const recordMatchLaunch = useCallback(
@@ -312,6 +378,12 @@ export function useLiveProgress(
       setCompleted((prev) => {
         const next = new Set(prev);
         next.add(code);
+        const nextForced = { ...forcedUpcomingRef.current };
+        for (const [terrain, forcedCode] of Object.entries(nextForced)) {
+          if (forcedCode === code) delete nextForced[terrain];
+        }
+        forcedUpcomingRef.current = nextForced;
+        setForcedUpcomingByTerrain(nextForced);
         if (next.size >= totalMatches && totalMatches > 0) {
           setFinishedAt(validatedAt);
           saveFinishedAt(liveToken, validatedAt);
@@ -340,6 +412,10 @@ export function useLiveProgress(
     completed,
     matchResults,
     matchLaunches,
+    forcedUpcomingByTerrain,
+    forceUpcomingMatch,
+    applyForcedUpcoming,
+    clearForcedForTerrain,
     toggleMatch,
     completeMatch,
     recordMatchLaunch,

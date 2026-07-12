@@ -1,3 +1,4 @@
+import { areCourtTeamsKnown } from "./courtTeamsReady";
 import type { LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
 import {
@@ -8,6 +9,7 @@ import {
   feedKeyFromTeamLabel,
   formatCourtTeamSlot,
   formatTeamSlot,
+  formatTeamWithInitials,
   isBracketPlaceholder,
 } from "./formatBracketLabel";
 
@@ -114,17 +116,181 @@ function toDisplay(
     equipe2: formatTeamForCourt(resolved2, slotFormat),
     heure: match.heure?.trim() || null,
     equipe1Footnote: inProgressTerrain1
-      ? `Match en cours ${inProgressTerrain1}`
+      ? `Match en cours sur ${inProgressTerrain1}`
       : null,
     equipe2Footnote: inProgressTerrain2
-      ? `Match en cours ${inProgressTerrain2}`
+      ? `Match en cours sur ${inProgressTerrain2}`
       : null,
   };
+}
+
+export function inProgressMatchCodes(
+  matches: LiveMatch[],
+  terrains: string[],
+  completed: Set<string>,
+  awaitingLaunch: Set<string>
+): Set<string> {
+  const result = new Set<string>();
+
+  for (const terrain of terrains) {
+    if (awaitingLaunch.has(terrain)) continue;
+
+    const queue = sortMatchesForTerrain(matches, terrain).filter(
+      (match) => !completed.has(match.code)
+    );
+    const current = queue[0];
+    if (current) result.add(current.code);
+  }
+
+  return result;
+}
+
+function codesForcedOnOtherTerrains(
+  forcedUpcomingByTerrain: Map<string, string> | undefined,
+  terrain: string
+): Set<string> {
+  const result = new Set<string>();
+  if (!forcedUpcomingByTerrain) return result;
+
+  for (const [name, code] of forcedUpcomingByTerrain) {
+    if (name !== terrain) result.add(code);
+  }
+
+  return result;
+}
+
+function naturalUpcomingInQueue(
+  queue: LiveMatch[],
+  forcedElsewhere: Set<string>
+): LiveMatch | null {
+  for (let index = 1; index < queue.length; index += 1) {
+    if (!forcedElsewhere.has(queue[index].code)) {
+      return queue[index];
+    }
+  }
+
+  return null;
+}
+
+function resolveForcedMatch(
+  terrain: string,
+  forcedUpcomingByTerrain: Map<string, string> | undefined,
+  matches: LiveMatch[],
+  completed: Set<string>,
+  inProgressCodes: Set<string>
+): LiveMatch | null {
+  const forcedCode = forcedUpcomingByTerrain?.get(terrain);
+  if (!forcedCode) return null;
+  if (completed.has(forcedCode)) return null;
+  if (inProgressCodes.has(forcedCode)) return null;
+
+  const match = matches.find((entry) => entry.code === forcedCode);
+  return match ?? null;
+}
+
+export interface ForceMatchOption {
+  code: string;
+  label: string;
+  selectable: boolean;
+}
+
+export function buildForceMatchOptions(
+  matches: LiveMatch[],
+  completed: Set<string>,
+  inProgressCodes: Set<string>,
+  matchResults: Record<string, StoredMatchResult>
+): ForceMatchOption[] {
+  const matchesByCode = buildMatchesByCode(matches);
+
+  return [...matches]
+    .filter(
+      (match) =>
+        !completed.has(match.code) && !inProgressCodes.has(match.code)
+    )
+    .sort(
+      (a, b) => a.ordre_planning - b.ordre_planning || a.ordre - b.ordre
+    )
+    .map((match) => {
+      const resolved1 = resolveTeamLabelDeep(
+        match.equipe1,
+        matchesByCode,
+        matchResults
+      );
+      const resolved2 = resolveTeamLabelDeep(
+        match.equipe2,
+        matchesByCode,
+        matchResults
+      );
+      const equipe1 = formatTeamWithInitials(resolved1);
+      const equipe2 = formatTeamWithInitials(resolved2);
+
+      return {
+        code: match.code,
+        label: `${match.code} — ${match.tour} - ${equipe1} vs ${equipe2}`,
+        selectable: areCourtTeamsKnown(equipe1, equipe2),
+      };
+    });
+}
+
+export function computeForcedUpcomingAfterForce(
+  targetTerrain: string,
+  matchCode: string,
+  terrains: string[],
+  matches: LiveMatch[],
+  completed: Set<string>,
+  awaitingLaunch: Set<string>,
+  forcedUpcomingByTerrain: Record<string, string>
+): Record<string, string> {
+  const forcedMap = new Map(Object.entries(forcedUpcomingByTerrain));
+  const next: Record<string, string> = { ...forcedUpcomingByTerrain };
+
+  for (const [terrain, code] of Object.entries(next)) {
+    if (code === matchCode) delete next[terrain];
+  }
+
+  const targetQueue = sortMatchesForTerrain(matches, targetTerrain).filter(
+    (match) => !completed.has(match.code)
+  );
+  const displaced = naturalUpcomingInQueue(
+    targetQueue,
+    codesForcedOnOtherTerrains(forcedMap, targetTerrain)
+  );
+  const displacedCode = displaced?.code ?? null;
+
+  let sourceTerrain: string | null = null;
+  for (const terrain of terrains) {
+    if (terrain === targetTerrain || awaitingLaunch.has(terrain)) continue;
+
+    const queue = sortMatchesForTerrain(matches, terrain).filter(
+      (match) => !completed.has(match.code)
+    );
+    const naturalUpcoming = naturalUpcomingInQueue(
+      queue,
+      codesForcedOnOtherTerrains(forcedMap, terrain)
+    );
+    if (naturalUpcoming?.code === matchCode) {
+      sourceTerrain = terrain;
+      break;
+    }
+  }
+
+  next[targetTerrain] = matchCode;
+
+  if (displacedCode && displacedCode !== matchCode && sourceTerrain) {
+    for (const [terrain, code] of Object.entries(next)) {
+      if (code === displacedCode) delete next[terrain];
+    }
+    next[sourceTerrain] = displacedCode;
+  }
+
+  return next;
 }
 
 export interface TerrainMatchQueues {
   current: Map<string, CourtMatchDisplay | null>;
   upcoming: Map<string, CourtMatchDisplay | null>;
+  /** Prochain lancement sur le terrain (forçage possible, pas le match en cours). */
+  nextLaunch: Map<string, CourtMatchDisplay | null>;
 }
 
 export function matchQueuesByTerrain(
@@ -133,7 +299,8 @@ export function matchQueuesByTerrain(
   completed: Set<string>,
   matchResults: Record<string, StoredMatchResult> = {},
   awaitingLaunch: Set<string> = new Set(),
-  slotFormat: CourtTeamSlotFormat = "bracket"
+  slotFormat: CourtTeamSlotFormat = "bracket",
+  forcedUpcomingByTerrain?: Map<string, string>
 ): TerrainMatchQueues {
   const matchesByCode = buildMatchesByCode(matches);
   const inProgressByCode = inProgressTerrainByMatchCode(
@@ -142,12 +309,26 @@ export function matchQueuesByTerrain(
     completed,
     awaitingLaunch
   );
+  const inProgressCodes = inProgressMatchCodes(
+    matches,
+    terrains,
+    completed,
+    awaitingLaunch
+  );
   const current = new Map<string, CourtMatchDisplay | null>();
   const upcoming = new Map<string, CourtMatchDisplay | null>();
+  const nextLaunch = new Map<string, CourtMatchDisplay | null>();
 
   for (const terrain of terrains) {
     const queue = sortMatchesForTerrain(matches, terrain).filter(
       (match) => !completed.has(match.code)
+    );
+    const forcedMatch = resolveForcedMatch(
+      terrain,
+      forcedUpcomingByTerrain,
+      matches,
+      completed,
+      inProgressCodes
     );
 
     current.set(
@@ -162,11 +343,33 @@ export function matchQueuesByTerrain(
           )
         : null
     );
+
+    const forcedElsewhere = codesForcedOnOtherTerrains(
+      forcedUpcomingByTerrain,
+      terrain
+    );
+
+    const launchMatch = forcedMatch ?? queue[0] ?? null;
+    nextLaunch.set(
+      terrain,
+      launchMatch
+        ? toDisplay(
+            launchMatch,
+            matchesByCode,
+            matchResults,
+            inProgressByCode,
+            slotFormat
+          )
+        : null
+    );
+
+    const upcomingMatch =
+      forcedMatch ?? naturalUpcomingInQueue(queue, forcedElsewhere);
     upcoming.set(
       terrain,
-      queue[1]
+      upcomingMatch
         ? toDisplay(
-            queue[1],
+            upcomingMatch,
             matchesByCode,
             matchResults,
             inProgressByCode,
@@ -176,7 +379,7 @@ export function matchQueuesByTerrain(
     );
   }
 
-  return { current, upcoming };
+  return { current, upcoming, nextLaunch };
 }
 
 /**
@@ -195,7 +398,7 @@ export function upcomingDisplayByTerrain(
     result.set(
       terrain,
       awaitingLaunch.has(terrain)
-        ? queues.current.get(terrain) ?? null
+        ? queues.nextLaunch.get(terrain) ?? queues.current.get(terrain) ?? null
         : queues.upcoming.get(terrain) ?? null
     );
   }

@@ -148,7 +148,7 @@ function GamesSelect({
 }
 
 function footnoteUsesTwoLines(footnote: string): boolean {
-  const terrain = footnote.replace(/^Match en cours\s+/i, "").trim();
+  const terrain = footnote.replace(/^Match en cours\s+(?:sur\s+)?/i, "").trim();
   if (/^\d+$/.test(terrain)) return false;
   if (/^terrain\s+\d+$/i.test(terrain)) return false;
   return terrain.length > 14;

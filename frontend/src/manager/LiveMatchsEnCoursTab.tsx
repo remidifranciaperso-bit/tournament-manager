@@ -92,6 +92,8 @@ interface LiveMatchsEnCoursTabProps {
   onRecordMatchLaunch: (code: string) => void;
   awaitingLaunch: Set<string>;
   setAwaitingLaunch: React.Dispatch<React.SetStateAction<Set<string>>>;
+  forcedUpcomingByTerrain: Record<string, string>;
+  clearForcedForTerrain: (terrain: string) => void;
 }
 
 export function LiveMatchsEnCoursTab({
@@ -112,6 +114,8 @@ export function LiveMatchsEnCoursTab({
   onRecordMatchLaunch,
   awaitingLaunch,
   setAwaitingLaunch,
+  forcedUpcomingByTerrain,
+  clearForcedForTerrain,
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
   const [exportError, setExportError] = useState<string | null>(null);
@@ -125,7 +129,12 @@ export function LiveMatchsEnCoursTab({
     (() => ValidatedMatchScore | null) | null
   >(null);
 
-  const { current: matchByTerrain } = useMemo(
+  const forcedMap = useMemo(
+    () => new Map(Object.entries(forcedUpcomingByTerrain)),
+    [forcedUpcomingByTerrain]
+  );
+
+  const { current: matchByTerrain, nextLaunch: nextLaunchByTerrain } = useMemo(
     () =>
       matchQueuesByTerrain(
         matches,
@@ -133,9 +142,10 @@ export function LiveMatchsEnCoursTab({
         completed,
         matchResults,
         awaitingLaunch,
-        "bracket"
+        "bracket",
+        forcedMap
       ),
-    [matches, terrains, completed, matchResults, awaitingLaunch]
+    [matches, terrains, completed, matchResults, awaitingLaunch, forcedMap]
   );
 
   const displayMatchByTerrain = useMemo(() => {
@@ -158,8 +168,9 @@ export function LiveMatchsEnCoursTab({
   }, [matches]);
 
   const launchNextOnTerrain = useCallback((terrain: string) => {
-    const pending = matchByTerrain.get(terrain);
+    const pending = nextLaunchByTerrain.get(terrain);
     if (pending) onRecordMatchLaunch(pending.code);
+    clearForcedForTerrain(terrain);
     setAwaitingLaunch((prev) => {
       const next = new Set(prev);
       next.delete(terrain);
@@ -171,11 +182,11 @@ export function LiveMatchsEnCoursTab({
       next.delete(terrain);
       return next;
     });
-  }, [matchByTerrain, onRecordMatchLaunch]);
+  }, [nextLaunchByTerrain, onRecordMatchLaunch, clearForcedForTerrain]);
 
   const handleLaunchNextOnTerrain = useCallback(
     (terrain: string) => {
-      const pending = matchByTerrain.get(terrain);
+      const pending = nextLaunchByTerrain.get(terrain);
       const liveMatch = pending ? matchLookup.get(pending.code) : undefined;
       const ready = canLaunchNextMatch(
         pending?.equipe1 ?? "",
@@ -195,7 +206,7 @@ export function LiveMatchsEnCoursTab({
       launchNextOnTerrain(terrain);
     },
     [
-      matchByTerrain,
+      nextLaunchByTerrain,
       matchLookup,
       completed,
       matchResults,
@@ -215,7 +226,7 @@ export function LiveMatchsEnCoursTab({
           continue;
         }
 
-        const pending = matchByTerrain.get(terrain);
+        const pending = nextLaunchByTerrain.get(terrain);
         const liveMatch = pending ? matchLookup.get(pending.code) : undefined;
         if (
           canLaunchNextMatch(
@@ -235,7 +246,7 @@ export function LiveMatchsEnCoursTab({
     });
   }, [
     awaitingLaunch,
-    matchByTerrain,
+    nextLaunchByTerrain,
     matchLookup,
     completed,
     matchResults,
@@ -294,7 +305,7 @@ export function LiveMatchsEnCoursTab({
           compact
           getTerrainLibrePrompt={(terrain) => {
             if (!awaitingLaunch.has(terrain)) return undefined;
-            const pending = matchByTerrain.get(terrain);
+            const pending = nextLaunchByTerrain.get(terrain);
             if (!pending) {
               return { noMoreMatches: true };
             }

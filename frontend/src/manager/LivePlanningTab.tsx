@@ -64,17 +64,18 @@ export function LivePlanningTab({
         <table
           className={[
             LIVE_TABLE,
-            exportMode ? "w-full table-fixed text-xs" : "",
+            "table-fixed",
+            exportMode ? "w-full text-xs" : "",
           ].join(" ")}
         >
           <thead>
             <tr className="bg-template-blue text-white">
               <th className={`w-[7%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Code</th>
-              <th className={`w-[8%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Heure</th>
-              <th className={`w-[11%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Terrain</th>
-              <th className={`w-[30%] ${LIVE_TABLE_HEAD}`}>Équipe 1</th>
-              <th className={`w-[30%] ${LIVE_TABLE_HEAD}`}>Équipe 2</th>
-              <th className={`w-[8%] whitespace-nowrap text-center ${LIVE_TABLE_HEAD}`}>
+              <th className={`w-[7%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Heure</th>
+              <th className={`w-[17%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Terrain</th>
+              <th className={`w-[27%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Équipe 1</th>
+              <th className={`w-[27%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Équipe 2</th>
+              <th className={`w-[7%] whitespace-nowrap text-center ${LIVE_TABLE_HEAD}`}>
                 {exportMode ? "Temps" : "Fait"}
               </th>
             </tr>
@@ -83,7 +84,7 @@ export function LivePlanningTab({
             {rows.map((row) => {
               const match = matchByCode.get(row.code);
               const code = match?.code ?? row.code;
-              const nowrap = exportMode ? "whitespace-nowrap" : "";
+              const nowrap = "whitespace-nowrap";
 
               return (
                 <tr
@@ -98,12 +99,12 @@ export function LivePlanningTab({
                     {row.terrain || "—"}
                   </td>
                   <td
-                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} ${exportMode ? "whitespace-nowrap" : ""}`}
+                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} ${nowrap}`}
                   >
                     {row.equipe1}
                   </td>
                   <td
-                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} ${exportMode ? "whitespace-nowrap" : ""}`}
+                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} ${nowrap}`}
                   >
                     {row.equipe2}
                   </td>
