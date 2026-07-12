@@ -48,6 +48,7 @@ export default function EnginePage() {
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [managerPackDownloaded, setManagerPackDownloaded] = useState(false);
   const notifyTokenRef = useRef<string | null>(null);
+  const notifySentRef = useRef(false);
   const genStartedRef = useRef(false);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
@@ -144,6 +145,7 @@ export default function EnginePage() {
     setGenError(null);
     setPdfDownloaded(false);
     setManagerPackDownloaded(false);
+    notifySentRef.current = false;
     genStartedRef.current = false;
     setStep(8);
   };
@@ -153,6 +155,7 @@ export default function EnginePage() {
     setGenError(null);
     setPdfDownloaded(false);
     setManagerPackDownloaded(false);
+    notifySentRef.current = false;
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl);
       setPdfUrl(null);
@@ -166,6 +169,7 @@ export default function EnginePage() {
       setPdfFilename(filename);
       notifyTokenRef.current = notifyToken;
       setLiveSnapshotAvailable(snapshot);
+      notifySentRef.current = false;
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -183,15 +187,21 @@ export default function EnginePage() {
     handleGenerate();
   }, [step, generating, handleGenerate]);
 
-  const handleDownloadNotify = useCallback(() => {
+  const envoyerNotificationUneFois = useCallback(() => {
     const token = notifyTokenRef.current;
-    if (!token) return;
-    setPdfDownloaded(true);
+    if (!token || notifySentRef.current) return;
+    notifySentRef.current = true;
     notifyOwnerAfterDownload(
       token,
       buildTournamentResume(form, preview, pdfFilename)
     );
   }, [form, preview, pdfFilename]);
+
+  const handleDownloadNotify = useCallback(() => {
+    if (!notifyTokenRef.current) return;
+    setPdfDownloaded(true);
+    envoyerNotificationUneFois();
+  }, [envoyerNotificationUneFois]);
 
   const handleDownloadManagerLive = useCallback(async () => {
     const token = notifyTokenRef.current;
@@ -200,10 +210,7 @@ export default function EnginePage() {
     try {
       await downloadManagerLiveBundle(token, `${base}-manager-live.zip`);
       setManagerPackDownloaded(true);
-      notifyOwnerAfterDownload(
-        token,
-        buildTournamentResume(form, preview, pdfFilename)
-      );
+      envoyerNotificationUneFois();
     } catch (err) {
       setGenError(
         err instanceof Error
@@ -211,7 +218,7 @@ export default function EnginePage() {
           : "Impossible de télécharger le pack Manager Live."
       );
     }
-  }, [form, preview, pdfFilename]);
+  }, [pdfFilename, envoyerNotificationUneFois]);
 
   const slideVariants = {
     initial: { opacity: 0, y: 20 },

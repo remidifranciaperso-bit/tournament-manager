@@ -92,6 +92,7 @@ export default function App() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState("tournoi.pdf");
   const notifyTokenRef = useRef<string | null>(null);
+  const notifySentRef = useRef(false);
   const [liveSnapshotAvailable, setLiveSnapshotAvailable] = useState(false);
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [managerPackDownloaded, setManagerPackDownloaded] = useState(false);
@@ -191,6 +192,7 @@ export default function App() {
     setGenError(null);
     setPdfDownloaded(false);
     setManagerPackDownloaded(false);
+    notifySentRef.current = false;
     genStartedRef.current = false;
     setStep(8);
   };
@@ -200,6 +202,7 @@ export default function App() {
     setGenError(null);
     setPdfDownloaded(false);
     setManagerPackDownloaded(false);
+    notifySentRef.current = false;
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl);
       setPdfUrl(null);
@@ -212,6 +215,7 @@ export default function App() {
       setPdfFilename(filename);
       notifyTokenRef.current = notifyToken;
       setLiveSnapshotAvailable(snapshot);
+      notifySentRef.current = false;
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -229,15 +233,21 @@ export default function App() {
     handleGenerate();
   }, [step, generating, handleGenerate]);
 
-  const handleDownloadNotify = useCallback(() => {
+  const envoyerNotificationUneFois = useCallback(() => {
     const token = notifyTokenRef.current;
-    if (!token) return;
-    setPdfDownloaded(true);
+    if (!token || notifySentRef.current) return;
+    notifySentRef.current = true;
     notifyOwnerAfterDownload(
       token,
       buildTournamentResume(form, preview, pdfFilename)
     );
   }, [form, preview, pdfFilename]);
+
+  const handleDownloadNotify = useCallback(() => {
+    if (!notifyTokenRef.current) return;
+    setPdfDownloaded(true);
+    envoyerNotificationUneFois();
+  }, [envoyerNotificationUneFois]);
 
   const handleDownloadManagerLive = useCallback(async () => {
     const token = notifyTokenRef.current;
@@ -246,10 +256,7 @@ export default function App() {
     try {
       await downloadManagerLiveBundle(token, `${base}-manager-live.zip`);
       setManagerPackDownloaded(true);
-      notifyOwnerAfterDownload(
-        token,
-        buildTournamentResume(form, preview, pdfFilename)
-      );
+      envoyerNotificationUneFois();
     } catch (err) {
       setGenError(
         err instanceof Error
@@ -257,7 +264,7 @@ export default function App() {
           : "Impossible de télécharger le pack Manager Live."
       );
     }
-  }, [form, preview, pdfFilename]);
+  }, [pdfFilename, envoyerNotificationUneFois]);
 
   const slideVariants = {
     initial: { opacity: 0, y: 20 },

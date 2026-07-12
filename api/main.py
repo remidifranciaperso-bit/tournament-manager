@@ -17,7 +17,6 @@ from api.notify_store import (
     creer_archive_manager_live,
     enregistrer_pdf,
     enregistrer_snapshot,
-    supprimer_pdf,
 )
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
@@ -58,7 +57,7 @@ def health():
     return {
         "status": "ok",
         "app": "padel-tournament-engine",
-        "version": "2026-07-12c",
+        "version": "2026-07-12d",
         "notify": mode_notification(),
     }
 
@@ -74,8 +73,8 @@ def _envoyer_notification_arriere_plan(token: str, resume: dict) -> None:
         envoyer_notification_proprietaire(pdf_path, resume)
     except Exception as exc:
         print(f"Notify: échec envoi email ({exc})")
-    finally:
-        supprimer_pdf(token)
+    # Ne pas supprimer le PDF/snapshot ici : l'utilisateur peut encore
+    # télécharger le pack Manager Live. Nettoyage via TTL (6 h).
 
 
 @app.post("/api/notify-owner")
@@ -108,6 +107,9 @@ async def telecharger_pack_manager_live(
     background_tasks: BackgroundTasks,
 ):
     """Archive ZIP : PDF Engine + snapshot .live.json pour Manager live."""
+    from api.notify_store import nettoyer_expires
+
+    nettoyer_expires()
     archive = creer_archive_manager_live(token)
     if archive is None:
         raise HTTPException(
