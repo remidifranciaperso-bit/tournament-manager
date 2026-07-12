@@ -7,6 +7,8 @@ import base64
 import fitz
 
 ENGINE_HEADER_RATIO = 0.083
+ENGINE_FOOTER_RATIO = 0.042
+ENGINE_FOOTER_LOGO_WIDTH_RATIO = 1 / 3
 FINAL_TOP_GAP_RATIO = 0.028
 FINAL_IMAGE_MAX_WIDTH_RATIO = 0.72
 
@@ -48,6 +50,14 @@ def _fit_pdf_clip(
     )
 
 
+def _footer_logo_clip(engine_rect: fitz.Rect) -> fitz.Rect:
+    """Bande basse Engine rognée aux 1/3 latéraux (logo centré uniquement)."""
+    footer_top = engine_rect.height * (1 - ENGINE_FOOTER_RATIO)
+    width = engine_rect.width
+    side = width * (1 - ENGINE_FOOTER_LOGO_WIDTH_RATIO) / 2
+    return fitz.Rect(side, footer_top, width - side, engine_rect.height)
+
+
 def composer_page_export(
     page: fitz.Page,
     source: fitz.Document,
@@ -56,15 +66,16 @@ def composer_page_export(
     *,
     section: str = "main",
 ) -> None:
-    """Fond blanc + entête Engine + capture Manager (logo inclus dans la capture)."""
+    """Fond blanc + bandeaux Engine (slide courante) + capture Manager."""
     rect = page.rect
     header_h = rect.height * ENGINE_HEADER_RATIO
+    footer_h = rect.height * ENGINE_FOOTER_RATIO
     top_gap = rect.height * FINAL_TOP_GAP_RATIO if section == "final" else 0
     content_rect = fitz.Rect(
         rect.x0,
         rect.y0 + header_h + top_gap,
         rect.x1,
-        rect.y1,
+        rect.y1 - footer_h,
     )
 
     page.draw_rect(rect, color=None, fill=(1, 1, 1), overlay=False)
@@ -79,6 +90,10 @@ def composer_page_export(
     )
     header_dest = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
     _fit_pdf_clip(page, source, slide_index, header_clip, header_dest)
+
+    footer_clip = _footer_logo_clip(engine_rect)
+    footer_dest = fitz.Rect(rect.x0, rect.y1 - footer_h, rect.x1, rect.y1)
+    _fit_pdf_clip(page, source, slide_index, footer_clip, footer_dest)
 
     page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 
