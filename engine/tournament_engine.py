@@ -73,6 +73,7 @@ def generate_tournament(
         matchs,
         cache,
         pdf_filename,
+        logo_path=logo_path,
     )
 
     pptx_path = exports_dir / f"{nom_export}.pptx"

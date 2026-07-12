@@ -14,6 +14,34 @@ def _pixmap_to_png(pix: fitz.Pixmap, output_path: Path) -> None:
     pix.save(str(output_path))
 
 
+def _footer_candidates(page: fitz.Page) -> list[tuple[float, int]]:
+    footer_y = page.rect.height * 0.88
+    candidates: list[tuple[float, int]] = []
+
+    try:
+        for info in page.get_image_info(xrefs=True):
+            bbox = fitz.Rect(info["bbox"])
+            if bbox.y0 < footer_y:
+                continue
+            width = int(info["width"])
+            height = int(info["height"])
+            if width < 16 or height < 16 or width > 320 or height > 320:
+                continue
+            candidates.append((float(width * height), int(info["xref"])))
+    except (AttributeError, TypeError, ValueError):
+        for entry in page.get_images(full=True):
+            xref = int(entry[0])
+            try:
+                pix = fitz.Pixmap(page.parent, xref)
+            except Exception:
+                continue
+            if pix.width < 16 or pix.height < 16 or pix.width > 320 or pix.height > 320:
+                continue
+            candidates.append((float(pix.width * pix.height), xref))
+
+    return candidates
+
+
 def extraire_logo_embarque_pdf(
     pdf_path: Path,
     output_path: Path,
@@ -28,23 +56,10 @@ def extraire_logo_embarque_pdf(
         best_area = float("inf")
 
         for page_index in range(doc.page_count):
-            page = doc[page_index]
-            footer_y = page.rect.height * 0.9
-
-            for info in page.get_image_info(xrefs=True):
-                bbox = fitz.Rect(info["bbox"])
-                if bbox.y0 < footer_y:
-                    continue
-
-                width = int(info["width"])
-                height = int(info["height"])
-                if width < 16 or height < 16 or width > 320 or height > 320:
-                    continue
-
-                area = float(width * height)
+            for area, xref in _footer_candidates(doc[page_index]):
                 if area < best_area:
                     best_area = area
-                    best_xref = int(info["xref"])
+                    best_xref = xref
 
         if best_xref is None:
             return False

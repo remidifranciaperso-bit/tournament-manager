@@ -64,6 +64,7 @@ def extraire_pack_manager_live(
                 nom
                 for nom in entrees
                 if Path(nom).name.lower().startswith("logo.")
+                or ".logo." in Path(nom).name.lower()
             ]
 
             if len(pdfs) != 1:

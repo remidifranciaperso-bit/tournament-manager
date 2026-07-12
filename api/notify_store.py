@@ -102,6 +102,6 @@ def creer_archive_manager_live(token: str) -> Path | None:
         zf.write(snapshot_path, arcname=f"{base}.live.json")
         logo_path = chemin_logo_notify(token)
         if logo_path is not None:
-            zf.write(logo_path, arcname=logo_path.name)
+            zf.write(logo_path, arcname=f"logo{logo_path.suffix.lower()}")
 
     return archive

@@ -23,11 +23,17 @@ def init_live_from_snapshot(
             "Snapshot invalide : aucune page tableau pour le live."
         )
 
+    resolved_logo = logo_path
+    if resolved_logo is None:
+        from engine.live_snapshot import materialiser_logo_snapshot
+
+        resolved_logo = materialiser_logo_snapshot(snapshot, pdf_path.parent)
+
     live_token, _pages_dir, page_sizes = creer_session(
         pdf_path,
         pdf_filename,
         page_map,
-        logo_path=logo_path,
+        logo_path=resolved_logo,
         move_pdf=True,
         page_sizes=page_sizes,
     )
