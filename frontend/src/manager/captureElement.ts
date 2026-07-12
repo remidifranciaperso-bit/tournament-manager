@@ -6,9 +6,11 @@
 import { toPng } from "html-to-image";
 
 const CAPTURE_TIMEOUT_MS = 30_000;
+const EXPORT_PIXEL_RATIO = 2;
 
 export interface DomCaptureOptions {
   format?: "png";
+  highQuality?: boolean;
 }
 
 async function waitForStableLayout(element: HTMLElement): Promise<void> {
@@ -39,6 +41,24 @@ async function waitForStableLayout(element: HTMLElement): Promise<void> {
     lastHeight = height;
     await new Promise((resolve) => setTimeout(resolve, 120));
   }
+}
+
+async function waitForEmbeddedImages(element: HTMLElement): Promise<void> {
+  const images = Array.from(element.querySelectorAll("img"));
+  await Promise.all(
+    images.map(
+      (image) =>
+        new Promise<void>((resolve) => {
+          if (image.complete && image.naturalWidth > 0) {
+            resolve();
+            return;
+          }
+          const done = () => resolve();
+          image.addEventListener("load", done, { once: true });
+          image.addEventListener("error", done, { once: true });
+        })
+    )
+  );
 }
 
 function isDataUrlMostlyBlank(dataUrl: string): Promise<boolean> {
@@ -78,21 +98,25 @@ function isDataUrlMostlyBlank(dataUrl: string): Promise<boolean> {
 
 export async function captureElementImage(
   element: HTMLElement,
-  _options: DomCaptureOptions = {}
+  options: DomCaptureOptions = {}
 ): Promise<string> {
+  const highQuality = options.highQuality ?? false;
+
   await document.fonts.ready;
+  await waitForEmbeddedImages(element);
   await waitForStableLayout(element);
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, highQuality ? 700 : 500));
 
   const captureWidth = Math.max(element.scrollWidth, element.offsetWidth);
   const captureHeight = Math.max(element.scrollHeight, element.offsetHeight);
+  const pixelRatio = highQuality ? EXPORT_PIXEL_RATIO : 1;
 
   const capturePromise = toPng(element, {
     cacheBust: true,
-    pixelRatio: 1,
+    pixelRatio,
     width: captureWidth,
     height: captureHeight,
     backgroundColor: "#ffffff",

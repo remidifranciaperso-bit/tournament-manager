@@ -13,6 +13,7 @@ import {
   LIVE_TABLE_PAGE,
   LIVE_TABLE_PAGE_INNER,
   LIVE_TABLE_ROW,
+  LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
 } from "./liveDataTable";
 
@@ -87,7 +88,7 @@ export function LivePlanningTab({
               return (
                 <tr
                   key={`${row.code}-${row.heure}`}
-                  className={LIVE_TABLE_ROW}
+                  className={exportMode ? LIVE_TABLE_ROW_EXPORT : LIVE_TABLE_ROW}
                 >
                   <td className={`${LIVE_TABLE_CELL_TSL_BOLD} ${nowrap}`}>{row.code}</td>
                   <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap}`}>
@@ -97,18 +98,20 @@ export function LivePlanningTab({
                     {row.terrain || "—"}
                   </td>
                   <td
-                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} ${exportMode ? "truncate" : ""}`}
+                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} ${exportMode ? "whitespace-nowrap" : ""}`}
                   >
                     {row.equipe1}
                   </td>
                   <td
-                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} ${exportMode ? "truncate" : ""}`}
+                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} ${exportMode ? "whitespace-nowrap" : ""}`}
                   >
                     {row.equipe2}
                   </td>
-                  <td className={`px-2 py-2 text-center sm:px-3 ${nowrap}`}>
+                  <td
+                    className={`${LIVE_TABLE_CELL_TSL} text-center ${nowrap}`}
+                  >
                     {exportMode ? (
-                      <span className={LIVE_TABLE_CELL_TSL}>{row.duration}</span>
+                      row.duration
                     ) : (
                       <input
                         type="checkbox"

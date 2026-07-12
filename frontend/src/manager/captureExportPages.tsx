@@ -22,7 +22,7 @@ async function waitForPaint(): Promise<void> {
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
-  await new Promise((resolve) => setTimeout(resolve, 900));
+  await new Promise((resolve) => setTimeout(resolve, 1200));
 }
 
 async function waitForScreenTarget(
@@ -76,7 +76,7 @@ export async function captureManagerExportPages(
         await waitForPaint();
         const target = await waitForScreenTarget(captureSelector(section));
         const key = captureKey(section, entry.index);
-        captures[key] = await captureElementImage(target);
+        captures[key] = await captureElementImage(target, { highQuality: true });
       }
     }
   } finally {

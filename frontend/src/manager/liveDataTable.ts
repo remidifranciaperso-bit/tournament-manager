@@ -16,6 +16,9 @@ export const LIVE_TABLE_HEAD =
 
 export const LIVE_TABLE_ROW = "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]";
 
+export const LIVE_TABLE_ROW_EXPORT =
+  "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04] [&>td]:align-middle [&>td]:py-2.5";
+
 export const LIVE_TABLE_CELL_TSL =
   "px-2 py-2 font-tsl text-arena-800 sm:px-3";
 

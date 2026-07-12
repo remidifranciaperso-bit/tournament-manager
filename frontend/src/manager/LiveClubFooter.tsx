@@ -7,7 +7,7 @@ interface LiveClubFooterProps {
 
 /** Pied de page club — aligné sur le footer Engine (logo ou nom du club). */
 export function LiveClubFooter({ club, logoUrl }: LiveClubFooterProps) {
-  if (!club.trim()) return null;
+  if (!club.trim() && !logoUrl) return null;
 
   return (
     <div

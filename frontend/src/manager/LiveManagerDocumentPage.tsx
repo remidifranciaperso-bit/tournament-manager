@@ -26,14 +26,14 @@ export function LiveManagerDocumentPage({
           ? "inline-flex w-full flex-col items-stretch bg-white"
           : "flex min-h-0 flex-1 flex-col overflow-hidden bg-white"
       }
-      {...(capture ? { "data-export-capture": capture } : {})}
     >
       <div
         className={
           exportMode
-            ? "shrink-0"
+            ? "shrink-0 bg-white"
             : "flex min-h-0 flex-1 flex-col overflow-hidden"
         }
+        {...(capture ? { "data-export-capture": capture } : {})}
       >
         {children}
       </div>

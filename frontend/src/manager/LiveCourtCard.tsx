@@ -346,14 +346,9 @@ export function LiveCourtCard({
         {terrainLibrePrompt ? (
           <div className="absolute inset-0 z-30 flex items-center justify-center px-3">
             {terrainLibrePrompt.noMoreMatches ? (
-              <div className="flex max-w-[92%] flex-col items-center gap-2 rounded-2xl border border-template-blue/40 bg-white/95 px-5 py-4 text-center shadow-lg">
-                <span className="font-brush text-2xl leading-none text-template-blue sm:text-3xl">
-                  Terrain libre
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-template-blue/85 sm:text-[11px]">
-                  Aucun match à suivre sur ce terrain
-                </span>
-              </div>
+              <span className="max-w-[92%] text-center font-brush text-2xl leading-none text-template-blue sm:text-3xl">
+                Aucun match à suivre
+              </span>
             ) : (
               <button
                 type="button"
