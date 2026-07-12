@@ -34,6 +34,7 @@ def creer_session(
     logo_path: Path | str | None = None,
     *,
     move_pdf: bool = False,
+    trim_logo: bool = True,
     page_indices: list[int] | None = None,
     page_sizes: dict[str, dict[str, float]] | None = None,
 ) -> tuple[str, Path, dict[str, dict[str, float]]]:
@@ -56,9 +57,10 @@ def creer_session(
     if logo_path is not None:
         source = Path(logo_path)
         if source.is_file():
-            from engine.logo_trim import rogner_logo_fichier
+            if trim_logo:
+                from engine.logo_trim import rogner_logo_fichier
 
-            rogner_logo_fichier(source)
+                rogner_logo_fichier(source)
             ext = source.suffix.lower() or ".png"
             shutil.copy2(source, session_dir / f"logo{ext}")
 

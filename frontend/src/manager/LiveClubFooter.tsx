@@ -18,7 +18,7 @@ export function LiveClubFooter({ club, logoUrl }: LiveClubFooterProps) {
       {logoUrl ? (
         <img
           src={logoUrl}
-          alt={club}
+          alt=""
           className={`${LIVE_LOGO_HEIGHT_CLASS} w-auto ${LIVE_LOGO_MAX_WIDTH_CLASS} object-contain object-center`}
         />
       ) : (

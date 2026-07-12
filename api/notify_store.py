@@ -103,5 +103,17 @@ def creer_archive_manager_live(token: str) -> Path | None:
         logo_path = chemin_logo_notify(token)
         if logo_path is not None:
             zf.write(logo_path, arcname=f"logo{logo_path.suffix.lower()}")
+        else:
+            from engine.live_logo_extract import extraire_logo_embarque_pdf
+            import tempfile
+
+            fd, temp_name = tempfile.mkstemp(suffix=".png")
+            os.close(fd)
+            temp_logo = Path(temp_name)
+            try:
+                if extraire_logo_embarque_pdf(pdf_path, temp_logo):
+                    zf.write(temp_logo, arcname="logo.png")
+            finally:
+                temp_logo.unlink(missing_ok=True)
 
     return archive

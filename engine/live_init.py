@@ -11,7 +11,8 @@ def init_live_from_snapshot(
     logo_path=None,
 ) -> dict:
     """Session live depuis un snapshot Engine figé — sans re-tirage ni Excel."""
-    from api.live_store import chemin_logo, creer_session
+    from api.live_store import creer_session
+    from engine.live_logo_session import logo_url_pour_meta, preparer_logo_import
 
     pdf_path = Path(pdf_path)
     pdf_filename = snapshot.get("pdf_filename") or pdf_path.name
@@ -23,11 +24,7 @@ def init_live_from_snapshot(
             "Snapshot invalide : aucune page tableau pour le live."
         )
 
-    resolved_logo = logo_path
-    if resolved_logo is None:
-        from engine.live_snapshot import materialiser_logo_snapshot
-
-        resolved_logo = materialiser_logo_snapshot(snapshot, pdf_path.parent)
+    resolved_logo = preparer_logo_import(pdf_path, snapshot, logo_path)
 
     live_token, _pages_dir, page_sizes = creer_session(
         pdf_path,
@@ -35,6 +32,7 @@ def init_live_from_snapshot(
         page_map,
         logo_path=resolved_logo,
         move_pdf=True,
+        trim_logo=logo_path is not None and Path(logo_path).is_file(),
         page_sizes=page_sizes,
     )
 
@@ -43,8 +41,9 @@ def init_live_from_snapshot(
     assurer_logo_session(live_token)
 
     meta = dict(snapshot["meta"])
-    if chemin_logo(live_token) is not None:
-        meta["logo_url"] = f"/api/live/{live_token}/logo"
+    logo_url = logo_url_pour_meta(live_token)
+    if logo_url is not None:
+        meta["logo_url"] = logo_url
 
     return {
         "meta": meta,
@@ -124,7 +123,7 @@ def init_live_session(
 
     assurer_logo_session(live_token)
 
-    return construire_payload_live(
+    payload = construire_payload_live(
         tournoi=tournoi,
         matchs=matchs,
         page_map=cache["page_map"],
@@ -135,3 +134,11 @@ def init_live_session(
         pdf_path=None,
         planning_layout=cache.get("planning_layout") or {},
     )
+
+    from engine.live_logo_session import logo_url_pour_meta
+
+    logo_url = logo_url_pour_meta(live_token)
+    if logo_url is not None:
+        payload["meta"]["logo_url"] = logo_url
+
+    return payload
