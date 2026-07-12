@@ -47,6 +47,7 @@ export default function EnginePage() {
   const [liveSnapshotAvailable, setLiveSnapshotAvailable] = useState(false);
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [managerPackDownloaded, setManagerPackDownloaded] = useState(false);
+  const [hasTelecharge, setHasTelecharge] = useState(false);
   const notifyTokenRef = useRef<string | null>(null);
   const notifySentRef = useRef(false);
   const genStartedRef = useRef(false);
@@ -145,6 +146,7 @@ export default function EnginePage() {
     setGenError(null);
     setPdfDownloaded(false);
     setManagerPackDownloaded(false);
+    setHasTelecharge(false);
     notifySentRef.current = false;
     genStartedRef.current = false;
     setStep(8);
@@ -180,6 +182,7 @@ export default function EnginePage() {
   useEffect(() => {
     if (step !== 8) {
       genStartedRef.current = false;
+      setHasTelecharge(false);
       return;
     }
     if (genStartedRef.current || generating) return;
@@ -200,6 +203,7 @@ export default function EnginePage() {
   const handleDownloadNotify = useCallback(() => {
     if (!notifyTokenRef.current) return;
     setPdfDownloaded(true);
+    setHasTelecharge(true);
     envoyerNotificationUneFois();
   }, [envoyerNotificationUneFois]);
 
@@ -210,6 +214,7 @@ export default function EnginePage() {
     try {
       await downloadManagerLiveBundle(token, `${base}-manager-live.zip`);
       setManagerPackDownloaded(true);
+      setHasTelecharge(true);
       envoyerNotificationUneFois();
     } catch (err) {
       setGenError(
@@ -219,6 +224,10 @@ export default function EnginePage() {
       );
     }
   }, [pdfFilename, envoyerNotificationUneFois]);
+
+  const handleRegenerateSame = useCallback(() => {
+    void handleGenerate();
+  }, [handleGenerate]);
 
   const slideVariants = {
     initial: { opacity: 0, y: 20 },
@@ -343,8 +352,10 @@ export default function EnginePage() {
                   liveSnapshotAvailable={liveSnapshotAvailable}
                   pdfDownloaded={pdfDownloaded}
                   managerPackDownloaded={managerPackDownloaded}
+                  hasTelecharge={hasTelecharge}
                   onDownloadPdf={handleDownloadNotify}
                   onDownloadManagerLive={handleDownloadManagerLive}
+                  onRegenerateSame={handleRegenerateSame}
                 />
               )}
             </motion.div>

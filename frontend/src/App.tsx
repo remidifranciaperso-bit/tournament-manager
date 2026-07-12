@@ -96,6 +96,7 @@ export default function App() {
   const [liveSnapshotAvailable, setLiveSnapshotAvailable] = useState(false);
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [managerPackDownloaded, setManagerPackDownloaded] = useState(false);
+  const [hasTelecharge, setHasTelecharge] = useState(false);
   const genStartedRef = useRef(false);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
@@ -192,6 +193,7 @@ export default function App() {
     setGenError(null);
     setPdfDownloaded(false);
     setManagerPackDownloaded(false);
+    setHasTelecharge(false);
     notifySentRef.current = false;
     genStartedRef.current = false;
     setStep(8);
@@ -226,6 +228,7 @@ export default function App() {
   useEffect(() => {
     if (step !== 8) {
       genStartedRef.current = false;
+      setHasTelecharge(false);
       return;
     }
     if (genStartedRef.current || generating) return;
@@ -246,6 +249,7 @@ export default function App() {
   const handleDownloadNotify = useCallback(() => {
     if (!notifyTokenRef.current) return;
     setPdfDownloaded(true);
+    setHasTelecharge(true);
     envoyerNotificationUneFois();
   }, [envoyerNotificationUneFois]);
 
@@ -256,6 +260,7 @@ export default function App() {
     try {
       await downloadManagerLiveBundle(token, `${base}-manager-live.zip`);
       setManagerPackDownloaded(true);
+      setHasTelecharge(true);
       envoyerNotificationUneFois();
     } catch (err) {
       setGenError(
@@ -265,6 +270,10 @@ export default function App() {
       );
     }
   }, [pdfFilename, envoyerNotificationUneFois]);
+
+  const handleRegenerateSame = useCallback(() => {
+    void handleGenerate();
+  }, [handleGenerate]);
 
   const slideVariants = {
     initial: { opacity: 0, y: 20 },
@@ -389,8 +398,10 @@ export default function App() {
                   liveSnapshotAvailable={liveSnapshotAvailable}
                   pdfDownloaded={pdfDownloaded}
                   managerPackDownloaded={managerPackDownloaded}
+                  hasTelecharge={hasTelecharge}
                   onDownloadPdf={handleDownloadNotify}
                   onDownloadManagerLive={handleDownloadManagerLive}
+                  onRegenerateSame={handleRegenerateSame}
                 />
               )}
             </motion.div>
@@ -1166,8 +1177,10 @@ function GenerationStep({
   liveSnapshotAvailable,
   pdfDownloaded,
   managerPackDownloaded,
+  hasTelecharge,
   onDownloadPdf,
   onDownloadManagerLive,
+  onRegenerateSame,
 }: {
   generating: boolean;
   genError: string | null;
@@ -1177,43 +1190,60 @@ function GenerationStep({
   liveSnapshotAvailable: boolean;
   pdfDownloaded: boolean;
   managerPackDownloaded: boolean;
+  hasTelecharge: boolean;
   onDownloadPdf: () => void;
   onDownloadManagerLive: () => void;
+  onRegenerateSame: () => void;
 }) {
   const done = !!pdfUrl && !generating;
+  const afficherRegenerer = hasTelecharge && !generating;
+
+  const sousTitre = generating
+    ? "Production du PDF en cours…"
+    : done && !afficherRegenerer
+      ? "Votre dossier tournoi est prêt."
+      : "\u00a0";
 
   return (
     <div className="mx-auto w-full max-w-2xl text-center">
-      <WizardPageTitle
-        title="Génération"
-        subtitle={
-          done
-            ? "Votre dossier tournoi est prêt."
-            : "Production du PDF en cours…"
-        }
-      />
+      <WizardPageTitle title="Génération" subtitle={sousTitre} />
 
-      <div className="mx-auto mt-6 w-full max-w-md">
-        <div className="h-2 overflow-hidden rounded-full bg-white/10">
-          {done ? (
+      <div className="mx-auto mt-6 flex min-h-[3.75rem] w-full max-w-md items-center justify-center">
+        {generating ? (
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+            <motion.div
+              className="h-full rounded-full bg-lime shadow-lime"
+              initial={{ width: "12%" }}
+              animate={{ width: "88%" }}
+              transition={{
+                duration: 8,
+                ease: "easeInOut",
+              }}
+            />
+          </div>
+        ) : afficherRegenerer ? (
+          <button
+            type="button"
+            onClick={onRegenerateSame}
+            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white/85 transition hover:border-lime/30 hover:bg-white/[0.06] hover:text-lime"
+          >
+            <span>Regénérer le même tournoi</span>
+            <span className="text-[11px] font-normal text-white/45">
+              nouveau tirage au sort - paramètres identiques
+            </span>
+          </button>
+        ) : done ? (
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
             <motion.div
               initial={{ width: "0%" }}
               animate={{ width: "100%" }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="h-full rounded-full bg-lime shadow-lime"
             />
-          ) : (
-            <motion.div
-              className="h-full rounded-full bg-lime shadow-lime"
-              initial={{ width: "12%" }}
-              animate={{ width: generating ? "88%" : "12%" }}
-              transition={{
-                duration: generating ? 8 : 0.3,
-                ease: "easeInOut",
-              }}
-            />
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="h-2 w-full" aria-hidden />
+        )}
       </div>
 
       {generating && (
