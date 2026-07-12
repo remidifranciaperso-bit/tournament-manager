@@ -12,6 +12,7 @@ import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
 import { downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
+import { LiveProjectionPage } from "./LiveProjectionPage";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { useMatchScoreDraft } from "./useMatchScoreDraft";
 import type { ValidatedMatchScore } from "./matchScoreRules";
@@ -271,7 +272,7 @@ export function LiveMatchsEnCoursTab({
   );
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {openTerrain && openMatch && (
         <ScoringBridge
           key={`${openTerrain}-${openMatch.code}`}
@@ -282,8 +283,9 @@ export function LiveMatchsEnCoursTab({
         />
       )}
 
-      {started && !finished ? (
-        <LiveCourtsRow
+      <LiveProjectionPage club={meta.club} logoUrl={meta.logo_url}>
+        {started && !finished ? (
+          <LiveCourtsRow
           terrains={terrains}
           matchByTerrain={displayMatchByTerrain}
           emptyLabel=""
@@ -366,11 +368,10 @@ export function LiveMatchsEnCoursTab({
             );
           }}
         />
-      ) : started ? (
-        <div className="min-h-0 flex-1" aria-hidden />
-      ) : (
-        <div className="min-h-0 flex-1" aria-hidden />
-      )}
+        ) : (
+          <div className="min-h-0 flex-1" aria-hidden />
+        )}
+      </LiveProjectionPage>
 
       {!started && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">

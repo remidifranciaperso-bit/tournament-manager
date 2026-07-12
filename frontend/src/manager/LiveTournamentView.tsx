@@ -395,6 +395,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                 <LiveProchainsMatchsTab
                   terrains={meta.terrains}
                   matches={matches}
+                  meta={meta}
                   completed={progress.completed}
                   matchResults={progress.matchResults}
                   started={progress.started}
@@ -408,6 +409,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   done={progress.done}
                   total={progress.total}
                   percent={progress.percent}
+                  club={meta.club}
+                  logoUrl={meta.logo_url}
                 />
               )}
 

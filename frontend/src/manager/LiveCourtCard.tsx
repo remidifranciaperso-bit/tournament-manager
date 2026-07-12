@@ -11,8 +11,8 @@ import { parseTeamLabel, type ParsedTeam } from "./parseTeamLabel";
 /** Décalage vertical des encarts vers le centre (évite le bord des lignes). */
 const COURT_TEAM_BADGE_TOP_CLASS = "pb-5";
 const COURT_TEAM_BADGE_BOTTOM_CLASS = "pt-5";
-export const COURT_WIDTH_PX = 280;
-export const COURT_HEIGHT_PX = 560;
+export const COURT_WIDTH_PX = 256;
+export const COURT_HEIGHT_PX = 512;
 /** Largeur uniforme des encarts equipes / gagnants (% du terrain). */
 export const COURT_BADGE_WIDTH_CLASS = "w-[78%]";
 /** Hauteur fixe sous le terrain (bouton score ou heure prévue). */
@@ -40,10 +40,11 @@ export function CourtFooterSlot({
   return (
     <div
       className={[
-        "flex w-full max-w-[280px] flex-col justify-start gap-1.5",
+        "flex w-full flex-col justify-start gap-1.5",
         compact ? "mt-1" : "mt-3",
       ].join(" ")}
       style={{
+        width: COURT_WIDTH_PX,
         minHeight: compact ? COURT_FOOTER_COMPACT_MIN_H_PX : COURT_FOOTER_MIN_H_PX,
       }}
     >
@@ -71,9 +72,9 @@ export function CourtScheduledTime({
 const COURT_THEME = {
   dark: {
     terrainLabel:
-      "field-label-section max-w-[280px] truncate px-1 text-center",
+      "field-label-section w-full truncate px-1 text-center",
     matchName:
-      "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-white/65 sm:text-[13px]",
+      "w-full truncate px-1 text-center text-[12px] font-medium text-white/65 sm:text-[13px]",
     teamBadge: `${COURT_BADGE_WIDTH_CLASS} relative min-h-[5.5rem] shrink-0 rounded-lg border border-white/30 bg-arena-950/80 shadow-sm`,
     playerName:
       "block max-w-full text-center text-[14px] font-medium leading-snug text-white sm:text-[15px]",
@@ -93,9 +94,9 @@ const COURT_THEME = {
   },
   light: {
     terrainLabel:
-      "max-w-[280px] truncate px-1 text-center text-sm font-semibold uppercase tracking-widest text-arena-700 sm:text-base",
+      "w-full truncate px-1 text-center text-sm font-semibold uppercase tracking-widest text-arena-700 sm:text-base",
     matchName:
-      "max-w-[280px] truncate px-1 text-center text-[12px] font-medium text-arena-600 sm:text-[13px]",
+      "w-full truncate px-1 text-center text-[12px] font-medium text-arena-600 sm:text-[13px]",
     teamBadge: `${COURT_BADGE_WIDTH_CLASS} relative min-h-[5.5rem] shrink-0 rounded-lg border border-arena-600/20 bg-white/95 shadow-sm`,
     playerName:
       "block max-w-full text-center text-[14px] font-medium leading-snug text-arena-800 sm:text-[15px]",
@@ -318,7 +319,10 @@ export function LiveCourtCard({
     scoringMode && scoring && scoring.setCount > 1;
 
   return (
-    <div className="flex w-[280px] shrink-0 flex-col items-center">
+    <div
+      className="flex shrink-0 flex-col items-center"
+      style={{ width: COURT_WIDTH_PX }}
+    >
       <p className={`${theme.terrainLabel} w-full shrink-0 text-center`}>
         {terrainName}
       </p>

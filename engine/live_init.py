@@ -32,6 +32,10 @@ def init_live_from_snapshot(
         page_sizes=page_sizes,
     )
 
+    from engine.live_logo_extract import assurer_logo_session
+
+    assurer_logo_session(live_token)
+
     meta = dict(snapshot["meta"])
     if chemin_logo(live_token) is not None:
         meta["logo_url"] = f"/api/live/{live_token}/logo"
@@ -109,6 +113,10 @@ def init_live_session(
         move_pdf=True,
         page_sizes=cache["page_sizes"],
     )
+
+    from engine.live_logo_extract import assurer_logo_session
+
+    assurer_logo_session(live_token)
 
     return construire_payload_live(
         tournoi=tournoi,
