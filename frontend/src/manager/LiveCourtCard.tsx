@@ -5,6 +5,7 @@ import type { CourtMatchDisplay } from "./liveCourtMatches";
 import { getSetScoreOptions } from "./matchScoreRules";
 import type { SetScore } from "./matchScoreRules";
 import { hasAnyCourtTeam } from "./courtTeamsReady";
+import { isBracketPlaceholder } from "./formatBracketLabel";
 import { parseTeamLabel, type ParsedTeam } from "./parseTeamLabel";
 
 /** Décalage vertical des encarts vers le centre (évite le bord des lignes). */
@@ -162,6 +163,25 @@ function TeamBadge({
   theme: (typeof COURT_THEME)[LiveCourtTheme];
   footnote?: string | null;
 }) {
+  const centerPlaceholder =
+    !scoringMode &&
+    !footnote &&
+    isBracketPlaceholder(team.player1) &&
+    !team.player2 &&
+    !team.seed;
+
+  if (centerPlaceholder) {
+    return (
+      <div className={theme.teamBadge}>
+        <div className="absolute inset-2 flex items-center justify-center px-1">
+          <span className={`${theme.playerName} text-center break-words`}>
+            {team.player1}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={theme.teamBadge}>
       <div className="absolute inset-x-2.5 top-2 bottom-9 flex items-center justify-center">

@@ -25,7 +25,7 @@ export function formatTeamSlot(label: string): string {
   return text;
 }
 
-/** Affichage terrain live : WIN/LOSE sans « : » (onglets matchs). */
+/** Affichage prochains matchs : emojis sans « : ». */
 export function formatCourtTeamSlot(label: string): string {
   const text = label.trim();
   if (!text) return "—";
@@ -40,10 +40,10 @@ export function formatCourtTeamSlot(label: string): string {
     return `3 ${text.replace("Troisième ", "")}`;
   }
   if (text.startsWith("Vainqueur ")) {
-    return `WIN ${text.replace("Vainqueur ", "")}`;
+    return `${ICONE_VAINQUEUR}${text.replace("Vainqueur ", "")}`;
   }
   if (text.startsWith("Perdant ")) {
-    return `LOSE ${text.replace("Perdant ", "")}`;
+    return `${ICONE_PERDANT}${text.replace("Perdant ", "")}`;
   }
 
   return text.replace(/:$/, "");

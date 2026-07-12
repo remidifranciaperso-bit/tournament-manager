@@ -128,7 +128,8 @@ export function LiveMatchsEnCoursTab({
         terrains,
         completed,
         matchResults,
-        awaitingLaunch
+        awaitingLaunch,
+        "bracket"
       ),
     [matches, terrains, completed, matchResults, awaitingLaunch]
   );
