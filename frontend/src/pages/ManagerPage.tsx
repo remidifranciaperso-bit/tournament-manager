@@ -14,7 +14,13 @@ import { ManagerStartStep } from "../manager/ManagerStartStep";
 import { defaultForm, type PreviewResult, type TournamentForm } from "../types";
 import { MANAGER_WIZARD_STEPS } from "../wizard/constants";
 import { poulesDisponibleFrom, syncHeures } from "../wizard/helpers";
-import { matchFormatsStepValid } from "../manager/matchFormats";
+import {
+  applyFormFormatsToLiveData,
+  hydrateFormFromPackMeta,
+  matchFormatsStepValid,
+  packHasPoules,
+} from "../manager/matchFormats";
+import { ManagerMatchFormatsStep } from "../manager/ManagerMatchFormatsStep";
 import {
   ClubStep,
   FormatStep,
@@ -26,12 +32,13 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-27";
+const MANAGER_BUILD = "manager-preview-28";
 
-/** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack */
+/** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack · 11 formats pack */
 const STEP_PARTICIPANTS = 2;
 const STEP_GENERATE = 9;
 const STEP_PACK_IMPORT = 10;
+const STEP_PACK_FORMAT = 11;
 
 /** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack */
 
@@ -46,6 +53,9 @@ export default function ManagerPage() {
   const [genError, setGenError] = useState<string | null>(null);
   const [liveReady, setLiveReady] = useState(false);
   const [liveData, setLiveData] = useState<LiveTournamentData | null>(null);
+  const [pendingPackLiveData, setPendingPackLiveData] =
+    useState<LiveTournamentData | null>(null);
+  const [packHasPoulesFormat, setPackHasPoulesFormat] = useState(false);
   const genStartedRef = useRef(false);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
@@ -126,11 +136,25 @@ export default function ManagerPage() {
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEP_GENERATE));
   const goBack = () => {
+    if (step === STEP_PACK_FORMAT) {
+      setPendingPackLiveData(null);
+      setPackHasPoulesFormat(false);
+      setStep(STEP_PACK_IMPORT);
+      return;
+    }
     if (step === STEP_PACK_IMPORT) {
       setStep(1);
       return;
     }
     setStep((s) => Math.max(s - 1, 0));
+  };
+
+  const handlePackFormatContinue = () => {
+    if (!pendingPackLiveData || !matchFormatsStepValid(form)) return;
+    setLiveData(applyFormFormatsToLiveData(pendingPackLiveData, form));
+    setPendingPackLiveData(null);
+    setPackHasPoulesFormat(false);
+    setPhase("live");
   };
   const goHome = () => setStep(0);
 
@@ -219,6 +243,38 @@ export default function ManagerPage() {
     );
   }
 
+  if (step === STEP_PACK_FORMAT && pendingPackLiveData) {
+    return (
+      <div className="relative flex h-dvh overflow-hidden">
+        <CourtBackground />
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <main className="mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 sm:px-8 sm:py-5">
+            <ManagerMatchFormatsStep
+              form={form}
+              patch={patch}
+              club={pendingPackLiveData.meta.club}
+              nbEquipes={pendingPackLiveData.meta.nb_equipes}
+              showPoules={packHasPoulesFormat}
+            />
+          </main>
+
+          <footer className="shrink-0 px-4 py-4 sm:px-8">
+            <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
+              <GhostButton onClick={goBack}>← Retour</GhostButton>
+              <PrimaryButton
+                onClick={handlePackFormatContinue}
+                disabled={!matchFormatsStepValid(form)}
+              >
+                Accéder au tournoi live →
+              </PrimaryButton>
+            </div>
+          </footer>
+        </div>
+      </div>
+    );
+  }
+
   if (step === STEP_PACK_IMPORT) {
     return (
       <div className="relative flex h-dvh w-full flex-col overflow-hidden">
@@ -226,8 +282,14 @@ export default function ManagerPage() {
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-8 sm:px-8">
           <ManagerPackImportStep
             onReady={(data) => {
-              setLiveData(data);
-              setPhase("live");
+              const hasPoules = packHasPoules(data);
+              setPendingPackLiveData(data);
+              setPackHasPoulesFormat(hasPoules);
+              setForm((prev) => ({
+                ...prev,
+                ...hydrateFormFromPackMeta(data.meta, hasPoules),
+              }));
+              setStep(STEP_PACK_FORMAT);
             }}
           />
         </div>
