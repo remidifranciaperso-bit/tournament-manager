@@ -35,10 +35,12 @@ def valider_snapshot(snapshot: dict) -> None:
         raise ValueError("Snapshot invalide : aucune page tableau cartographiée.")
 
 
-def extraire_pack_manager_live(archive_path: Path) -> tuple[Path, dict, Path]:
+def extraire_pack_manager_live(
+    archive_path: Path,
+) -> tuple[Path, dict, Path, Path | None]:
     """
-    Extrait PDF + snapshot depuis une archive ZIP.
-    Retourne (chemin_pdf, snapshot, dossier_temporaire_a_nettoyer).
+    Extrait PDF + snapshot (+ logo optionnel) depuis une archive ZIP.
+    Retourne (chemin_pdf, snapshot, dossier_temporaire_a_nettoyer, chemin_logo).
     """
     archive_path = Path(archive_path)
     if not archive_path.is_file():
@@ -57,6 +59,11 @@ def extraire_pack_manager_live(archive_path: Path) -> tuple[Path, dict, Path]:
             pdfs = [nom for nom in entrees if nom.lower().endswith(".pdf")]
             snapshots = [
                 nom for nom in entrees if nom.lower().endswith(".live.json")
+            ]
+            logos = [
+                nom
+                for nom in entrees
+                if Path(nom).name.lower().startswith("logo.")
             ]
 
             if len(pdfs) != 1:
@@ -79,6 +86,13 @@ def extraire_pack_manager_live(archive_path: Path) -> tuple[Path, dict, Path]:
             with zf.open(snapshot_nom) as source, snapshot_sortie.open("wb") as cible:
                 shutil.copyfileobj(source, cible)
 
+            logo_sortie: Path | None = None
+            if logos:
+                logo_nom = logos[0]
+                logo_sortie = temp_dir / Path(logo_nom).name
+                with zf.open(logo_nom) as source, logo_sortie.open("wb") as cible:
+                    shutil.copyfileobj(source, cible)
+
         try:
             snapshot = json.loads(
                 snapshot_sortie.read_text(encoding="utf-8")
@@ -87,7 +101,7 @@ def extraire_pack_manager_live(archive_path: Path) -> tuple[Path, dict, Path]:
             raise ValueError(f"Snapshot illisible : {exc}") from exc
 
         valider_snapshot(snapshot)
-        return pdf_sortie, snapshot, temp_dir
+        return pdf_sortie, snapshot, temp_dir, logo_sortie
     except Exception:
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise

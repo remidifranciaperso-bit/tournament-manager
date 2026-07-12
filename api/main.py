@@ -22,6 +22,7 @@ from api.notify_store import (
     creer_archive_manager_live,
     enregistrer_pdf,
     enregistrer_snapshot,
+    enregistrer_logo,
     supprimer_pdf,
 )
 from api.live_store import (
@@ -353,11 +354,13 @@ async def init_live_from_pack(
         from engine.live_pack import extraire_pack_manager_live
         from engine.live_init import init_live_from_snapshot
 
-        pdf_path, snapshot, temp_dir = extraire_pack_manager_live(archive_path)
+        pdf_path, snapshot, temp_dir, logo_from_pack = extraire_pack_manager_live(
+            archive_path
+        )
         payload = init_live_from_snapshot(
             pdf_path=pdf_path,
             snapshot=snapshot,
-            logo_path=logo_path,
+            logo_path=logo_path or logo_from_pack,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -665,6 +668,7 @@ async def generate(
     exports_dir = BASE_DIR / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
 
+    notify_token = None
     try:
         snapshot = None
         if remote_engine:
@@ -699,6 +703,13 @@ async def generate(
                 format_match_finale=format_match_finale,
                 format_match_poule=format_match_poule,
             )
+
+        pdf_path = Path(pdf_path)
+        notify_token = enregistrer_pdf(pdf_path)
+        if snapshot is not None:
+            enregistrer_snapshot(notify_token, snapshot)
+        if logo_path is not None and logo_path.is_file():
+            enregistrer_logo(notify_token, logo_path)
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except RuntimeError as exc:
@@ -709,11 +720,6 @@ async def generate(
         excel_path.unlink(missing_ok=True)
         if logo_path is not None:
             logo_path.unlink(missing_ok=True)
-
-    pdf_path = Path(pdf_path)
-    notify_token = enregistrer_pdf(pdf_path)
-    if snapshot is not None:
-        enregistrer_snapshot(notify_token, snapshot)
 
     response = FileResponse(
         path=str(pdf_path),

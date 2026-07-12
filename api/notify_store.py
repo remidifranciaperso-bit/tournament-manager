@@ -40,6 +40,24 @@ def enregistrer_snapshot(token: str, snapshot: dict) -> None:
     )
 
 
+def enregistrer_logo(token: str, logo_path: Path) -> None:
+    logo_path = Path(logo_path)
+    if not logo_path.is_file():
+        return
+    ext = logo_path.suffix.lower() or ".png"
+    destination = _notify_dir() / f"{token}.logo{ext}"
+    shutil.copy2(logo_path, destination)
+
+
+def chemin_logo_notify(token: str) -> Path | None:
+    if not token or not token.isalnum():
+        return None
+    for candidate in sorted(_notify_dir().glob(f"{token}.logo.*")):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def chemin_pdf(token: str) -> Path | None:
     if not token or not token.isalnum():
         return None
@@ -82,5 +100,8 @@ def creer_archive_manager_live(token: str) -> Path | None:
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.write(pdf_path, arcname=pdf_path.name)
         zf.write(snapshot_path, arcname=f"{base}.live.json")
+        logo_path = chemin_logo_notify(token)
+        if logo_path is not None:
+            zf.write(logo_path, arcname=logo_path.name)
 
     return archive

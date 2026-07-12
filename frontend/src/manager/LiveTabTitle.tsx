@@ -3,7 +3,9 @@ export const LIVE_BRUSH_LABEL_SIZE_CLASS =
   "text-[clamp(1.85rem,4.2vw,2.85rem)]";
 
 export const LIVE_LOGO_HEIGHT_CLASS =
-  "h-[clamp(1.85rem,4.2vw,2.85rem)]";
+  "h-[clamp(1.48rem,3.36vw,2.28rem)]";
+
+export const LIVE_LOGO_MAX_WIDTH_CLASS = "max-w-[26%]";
 
 export const LIVE_BRUSH_LABEL_CLASS = [
   "font-brush leading-none text-template-blue",

@@ -51,7 +51,6 @@ export function ExportCaptureLayer({
           club={meta.club}
           logoUrl={meta.logo_url}
           capture="final"
-          showFooter={false}
         >
           <LiveFinalRankingTab
             meta={meta}
@@ -86,7 +85,6 @@ export function ExportCaptureLayer({
           club={meta.club}
           logoUrl={meta.logo_url}
           capture="planning"
-          showFooter={false}
         >
           <LivePlanningTab
             layoutFields={layoutFields}
@@ -116,7 +114,6 @@ export function ExportCaptureLayer({
         club={meta.club}
         logoUrl={meta.logo_url}
         capture="bracket"
-        showFooter={false}
       >
         <LiveBracketViewer
           templateId={templateId}

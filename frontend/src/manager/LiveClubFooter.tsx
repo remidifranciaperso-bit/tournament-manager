@@ -1,4 +1,4 @@
-import { LIVE_LOGO_HEIGHT_CLASS } from "./LiveTabTitle";
+import { LIVE_LOGO_HEIGHT_CLASS, LIVE_LOGO_MAX_WIDTH_CLASS } from "./LiveTabTitle";
 
 interface LiveClubFooterProps {
   club: string;
@@ -19,7 +19,7 @@ export function LiveClubFooter({ club, logoUrl }: LiveClubFooterProps) {
         <img
           src={logoUrl}
           alt={club}
-          className={`${LIVE_LOGO_HEIGHT_CLASS} w-auto max-w-[32%] object-contain object-center`}
+          className={`${LIVE_LOGO_HEIGHT_CLASS} w-auto ${LIVE_LOGO_MAX_WIDTH_CLASS} object-contain object-center`}
         />
       ) : (
         <p className="max-w-[34%] truncate text-center font-noto text-xs font-medium text-arena-700 sm:text-sm">
