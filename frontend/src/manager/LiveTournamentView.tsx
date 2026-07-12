@@ -381,8 +381,11 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   captureExportPages={captureExportPages}
                   exportingPdf={exportingPdf}
                   onExportPhaseChange={setExportPhase}
-                  onStart={progress.startTournament}
+                  onStart={(initialMatchCodes) =>
+                    progress.startTournament(initialMatchCodes)
+                  }
                   onCompleteMatch={progress.completeMatch}
+                  onRecordMatchLaunch={progress.recordMatchLaunch}
                   awaitingLaunch={awaitingLaunch}
                   setAwaitingLaunch={setAwaitingLaunch}
                 />
@@ -428,6 +431,8 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
         pageMap={page_map}
         matches={matches}
         matchResults={progress.matchResults}
+        completed={progress.completed}
+        planningLayout={planning_layout ?? {}}
         meta={meta}
         fields={fields}
       />

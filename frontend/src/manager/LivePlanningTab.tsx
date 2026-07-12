@@ -22,6 +22,7 @@ interface LivePlanningTabProps {
   completed: Set<string>;
   matchResults: Record<string, StoredMatchResult>;
   onToggleDone: (code: string) => void;
+  exportMode?: boolean;
 }
 
 export function LivePlanningTab({
@@ -30,6 +31,7 @@ export function LivePlanningTab({
   completed,
   matchResults,
   onToggleDone,
+  exportMode = false,
 }: LivePlanningTabProps) {
   const rows = useMemo(
     () =>
@@ -60,7 +62,9 @@ export function LivePlanningTab({
               <th className={`w-[10%] ${LIVE_TABLE_HEAD}`}>Terrain</th>
               <th className={LIVE_TABLE_HEAD}>Équipe 1</th>
               <th className={LIVE_TABLE_HEAD}>Équipe 2</th>
-              <th className={`w-[8%] text-center ${LIVE_TABLE_HEAD}`}>Fait</th>
+              <th className={`w-[8%] text-center ${LIVE_TABLE_HEAD}`}>
+                {exportMode ? "Temps" : "Fait"}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -91,13 +95,17 @@ export function LivePlanningTab({
                     {row.equipe2}
                   </td>
                   <td className="px-2 py-2 text-center sm:px-3">
-                    <input
-                      type="checkbox"
-                      checked={row.done}
-                      onChange={() => onToggleDone(code)}
-                      className="h-4 w-4 accent-template-blue"
-                      aria-label={`Match ${row.code} terminé`}
-                    />
+                    {exportMode ? (
+                      <span className={LIVE_TABLE_CELL_TSL}>{row.duration}</span>
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={row.done}
+                        onChange={() => onToggleDone(code)}
+                        className="h-4 w-4 accent-template-blue"
+                        aria-label={`Match ${row.code} terminé`}
+                      />
+                    )}
                   </td>
                 </tr>
               );

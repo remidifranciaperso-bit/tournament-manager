@@ -5,11 +5,13 @@ import type { LiveTournamentMeta } from "./liveTypes";
 export interface StoredMatchResult extends ValidatedMatchScore {
   code: string;
   validatedAt: number;
+  launchedAt?: number;
 }
 
 interface ProgressState {
   completed: string[];
   results: Record<string, StoredMatchResult>;
+  launches?: Record<string, number>;
 }
 
 function storageKey(liveToken: string): string {
@@ -23,20 +25,21 @@ function startedAtKey(liveToken: string): string {
 function loadState(liveToken: string): ProgressState {
   try {
     const raw = localStorage.getItem(storageKey(liveToken));
-    if (!raw) return { completed: [], results: {} };
+    if (!raw) return { completed: [], results: {}, launches: {} };
 
     const parsed = JSON.parse(raw) as ProgressState | string[];
 
     if (Array.isArray(parsed)) {
-      return { completed: parsed, results: {} };
+      return { completed: parsed, results: {}, launches: {} };
     }
 
     return {
       completed: Array.isArray(parsed.completed) ? parsed.completed : [],
       results: parsed.results ?? {},
+      launches: parsed.launches ?? {},
     };
   } catch {
-    return { completed: [], results: {} };
+    return { completed: [], results: {}, launches: {} };
   }
 }
 
@@ -57,6 +60,15 @@ function loadStartedAt(liveToken: string): number | null {
 
 function saveStartedAt(liveToken: string, startedAt: number): void {
   localStorage.setItem(startedAtKey(liveToken), String(startedAt));
+}
+
+export function formatMatchDurationMinutes(
+  launchedAt: number | undefined,
+  validatedAt: number | undefined
+): string {
+  if (!launchedAt || !validatedAt) return "—";
+  const minutes = Math.max(0, Math.round((validatedAt - launchedAt) / 60_000));
+  return `${minutes} min`;
 }
 
 export function formatElapsed(ms: number): string {
@@ -81,9 +93,12 @@ export function useLiveProgress(
     const state = loadState(liveToken);
     return new Set(state.completed);
   });
-  const [matchResults, setMatchResults] = useState<
-    Record<string, StoredMatchResult>
-  >(() => loadState(liveToken).results);
+  const [matchResults, setMatchResults] = useState<Record<string, StoredMatchResult>>(
+    () => loadState(liveToken).results
+  );
+  const [matchLaunches, setMatchLaunches] = useState<Record<string, number>>(
+    () => loadState(liveToken).launches ?? {}
+  );
   const [startedAt, setStartedAt] = useState<number | null>(() =>
     loadStartedAt(liveToken)
   );
@@ -93,6 +108,7 @@ export function useLiveProgress(
     const state = loadState(liveToken);
     setCompleted(new Set(state.completed));
     setMatchResults(state.results);
+    setMatchLaunches(state.launches ?? {});
     setStartedAt(loadStartedAt(liveToken));
   }, [liveToken]);
 
@@ -101,11 +117,64 @@ export function useLiveProgress(
     return () => window.clearInterval(timer);
   }, []);
 
-  const startTournament = useCallback(() => {
-    const at = Date.now();
-    setStartedAt(at);
-    saveStartedAt(liveToken, at);
-  }, [liveToken]);
+  const persistState = useCallback(
+    (
+      completedNext: Set<string>,
+      resultsNext: Record<string, StoredMatchResult>,
+      launchesNext: Record<string, number>
+    ) => {
+      saveState(liveToken, {
+        completed: [...completedNext],
+        results: resultsNext,
+        launches: launchesNext,
+      });
+    },
+    [liveToken]
+  );
+
+  const recordMatchLaunch = useCallback(
+    (code: string, at?: number) => {
+      const launchedAt = at ?? Date.now();
+      setMatchLaunches((prev) => {
+        if (prev[code]) return prev;
+        const next = { ...prev, [code]: launchedAt };
+        setCompleted((completedPrev) => {
+          setMatchResults((resultsPrev) => {
+            persistState(completedPrev, resultsPrev, next);
+            return resultsPrev;
+          });
+          return completedPrev;
+        });
+        return next;
+      });
+    },
+    [persistState]
+  );
+
+  const startTournament = useCallback(
+    (initialMatchCodes: string[] = []) => {
+      const at = Date.now();
+      setStartedAt(at);
+      saveStartedAt(liveToken, at);
+      if (initialMatchCodes.length === 0) return;
+
+      setMatchLaunches((prev) => {
+        const next = { ...prev };
+        for (const code of initialMatchCodes) {
+          if (!next[code]) next[code] = at;
+        }
+        setCompleted((completedPrev) => {
+          setMatchResults((resultsPrev) => {
+            persistState(completedPrev, resultsPrev, next);
+            return resultsPrev;
+          });
+          return completedPrev;
+        });
+        return next;
+      });
+    },
+    [liveToken, persistState]
+  );
 
   const toggleMatch = useCallback(
     (code: string) => {
@@ -114,13 +183,13 @@ export function useLiveProgress(
         if (next.has(code)) next.delete(code);
         else next.add(code);
         setMatchResults((prevResults) => {
-          saveState(liveToken, { completed: [...next], results: prevResults });
+          persistState(next, prevResults, matchLaunches);
           return prevResults;
         });
         return next;
       });
     },
-    [liveToken]
+    [persistState, matchLaunches]
   );
 
   const completeMatch = useCallback(
@@ -129,6 +198,7 @@ export function useLiveProgress(
         ...score,
         code,
         validatedAt: Date.now(),
+        launchedAt: matchLaunches[code],
       };
 
       setCompleted((prev) => {
@@ -136,13 +206,13 @@ export function useLiveProgress(
         next.add(code);
         setMatchResults((prevResults) => {
           const nextResults = { ...prevResults, [code]: stored };
-          saveState(liveToken, { completed: [...next], results: nextResults });
+          persistState(next, nextResults, matchLaunches);
           return nextResults;
         });
         return next;
       });
     },
-    [liveToken]
+    [matchLaunches, persistState]
   );
 
   const done = completed.size;
@@ -156,8 +226,10 @@ export function useLiveProgress(
   return {
     completed,
     matchResults,
+    matchLaunches,
     toggleMatch,
     completeMatch,
+    recordMatchLaunch,
     done,
     total: totalMatches,
     percent,

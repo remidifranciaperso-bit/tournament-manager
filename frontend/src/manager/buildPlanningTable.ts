@@ -5,6 +5,7 @@ import {
 } from "./resolveTeamLabel";
 import { formatTeamWithInitials } from "./formatBracketLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
+import { formatMatchDurationMinutes } from "./useLiveProgress";
 
 export interface PlanningRow {
   code: string;
@@ -13,6 +14,7 @@ export interface PlanningRow {
   equipe1: string;
   equipe2: string;
   done: boolean;
+  duration: string;
 }
 
 function planningIndices(layoutFields: LiveLayoutField[]): number[] {
@@ -70,6 +72,10 @@ export function buildPlanningRows(
           matchResults
         ),
         done: completed.has(match.code),
+        duration: formatMatchDurationMinutes(
+          matchResults[match.code]?.launchedAt,
+          matchResults[match.code]?.validatedAt
+        ),
       };
     })
     .filter((row): row is PlanningRow => row !== null);

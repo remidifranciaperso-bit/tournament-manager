@@ -184,7 +184,12 @@ function TeamBadge({
 
   return (
     <div className={theme.teamBadge}>
-      <div className="absolute inset-x-2.5 top-2 bottom-9 flex items-center justify-center">
+      <div
+        className={[
+          "absolute inset-x-2.5 top-2 flex items-center justify-center",
+          footnote ? "bottom-[3.25rem]" : "bottom-9",
+        ].join(" ")}
+      >
         <div className="flex max-w-full flex-col items-center gap-0.5">
           <span className={`${theme.playerName} break-words`}>{team.player1}</span>
           {team.player2 && (
@@ -192,7 +197,7 @@ function TeamBadge({
           )}
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-2 flex h-7 items-center justify-center">
+      <div className="absolute inset-x-0 bottom-1.5 flex min-h-[2.75rem] items-center justify-center px-1">
         {scoringMode && gameOptions && onGamesChange ? (
           <GamesSelect
             value={games ?? 0}
@@ -202,7 +207,12 @@ function TeamBadge({
             className={`${theme.gamesSelect} mt-0`}
           />
         ) : footnote ? (
-          <p className={theme.seed}>{footnote}</p>
+          <p
+            className={`${theme.seed} max-w-full text-center leading-tight`}
+            style={{ fontSize: "10px" }}
+          >
+            {footnote}
+          </p>
         ) : (
           team.seed && <p className={theme.seed}>{team.seed}</p>
         )}
@@ -254,8 +264,9 @@ interface LiveCourtCardProps {
   compact?: boolean;
   /** Après validation du score : invite à lancer le match suivant sur ce terrain. */
   terrainLibrePrompt?: {
-    onLaunch: () => void;
+    onLaunch?: () => void;
     blockedMessage?: string | null;
+    noMoreMatches?: boolean;
   };
 }
 
@@ -321,24 +332,30 @@ export function LiveCourtCard({
 
         {terrainLibrePrompt ? (
           <div className="absolute inset-0 z-30 flex items-center justify-center px-3">
-            <button
-              type="button"
-              onClick={terrainLibrePrompt.onLaunch}
-              className="flex max-w-[92%] flex-col items-center gap-2 rounded-2xl border border-arena-600/25 bg-white/95 px-5 py-4 text-center shadow-lg transition hover:border-arena-600/45 hover:shadow-xl"
-            >
-              <span className="font-brush text-2xl leading-none text-arena-700 sm:text-3xl">
-                Terrain libre
-              </span>
-              {terrainLibrePrompt.blockedMessage ? (
-                <span className="max-w-[220px] text-[10px] font-semibold leading-snug text-amber-700 sm:text-[11px]">
-                  {terrainLibrePrompt.blockedMessage}
+            {terrainLibrePrompt.noMoreMatches ? (
+              <p className="max-w-[220px] text-center text-[11px] font-semibold leading-snug text-arena-600/80 sm:text-xs">
+                Aucun match à suivre sur ce terrain
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={terrainLibrePrompt.onLaunch}
+                className="flex max-w-[92%] flex-col items-center gap-2 rounded-2xl border border-arena-600/25 bg-white/95 px-5 py-4 text-center shadow-lg transition hover:border-arena-600/45 hover:shadow-xl"
+              >
+                <span className="font-brush text-2xl leading-none text-arena-700 sm:text-3xl">
+                  Terrain libre
                 </span>
-              ) : (
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-arena-600/80 sm:text-[11px]">
-                  Lancer le match suivant
-                </span>
-              )}
-            </button>
+                {terrainLibrePrompt.blockedMessage ? (
+                  <span className="max-w-[220px] text-[10px] font-semibold leading-snug text-amber-700 sm:text-[11px]">
+                    {terrainLibrePrompt.blockedMessage}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-arena-600/80 sm:text-[11px]">
+                    Lancer le match suivant
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         ) : match && hasAnyCourtTeam(match.equipe1, match.equipe2) ? (
           <>

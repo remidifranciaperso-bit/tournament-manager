@@ -47,9 +47,14 @@ async function waitForScreenTarget(
 
 const EXPORT_LAYER = "#export-capture-layer";
 
-function captureSelector(section: "main" | "classement" | "final"): string {
+function captureSelector(
+  section: "main" | "classement" | "planning" | "final"
+): string {
   if (section === "final") {
     return `${EXPORT_LAYER} [data-export-capture="final"]`;
+  }
+  if (section === "planning") {
+    return `${EXPORT_LAYER} [data-export-capture="planning"]`;
   }
   return `${EXPORT_LAYER} [data-export-capture="bracket"]`;
 }
@@ -61,7 +66,7 @@ export async function captureManagerExportPages(
   const captures: Record<string, string> = {};
 
   try {
-    for (const section of ["main", "classement", "final"] as const) {
+    for (const section of ["main", "classement", "planning", "final"] as const) {
       for (let page = 0; page < pageEntries(pageMap, section).length; page += 1) {
         const entry = pageEntries(pageMap, section)[page];
         flushSync(() => {

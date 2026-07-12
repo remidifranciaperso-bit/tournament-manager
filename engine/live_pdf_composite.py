@@ -7,6 +7,7 @@ import base64
 import fitz
 
 ENGINE_HEADER_RATIO = 0.083
+ENGINE_FOOTER_RATIO = 0.029
 FINAL_TOP_GAP_RATIO = 0.028
 FINAL_IMAGE_MAX_WIDTH_RATIO = 0.72
 
@@ -29,12 +30,13 @@ def composer_page_export(
     """Fond blanc + bandeau Engine + capture Manager collée en dessous."""
     rect = page.rect
     header_h = rect.height * ENGINE_HEADER_RATIO
+    footer_h = rect.height * ENGINE_FOOTER_RATIO
     top_gap = rect.height * FINAL_TOP_GAP_RATIO if section == "final" else 0
     content_rect = fitz.Rect(
         rect.x0,
         rect.y0 + header_h + top_gap,
         rect.x1,
-        rect.y1,
+        rect.y1 - footer_h,
     )
 
     page.draw_rect(rect, color=None, fill=(1, 1, 1), overlay=False)
@@ -44,6 +46,11 @@ def composer_page_export(
     header_clip = fitz.Rect(0, 0, engine_rect.width, engine_rect.height * ENGINE_HEADER_RATIO)
     header_dest = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
     page.show_pdf_page(header_dest, source, slide_index, clip=header_clip)
+
+    footer_top = engine_rect.height * (1 - ENGINE_FOOTER_RATIO)
+    footer_clip = fitz.Rect(0, footer_top, engine_rect.width, engine_rect.height)
+    footer_dest = fitz.Rect(rect.x0, rect.y1 - footer_h, rect.x1, rect.y1)
+    page.show_pdf_page(footer_dest, source, slide_index, clip=footer_clip)
 
     image_bytes = _decode_capture(capture_data)
     if len(image_bytes) < 4096:

@@ -6,7 +6,7 @@ import {
   useScoreFormToggle,
   type CourtScoringState,
 } from "./LiveCourtCard";
-import { matchQueuesByTerrain, type CourtMatchDisplay } from "./liveCourtMatches";
+import { matchQueuesByTerrain } from "./liveCourtMatches";
 import { areCourtTeamsKnown, canLaunchNextMatch, TEAMS_UNAVAILABLE_MESSAGE } from "./courtTeamsReady";
 import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
@@ -82,11 +82,12 @@ interface LiveMatchsEnCoursTabProps {
   captureExportPages: () => Promise<Record<string, string>>;
   exportingPdf: boolean;
   onExportPhaseChange: (phase: ExportPhase) => void;
-  onStart: () => void;
+  onStart: (initialMatchCodes: string[]) => void;
   onCompleteMatch: (
     code: string,
-    score: Omit<StoredMatchResult, "code" | "validatedAt">
+    score: Omit<StoredMatchResult, "code" | "validatedAt" | "launchedAt">
   ) => void;
+  onRecordMatchLaunch: (code: string) => void;
   awaitingLaunch: Set<string>;
   setAwaitingLaunch: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
@@ -106,6 +107,7 @@ export function LiveMatchsEnCoursTab({
   onExportPhaseChange,
   onStart,
   onCompleteMatch,
+  onRecordMatchLaunch,
   awaitingLaunch,
   setAwaitingLaunch,
 }: LiveMatchsEnCoursTabProps) {
@@ -154,6 +156,8 @@ export function LiveMatchsEnCoursTab({
   }, [matches]);
 
   const launchNextOnTerrain = useCallback((terrain: string) => {
+    const pending = matchByTerrain.get(terrain);
+    if (pending) onRecordMatchLaunch(pending.code);
     setAwaitingLaunch((prev) => {
       const next = new Set(prev);
       next.delete(terrain);
@@ -165,7 +169,7 @@ export function LiveMatchsEnCoursTab({
       next.delete(terrain);
       return next;
     });
-  }, []);
+  }, [matchByTerrain, onRecordMatchLaunch]);
 
   const handleLaunchNextOnTerrain = useCallback(
     (terrain: string) => {
@@ -285,14 +289,17 @@ export function LiveMatchsEnCoursTab({
           emptyLabel=""
           theme="light"
           compact
-          getTerrainLibrePrompt={(terrain) =>
-            awaitingLaunch.has(terrain)
-              ? {
-                  onLaunch: () => handleLaunchNextOnTerrain(terrain),
-                  blockedMessage: launchBlockedMessage.get(terrain) ?? null,
-                }
-              : undefined
-          }
+          getTerrainLibrePrompt={(terrain) => {
+            if (!awaitingLaunch.has(terrain)) return undefined;
+            const pending = matchByTerrain.get(terrain);
+            if (!pending) {
+              return { noMoreMatches: true };
+            }
+            return {
+              onLaunch: () => handleLaunchNextOnTerrain(terrain),
+              blockedMessage: launchBlockedMessage.get(terrain) ?? null,
+            };
+          }}
           getScoring={(terrain) =>
             scoreForm.isOpen(terrain) ? scoringState ?? undefined : undefined
           }
@@ -369,7 +376,19 @@ export function LiveMatchsEnCoursTab({
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
           <button
             type="button"
-            onClick={onStart}
+            onClick={() => {
+              const { current } = matchQueuesByTerrain(
+                matches,
+                terrains,
+                new Set(),
+                {},
+                new Set()
+              );
+              const initialCodes = terrains
+                .map((terrain) => current.get(terrain)?.code)
+                .filter((code): code is string => Boolean(code));
+              onStart(initialCodes);
+            }}
             className="rounded-2xl border border-arena-600/25 bg-white px-8 py-6 text-center shadow-md transition hover:border-arena-600/45 hover:shadow-lg sm:px-12 sm:py-8"
           >
             <span
