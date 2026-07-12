@@ -45,6 +45,8 @@ export default function EnginePage() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState("tournoi.pdf");
   const [liveSnapshotAvailable, setLiveSnapshotAvailable] = useState(false);
+  const [pdfDownloaded, setPdfDownloaded] = useState(false);
+  const [managerPackDownloaded, setManagerPackDownloaded] = useState(false);
   const notifyTokenRef = useRef<string | null>(null);
   const genStartedRef = useRef(false);
 
@@ -140,6 +142,8 @@ export default function EnginePage() {
       setPdfUrl(null);
     }
     setGenError(null);
+    setPdfDownloaded(false);
+    setManagerPackDownloaded(false);
     genStartedRef.current = false;
     setStep(8);
   };
@@ -147,6 +151,8 @@ export default function EnginePage() {
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
     setGenError(null);
+    setPdfDownloaded(false);
+    setManagerPackDownloaded(false);
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl);
       setPdfUrl(null);
@@ -180,12 +186,11 @@ export default function EnginePage() {
   const handleDownloadNotify = useCallback(() => {
     const token = notifyTokenRef.current;
     if (!token) return;
+    setPdfDownloaded(true);
     notifyOwnerAfterDownload(
       token,
       buildTournamentResume(form, preview, pdfFilename)
     );
-    notifyTokenRef.current = null;
-    setLiveSnapshotAvailable(false);
   }, [form, preview, pdfFilename]);
 
   const handleDownloadManagerLive = useCallback(async () => {
@@ -194,12 +199,11 @@ export default function EnginePage() {
     const base = pdfFilename.replace(/\.pdf$/i, "");
     try {
       await downloadManagerLiveBundle(token, `${base}-manager-live.zip`);
+      setManagerPackDownloaded(true);
       notifyOwnerAfterDownload(
         token,
         buildTournamentResume(form, preview, pdfFilename)
       );
-      notifyTokenRef.current = null;
-      setLiveSnapshotAvailable(false);
     } catch (err) {
       setGenError(
         err instanceof Error
@@ -330,6 +334,8 @@ export default function EnginePage() {
                   pdfFilename={pdfFilename}
                   genreTournoi={form.genreTournoi}
                   liveSnapshotAvailable={liveSnapshotAvailable}
+                  pdfDownloaded={pdfDownloaded}
+                  managerPackDownloaded={managerPackDownloaded}
                   onDownloadPdf={handleDownloadNotify}
                   onDownloadManagerLive={handleDownloadManagerLive}
                 />

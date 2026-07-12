@@ -93,6 +93,8 @@ export default function App() {
   const [pdfFilename, setPdfFilename] = useState("tournoi.pdf");
   const notifyTokenRef = useRef<string | null>(null);
   const [liveSnapshotAvailable, setLiveSnapshotAvailable] = useState(false);
+  const [pdfDownloaded, setPdfDownloaded] = useState(false);
+  const [managerPackDownloaded, setManagerPackDownloaded] = useState(false);
   const genStartedRef = useRef(false);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
@@ -187,6 +189,8 @@ export default function App() {
       setPdfUrl(null);
     }
     setGenError(null);
+    setPdfDownloaded(false);
+    setManagerPackDownloaded(false);
     genStartedRef.current = false;
     setStep(8);
   };
@@ -194,6 +198,8 @@ export default function App() {
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
     setGenError(null);
+    setPdfDownloaded(false);
+    setManagerPackDownloaded(false);
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl);
       setPdfUrl(null);
@@ -226,12 +232,11 @@ export default function App() {
   const handleDownloadNotify = useCallback(() => {
     const token = notifyTokenRef.current;
     if (!token) return;
+    setPdfDownloaded(true);
     notifyOwnerAfterDownload(
       token,
       buildTournamentResume(form, preview, pdfFilename)
     );
-    notifyTokenRef.current = null;
-    setLiveSnapshotAvailable(false);
   }, [form, preview, pdfFilename]);
 
   const handleDownloadManagerLive = useCallback(async () => {
@@ -240,12 +245,11 @@ export default function App() {
     const base = pdfFilename.replace(/\.pdf$/i, "");
     try {
       await downloadManagerLiveBundle(token, `${base}-manager-live.zip`);
+      setManagerPackDownloaded(true);
       notifyOwnerAfterDownload(
         token,
         buildTournamentResume(form, preview, pdfFilename)
       );
-      notifyTokenRef.current = null;
-      setLiveSnapshotAvailable(false);
     } catch (err) {
       setGenError(
         err instanceof Error
@@ -376,6 +380,8 @@ export default function App() {
                   pdfFilename={pdfFilename}
                   genreTournoi={form.genreTournoi}
                   liveSnapshotAvailable={liveSnapshotAvailable}
+                  pdfDownloaded={pdfDownloaded}
+                  managerPackDownloaded={managerPackDownloaded}
                   onDownloadPdf={handleDownloadNotify}
                   onDownloadManagerLive={handleDownloadManagerLive}
                 />
@@ -1132,6 +1138,18 @@ function SummaryStep({
   );
 }
 
+function downloadOptionClass(downloaded: boolean) {
+  return downloaded
+    ? "inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-lime px-5 py-3 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
+    : "inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15";
+}
+
+function downloadSubtitleClass(downloaded: boolean) {
+  return downloaded
+    ? "text-[11px] font-normal text-arena-950/70"
+    : "text-[11px] font-normal text-lime/70";
+}
+
 function GenerationStep({
   generating,
   genError,
@@ -1139,6 +1157,8 @@ function GenerationStep({
   pdfFilename,
   genreTournoi,
   liveSnapshotAvailable,
+  pdfDownloaded,
+  managerPackDownloaded,
   onDownloadPdf,
   onDownloadManagerLive,
 }: {
@@ -1148,6 +1168,8 @@ function GenerationStep({
   pdfFilename: string;
   genreTournoi: Genre;
   liveSnapshotAvailable: boolean;
+  pdfDownloaded: boolean;
+  managerPackDownloaded: boolean;
   onDownloadPdf: () => void;
   onDownloadManagerLive: () => void;
 }) {
@@ -1216,10 +1238,10 @@ function GenerationStep({
                 href={pdfUrl}
                 download={pdfFilename}
                 onClick={onDownloadPdf}
-                className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15"
+                className={downloadOptionClass(pdfDownloaded)}
               >
                 <span>PDF seul</span>
-                <span className="text-[11px] font-normal text-lime/70">
+                <span className={downloadSubtitleClass(pdfDownloaded)}>
                   participants-convocations-tableaux-planning-classement final
                 </span>
               </a>
@@ -1228,10 +1250,10 @@ function GenerationStep({
                 <button
                   type="button"
                   onClick={onDownloadManagerLive}
-                  className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15"
+                  className={downloadOptionClass(managerPackDownloaded)}
                 >
                   <span>PDF + pack Manager Live</span>
-                  <span className="text-[11px] font-normal text-lime/70">
+                  <span className={downloadSubtitleClass(managerPackDownloaded)}>
                     Conserve le tableau et les convocations pour un live ultérieur
                   </span>
                 </button>

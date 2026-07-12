@@ -914,6 +914,18 @@ export function SummaryStep({
   );
 }
 
+function downloadOptionClass(downloaded: boolean) {
+  return downloaded
+    ? "inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-lime px-5 py-3 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
+    : "inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15";
+}
+
+function downloadSubtitleClass(downloaded: boolean) {
+  return downloaded
+    ? "text-[11px] font-normal text-arena-950/70"
+    : "text-[11px] font-normal text-lime/70";
+}
+
 export function GenerationStep({
   generating,
   genError,
@@ -921,6 +933,8 @@ export function GenerationStep({
   pdfFilename,
   genreTournoi,
   liveSnapshotAvailable = false,
+  pdfDownloaded = false,
+  managerPackDownloaded = false,
   onDownloadPdf,
   onDownloadManagerLive,
 }: {
@@ -930,6 +944,8 @@ export function GenerationStep({
   pdfFilename: string;
   genreTournoi: Genre;
   liveSnapshotAvailable?: boolean;
+  pdfDownloaded?: boolean;
+  managerPackDownloaded?: boolean;
   onDownloadPdf: () => void;
   onDownloadManagerLive?: () => void;
 }) {
@@ -998,10 +1014,10 @@ export function GenerationStep({
                 href={pdfUrl}
                 download={pdfFilename}
                 onClick={onDownloadPdf}
-                className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15"
+                className={downloadOptionClass(pdfDownloaded)}
               >
                 <span>PDF seul</span>
-                <span className="text-[11px] font-normal text-lime/70">
+                <span className={downloadSubtitleClass(pdfDownloaded)}>
                   participants-convocations-tableaux-planning-classement final
                 </span>
               </a>
@@ -1010,10 +1026,10 @@ export function GenerationStep({
                 <button
                   type="button"
                   onClick={onDownloadManagerLive}
-                  className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15"
+                  className={downloadOptionClass(managerPackDownloaded)}
                 >
                   <span>PDF + pack Manager Live</span>
-                  <span className="text-[11px] font-normal text-lime/70">
+                  <span className={downloadSubtitleClass(managerPackDownloaded)}>
                     Conserve le tableau et les convocations pour un live ultérieur
                   </span>
                 </button>
