@@ -87,9 +87,14 @@ export async function captureElementImage(
   });
   await new Promise((resolve) => setTimeout(resolve, 500));
 
+  const captureWidth = Math.max(element.scrollWidth, element.offsetWidth);
+  const captureHeight = Math.max(element.scrollHeight, element.offsetHeight);
+
   const capturePromise = toPng(element, {
     cacheBust: true,
     pixelRatio: 1,
+    width: captureWidth,
+    height: captureHeight,
     backgroundColor: "#ffffff",
     includeQueryParams: true,
     skipAutoScale: false,

@@ -43,7 +43,7 @@ export function ExportCaptureLayer({
     return (
       <div
         id="export-capture-layer"
-        className="pointer-events-none fixed -left-[120vw] top-0 z-0 bg-white"
+        className="pointer-events-none fixed -left-[120vw] top-0 z-0 inline-block bg-white"
         style={{ width: EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
@@ -51,13 +51,13 @@ export function ExportCaptureLayer({
           club={meta.club}
           logoUrl={meta.logo_url}
           capture="final"
-          showFooter={false}
         >
           <LiveFinalRankingTab
             meta={meta}
             matches={matches}
             matchResults={matchResults}
             fields={fields}
+            exportMode
           />
         </LiveManagerDocumentPage>
       </div>
@@ -77,7 +77,7 @@ export function ExportCaptureLayer({
     return (
       <div
         id="export-capture-layer"
-        className="pointer-events-none fixed -left-[120vw] top-0 z-0 bg-white"
+        className="pointer-events-none fixed -left-[120vw] top-0 z-0 inline-block bg-white"
         style={{ width: PLANNING_EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
@@ -85,7 +85,6 @@ export function ExportCaptureLayer({
           club={meta.club}
           logoUrl={meta.logo_url}
           capture="planning"
-          showFooter={false}
         >
           <LivePlanningTab
             layoutFields={layoutFields}
@@ -107,7 +106,7 @@ export function ExportCaptureLayer({
   return (
     <div
       id="export-capture-layer"
-      className="pointer-events-none fixed -left-[120vw] top-0 z-0 bg-white"
+      className="pointer-events-none fixed -left-[120vw] top-0 z-0 inline-block bg-white"
       style={{ width: EXPORT_CAPTURE_WIDTH }}
       aria-hidden
     >
@@ -115,7 +114,6 @@ export function ExportCaptureLayer({
         club={meta.club}
         logoUrl={meta.logo_url}
         capture="bracket"
-        showFooter={false}
       >
         <LiveBracketViewer
           templateId={templateId}

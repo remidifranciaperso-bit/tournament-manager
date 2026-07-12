@@ -22,6 +22,10 @@ function startedAtKey(liveToken: string): string {
   return `live-started-at-${liveToken}`;
 }
 
+function finishedAtKey(liveToken: string): string {
+  return `live-finished-at-${liveToken}`;
+}
+
 function loadState(liveToken: string): ProgressState {
   try {
     const raw = localStorage.getItem(storageKey(liveToken));
@@ -60,6 +64,49 @@ function loadStartedAt(liveToken: string): number | null {
 
 function saveStartedAt(liveToken: string, startedAt: number): void {
   localStorage.setItem(startedAtKey(liveToken), String(startedAt));
+}
+
+function loadFinishedAt(liveToken: string): number | null {
+  try {
+    const raw = localStorage.getItem(finishedAtKey(liveToken));
+    if (!raw) return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveFinishedAt(liveToken: string, finishedAt: number): void {
+  localStorage.setItem(finishedAtKey(liveToken), String(finishedAt));
+}
+
+function clearFinishedAt(liveToken: string): void {
+  localStorage.removeItem(finishedAtKey(liveToken));
+}
+
+function resolveFinishedAt(
+  liveToken: string,
+  completedCount: number,
+  totalMatches: number,
+  startedAt: number | null,
+  results: Record<string, StoredMatchResult>
+): number | null {
+  if (startedAt === null || totalMatches <= 0 || completedCount < totalMatches) {
+    return null;
+  }
+
+  const stored = loadFinishedAt(liveToken);
+  if (stored !== null) return stored;
+
+  const validatedTimes = Object.values(results)
+    .map((result) => result.validatedAt)
+    .filter((value) => Number.isFinite(value));
+  if (validatedTimes.length > 0) {
+    return Math.max(...validatedTimes);
+  }
+
+  return Date.now();
 }
 
 export function formatMatchDurationMinutes(
@@ -102,6 +149,16 @@ export function useLiveProgress(
   const [startedAt, setStartedAt] = useState<number | null>(() =>
     loadStartedAt(liveToken)
   );
+  const [finishedAt, setFinishedAt] = useState<number | null>(() => {
+    const state = loadState(liveToken);
+    return resolveFinishedAt(
+      liveToken,
+      state.completed.length,
+      totalMatches,
+      loadStartedAt(liveToken),
+      state.results
+    );
+  });
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -109,13 +166,63 @@ export function useLiveProgress(
     setCompleted(new Set(state.completed));
     setMatchResults(state.results);
     setMatchLaunches(state.launches ?? {});
-    setStartedAt(loadStartedAt(liveToken));
-  }, [liveToken]);
+    const nextStartedAt = loadStartedAt(liveToken);
+    setStartedAt(nextStartedAt);
+    setFinishedAt(
+      resolveFinishedAt(
+        liveToken,
+        state.completed.length,
+        totalMatches,
+        nextStartedAt,
+        state.results
+      )
+    );
+  }, [liveToken, totalMatches]);
 
   useEffect(() => {
+    if (finishedAt !== null) return;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [finishedAt]);
+
+  useEffect(() => {
+    if (startedAt === null || totalMatches <= 0) {
+      if (finishedAt !== null) {
+        setFinishedAt(null);
+        clearFinishedAt(liveToken);
+      }
+      return;
+    }
+
+    if (completed.size >= totalMatches) {
+      if (finishedAt !== null) return;
+
+      const at = resolveFinishedAt(
+        liveToken,
+        completed.size,
+        totalMatches,
+        startedAt,
+        matchResults
+      );
+      if (at !== null) {
+        setFinishedAt(at);
+        saveFinishedAt(liveToken, at);
+      }
+      return;
+    }
+
+    if (finishedAt !== null) {
+      setFinishedAt(null);
+      clearFinishedAt(liveToken);
+    }
+  }, [
+    completed.size,
+    finishedAt,
+    liveToken,
+    matchResults,
+    startedAt,
+    totalMatches,
+  ]);
 
   const persistState = useCallback(
     (
@@ -194,16 +301,21 @@ export function useLiveProgress(
 
   const completeMatch = useCallback(
     (code: string, score: ValidatedMatchScore) => {
+      const validatedAt = Date.now();
       const stored: StoredMatchResult = {
         ...score,
         code,
-        validatedAt: Date.now(),
+        validatedAt,
         launchedAt: matchLaunches[code],
       };
 
       setCompleted((prev) => {
         const next = new Set(prev);
         next.add(code);
+        if (next.size >= totalMatches && totalMatches > 0) {
+          setFinishedAt(validatedAt);
+          saveFinishedAt(liveToken, validatedAt);
+        }
         setMatchResults((prevResults) => {
           const nextResults = { ...prevResults, [code]: stored };
           persistState(next, nextResults, matchLaunches);
@@ -212,7 +324,7 @@ export function useLiveProgress(
         return next;
       });
     },
-    [matchLaunches, persistState]
+    [liveToken, matchLaunches, persistState, totalMatches]
   );
 
   const done = completed.size;
@@ -220,8 +332,9 @@ export function useLiveProgress(
 
   const elapsed = useMemo(() => {
     if (startedAt === null) return "00:00";
-    return formatElapsed(now - startedAt);
-  }, [startedAt, now]);
+    const end = finishedAt ?? now;
+    return formatElapsed(end - startedAt);
+  }, [startedAt, finishedAt, now]);
 
   return {
     completed,
@@ -235,6 +348,7 @@ export function useLiveProgress(
     percent,
     elapsed,
     started: startedAt !== null,
+    finished: finishedAt !== null,
     startTournament,
   };
 }

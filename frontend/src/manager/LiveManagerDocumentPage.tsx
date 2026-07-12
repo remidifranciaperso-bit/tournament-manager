@@ -17,12 +17,26 @@ export function LiveManagerDocumentPage({
   capture,
   showFooter = true,
 }: LiveManagerDocumentPageProps) {
+  const exportMode = Boolean(capture);
+
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white"
+      className={
+        exportMode
+          ? "inline-flex w-full flex-col items-stretch bg-white"
+          : "flex min-h-0 flex-1 flex-col overflow-hidden bg-white"
+      }
       {...(capture ? { "data-export-capture": capture } : {})}
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+      <div
+        className={
+          exportMode
+            ? "shrink-0"
+            : "flex min-h-0 flex-1 flex-col overflow-hidden"
+        }
+      >
+        {children}
+      </div>
       {showFooter ? <LiveClubFooter club={club} logoUrl={logoUrl} /> : null}
     </div>
   );

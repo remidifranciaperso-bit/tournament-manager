@@ -24,6 +24,7 @@ interface LiveFinalRankingTabProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   fields: Record<string, string>;
+  exportMode?: boolean;
 }
 
 export function LiveFinalRankingTab({
@@ -31,6 +32,7 @@ export function LiveFinalRankingTab({
   matches,
   matchResults,
   fields,
+  exportMode = false,
 }: LiveFinalRankingTabProps) {
   const rows = useMemo(
     () =>
@@ -44,8 +46,8 @@ export function LiveFinalRankingTab({
   );
 
   return (
-    <div className={LIVE_TABLE_PAGE}>
-      <div className={LIVE_TABLE_PAGE_INNER}>
+    <div className={exportMode ? "bg-white px-3 py-4" : LIVE_TABLE_PAGE}>
+      <div className={exportMode ? "w-full" : LIVE_TABLE_PAGE_INNER}>
         <div className={LIVE_TABLE_CARD}>
         <table className={LIVE_TABLE}>
           <thead>
