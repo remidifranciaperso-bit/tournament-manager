@@ -25,6 +25,30 @@ export function formatTeamSlot(label: string): string {
   return text;
 }
 
+/** Affichage terrain live : WIN/LOSE sans « : » (onglets matchs). */
+export function formatCourtTeamSlot(label: string): string {
+  const text = label.trim();
+  if (!text) return "—";
+
+  if (text.startsWith("Vainqueur Poule ")) {
+    return `1er ${text.replace("Vainqueur ", "")}`;
+  }
+  if (text.startsWith("Deuxième Poule ") || text.startsWith("Second Poule ")) {
+    return `2e ${text.replace(/^(Deuxième|Second) /, "")}`;
+  }
+  if (text.startsWith("Troisième Poule ")) {
+    return `3 ${text.replace("Troisième ", "")}`;
+  }
+  if (text.startsWith("Vainqueur ")) {
+    return `WIN ${text.replace("Vainqueur ", "")}`;
+  }
+  if (text.startsWith("Perdant ")) {
+    return `LOSE ${text.replace("Perdant ", "")}`;
+  }
+
+  return text.replace(/:$/, "");
+}
+
 /** Libellé statique d'une balise WIN_/LOSE_/SECOND_/THIRD_. */
 export function formatFeedKey(key: string): string {
   if (key.startsWith("WIN_")) {

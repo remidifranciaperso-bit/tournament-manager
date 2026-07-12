@@ -27,7 +27,6 @@ export function ManagerStartStep({
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           <OptionCard
             variant="lime"
-            active
             onClick={onExcelStart}
             title="Démarrer mon tournoi live"
             subtitle="Depuis un fichier Excel"

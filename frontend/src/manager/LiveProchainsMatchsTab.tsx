@@ -29,7 +29,8 @@ export function LiveProchainsMatchsTab({
       matches,
       terrains,
       completed,
-      matchResults
+      matchResults,
+      awaitingLaunch
     );
     return upcomingDisplayByTerrain(queues, terrains, awaitingLaunch);
   }, [matches, terrains, completed, matchResults, awaitingLaunch]);

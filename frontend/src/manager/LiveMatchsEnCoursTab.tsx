@@ -122,8 +122,15 @@ export function LiveMatchsEnCoursTab({
   >(null);
 
   const { current: matchByTerrain } = useMemo(
-    () => matchQueuesByTerrain(matches, terrains, completed, matchResults),
-    [matches, terrains, completed, matchResults]
+    () =>
+      matchQueuesByTerrain(
+        matches,
+        terrains,
+        completed,
+        matchResults,
+        awaitingLaunch
+      ),
+    [matches, terrains, completed, matchResults, awaitingLaunch]
   );
 
   const displayMatchByTerrain = useMemo(() => {

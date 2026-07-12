@@ -152,6 +152,8 @@ function TeamBadge({
   gameOptions,
   onGamesChange,
   theme,
+  isPlaceholder = false,
+  footnote,
 }: {
   team: ParsedTeam;
   scoringMode: boolean;
@@ -159,7 +161,26 @@ function TeamBadge({
   gameOptions?: number[];
   onGamesChange?: (value: number) => void;
   theme: (typeof COURT_THEME)[LiveCourtTheme];
+  isPlaceholder?: boolean;
+  footnote?: string | null;
 }) {
+  if (isPlaceholder) {
+    return (
+      <div className={theme.teamBadge}>
+        <div className="absolute inset-2 flex items-center justify-center px-1">
+          <span className={`${theme.playerName} text-center break-words`}>
+            {team.player1}
+          </span>
+        </div>
+        {footnote ? (
+          <div className="absolute inset-x-0 bottom-2 flex h-7 items-center justify-center">
+            <p className={theme.seed}>{footnote}</p>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className={theme.teamBadge}>
       <div className="absolute inset-x-2.5 top-2 bottom-9 flex items-center justify-center">
@@ -333,6 +354,8 @@ export function LiveCourtCard({
                     : undefined
                 }
                 theme={theme}
+                isPlaceholder={match.equipe1IsPlaceholder}
+                footnote={match.equipe1Footnote}
               />
             </div>
 
@@ -375,6 +398,8 @@ export function LiveCourtCard({
                     : undefined
                 }
                 theme={theme}
+                isPlaceholder={match.equipe2IsPlaceholder}
+                footnote={match.equipe2Footnote}
               />
             </div>
           </>
