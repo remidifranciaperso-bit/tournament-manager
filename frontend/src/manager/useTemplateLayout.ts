@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import type { LiveLayout } from "./liveTypes";
-import { fetchTemplateLayout } from "./bracketSlideLayout";
+import { fetchTemplateLayout, getCachedTemplateLayout } from "./bracketSlideLayout";
 
 export function useTemplateLayout(templateId: string) {
-  const [layout, setLayout] = useState<LiveLayout | null>(null);
+  const [layout, setLayout] = useState<LiveLayout | null>(() =>
+    getCachedTemplateLayout(templateId)
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

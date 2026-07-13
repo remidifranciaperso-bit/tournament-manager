@@ -125,6 +125,10 @@ export function parseBracketSlide(
 
 const layoutCache = new Map<string, LiveLayout>();
 
+export function getCachedTemplateLayout(templateId: string): LiveLayout | null {
+  return layoutCache.get(templateId) ?? null;
+}
+
 export async function fetchTemplateLayout(templateId: string): Promise<LiveLayout> {
   const cached = layoutCache.get(templateId);
   if (cached) return cached;

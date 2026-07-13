@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
+import { fetchTemplateLayout } from "./bracketSlideLayout";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
@@ -35,10 +36,11 @@ import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide sm:px-1.5 sm:py-3 sm:text-[10px]";
 
-function panelClass(active: boolean) {
-  return active
-    ? "flex min-h-0 flex-1 flex-col overflow-hidden"
-    : "hidden";
+function stackedPanelClass(active: boolean) {
+  return [
+    "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
+    active ? "visible z-10" : "pointer-events-none invisible z-0",
+  ].join(" ");
 }
 
 function tabClass(active: boolean) {
@@ -69,6 +71,10 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
 
   const progress = useLiveProgress(live_token, matches.length, meta);
   const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
+
+  useEffect(() => {
+    void fetchTemplateLayout(templateId);
+  }, [templateId]);
 
   const exportPayload = useMemo<LivePdfExportPayload>(() => {
     const match_results: LivePdfExportPayload["match_results"] = {};
@@ -373,22 +379,14 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             ].join(" ")}
           >
             <BracketCrossPageMetricsProvider>
-            <LiveTabTitle
-              label={activeTabLabel}
-              reserveLabel={tabTitleReserveLabel}
-            />
-            <div
-              className={
-                isBracketTab
-                  ? primaryTab === "planning"
-                    ? "relative flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation"
-                    : "relative flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
-                  : isProjectionTab
-                    ? "relative flex min-h-0 flex-1 flex-col overflow-hidden touch-none"
-                    : "relative flex min-h-0 flex-1 flex-col overflow-y-auto"
-              }
-            >
-              <div className={panelClass(primaryTab === "live")}>
+            <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 transition-none sm:px-6 sm:pb-3 min-h-[clamp(2.75rem,6vw,3.75rem)]">
+              <LiveTabTitle
+                label={activeTabLabel}
+                reserveLabel={tabTitleReserveLabel}
+              />
+            </div>
+            <div className="relative min-h-0 flex-1 overflow-hidden transition-none">
+              <div className={stackedPanelClass(primaryTab === "live")}>
                 <LiveMatchsEnCoursTab
                   terrains={meta.terrains}
                   matches={matches}
@@ -414,7 +412,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                 />
               </div>
 
-              <div className={panelClass(primaryTab === "upcoming")}>
+              <div className={stackedPanelClass(primaryTab === "upcoming")}>
                 <LiveProchainsMatchsTab
                   terrains={meta.terrains}
                   matches={matches}
@@ -428,7 +426,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                 />
               </div>
 
-              {primaryTab === "avancement" && (
+              <div className={stackedPanelClass(primaryTab === "avancement")}>
                 <LiveAvancementTab
                   elapsed={progress.elapsed}
                   done={progress.done}
@@ -437,9 +435,16 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   club={meta.club}
                   logoUrl={meta.logo_url}
                 />
-              )}
+              </div>
 
-              {isBracketTab && renderDocumentTab()}
+              <div
+                className={[
+                  stackedPanelClass(isBracketTab),
+                  primaryTab === "planning" ? "touch-manipulation" : "touch-none",
+                ].join(" ")}
+              >
+                {renderDocumentTab()}
+              </div>
             </div>
             {isBracketTab ? (
               <LiveBracketCrossPageOverlay shellRef={bracketShellRef} />

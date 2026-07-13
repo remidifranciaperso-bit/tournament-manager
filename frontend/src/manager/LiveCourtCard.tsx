@@ -496,7 +496,8 @@ export function LiveCourtsRow({
     }
     const height = slot.clientHeight;
     if (height <= 0) return;
-    setScale(Math.min(1, height / COMPACT_COURT_CARD_HEIGHT_PX));
+    const next = Math.min(1, height / COMPACT_COURT_CARD_HEIGHT_PX);
+    setScale((prev) => (prev === next ? prev : next));
   }, [compact]);
 
   useLayoutEffect(() => {
