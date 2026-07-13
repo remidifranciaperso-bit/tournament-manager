@@ -88,10 +88,10 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 
 def _ecrire_logo_temporaire(upload: UploadFile, suffix: str) -> Path:
-    from engine.logo_trim import rogner_logo_fichier
+    from engine.logo_prepare import preparer_logo_fichier
 
     chemin = _ecrire_fichier_temporaire(upload, suffix)
-    return rogner_logo_fichier(chemin)
+    return preparer_logo_fichier(chemin)
 
 
 @app.get("/api/health")
@@ -745,6 +745,10 @@ async def generate(
             enregistrer_snapshot(notify_token, snapshot)
         if logo_path is not None and logo_path.is_file():
             enregistrer_logo(notify_token, logo_path)
+
+        from api.live_store import liberer_memoire
+
+        liberer_memoire()
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except RuntimeError as exc:

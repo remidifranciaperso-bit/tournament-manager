@@ -126,18 +126,11 @@ def extraire_logo_embarque_pdf(
         best_xref: int | None = None
         best_area = float("inf")
 
-        for page_index in range(doc.page_count):
-            for area, xref in _footer_candidates(doc[page_index], doc):
-                if area < best_area:
-                    best_area = area
-                    best_xref = xref
-
-        if best_xref is None:
-            for page_index in range(doc.page_count):
-                for area, xref in _smallest_logo_candidates(doc[page_index], doc):
-                    if area < best_area:
-                        best_area = area
-                        best_xref = xref
+        page_index = 0
+        for area, xref in _footer_candidates(doc[page_index], doc):
+            if area < best_area:
+                best_area = area
+                best_xref = xref
 
         if best_xref is None:
             return False

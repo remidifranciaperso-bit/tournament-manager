@@ -50,6 +50,8 @@ services:
         value: https://tournament-manager.onrender.com
       - key: PDF_CONVERTER
         value: libreoffice
+      - key: PDF_IMAGE_MAX_DPI
+        value: "150"
       - key: OWNER_EMAIL
         value: remi.difrancia.perso@gmail.com
       - key: EMAIL_FROM

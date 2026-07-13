@@ -63,10 +63,10 @@ def creer_session(
     if logo_path is not None:
         source = Path(logo_path)
         if source.is_file():
-            if trim_logo:
-                from engine.logo_trim import rogner_logo_fichier
+            from engine.logo_prepare import preparer_logo_fichier
 
-                rogner_logo_fichier(source)
+            if trim_logo:
+                preparer_logo_fichier(source)
             ext = source.suffix.lower() or ".png"
             shutil.copy2(source, session_dir / f"logo{ext}")
 

@@ -32,13 +32,14 @@ def init_live_from_snapshot(
         page_map,
         logo_path=resolved_logo,
         move_pdf=True,
-        trim_logo=logo_path is not None and Path(logo_path).is_file(),
+        trim_logo=False,
         page_sizes=page_sizes,
     )
 
-    from engine.live_logo_extract import assurer_logo_session
+    if resolved_logo is not None:
+        from engine.live_logo_extract import assurer_logo_session
 
-    assurer_logo_session(live_token)
+        assurer_logo_session(live_token)
 
     meta = dict(snapshot["meta"])
     logo_url = logo_url_pour_meta(live_token)
@@ -56,8 +57,6 @@ def init_live_from_snapshot(
         "pdf_filename": pdf_filename,
         "live_version": "engine-pdf",
     }
-    if logo_url is not None:
-        payload["logo_data_url"] = logo_url
     logo_png = snapshot.get("logo_png")
     if logo_png:
         payload["logo_png"] = logo_png
@@ -122,12 +121,14 @@ def init_live_session(
         cache["page_map"],
         logo_path=logo_path,
         move_pdf=True,
+        trim_logo=False,
         page_sizes=cache["page_sizes"],
     )
 
-    from engine.live_logo_extract import assurer_logo_session
+    if logo_path is not None and Path(logo_path).is_file():
+        from engine.live_logo_extract import assurer_logo_session
 
-    assurer_logo_session(live_token)
+        assurer_logo_session(live_token)
 
     payload = construire_payload_live(
         tournoi=tournoi,
@@ -146,6 +147,5 @@ def init_live_session(
     logo_url = logo_url_pour_meta(live_token)
     if logo_url is not None:
         payload["meta"]["logo_url"] = logo_url
-        payload["logo_data_url"] = logo_url
 
     return payload

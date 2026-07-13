@@ -1,3 +1,4 @@
+import gc
 from pathlib import Path
 
 from engine.live_snapshot import construire_snapshot_engine
@@ -90,6 +91,12 @@ def generate_tournament(
         pptx_path=pptx_path,
         output_dir=exports_dir,
     )
+
+    try:
+        pptx_path.unlink(missing_ok=True)
+    except OSError:
+        pass
+    gc.collect()
 
     return pdf_path, snapshot
 

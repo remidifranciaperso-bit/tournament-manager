@@ -74,6 +74,19 @@ def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess
         )
 
 
+def _pdf_export_filter() -> str:
+    max_dpi = int(os.environ.get("PDF_IMAGE_MAX_DPI", "150"))
+    reduire = "true" if max_dpi <= 300 else "false"
+    return (
+        "pdf:impress_pdf_Export:{"
+        f'"SelectPdfVersion":{{"type":"long","value":"1"}},'
+        f'"Quality":{{"type":"long","value":"85"}},'
+        f'"ReduceImageResolution":{{"type":"boolean","value":"{reduire}"}},'
+        f'"MaxImageResolution":{{"type":"long","value":"{max_dpi}"}}'
+        "}"
+    )
+
+
 def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie="pdf"):
     """
     Conversion PPTX -> PDF (ou autre) via LibreOffice en mode headless/invisible.
@@ -98,15 +111,7 @@ def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie
             "--norestore",
             f"-env:UserInstallation={user_installation}",
             "--convert-to",
-            (
-                "pdf:impress_pdf_Export:"
-                "{"
-                '"SelectPdfVersion":{"type":"long","value":"1"},'
-                '"Quality":{"type":"long","value":"100"},'
-                '"ReduceImageResolution":{"type":"boolean","value":"false"},'
-                '"MaxImageResolution":{"type":"long","value":"600"}'
-                "}"
-            ),
+            _pdf_export_filter(),
             "--outdir",
             str(output_dir),
             str(pptx_path),

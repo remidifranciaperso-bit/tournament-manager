@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { LIVE_LOGO_HEIGHT_CLASS, LIVE_LOGO_MAX_WIDTH_CLASS } from "./LiveTabTitle";
 
 interface LiveClubFooterProps {
@@ -7,7 +8,11 @@ interface LiveClubFooterProps {
 
 /** Pied de page club — aligné sur le footer Engine (logo ou nom du club). */
 export function LiveClubFooter({ club, logoUrl }: LiveClubFooterProps) {
-  if (!club.trim() && !logoUrl) return null;
+  const [logoFailed, setLogoFailed] = useState(false);
+  const clubLabel = club.trim();
+  const showLogo = Boolean(logoUrl) && !logoFailed;
+
+  if (!clubLabel && !showLogo) return null;
 
   return (
     <div
@@ -15,15 +20,16 @@ export function LiveClubFooter({ club, logoUrl }: LiveClubFooterProps) {
       style={{ minHeight: "2.9%" }}
       data-club-footer
     >
-      {logoUrl ? (
+      {showLogo ? (
         <img
-          src={logoUrl}
-          alt=""
+          src={logoUrl!}
+          alt={clubLabel || "Logo club"}
           className={`${LIVE_LOGO_HEIGHT_CLASS} w-auto ${LIVE_LOGO_MAX_WIDTH_CLASS} object-contain object-center`}
+          onError={() => setLogoFailed(true)}
         />
       ) : (
         <p className="max-w-[34%] truncate text-center font-noto text-xs font-medium text-arena-700 sm:text-sm">
-          {club}
+          {clubLabel}
         </p>
       )}
     </div>
