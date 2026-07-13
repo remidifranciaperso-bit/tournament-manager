@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import gc
-import os
-import tempfile
+import shutil
+import uuid
 from pathlib import Path
 
 import fitz
@@ -21,11 +21,22 @@ def _zone_logo_pied(page: fitz.Page) -> fitz.Rect:
     return fitz.Rect(side, footer_top, rect.width - side, rect.height)
 
 
+def _remplacer_fichier_atomique(cible: Path, source: Path) -> None:
+    """Remplace cible par source (même volume requis pour rename atomique)."""
+    cible = Path(cible)
+    source = Path(source)
+    try:
+        source.replace(cible)
+    except OSError:
+        shutil.copy2(source, cible)
+        source.unlink(missing_ok=True)
+
+
 def appliquer_logo_sur_pdf(pdf_path: Path, logo_path: Path) -> None:
     """Insère le logo dans la bande pied de chaque page du PDF Engine."""
     from engine.logo_prepare import preparer_logo_fichier
 
-    pdf_path = Path(pdf_path)
+    pdf_path = Path(pdf_path).resolve()
     logo_path = Path(logo_path)
     if not pdf_path.is_file() or not logo_path.is_file():
         return
@@ -35,6 +46,9 @@ def appliquer_logo_sur_pdf(pdf_path: Path, logo_path: Path) -> None:
     if len(logo_bytes) < 32:
         return
 
+    # Fichier temporaire dans le même dossier que le PDF (évite errno 18 sur Render).
+    temp_path = pdf_path.parent / f".{pdf_path.stem}-logo-{uuid.uuid4().hex}.pdf"
+
     doc = fitz.open(str(pdf_path))
     try:
         for page in doc:
@@ -42,15 +56,12 @@ def appliquer_logo_sur_pdf(pdf_path: Path, logo_path: Path) -> None:
             page.draw_rect(zone, color=None, fill=(1, 1, 1), overlay=True)
             page.insert_image(zone, stream=logo_bytes, keep_proportion=True)
 
-        fd, temp_name = tempfile.mkstemp(suffix=".pdf", prefix="pdf-logo-")
-        os.close(fd)
-        temp_path = Path(temp_name)
         doc.save(str(temp_path), garbage=4, deflate=True)
-        doc.close()
-        doc = None
-        gc.collect()
-        temp_path.replace(pdf_path)
     finally:
-        if doc is not None:
-            doc.close()
+        doc.close()
         gc.collect()
+
+    try:
+        _remplacer_fichier_atomique(pdf_path, temp_path)
+    finally:
+        temp_path.unlink(missing_ok=True)
