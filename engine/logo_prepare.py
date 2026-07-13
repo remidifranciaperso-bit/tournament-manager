@@ -8,8 +8,9 @@ from PIL import Image, ImageOps
 
 from engine.logo_trim import rogner_image
 
-MAX_LOGO_BYTES = 4 * 1024 * 1024
-MAX_LOGO_PX = 480
+MAX_LOGO_BYTES = 2 * 1024 * 1024
+MAX_LOGO_PX = 320
+UPLOAD_LOGO_MAX_PX = 240
 
 
 def preparer_logo_fichier(chemin: Path, *, max_px: int = MAX_LOGO_PX) -> Path:

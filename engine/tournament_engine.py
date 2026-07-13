@@ -69,12 +69,15 @@ def generate_tournament(
     )
     pdf_filename = f"{nom_export}.pdf"
 
+    logo_fichier = Path(logo_path) if logo_path else None
+    logo_pdf_differe = bool(logo_fichier and logo_fichier.is_file())
+
     snapshot = construire_snapshot_engine(
         tournoi,
         matchs,
         cache,
         pdf_filename,
-        logo_path=logo_path,
+        logo_path=logo_fichier if logo_pdf_differe else None,
     )
 
     pptx_path = exports_dir / f"{nom_export}.pptx"
@@ -84,8 +87,10 @@ def generate_tournament(
         output_path=pptx_path,
         tournoi=tournoi,
         matchs=matchs,
-        logo_path=logo_path,
+        logo_path=None if logo_pdf_differe else logo_fichier,
+        logo_pdf_differe=logo_pdf_differe,
     )
+    gc.collect()
 
     pdf_path = convertir_pptx_en_pdf(
         pptx_path=pptx_path,
@@ -97,6 +102,12 @@ def generate_tournament(
     except OSError:
         pass
     gc.collect()
+
+    if logo_pdf_differe and logo_fichier is not None:
+        from engine.pdf_footer import appliquer_logo_sur_pdf
+
+        appliquer_logo_sur_pdf(pdf_path, logo_fichier)
+        gc.collect()
 
     return pdf_path, snapshot
 

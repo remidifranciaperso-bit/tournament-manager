@@ -88,10 +88,10 @@ def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
 
 
 def _ecrire_logo_temporaire(upload: UploadFile, suffix: str) -> Path:
-    from engine.logo_prepare import preparer_logo_fichier
+    from engine.logo_prepare import UPLOAD_LOGO_MAX_PX, preparer_logo_fichier
 
     chemin = _ecrire_fichier_temporaire(upload, suffix)
-    return preparer_logo_fichier(chemin)
+    return preparer_logo_fichier(chemin, max_px=UPLOAD_LOGO_MAX_PX)
 
 
 @app.get("/api/health")

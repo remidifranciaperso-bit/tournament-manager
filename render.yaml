@@ -51,7 +51,7 @@ services:
       - key: PDF_CONVERTER
         value: libreoffice
       - key: PDF_IMAGE_MAX_DPI
-        value: "150"
+        value: "96"
       - key: OWNER_EMAIL
         value: remi.difrancia.perso@gmail.com
       - key: EMAIL_FROM

@@ -75,7 +75,7 @@ def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess
 
 
 def _pdf_export_filter() -> str:
-    max_dpi = int(os.environ.get("PDF_IMAGE_MAX_DPI", "150"))
+    max_dpi = int(os.environ.get("PDF_IMAGE_MAX_DPI", "96"))
     reduire = "true" if max_dpi <= 300 else "false"
     return (
         "pdf:impress_pdf_Export:{"

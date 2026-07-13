@@ -1,6 +1,7 @@
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
+import gc
 import re
 
 from engine.points_engine import get_points
@@ -927,6 +928,7 @@ def remplir_template(
     tournoi,
     matchs,
     logo_path=None,
+    logo_pdf_differe=False,
 ):
     prs = Presentation(template_path)
 
@@ -934,6 +936,7 @@ def remplir_template(
         prs=prs,
         logo_path=logo_path,
         club=tournoi.club,
+        pdf_differe=logo_pdf_differe,
     )
 
     valeurs = {}
@@ -995,6 +998,8 @@ def remplir_template(
             )
 
     prs.save(output_path)
+    del prs
+    gc.collect()
 
 def remplir_template_8(
     template_path,
@@ -1009,12 +1014,15 @@ def remplir_template_8(
         matchs=matchs,
     )
 
-def remplacer_logo(prs, logo_path=None, club=""):
+def remplacer_logo(prs, logo_path=None, club="", pdf_differe=False):
+    if pdf_differe:
+        logo_path = None
+
     logo_size = None
     if logo_path:
-        from engine.logo_trim import rogner_logo_fichier
+        from engine.logo_prepare import preparer_logo_fichier
 
-        logo_path = rogner_logo_fichier(Path(logo_path))
+        logo_path = preparer_logo_fichier(Path(logo_path))
         with Image.open(logo_path) as img:
             logo_size = img.size
 
@@ -1062,9 +1070,10 @@ def remplacer_logo(prs, logo_path=None, club=""):
                 )
 
             else:
+                libelle = "" if pdf_differe else club
                 remplacer_texte_preserve_style(
                     shape.text_frame,
-                    club,
+                    libelle,
                 )
 
                 # Sans logo, la zone de texte du club ne doit pas afficher
