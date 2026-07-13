@@ -7,7 +7,7 @@ import re
 from engine.live_bracket_layout import parse_bracket_slide
 from engine.live_team_resolve import feed_key_from_team_label
 
-_NO_INCOMING_CONNECTOR_CODES = frozenset({"PF", "C11_12", "C19_20", "C23_24"})
+_NO_INCOMING_CONNECTOR_CODES = frozenset({"PF", "C11_12", "C19_20"})
 
 
 def _parent_code_from_label(label: str) -> str | None:
@@ -100,6 +100,18 @@ def build_bracket_connector_paths(
             if feed:
                 consumed_feeds.add(feed)
 
+    slide_half = None
+    h_on_slide = sorted(
+        _h_sort_key(slot["code"])
+        for slot in slots
+        if re.match(r"^H\d+$", slot["code"])
+    )
+    if h_on_slide:
+        if max(h_on_slide) <= 4:
+            slide_half = "upper"
+        elif min(h_on_slide) >= 5:
+            slide_half = "lower"
+
     parents_by_child: dict[str, list[dict]] = {}
     feed_to_child_links: list[tuple[tuple[float, float], tuple[float, float]]] = []
 
@@ -149,10 +161,19 @@ def build_bracket_connector_paths(
             feed_field = None
             if feed_key and feed_key not in consumed_feeds:
                 feed_field = feed_by_key.get(feed_key)
-            if feed_field is None:
-                feed_field = feed_by_key.get(win_key) or feed_by_key.get(lose_key)
+            if feed_field is None and win_key not in consumed_feeds:
+                feed_field = feed_by_key.get(win_key)
+            if feed_field is None and lose_key not in consumed_feeds:
+                feed_field = feed_by_key.get(lose_key)
 
             if feed_field:
+                if slide_half and (
+                    re.match(r"^H\d+$", code)
+                    or re.match(r"^P\d+$", parent_code)
+                    or re.match(r"^(WIN|LOSE)_H\d+$", feed_field["key"])
+                    or re.match(r"^(WIN|LOSE)_P\d+$", feed_field["key"])
+                ):
+                    continue
                 feed_to_child_links.append((_feed_anchor(feed_field, "left"), child_point))
 
     paths: list[list[tuple[float, float]]] = []
@@ -163,18 +184,6 @@ def build_bracket_connector_paths(
 
     for from_point, to_point in feed_to_child_links:
         paths.append(_feed_bracket_path(from_point, to_point))
-
-    slide_half = None
-    h_on_slide = sorted(
-        _h_sort_key(slot["code"])
-        for slot in slots
-        if re.match(r"^H\d+$", slot["code"])
-    )
-    if h_on_slide:
-        if max(h_on_slide) <= 4:
-            slide_half = "upper"
-        elif min(h_on_slide) >= 5:
-            slide_half = "lower"
 
     d1_rect = box_layouts.get("D1")
     d2_rect = box_layouts.get("D2")
@@ -199,6 +208,8 @@ def build_bracket_connector_paths(
             if slide_half and re.match(r"^(WIN|LOSE)_H\d+$", field["key"]):
                 continue
             code = re.sub(r"^(WIN|LOSE|SECOND|THIRD)_", "", field["key"])
+            if slide_half and re.match(r"^H\d+$", code):
+                continue
             if code in _NO_INCOMING_CONNECTOR_CODES:
                 continue
             if field["key"] == "WIN_D2" and "F" in slot_by_code:

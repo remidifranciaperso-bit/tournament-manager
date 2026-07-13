@@ -54,12 +54,7 @@ function bracketPathsToChild(
 }
 
 /** Aucun trait entrant (comme PF sur un tableau 8 équipes). */
-const NO_INCOMING_CONNECTOR_CODES = new Set([
-  "PF",
-  "C11_12",
-  "C19_20",
-  "C23_24",
-]);
+const NO_INCOMING_CONNECTOR_CODES = new Set(["PF", "C11_12", "C19_20"]);
 
 function feedBracketPath(from: PointPct, to: PointPct): string {
   const gap = to.x - from.x;
@@ -193,9 +188,23 @@ export function buildBracketConnectors(
       const feedField =
         feedKey && !consumedFeeds.has(feedKey)
           ? feedByKey.get(feedKey)
-          : feedByKey.get(winKey) ?? feedByKey.get(loseKey);
+          : !consumedFeeds.has(winKey)
+            ? feedByKey.get(winKey)
+            : !consumedFeeds.has(loseKey)
+              ? feedByKey.get(loseKey)
+              : undefined;
 
       if (feedField && includeFeedConnectors) {
+        if (
+          splitHalf &&
+          (/^H\d+$/.test(slot.code) ||
+            /^P\d+$/.test(parentCode) ||
+            /^(WIN|LOSE)_H\d+$/.test(feedField.key) ||
+            /^(WIN|LOSE)_P\d+$/.test(feedField.key))
+        ) {
+          continue;
+        }
+
         feedToChildLinks.push({
           from: feedAnchor(feedField, "left"),
           to: childPoint,
@@ -224,6 +233,7 @@ export function buildBracketConnectors(
     if (consumedFeeds.has(field.key)) continue;
 
     if (splitHalf && /^(WIN|LOSE)_H\d+$/.test(field.key)) continue;
+    if (splitHalf && /^H\d+$/.test(code)) continue;
 
     const code = field.key.replace(/^(WIN|LOSE|SECOND|THIRD)_/, "");
     if (NO_INCOMING_CONNECTOR_CODES.has(code)) continue;
