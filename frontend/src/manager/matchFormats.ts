@@ -83,6 +83,47 @@ export function formatChoiceLabel(
   return choice;
 }
 
+export function buildMatchFormatSummaryRows(
+  form: TournamentForm
+): { label: string; value: string }[] {
+  const principal = form.formatMatchTableauPrincipal;
+  if (!principal) {
+    return [{ label: "Formats de matchs", value: "—" }];
+  }
+
+  const hasPoules = form.modeTournoi === "Poules + tableau final";
+  const autres: { label: string; code: MatchFormatCode }[] = [];
+
+  const classement = resolveMatchFormat(form.formatMatchClassement, principal);
+  if (classement !== principal) {
+    autres.push({ label: "Classements", code: classement });
+  }
+
+  const finale = resolveMatchFormat(form.formatMatchFinale, principal);
+  if (finale !== principal) {
+    autres.push({ label: "Finale", code: finale });
+  }
+
+  if (hasPoules) {
+    const poule = resolveMatchFormat(form.formatMatchPoule, principal);
+    if (poule !== principal) {
+      autres.push({ label: "Poules", code: poule });
+    }
+  }
+
+  if (autres.length === 0) {
+    return [{ label: "Formats de matchs", value: principal }];
+  }
+
+  return [
+    { label: "Format tableau principal", value: principal },
+    {
+      label: "Autres formats",
+      value: autres.map(({ label, code }) => `${label} ${code}`).join(" · "),
+    },
+  ];
+}
+
 export function matchFormatsStepValid(form: TournamentForm): boolean {
   if (!form.formatMatchTableauPrincipal) return false;
   if (!form.formatMatchClassement) return false;

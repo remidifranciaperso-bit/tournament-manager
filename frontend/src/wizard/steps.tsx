@@ -24,7 +24,7 @@ import {
 } from "../components/ui";
 import { MatchFormatPicker } from "../manager/MatchFormatPicker";
 import {
-  formatChoiceLabel,
+  buildMatchFormatSummaryRows,
   matchFormatsStepValid,
 } from "../manager/matchFormats";
 import {
@@ -848,39 +848,7 @@ export function SummaryStep({
     ["Jours", String(form.nbJours)],
     ["Terrains", String(form.nbTerrains)],
     ["Durée des matchs", `${form.dureeMatch} min`],
-    ...(showMatchFormats
-      ? [
-          [
-            "Format tableau principal",
-            form.formatMatchTableauPrincipal ?? "—",
-          ],
-          [
-            "Format classements",
-            formatChoiceLabel(
-              form.formatMatchClassement,
-              form.formatMatchTableauPrincipal
-            ),
-          ],
-          [
-            "Format finale",
-            formatChoiceLabel(
-              form.formatMatchFinale,
-              form.formatMatchTableauPrincipal
-            ),
-          ],
-          ...(form.modeTournoi === "Poules + tableau final"
-            ? [
-                [
-                  "Format poules",
-                  formatChoiceLabel(
-                    form.formatMatchPoule,
-                    form.formatMatchTableauPrincipal
-                  ),
-                ],
-              ]
-            : []),
-        ]
-      : []),
+    ...(showMatchFormats ? buildMatchFormatSummaryRows(form) : []),
   ].map((row) =>
     Array.isArray(row) ? { label: row[0], value: row[1] } : row
   );
