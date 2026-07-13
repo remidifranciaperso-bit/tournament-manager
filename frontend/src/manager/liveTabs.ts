@@ -19,7 +19,7 @@ export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
   { id: "planning", label: "Planning" },
   { id: "final", label: "Classement final" },
   { id: "avancement", label: "Avancement" },
-  { id: "retransmission", label: "Retransmission" },
+  { id: "retransmission", label: "Projection" },
 ];
 
 /** Libellé onglet classement : singulier s'il n'y a qu'une page (ex. 5-8 seul). */

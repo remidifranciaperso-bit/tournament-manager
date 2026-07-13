@@ -283,7 +283,7 @@ export function LiveRetransmissionTab({
               <SectionTitle
                 step={1}
                 title="Écrans détectés"
-                subtitle="Sélectionnez le rétroprojecteur ou l'écran de retransmission."
+                subtitle="Sélectionnez le rétroprojecteur ou l'écran de projection."
               />
               <button
                 type="button"
@@ -323,7 +323,7 @@ export function LiveRetransmissionTab({
 
             {apiSupported && extendedMode && displays.length > 0 ? (
               <p className="mb-3 rounded-xl border border-template-blue/20 bg-template-blue/[0.05] px-4 py-3 text-sm text-arena-700">
-                Mode étendu détecté — la retransmission s&apos;ouvrira
+                Mode étendu détecté — la projection s&apos;ouvrira
                 automatiquement sur l&apos;écran externe sélectionné.
               </p>
             ) : null}
@@ -396,7 +396,7 @@ export function LiveRetransmissionTab({
             <section>
               <SectionTitle
                 step={2}
-                title="Mode de retransmission"
+                title="Mode de projection"
                 subtitle={
                   mode === "multi"
                     ? "Sélection multiple d'écrans activée."
@@ -424,7 +424,7 @@ export function LiveRetransmissionTab({
             <section>
               <SectionTitle
                 step={2}
-                title="Mode de retransmission (test URL)"
+                title="Mode de projection (test URL)"
                 subtitle="Sans rétro branché, vous pouvez quand même générer une URL et l'ouvrir dans un autre onglet."
               />
               <div className="grid gap-3 sm:grid-cols-2">
@@ -513,7 +513,7 @@ export function LiveRetransmissionTab({
             <section className="rounded-2xl border border-arena-600/15 bg-arena-600/[0.03] px-5 py-5">
               <SectionTitle
                 step={4}
-                title="Lancer la retransmission"
+                title="Lancer la projection"
                 subtitle="Une URL est générée par écran. Collez-la sur la TV ou laissez l'ouverture automatique sur le rétro HDMI."
               />
               <ul className="mb-5 space-y-1 text-sm text-arena-600/65">
@@ -522,7 +522,7 @@ export function LiveRetransmissionTab({
                 ))}
               </ul>
               <PrimaryButton onClick={handleLaunch}>
-                Lancer la retransmission
+                Lancer la projection
               </PrimaryButton>
             </section>
           ) : null}

@@ -517,7 +517,7 @@ export function LiveCourtsRow({
       ref={slotRef}
       className={[
         "flex min-h-0 flex-1 justify-center overflow-hidden px-4 sm:px-8",
-        compact ? "items-start pt-0" : "items-center py-6",
+        compact ? "items-center py-0" : "items-center py-6",
       ].join(" ")}
     >
       <div

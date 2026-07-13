@@ -85,8 +85,8 @@ export default function LiveAffichagePage() {
       <div className="flex h-dvh items-center justify-center bg-white px-6 text-center">
         <p className="text-sm text-arena-600/60">
           Tournoi live introuvable. Ouvrez d&apos;abord le manager sur cet
-          appareil, ou relancez la retransmission depuis l&apos;onglet
-          Retransmission.
+          appareil, ou relancez la projection depuis l&apos;onglet
+          Projection.
         </p>
       </div>
     );

@@ -29,8 +29,8 @@ interface LiveBroadcastContentProps {
 
 function broadcastPanelClass(active: boolean) {
   return [
-    "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
-    active ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
+    "absolute inset-0 flex min-h-0 flex-col overflow-hidden",
+    active ? "z-10" : "pointer-events-none z-0 opacity-0",
   ].join(" ");
 }
 
@@ -122,18 +122,16 @@ export function LiveBroadcastContent({
 
   return (
     <div className="pointer-events-none flex h-dvh w-full flex-col overflow-hidden bg-white select-none">
-      {activeTab !== "cover" ? (
-        <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
-          <LiveTabTitle label={tabLabel} reserveLabel={tabTitleReserveLabel} />
-        </div>
-      ) : null}
+      <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
+        <LiveTabTitle
+          label={activeTab === "cover" ? "" : tabLabel}
+          reserveLabel={
+            activeTab === "cover" ? "Page de garde" : tabTitleReserveLabel
+          }
+        />
+      </div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        <div
-          className={[
-            broadcastPanelClass(activeTab === "cover"),
-            activeTab === "cover" ? "flex min-h-0 flex-1 flex-col" : "",
-          ].join(" ")}
-        >
+        <div className={broadcastPanelClass(activeTab === "cover")}>
           <LivePdfPage pageUrl={coverPageUrl} />
         </div>
 
