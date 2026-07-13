@@ -83,7 +83,7 @@ def build_bracket_connector_paths(
     matches_by_code = {match["code"]: match for match in matches}
     slot_by_code = {slot["code"]: slot for slot in slots}
 
-    from engine.live_bracket_box_layout import resolve_match_box_layouts
+    from engine.live_bracket_box_layout import resolve_match_box_layouts, _h_sort_key
 
     match_codes = {match["code"] for match in matches}
     box_layouts = resolve_match_box_layouts(slots, match_codes=match_codes)
@@ -159,6 +159,36 @@ def build_bracket_connector_paths(
 
     for from_point, to_point in feed_to_child_links:
         paths.append(_feed_bracket_path(from_point, to_point))
+
+    slide_half = None
+    h_on_slide = sorted(
+        _h_sort_key(slot["code"])
+        for slot in slots
+        if re.match(r"^H\d+$", slot["code"])
+    )
+    if h_on_slide:
+        if max(h_on_slide) <= 4:
+            slide_half = "upper"
+        elif min(h_on_slide) >= 5:
+            slide_half = "lower"
+
+    feed_by_key = {field["key"]: field for field in feeds}
+    slot_codes = {slot["code"] for slot in slots}
+
+    if slide_half == "lower":
+        d2_rect = box_layouts.get("D2")
+        if d2_rect and "F" not in slot_codes and "WIN_D2" not in feed_by_key:
+            outlet_x, outlet_y = _parent_outlet(d2_rect)
+            exit_y = 1.5
+            mid_x = outlet_x + max(2.0, (100.0 - outlet_x) * 0.25)
+            paths.append([(outlet_x, outlet_y), (mid_x, outlet_y), (mid_x, exit_y)])
+
+    if slide_half == "upper":
+        win_d2 = feed_by_key.get("WIN_D2")
+        if win_d2 and "D2" not in slot_codes:
+            feed_left = _feed_anchor(win_d2, "left")
+            entry_y = 98.5
+            paths.append([(feed_left[0], entry_y), feed_left])
 
     if include_feed_connectors:
         for field in feeds:

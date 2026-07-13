@@ -1,4 +1,5 @@
 import { feedKeyFromTeamLabel } from "./formatBracketLabel";
+import { inferSplitMainBracketHalf } from "./bracketBoxLayout";
 import {
   childInlet,
   feedAnchor,
@@ -59,6 +60,49 @@ function feedBracketPath(from: PointPct, to: PointPct): string {
   }
   const midX = from.x + gap * 0.5;
   return `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
+}
+
+/** Bracket D2 (partie basse) → F (partie haute) : sortie vers le haut de la slide. */
+function crossPageExitPath(parentRect: BoxRectPct): string {
+  const outlet = parentOutlet(parentRect);
+  const exitY = 1.5;
+  const midX = outlet.x + Math.max(2, (100 - outlet.x) * 0.25);
+  return `M ${outlet.x} ${outlet.y} L ${midX} ${outlet.y} L ${midX} ${exitY}`;
+}
+
+/** Entrée depuis la slide suivante (partie basse) vers le feed WIN_D2. */
+function crossPageEntryPath(feedField: LiveLayoutField): string {
+  const feedLeft = feedAnchor(feedField, "left");
+  const entryY = 98.5;
+  return `M ${feedLeft.x} ${entryY} L ${feedLeft.x} ${feedLeft.y}`;
+}
+
+function appendSplitCrossPagePaths(
+  slots: ParsedMatchSlot[],
+  feeds: LiveLayoutField[],
+  boxLayouts: Map<string, BoxRectPct>,
+  paths: string[]
+): void {
+  const slideCodes = new Set(slots.map((slot) => slot.code));
+  const slideHalf = inferSplitMainBracketHalf(slideCodes, slideCodes);
+  if (!slideHalf) return;
+
+  const feedByKey = new Map(feeds.map((field) => [field.key, field]));
+  const slotByCode = new Set(slideCodes);
+
+  if (slideHalf === "lower") {
+    const d2Rect = boxLayouts.get("D2");
+    if (d2Rect && !slotByCode.has("F") && !feedByKey.has("WIN_D2")) {
+      paths.push(crossPageExitPath(d2Rect));
+    }
+  }
+
+  if (slideHalf === "upper") {
+    const winD2 = feedByKey.get("WIN_D2");
+    if (winD2 && !slotByCode.has("D2")) {
+      paths.push(crossPageEntryPath(winD2));
+    }
+  }
 }
 
 export function buildBracketConnectors(
@@ -134,6 +178,8 @@ export function buildBracketConnectors(
   for (const { from, to } of feedToChildLinks) {
     paths.push(feedBracketPath(from, to));
   }
+
+  appendSplitCrossPagePaths(slots, feeds, boxLayouts, paths);
 
   if (!includeFeedConnectors) {
     return paths;

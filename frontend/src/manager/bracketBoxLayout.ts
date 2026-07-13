@@ -11,6 +11,8 @@ const PAGE_SPAN_PCT = 100;
 
 const QUARTER_CODES = ["Q1", "Q2", "Q3", "Q4"] as const;
 
+type EightTeamRow = "q0" | "q1" | "q2" | "q3" | "d1" | "d2" | "f" | "pf";
+
 function columnKey(left: number): number {
   return Math.round(left / COLUMN_BUCKET_PCT) * COLUMN_BUCKET_PCT;
 }
@@ -72,6 +74,43 @@ function topForCenter(centerY: number, height: number): number {
   return centerY - height / 2;
 }
 
+function eightTeamRowTop(row: EightTeamRow, grid: VerticalGrid): number {
+  const { tops: qTops, boxHeight } = grid;
+  const qTop = (index: number) => qTops[index] ?? qTops[qTops.length - 1];
+  const qCenter = (index: number) => boxCenterY(qTop(index), boxHeight);
+  const d1Center = (qCenter(0) + qCenter(1)) / 2;
+  const d2Center = (qCenter(2) + qCenter(3)) / 2;
+  const fCenter = (d1Center + d2Center) / 2;
+
+  switch (row) {
+    case "q0":
+      return qTop(0);
+    case "q1":
+      return qTop(1);
+    case "q2":
+      return qTop(2);
+    case "q3":
+      return qTop(3);
+    case "d1":
+      return topForCenter(d1Center, boxHeight);
+    case "d2":
+      return topForCenter(d2Center, boxHeight);
+    case "f":
+      return topForCenter(fCenter, boxHeight);
+    case "pf":
+      return qTop(3);
+  }
+}
+
+function setEightTeamRow(
+  tops: Map<string, number>,
+  code: string,
+  row: EightTeamRow,
+  grid: VerticalGrid
+): void {
+  tops.set(code, eightTeamRowTop(row, grid));
+}
+
 function isMainBracketCode(code: string): boolean {
   return (
     /^[HQ]\d+$/.test(code) ||
@@ -92,6 +131,39 @@ function isPrelimCode(code: string): boolean {
 function isPrelimOnlySlide(codes: Set<string>): boolean {
   const list = [...codes];
   return list.length > 0 && list.every(isPrelimCode);
+}
+
+/** Tableau principal 16 équipes scindé en partie haute / basse. */
+export function inferSplitMainBracketHalf(
+  slideCodes: Set<string>,
+  allMatchCodes: Set<string>
+): "upper" | "lower" | null {
+  const hasHRound = [...allMatchCodes].some((code) => /^H\d+$/.test(code));
+  if (!hasHRound) return null;
+
+  const hOnSlide = [...slideCodes]
+    .filter((code) => /^H\d+$/.test(code))
+    .map(hSortKey)
+    .sort((a, b) => a - b);
+  if (hOnSlide.length === 0) return null;
+
+  const minH = hOnSlide[0];
+  const maxH = hOnSlide[hOnSlide.length - 1];
+  if (minH <= 4 && maxH > 4) return null;
+
+  if (maxH <= 4) return "upper";
+  if (minH >= 5) return "lower";
+  return null;
+}
+
+type ClassementEightTeamStyle = "main" | "ranking";
+
+function detectClassementEightTeamStyle(
+  codes: Set<string>
+): ClassementEightTeamStyle | null {
+  if (codes.has("C9_16_1") || codes.has("C9_12_1")) return "main";
+  if (codes.has("C5_8_1") || codes.has("C13_16_1")) return "ranking";
+  return null;
 }
 
 /**
@@ -138,58 +210,113 @@ function applyPrelimColumnPositions(
 }
 
 /**
- * Tableau principal — les Q imposent la grille, D/F en découlent.
- * D1 = milieu Q1/Q2, D2 = milieu Q3/Q4, F = milieu D1/D2, PF = top Q4.
+ * Tableau principal 8 équipes sur une page — les Q imposent la grille, D/F en découlent.
  */
 function applyMainBracketPositions(
   codes: Set<string>,
   tops: Map<string, number>,
   quarterGrid: VerticalGrid
 ): void {
-  const { tops: qTops, boxHeight } = quarterGrid;
-
   for (const code of QUARTER_CODES) {
     const index = quarterIndex(code);
-    if (index == null || index >= qTops.length) continue;
+    if (index == null || index >= quarterGrid.tops.length) continue;
     if (codes.has(code)) {
-      tops.set(code, qTops[index]);
+      setEightTeamRow(tops, code, `q${index}` as EightTeamRow, quarterGrid);
     }
   }
 
-  const qTop = (index: number) => qTops[index] ?? qTops[qTops.length - 1];
-  const qCenter = (index: number) => boxCenterY(qTop(index), boxHeight);
-
-  const d1Center = (qCenter(0) + qCenter(1)) / 2;
-  const d2Center = (qCenter(2) + qCenter(3)) / 2;
-
-  if (codes.has("D1")) {
-    tops.set("D1", topForCenter(d1Center, boxHeight));
-  }
-  if (codes.has("D2")) {
-    tops.set("D2", topForCenter(d2Center, boxHeight));
-  }
-  if (codes.has("F")) {
-    tops.set("F", topForCenter((d1Center + d2Center) / 2, boxHeight));
-  }
-  if (codes.has("PF")) {
-    tops.set("PF", qTop(3));
-  }
-
-  const hCodes = [...codes]
-    .filter((code) => /^H\d+$/.test(code))
-    .sort((a, b) => hSortKey(a) - hSortKey(b));
-
-  const hBase = hCodes[0] ? Math.floor((hSortKey(hCodes[0]) - 1) / 4) * 4 : 0;
-
-  hCodes.forEach((code) => {
-    const index = hSortKey(code) - 1 - hBase;
-    if (index >= 0 && index < qTops.length) {
-      tops.set(code, qTops[index]);
-    }
-  });
+  if (codes.has("D1")) setEightTeamRow(tops, "D1", "d1", quarterGrid);
+  if (codes.has("D2")) setEightTeamRow(tops, "D2", "d2", quarterGrid);
+  if (codes.has("F")) setEightTeamRow(tops, "F", "f", quarterGrid);
+  if (codes.has("PF")) setEightTeamRow(tops, "PF", "pf", quarterGrid);
 }
 
-/** Colonnes classement : espacement uniforme par colonne. */
+/**
+ * Tableau principal 16 équipes — chaque moitié reprend la géométrie d'un tableau 8 :
+ * H1–H4 / H5–H8 = Q1–Q4 ; Q1–Q2 / Q3–Q4 = D1–D2 ; D1 / D2 = F ; F / PF = PF.
+ */
+function applySplitMainBracketHalf(
+  codes: Set<string>,
+  tops: Map<string, number>,
+  quarterGrid: VerticalGrid,
+  half: "upper" | "lower"
+): void {
+  const hBase = half === "upper" ? 0 : 4;
+
+  for (const code of codes) {
+    if (!/^H\d+$/.test(code)) continue;
+    const index = hSortKey(code) - 1 - hBase;
+    if (index >= 0 && index < 4) {
+      setEightTeamRow(tops, code, `q${index}` as EightTeamRow, quarterGrid);
+    }
+  }
+
+  if (half === "upper") {
+    if (codes.has("Q1")) setEightTeamRow(tops, "Q1", "d1", quarterGrid);
+    if (codes.has("Q2")) setEightTeamRow(tops, "Q2", "d2", quarterGrid);
+    if (codes.has("D1")) setEightTeamRow(tops, "D1", "f", quarterGrid);
+    if (codes.has("F")) setEightTeamRow(tops, "F", "pf", quarterGrid);
+  } else {
+    if (codes.has("Q3")) setEightTeamRow(tops, "Q3", "d1", quarterGrid);
+    if (codes.has("Q4")) setEightTeamRow(tops, "Q4", "d2", quarterGrid);
+    if (codes.has("D2")) setEightTeamRow(tops, "D2", "f", quarterGrid);
+    if (codes.has("PF")) setEightTeamRow(tops, "PF", "pf", quarterGrid);
+  }
+}
+
+/** Classement 9-12 : même mise en page qu'un tableau principal 8 équipes. */
+function applyClassementMainEightTeam(
+  codes: Set<string>,
+  tops: Map<string, number>,
+  quarterGrid: VerticalGrid
+): void {
+  const firstRound = ["C9_16_1", "C9_16_2", "C9_16_3", "C9_16_4"] as const;
+  firstRound.forEach((code, index) => {
+    if (codes.has(code)) {
+      setEightTeamRow(tops, code, `q${index}` as EightTeamRow, quarterGrid);
+    }
+  });
+
+  if (codes.has("C9_12_1")) setEightTeamRow(tops, "C9_12_1", "d1", quarterGrid);
+  if (codes.has("C9_12_2")) setEightTeamRow(tops, "C9_12_2", "d2", quarterGrid);
+  if (codes.has("C9_10")) setEightTeamRow(tops, "C9_10", "f", quarterGrid);
+  if (codes.has("C11_12")) setEightTeamRow(tops, "C11_12", "pf", quarterGrid);
+}
+
+/** Classements 5-8 et 13-16 : calqués sur le slide C5_8 de 8 équipes. */
+function applyClassementRankingEightTeam(
+  codes: Set<string>,
+  tops: Map<string, number>,
+  quarterGrid: VerticalGrid
+): void {
+  const semi1 = codes.has("C5_8_1")
+    ? "C5_8_1"
+    : codes.has("C13_16_1")
+      ? "C13_16_1"
+      : null;
+  const semi2 = codes.has("C5_8_2")
+    ? "C5_8_2"
+    : codes.has("C13_16_2")
+      ? "C13_16_2"
+      : null;
+  const finalLeft = codes.has("C7_8")
+    ? "C7_8"
+    : codes.has("C15_16")
+      ? "C15_16"
+      : null;
+  const finalRight = codes.has("C5_6")
+    ? "C5_6"
+    : codes.has("C13_14")
+      ? "C13_14"
+      : null;
+
+  if (semi1) setEightTeamRow(tops, semi1, "d1", quarterGrid);
+  if (semi2) setEightTeamRow(tops, semi2, "d2", quarterGrid);
+  if (finalLeft) setEightTeamRow(tops, finalLeft, "f", quarterGrid);
+  if (finalRight) setEightTeamRow(tops, finalRight, "f", quarterGrid);
+}
+
+/** Colonnes classement générique : espacement uniforme par colonne. */
 function applyClassementColumnPositions(
   slots: ParsedMatchSlot[],
   tops: Map<string, number>,
@@ -225,25 +352,36 @@ export function resolveMatchBoxLayouts(
   );
 
   const codes = new Set(slots.map((slot) => slot.code));
+  const allMatchCodes = new Set(options?.matchCodes ?? codes);
   const hasMainBracket = [...codes].some(isMainBracketCode);
   const prelimOnly = isPrelimOnlySlide(codes);
+  const splitHalf = inferSplitMainBracketHalf(codes, allMatchCodes);
+  const classementStyle = detectClassementEightTeamStyle(codes);
   const tops = new Map<string, number>();
   const lefts = new Map<string, number>();
 
-  const quarterSlotCount = inferQuarterSlotCount(
-    options?.matchCodes ?? codes
-  );
+  const quarterSlotCount = inferQuarterSlotCount(allMatchCodes);
   const quarterGrid = buildEqualGapGrid(quarterSlotCount, dim.height);
-  const boxHeight = hasMainBracket ? quarterGrid.boxHeight : dim.height;
+  const useEightTeamGrid =
+    hasMainBracket || classementStyle != null || prelimOnly;
+  const boxHeight = useEightTeamGrid ? quarterGrid.boxHeight : dim.height;
 
   if (hasMainBracket) {
-    applyMainBracketPositions(codes, tops, quarterGrid);
+    if (splitHalf) {
+      applySplitMainBracketHalf(codes, tops, quarterGrid, splitHalf);
+    } else {
+      applyMainBracketPositions(codes, tops, quarterGrid);
+    }
+  } else if (classementStyle === "main") {
+    applyClassementMainEightTeam(codes, tops, quarterGrid);
+  } else if (classementStyle === "ranking") {
+    applyClassementRankingEightTeam(codes, tops, quarterGrid);
+  } else if (!prelimOnly) {
+    applyClassementColumnPositions(slots, tops, boxHeight);
   }
 
   if (prelimOnly) {
     applyPrelimColumnPositions(slots, tops, lefts, dim.width, boxHeight);
-  } else {
-    applyClassementColumnPositions(slots, tops, boxHeight);
   }
 
   const layouts = new Map<string, BoxRectPct>();
