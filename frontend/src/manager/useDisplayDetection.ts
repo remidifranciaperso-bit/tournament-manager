@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import { analyzeDisplayLayoutMode, type DisplayLayoutMode } from "./displayWindow";
 
 export type DisplayConnectionStatus = "connected" | "connecting" | "available";
 
 export interface DetectedDisplay {
   id: string;
   label: string;
+  left: number;
+  top: number;
   width: number;
   height: number;
   isPrimary: boolean;
@@ -42,6 +45,8 @@ function externalDisplaysOnly(
         label:
           screen.label?.trim() ||
           `Rétroprojecteur / écran externe ${externalIndex}`,
+        left: screen.left,
+        top: screen.top,
         width: screen.width,
         height: screen.height,
         isPrimary: false,
@@ -53,6 +58,7 @@ function externalDisplaysOnly(
 
 async function readDisplays(): Promise<{
   displays: DetectedDisplay[];
+  layoutMode: DisplayLayoutMode;
   apiSupported: boolean;
 }> {
   const getScreenDetails = (
@@ -62,22 +68,24 @@ async function readDisplays(): Promise<{
   ).getScreenDetails;
 
   if (!getScreenDetails) {
-    return { displays: [], apiSupported: false };
+    return { displays: [], layoutMode: "unknown", apiSupported: false };
   }
 
   try {
     const details = await getScreenDetails();
     return {
       displays: externalDisplaysOnly(details.screens),
+      layoutMode: analyzeDisplayLayoutMode(details.screens),
       apiSupported: true,
     };
   } catch {
-    return { displays: [], apiSupported: true };
+    return { displays: [], layoutMode: "unknown", apiSupported: true };
   }
 }
 
 export function useDisplayDetection(active: boolean) {
   const [displays, setDisplays] = useState<DetectedDisplay[]>([]);
+  const [layoutMode, setLayoutMode] = useState<DisplayLayoutMode>("unknown");
   const [scanning, setScanning] = useState(false);
   const [apiSupported, setApiSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,12 +96,14 @@ export function useDisplayDetection(active: boolean) {
     try {
       const result = await readDisplays();
       setDisplays(result.displays);
+      setLayoutMode(result.layoutMode);
       setApiSupported(result.apiSupported);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Impossible de détecter les écrans."
       );
       setDisplays([]);
+      setLayoutMode("unknown");
     } finally {
       setScanning(false);
     }
@@ -139,8 +149,12 @@ export function useDisplayDetection(active: boolean) {
     };
   }, [active, scan]);
 
+  const extendedMode = layoutMode === "extended";
+
   return {
     displays,
+    layoutMode,
+    extendedMode,
     scanning,
     apiSupported,
     error,

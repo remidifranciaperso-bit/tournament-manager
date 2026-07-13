@@ -11,6 +11,7 @@ import {
   useDisplayDetection,
   type DetectedDisplay,
 } from "./useDisplayDetection";
+import { extendedModeHint } from "./displayWindow";
 
 interface LiveRetransmissionTabProps {
   classementPageCount: number;
@@ -110,7 +111,7 @@ export function LiveRetransmissionTab({
   classementPageCount,
   active,
 }: LiveRetransmissionTabProps) {
-  const { displays, scanning, apiSupported, error, scan } =
+  const { displays, layoutMode, extendedMode, scanning, apiSupported, error, scan } =
     useDisplayDetection(active);
 
   const tabOptions = useMemo(
@@ -205,14 +206,37 @@ export function LiveRetransmissionTab({
               </p>
             ) : null}
 
+            {apiSupported && !extendedMode ? (
+              <p className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-sm text-amber-900">
+                <span className="font-semibold">Mode étendu requis.</span>{" "}
+                Avec un câble HDMI branché, passez en affichage{" "}
+                <strong>étendu</strong> (pas dupliquer / miroir) pour que le
+                rétro soit détecté et que l&apos;URL s&apos;y ouvre
+                automatiquement — sans choix d&apos;écran.
+                <span className="mt-2 block text-xs text-amber-800/90">
+                  {extendedModeHint()}
+                </span>
+              </p>
+            ) : null}
+
+            {apiSupported && extendedMode && displays.length > 0 ? (
+              <p className="mb-3 rounded-xl border border-template-blue/20 bg-template-blue/[0.05] px-4 py-3 text-sm text-arena-700">
+                Mode étendu détecté — la retransmission s&apos;ouvrira
+                automatiquement sur l&apos;écran externe sélectionné.
+              </p>
+            ) : null}
+
             {displays.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-arena-600/20 bg-arena-600/[0.03] px-5 py-8 text-center">
                 <p className="text-sm font-medium text-arena-700">
-                  Aucun rétroprojecteur détecté
+                  {layoutMode === "mirror_or_single" && apiSupported
+                    ? "Rétro non visible — passez en mode étendu"
+                    : "Aucun rétroprojecteur détecté"}
                 </p>
                 <p className="mt-2 text-sm text-arena-600/50">
-                  Branchez un écran externe (HDMI, USB-C…) — la liste se met à
-                  jour automatiquement.
+                  {layoutMode === "mirror_or_single" && apiSupported
+                    ? "En mode dupliquer, le navigateur ne voit qu'un seul écran. Basculez en étendu : le rétro apparaîtra ici sans dialogue de choix."
+                    : "Branchez un écran externe (HDMI, USB-C…) — la liste se met à jour automatiquement."}
                 </p>
               </div>
             ) : (
