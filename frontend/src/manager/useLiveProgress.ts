@@ -408,6 +408,12 @@ export function useLiveProgress(
     return formatElapsed(end - startedAt);
   }, [startedAt, finishedAt, now]);
 
+  const elapsedMs = useMemo(() => {
+    if (startedAt === null) return 0;
+    const end = finishedAt ?? now;
+    return Math.max(0, end - startedAt);
+  }, [startedAt, finishedAt, now]);
+
   return {
     completed,
     matchResults,
@@ -423,6 +429,7 @@ export function useLiveProgress(
     total: totalMatches,
     percent,
     elapsed,
+    elapsedMs,
     started: startedAt !== null,
     finished: finishedAt !== null,
     startTournament,

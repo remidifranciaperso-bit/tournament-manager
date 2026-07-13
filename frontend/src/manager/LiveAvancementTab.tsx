@@ -1,101 +1,78 @@
+import type { StoredMatchResult } from "./useLiveProgress";
+import { formatElapsed } from "./useLiveProgress";
 import { LiveProjectionPage } from "./LiveProjectionPage";
 
 interface LiveAvancementTabProps {
   elapsed: string;
+  elapsedMs: number;
   done: number;
   total: number;
   percent: number;
   club: string;
   logoUrl?: string | null;
+  matchResults: Record<string, StoredMatchResult>;
+  matchLaunches: Record<string, number>;
+  nbTerrains: number;
+  started: boolean;
+  finished: boolean;
 }
 
-function ProgressRing({ percent }: { percent: number }) {
-  const radius = 88;
-  const stroke = 10;
-  const normalizedRadius = radius - stroke / 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const offset = circumference - (percent / 100) * circumference;
+function averageMatchMinutes(
+  results: Record<string, StoredMatchResult>,
+  launches: Record<string, number>
+): string {
+  const durations: number[] = [];
 
-  return (
-    <div className="relative mx-auto aspect-square w-[min(72vw,15.5rem)]">
-      <svg
-        viewBox="0 0 200 200"
-        className="h-full w-full -rotate-90"
-        aria-hidden
-      >
-        <circle
-          cx="100"
-          cy="100"
-          r={normalizedRadius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={stroke}
-          className="text-arena-600/10"
-        />
-        <circle
-          cx="100"
-          cy="100"
-          r={normalizedRadius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={offset}
-          className="text-template-blue transition-none"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center">
-        <span className="font-display text-[clamp(2.75rem,10vw,4.25rem)] leading-none text-template-blue">
-          {percent}%
-        </span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-arena-600/50 sm:text-[11px]">
-          complété
-        </span>
-      </div>
-    </div>
-  );
+  for (const [code, result] of Object.entries(results)) {
+    const launched = launches[code] ?? result.launchedAt;
+    if (!launched || !result.validatedAt) continue;
+    durations.push((result.validatedAt - launched) / 60_000);
+  }
+
+  if (durations.length === 0) return "—";
+  const avg = durations.reduce((sum, value) => sum + value, 0) / durations.length;
+  return `${Math.round(avg)} min`;
 }
 
-function StatCard({
+function formatPace(done: number, elapsedMs: number): string {
+  if (done === 0 || elapsedMs <= 0) return "—";
+  const perHour = done / (elapsedMs / 3_600_000);
+  if (perHour >= 10) return `${Math.round(perHour)} / h`;
+  return `${perHour.toFixed(1)} / h`;
+}
+
+function estimateRemaining(
+  elapsedMs: number,
+  done: number,
+  total: number,
+  finished: boolean
+): string {
+  if (finished) return "Terminé";
+  const remaining = total - done;
+  if (!finished && remaining <= 0) return "Terminé";
+  if (done === 0 || elapsedMs <= 0) return "—";
+  return `≈ ${formatElapsed((elapsedMs / done) * remaining)}`;
+}
+
+function StatTile({
   label,
   value,
-  hint,
-  accent = false,
+  detail,
 }: {
   label: string;
   value: string;
-  hint?: string;
-  accent?: boolean;
+  detail?: string;
 }) {
   return (
-    <div
-      className={[
-        "relative overflow-hidden rounded-2xl border px-4 py-4 text-center shadow-sm sm:px-5 sm:py-5",
-        accent
-          ? "border-template-blue/25 bg-template-blue/[0.06]"
-          : "border-arena-600/15 bg-white",
-      ].join(" ")}
-    >
-      <div
-        className={[
-          "absolute inset-y-3 left-0 w-1 rounded-r-full",
-          accent ? "bg-template-blue" : "bg-arena-600/20",
-        ].join(" ")}
-      />
-      <div className="text-[10px] font-semibold uppercase tracking-widest text-arena-600/55 sm:text-[11px]">
+    <div className="rounded-xl border border-arena-600/15 bg-white px-3 py-3 sm:px-4 sm:py-3.5">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-arena-600/50">
         {label}
-      </div>
-      <div
-        className={[
-          "mt-2 font-display text-2xl leading-none sm:text-3xl",
-          accent ? "text-template-blue" : "text-arena-700",
-        ].join(" ")}
-      >
+      </p>
+      <p className="mt-1 font-display text-xl leading-none text-arena-700 sm:text-2xl">
         {value}
-      </div>
-      {hint ? (
-        <p className="mt-1.5 text-[11px] text-arena-600/45">{hint}</p>
+      </p>
+      {detail ? (
+        <p className="mt-1 text-[11px] leading-snug text-arena-600/45">{detail}</p>
       ) : null}
     </div>
   );
@@ -103,64 +80,86 @@ function StatCard({
 
 export function LiveAvancementTab({
   elapsed,
+  elapsedMs,
   done,
   total,
   percent,
   club,
   logoUrl,
+  matchResults,
+  matchLaunches,
+  nbTerrains,
+  started,
+  finished,
 }: LiveAvancementTabProps) {
   const clampedPercent = Math.max(0, Math.min(100, percent));
-  const remaining = Math.max(0, total - done);
-  const matchWord = (count: number) => (count > 1 ? "matchs" : "match");
+  const avgMatch = averageMatchMinutes(matchResults, matchLaunches);
+  const pace = formatPace(done, elapsedMs);
+  const eta = estimateRemaining(elapsedMs, done, total, finished);
 
   return (
     <LiveProjectionPage club={club} logoUrl={logoUrl}>
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-5 sm:px-8 sm:py-8">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 sm:gap-8">
-          <div className="overflow-hidden rounded-[1.75rem] border border-arena-600/15 bg-white shadow-sm">
-            <div className="border-b border-arena-600/10 bg-template-blue/[0.05] px-5 py-4 text-center sm:px-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-arena-600/50">
-                Progression du tournoi
-              </p>
-              <p className="mt-2 font-display text-lg text-arena-700 sm:text-xl">
-                {done} {matchWord(done)} terminé{done > 1 ? "s" : ""}{" "}
-                <span className="text-arena-600/40">/</span> {total}
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center gap-6 px-5 py-7 sm:gap-7 sm:px-8 sm:py-8">
-              <ProgressRing percent={clampedPercent} />
-
-              <div className="w-full max-w-xl">
-                <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-arena-600/45">
-                  <span>Début</span>
-                  <span>Fin du tournoi</span>
-                </div>
-                <div className="h-3.5 overflow-hidden rounded-full border border-arena-600/10 bg-arena-600/[0.06] p-0.5">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-template-blue/85 to-template-blue transition-none"
-                    style={{ width: `${clampedPercent}%` }}
-                  />
-                </div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-3 sm:px-6 sm:py-4">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 sm:gap-4">
+          <section className="rounded-2xl border border-arena-600/15 bg-white px-4 py-4 sm:px-5 sm:py-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-arena-600/50">
+                  Progression globale
+                </p>
+                <p className="mt-1.5 font-display text-[clamp(2.25rem,8vw,3.5rem)] leading-none text-template-blue">
+                  {clampedPercent}%
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="font-display text-2xl leading-none text-arena-700 sm:text-3xl">
+                  {done}
+                  <span className="text-arena-600/30">/</span>
+                  {total}
+                </p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-arena-600/45">
+                  matchs
+                </p>
               </div>
             </div>
-          </div>
 
-          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-            <StatCard label="Temps écoulé" value={elapsed} hint="Depuis le coup d'envoi" />
-            <StatCard
-              label="Matchs joués"
-              value={`${done}/${total}`}
-              hint={`${clampedPercent}% du planning`}
-              accent
+            <div
+              className="mt-4 h-2 overflow-hidden rounded-full bg-arena-600/10"
+              role="progressbar"
+              aria-valuenow={clampedPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full rounded-full bg-template-blue transition-none"
+                style={{ width: `${clampedPercent}%` }}
+              />
+            </div>
+          </section>
+
+          <div className="grid grid-cols-2 gap-3">
+            <StatTile
+              label="Temps écoulé"
+              value={started ? elapsed : "—"}
+              detail={started ? "Depuis le coup d'envoi" : "Tournoi pas encore lancé"}
             />
-            <StatCard
-              label="Restants"
-              value={String(remaining)}
-              hint={
-                remaining === 0
-                  ? "Tournoi terminé"
-                  : `${remaining} ${matchWord(remaining)} à venir`
+            <StatTile
+              label="Durée moyenne"
+              value={avgMatch}
+              detail="Par match terminé"
+            />
+            <StatTile
+              label="Cadence"
+              value={pace}
+              detail="Matchs joués par heure"
+            />
+            <StatTile
+              label="Fin estimée"
+              value={eta}
+              detail={
+                finished
+                  ? "Tous les matchs sont terminés"
+                  : `${nbTerrains} terrain${nbTerrains > 1 ? "s" : ""} au planning`
               }
             />
           </div>
