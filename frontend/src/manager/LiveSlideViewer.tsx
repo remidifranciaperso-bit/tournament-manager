@@ -38,7 +38,7 @@ interface LiveSlideViewerProps {
   layoutFields: LiveLayoutField[];
 }
 
-function LiveSlideViewer({
+export function LiveSlideViewer({
   templateId,
   slideIndex,
   fields,
@@ -102,7 +102,7 @@ function LiveSlideViewer({
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white"
+      className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white transition-none"
       style={{ touchAction: "none" }}
     >
       <div

@@ -85,7 +85,7 @@ interface LivePdfPageProps {
 /** Compense le centrage flex + métriques fonte du ✓ vs la ☐ du PDF. */
 const CHECK_MARK_UPSHIFT_RATIO = 0.16;
 
-function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
+export function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
   const slotRef = useRef<HTMLDivElement>(null);
   const [renderSize, setRenderSize] = useState<{ w: number; h: number } | null>(
     null
@@ -136,7 +136,7 @@ function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
     <div
       ref={slotRef}
       className={[
-        "flex min-h-0 flex-1 select-none items-center justify-center overflow-hidden bg-white",
+        "flex min-h-0 flex-1 select-none items-center justify-center overflow-hidden bg-white transition-none",
         interactive ? "touch-manipulation" : "touch-none",
       ].join(" ")}
       style={interactive ? undefined : { touchAction: "none" }}

@@ -84,12 +84,8 @@ export function LiveBracketViewer({
       ) : (
         <div
           aria-hidden
-          className="max-h-full max-w-full shrink-0"
-          style={{
-            width: effectiveWidth > 0 ? effectiveWidth : "min(100%, 70vh)",
-            aspectRatio: String(SLIDE_ASPECT),
-            visibility: "hidden",
-          }}
+          className="h-full max-h-full max-w-full shrink-0"
+          style={{ aspectRatio: String(SLIDE_ASPECT) }}
         />
       )}
     </div>
