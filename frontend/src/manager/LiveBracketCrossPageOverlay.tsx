@@ -12,7 +12,8 @@ interface LineSegment {
 function measureLine(
   shellEl: HTMLElement,
   slideEl: HTMLElement,
-  midXSlidePct: number
+  midXSlidePct: number,
+  direction: "up" | "down"
 ): LineSegment | null {
   const shellRect = shellEl.getBoundingClientRect();
   const slideRect = slideEl.getBoundingClientRect();
@@ -20,18 +21,21 @@ function measureLine(
 
   const x =
     slideRect.left - shellRect.left + (slideRect.width * midXSlidePct) / 100;
+  const slideTop = slideRect.top - shellRect.top;
+  const slideBottom = slideRect.bottom - shellRect.top;
   const strokeWidth = Math.max(0.3, slideRect.width * 0.0008);
   const overlap = Math.max(1, strokeWidth * 0.5);
 
-  return {
-    x,
-    y1: -overlap,
-    y2: shellRect.height + overlap,
-    strokeWidth,
-  };
+  const y1 = direction === "down" ? slideBottom - overlap : -overlap;
+  const y2 =
+    direction === "down" ? shellRect.height + overlap : slideTop + overlap;
+
+  if (Math.abs(y2 - y1) < 0.5) return null;
+
+  return { x, y1, y2, strokeWidth };
 }
 
-/** Trait inter-pages sur toute la hauteur du panneau blanc (titre + tableau + pied). */
+/** Prolongement inter-pages dans les marges blanches (haut ou bas du panneau). */
 export function LiveBracketCrossPageOverlay({
   shellRef,
 }: {
@@ -42,9 +46,10 @@ export function LiveBracketCrossPageOverlay({
 
   const stub = context?.metrics?.stub ?? null;
   const midXSlidePct = stub?.midXSlidePct;
+  const direction = stub?.direction;
 
   useLayoutEffect(() => {
-    if (midXSlidePct == null) {
+    if (midXSlidePct == null || !direction) {
       setLine(null);
       return;
     }
@@ -58,7 +63,7 @@ export function LiveBracketCrossPageOverlay({
         setLine(null);
         return;
       }
-      const next = measureLine(shellEl, slideEl, midXSlidePct);
+      const next = measureLine(shellEl, slideEl, midXSlidePct, direction);
       setLine((prev) => {
         if (
           prev &&
@@ -86,7 +91,7 @@ export function LiveBracketCrossPageOverlay({
       observer.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, [shellRef, midXSlidePct]);
+  }, [shellRef, midXSlidePct, direction]);
 
   if (!line) return null;
 
