@@ -2,6 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { DocumentTitle } from "./components/DocumentTitle";
 import EnginePage from "./pages/EnginePage";
 import HubPage from "./pages/HubPage";
+import LiveAffichagePage from "./pages/LiveAffichagePage";
 import ManagerPage from "./pages/ManagerPage";
 import Bracket16MainPreviewPage from "./pages/Bracket16MainPreviewPage";
 
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/" element={<HubPage />} />
         <Route path="/engine" element={<EnginePage />} />
         <Route path="/engine/*" element={<EnginePage />} />
+        <Route path="/manager/affichage/:token" element={<LiveAffichagePage />} />
         <Route path="/manager" element={<ManagerPage />} />
         <Route path="/manager/*" element={<ManagerPage />} />
         <Route path="/preview/tableau-16" element={<Bracket16MainPreviewPage />} />

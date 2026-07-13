@@ -2,6 +2,7 @@ import type { TournamentForm } from "../types";
 import { defaultForm } from "../types";
 import type { LiveTournamentData } from "./liveTypes";
 import { clearLiveProgress, readLiveProgressStats } from "./useLiveProgress";
+import { clearBroadcastSession } from "./liveBroadcastStore";
 
 const SESSION_STORAGE_KEY = "manager-live-session-v1";
 
@@ -130,4 +131,5 @@ export function buildResumeSummary(session: StoredLiveSession): LiveResumeSummar
 export function clearLiveSession(liveToken: string): void {
   localStorage.removeItem(SESSION_STORAGE_KEY);
   clearLiveProgress(liveToken);
+  clearBroadcastSession(liveToken);
 }

@@ -56,6 +56,33 @@ function externalDisplaysOnly(
     });
 }
 
+function devMockDisplays(): DetectedDisplay[] {
+  return [
+    {
+      id: "mock-ext-1",
+      label: "Écran externe 1 (simulation)",
+      left: 1920,
+      top: 0,
+      width: 1920,
+      height: 1080,
+      isPrimary: false,
+      isInternal: false,
+      status: "connected",
+    },
+    {
+      id: "mock-ext-2",
+      label: "Rétroprojecteur (simulation)",
+      left: 1920,
+      top: 0,
+      width: 1280,
+      height: 720,
+      isPrimary: false,
+      isInternal: false,
+      status: "connected",
+    },
+  ];
+}
+
 async function readDisplays(): Promise<{
   displays: DetectedDisplay[];
   layoutMode: DisplayLayoutMode;
@@ -68,18 +95,34 @@ async function readDisplays(): Promise<{
   ).getScreenDetails;
 
   if (!getScreenDetails) {
-    return { displays: [], layoutMode: "unknown", apiSupported: false };
+    return {
+      displays: import.meta.env.DEV ? devMockDisplays() : [],
+      layoutMode: import.meta.env.DEV ? "extended" : "unknown",
+      apiSupported: false,
+    };
   }
 
   try {
     const details = await getScreenDetails();
+    const displays = externalDisplaysOnly(details.screens);
+    if (displays.length === 0 && import.meta.env.DEV) {
+      return {
+        displays: devMockDisplays(),
+        layoutMode: "extended",
+        apiSupported: true,
+      };
+    }
     return {
-      displays: externalDisplaysOnly(details.screens),
+      displays,
       layoutMode: analyzeDisplayLayoutMode(details.screens),
       apiSupported: true,
     };
   } catch {
-    return { displays: [], layoutMode: "unknown", apiSupported: true };
+    return {
+      displays: import.meta.env.DEV ? devMockDisplays() : [],
+      layoutMode: import.meta.env.DEV ? "extended" : "unknown",
+      apiSupported: true,
+    };
   }
 }
 

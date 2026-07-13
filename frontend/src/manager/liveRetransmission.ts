@@ -56,3 +56,5 @@ export const DEFAULT_BROADCAST_TABS: BroadcastableTab[] = [
   "upcoming",
   "main",
 ];
+
+export const DEFAULT_ROTATION_SECONDS = 30;

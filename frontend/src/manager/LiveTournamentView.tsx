@@ -464,6 +464,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
 
               <div className={stackedPanelClass(primaryTab === "retransmission")}>
                 <LiveRetransmissionTab
+                  liveToken={live_token}
                   classementPageCount={classementPages.length}
                   active={primaryTab === "retransmission"}
                 />

@@ -163,7 +163,8 @@ export function formatElapsed(ms: number): string {
 export function useLiveProgress(
   liveToken: string,
   totalMatches: number,
-  _meta: LiveTournamentMeta
+  _meta: LiveTournamentMeta,
+  options?: { pollMs?: number }
 ) {
   const [completed, setCompleted] = useState<Set<string>>(() => {
     const state = loadState(liveToken);
@@ -213,6 +214,33 @@ export function useLiveProgress(
       )
     );
   }, [liveToken, totalMatches]);
+
+  useEffect(() => {
+    const pollMs = options?.pollMs;
+    if (!pollMs || pollMs <= 0) return;
+
+    const reload = () => {
+      const state = loadState(liveToken);
+      setCompleted(new Set(state.completed));
+      setMatchResults(state.results);
+      setMatchLaunches(state.launches ?? {});
+      setForcedUpcomingByTerrain(state.forcedUpcoming ?? {});
+      const nextStartedAt = loadStartedAt(liveToken);
+      setStartedAt(nextStartedAt);
+      setFinishedAt(
+        resolveFinishedAt(
+          liveToken,
+          state.completed.length,
+          totalMatches,
+          nextStartedAt,
+          state.results
+        )
+      );
+    };
+
+    const timer = window.setInterval(reload, pollMs);
+    return () => window.clearInterval(timer);
+  }, [liveToken, totalMatches, options?.pollMs]);
 
   useEffect(() => {
     if (finishedAt !== null) return;

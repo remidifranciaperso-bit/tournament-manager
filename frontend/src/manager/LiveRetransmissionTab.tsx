@@ -3,10 +3,19 @@ import { PrimaryButton } from "../components/ui";
 import {
   broadcastableTabs,
   DEFAULT_BROADCAST_TABS,
+  DEFAULT_ROTATION_SECONDS,
   RETRANSMISSION_MODES,
   type BroadcastableTab,
   type RetransmissionMode,
 } from "./liveRetransmission";
+import {
+  buildAffichageUrl,
+  createOutputToken,
+  listBroadcastOutputs,
+  saveBroadcastOutput,
+  type BroadcastOutput,
+} from "./liveBroadcastStore";
+import { openBroadcastWindow } from "./displayWindow";
 import {
   useDisplayDetection,
   type DetectedDisplay,
@@ -14,6 +23,7 @@ import {
 import { extendedModeHint } from "./displayWindow";
 
 interface LiveRetransmissionTabProps {
+  liveToken: string;
   classementPageCount: number;
   active: boolean;
 }
@@ -108,6 +118,7 @@ function ModeOptionCard({
 }
 
 export function LiveRetransmissionTab({
+  liveToken,
   classementPageCount,
   active,
 }: LiveRetransmissionTabProps) {
@@ -124,6 +135,13 @@ export function LiveRetransmissionTab({
   const [selectedTabs, setSelectedTabs] = useState<Set<BroadcastableTab>>(
     () => new Set(DEFAULT_BROADCAST_TABS)
   );
+  const [fixedTab, setFixedTab] = useState<BroadcastableTab>("live");
+  const [launchedOutputs, setLaunchedOutputs] = useState<BroadcastOutput[]>(() =>
+    listBroadcastOutputs(liveToken)
+  );
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  const tabList = useMemo(() => [...selectedTabs], [selectedTabs]);
 
   const toggleDisplay = (id: string) => {
     setSelectedDisplayIds((prev) => {
@@ -141,18 +159,18 @@ export function LiveRetransmissionTab({
       const next = new Set(prev);
       if (next.has(tab)) next.delete(tab);
       else next.add(tab);
+      const nextList = [...next];
+      if (!nextList.includes(fixedTab) && nextList.length > 0) {
+        setFixedTab(nextList[0]);
+      }
       return next;
     });
   };
 
-  const canConfigureTabs = selectedDisplayIds.length > 0 && mode !== null;
-  const canLaunch =
-    canConfigureTabs && selectedTabs.size > 0 && mode !== "multi"
-      ? true
-      : canConfigureTabs &&
-        selectedTabs.size > 0 &&
-        mode === "multi" &&
-        selectedDisplayIds.length >= 1;
+  const canConfigureTabs =
+    selectedDisplayIds.length > 0 && mode !== null && selectedTabs.size > 0;
+  const canConfigureTest = mode !== null && selectedTabs.size > 0;
+  const canLaunch = canConfigureTabs;
 
   const summaryLines = useMemo(() => {
     if (selectedDisplayIds.length === 0) return [];
@@ -171,6 +189,87 @@ export function LiveRetransmissionTab({
       `Onglets : ${tabLabels.join(" · ") || "—"}`,
     ];
   }, [selectedDisplayIds, displays, tabOptions, selectedTabs, mode]);
+
+  const handleCopyUrl = async (url: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyFeedback(label);
+      window.setTimeout(() => setCopyFeedback(null), 2000);
+    } catch {
+      setCopyFeedback("Copie impossible");
+    }
+  };
+
+  const createOutputs = (
+    displayTargets: DetectedDisplay[],
+    openWindows: boolean
+  ): BroadcastOutput[] => {
+    if (!mode || tabList.length === 0) return [];
+
+    const targets =
+      displayTargets.length > 0
+        ? displayTargets
+        : [
+            {
+              id: "url-only",
+              label: "Affichage URL (test)",
+              left: 0,
+              top: 0,
+              width: 1280,
+              height: 720,
+              isPrimary: false,
+              isInternal: false,
+              status: "connected" as const,
+            },
+          ];
+
+    return targets.map((display, index) => {
+      const dedicatedTab =
+        mode === "multi" ? tabList[index % tabList.length] : null;
+
+      const output: BroadcastOutput = {
+        version: 1,
+        outputToken: createOutputToken(),
+        liveToken,
+        displayId: display.id,
+        displayLabel: display.label,
+        mode,
+        tabs: tabList,
+        fixedTab: mode === "fixed" || mode === "mirror" ? fixedTab : null,
+        dedicatedTab,
+        rotationSeconds: DEFAULT_ROTATION_SECONDS,
+        createdAt: Date.now(),
+      };
+
+      saveBroadcastOutput(output);
+
+      if (openWindows) {
+        const url = buildAffichageUrl(output.outputToken);
+        const opened =
+          display.id !== "url-only"
+            ? openBroadcastWindow(url, display)
+            : null;
+        if (!opened) {
+          window.open(url, `broadcast-${output.outputToken}`, "noopener");
+        }
+      }
+
+      return output;
+    });
+  };
+
+  const handleLaunch = () => {
+    const displayTargets = displays.filter((d) =>
+      selectedDisplayIds.includes(d.id)
+    );
+    createOutputs(displayTargets, true);
+    setLaunchedOutputs(listBroadcastOutputs(liveToken));
+  };
+
+  const handleLaunchTestUrl = () => {
+    createOutputs([], true);
+    setLaunchedOutputs(listBroadcastOutputs(liveToken));
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -223,6 +322,13 @@ export function LiveRetransmissionTab({
               <p className="mb-3 rounded-xl border border-template-blue/20 bg-template-blue/[0.05] px-4 py-3 text-sm text-arena-700">
                 Mode étendu détecté — la retransmission s&apos;ouvrira
                 automatiquement sur l&apos;écran externe sélectionné.
+              </p>
+            ) : null}
+
+            {import.meta.env.DEV && displays.some((d) => d.id.startsWith("mock-")) ? (
+              <p className="mb-3 rounded-xl border border-arena-600/15 bg-arena-600/[0.04] px-4 py-3 text-xs text-arena-600/60">
+                Mode simulation : écrans fictifs pour tester sans rétro branché.
+                Le lancement ouvre un nouvel onglet navigateur.
               </p>
             ) : null}
 
@@ -311,9 +417,30 @@ export function LiveRetransmissionTab({
                 ))}
               </div>
             </section>
+          ) : displays.length === 0 ? (
+            <section>
+              <SectionTitle
+                step={2}
+                title="Mode de retransmission (test URL)"
+                subtitle="Sans rétro branché, vous pouvez quand même générer une URL et l'ouvrir dans un autre onglet."
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                {RETRANSMISSION_MODES.filter((option) => option.id !== "multi").map(
+                  (option) => (
+                    <ModeOptionCard
+                      key={option.id}
+                      active={mode === option.id}
+                      title={option.title}
+                      subtitle={option.subtitle}
+                      onClick={() => setMode(option.id)}
+                    />
+                  )
+                )}
+              </div>
+            </section>
           ) : null}
 
-          {canConfigureTabs ? (
+          {canConfigureTabs || canConfigureTest ? (
             <section>
               <SectionTitle
                 step={3}
@@ -346,6 +473,36 @@ export function LiveRetransmissionTab({
                   );
                 })}
               </div>
+              {mode === "fixed" && tabList.length > 1 ? (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {tabList.map((tab) => {
+                    const label =
+                      tabOptions.find((entry) => entry.id === tab)?.label ?? tab;
+                    return (
+                      <label
+                        key={tab}
+                        className={[
+                          "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition",
+                          fixedTab === tab
+                            ? "border-template-blue/30 bg-template-blue/[0.05]"
+                            : "border-arena-600/15 bg-white",
+                        ].join(" ")}
+                      >
+                        <input
+                          type="radio"
+                          name="fixed-tab"
+                          checked={fixedTab === tab}
+                          onChange={() => setFixedTab(tab)}
+                          className="accent-template-blue"
+                        />
+                        <span className="text-sm font-medium text-arena-700">
+                          {label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : null}
             </section>
           ) : null}
 
@@ -354,16 +511,69 @@ export function LiveRetransmissionTab({
               <SectionTitle
                 step={4}
                 title="Lancer la retransmission"
-                subtitle="La connexion aux écrans sera activée dans une prochaine version."
+                subtitle="Une URL est générée par écran. Collez-la sur la TV ou laissez l'ouverture automatique sur le rétro HDMI."
               />
               <ul className="mb-5 space-y-1 text-sm text-arena-600/65">
                 {summaryLines.map((line) => (
                   <li key={line}>{line}</li>
                 ))}
               </ul>
-              <PrimaryButton disabled>
-                Lancer la retransmission (bientôt)
+              <PrimaryButton onClick={handleLaunch}>
+                Lancer la retransmission
               </PrimaryButton>
+            </section>
+          ) : null}
+
+          {canConfigureTest && selectedDisplayIds.length === 0 ? (
+            <section className="rounded-2xl border border-arena-600/15 bg-arena-600/[0.03] px-5 py-5">
+              <SectionTitle
+                step={4}
+                title="Tester sans rétro"
+                subtitle="Ouvre l'URL dans un nouvel onglet sur cet ordinateur — pratique sans matériel."
+              />
+              <PrimaryButton onClick={handleLaunchTestUrl}>
+                Créer l&apos;URL et ouvrir (test)
+              </PrimaryButton>
+            </section>
+          ) : null}
+
+          {launchedOutputs.length > 0 ? (
+            <section className="rounded-2xl border border-template-blue/20 bg-template-blue/[0.04] px-5 py-5">
+              <SectionTitle
+                step={5}
+                title="URLs actives"
+                subtitle="Copiez l'URL sur un navigateur TV ou rouvrez-la sur le rétro."
+              />
+              <div className="space-y-3">
+                {launchedOutputs.map((output) => {
+                  const url = buildAffichageUrl(output.outputToken);
+                  return (
+                    <div
+                      key={output.outputToken}
+                      className="rounded-xl border border-arena-600/15 bg-white px-4 py-3"
+                    >
+                      <p className="text-sm font-semibold text-arena-700">
+                        {output.displayLabel}
+                      </p>
+                      <p className="mt-1 break-all font-mono text-xs text-arena-600/55">
+                        {url}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyUrl(url, output.displayLabel)}
+                        className="mt-2 text-xs font-semibold uppercase tracking-wide text-template-blue hover:underline"
+                      >
+                        Copier l&apos;URL
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              {copyFeedback ? (
+                <p className="mt-3 text-xs text-template-blue">
+                  URL copiée — {copyFeedback}
+                </p>
+              ) : null}
             </section>
           ) : null}
         </div>
