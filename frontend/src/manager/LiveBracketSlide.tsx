@@ -5,7 +5,7 @@ import {
   SLIDE_ASPECT,
 } from "./bracketSlideLayout";
 import { resolveMatchBoxLayouts } from "./bracketBoxLayout";
-import { buildBracketConnectors } from "./bracketConnectors";
+import { buildBracketConnectors, getViewportCrossPageStub } from "./bracketConnectors";
 import { mapFieldToProjection, type BoxRectPct } from "./bracketGeometry";
 import {
   ptOnSlide,
@@ -107,7 +107,7 @@ function TemplateMatchBox({
         <p
           className={
             match.code === "F"
-              ? `pointer-events-none absolute bottom-full left-full ml-[0.35em] w-max max-w-[160%] truncate pb-0.5 text-left ${LIVE_BRUSH_LABEL_CLASS}`
+              ? `pointer-events-none absolute bottom-full right-0 max-w-full origin-right truncate pb-0.5 text-right ${LIVE_BRUSH_LABEL_CLASS}`
               : `pointer-events-none absolute bottom-full left-1/2 w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${LIVE_BRUSH_LABEL_CLASS}`
           }
         >
@@ -236,6 +236,8 @@ function BracketConnectors({
     [paths, width, height]
   );
 
+  const strokeWidth = Math.max(0.3, width * 0.0008);
+
   return (
     <svg
       className="pointer-events-none absolute left-0 top-0 z-[5] block"
@@ -251,7 +253,7 @@ function BracketConnectors({
           d={d}
           fill="none"
           stroke="#00B0F0"
-          strokeWidth={Math.max(0.3, width * 0.0008)}
+          strokeWidth={strokeWidth}
           strokeLinejoin="round"
           strokeLinecap="butt"
           shapeRendering="geometricPrecision"
@@ -261,11 +263,59 @@ function BracketConnectors({
   );
 }
 
+function ViewportCrossPageConnector({
+  midXSlidePct,
+  direction,
+  slideWidth,
+  slideHeight,
+  slideOffsetY,
+  viewportHeight,
+}: {
+  midXSlidePct: number;
+  direction: "up" | "down";
+  slideWidth: number;
+  slideHeight: number;
+  slideOffsetY: number;
+  viewportHeight: number;
+}) {
+  const x = (slideWidth * midXSlidePct) / 100;
+  const strokeWidth = Math.max(0.3, slideWidth * 0.0008);
+  const fromY =
+    direction === "down" ? slideOffsetY + slideHeight : slideOffsetY;
+  const toY = direction === "down" ? viewportHeight : 0;
+
+  if (Math.abs(toY - fromY) < 0.5) return null;
+
+  return (
+    <svg
+      className="pointer-events-none absolute left-1/2 top-0 z-[5] block -translate-x-1/2"
+      width={slideWidth}
+      height={viewportHeight}
+      viewBox={`0 0 ${slideWidth} ${viewportHeight}`}
+      style={{ width: slideWidth, height: viewportHeight }}
+      aria-hidden
+    >
+      <line
+        x1={x}
+        y1={fromY}
+        x2={x}
+        y2={toY}
+        stroke="#00B0F0"
+        strokeWidth={strokeWidth}
+        strokeLinecap="butt"
+        shapeRendering="geometricPrecision"
+      />
+    </svg>
+  );
+}
+
 interface LiveBracketSlideProps {
   fields: LiveLayoutField[];
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   renderWidth: number;
+  viewportHeight?: number;
+  slideOffsetY?: number;
 }
 
 export function LiveBracketSlide({
@@ -273,6 +323,8 @@ export function LiveBracketSlide({
   matches,
   matchResults,
   renderWidth,
+  viewportHeight,
+  slideOffsetY = 0,
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
@@ -314,14 +366,17 @@ export function LiveBracketSlide({
     );
   }, [parsed.matches, parsed.feeds, matchesByCode, consumedFeeds, boxLayouts]);
 
-  return (
-    <div
-      data-bracket-slide
-      data-capture-width={renderWidth}
-      data-capture-height={renderHeight}
-      className="relative shrink-0 overflow-hidden bg-white"
-      style={{ width: renderWidth, height: renderHeight }}
-    >
+  const viewportCrossPageStub = useMemo(
+    () => getViewportCrossPageStub(parsed.matches, boxLayouts),
+    [parsed.matches, boxLayouts]
+  );
+
+  const effectiveViewportHeight = viewportHeight ?? renderHeight;
+  const effectiveSlideOffsetY = viewportHeight != null ? slideOffsetY : 0;
+  const useViewportLayout = viewportHeight != null && viewportHeight > renderHeight;
+
+  const slideContent = (
+    <>
       <BracketConnectors
         paths={connectorPaths}
         width={renderWidth}
@@ -370,6 +425,51 @@ export function LiveBracketSlide({
             scaleH={renderHeight}
           />
         ))}
+    </>
+  );
+
+  if (!useViewportLayout) {
+    return (
+      <div
+        data-bracket-slide
+        data-capture-width={renderWidth}
+        data-capture-height={renderHeight}
+        className="relative shrink-0 overflow-hidden bg-white"
+        style={{ width: renderWidth, height: renderHeight }}
+      >
+        {slideContent}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative mx-auto w-full shrink-0"
+      style={{ height: effectiveViewportHeight }}
+    >
+      {viewportCrossPageStub ? (
+        <ViewportCrossPageConnector
+          midXSlidePct={viewportCrossPageStub.midXSlidePct}
+          direction={viewportCrossPageStub.direction}
+          slideWidth={renderWidth}
+          slideHeight={renderHeight}
+          slideOffsetY={effectiveSlideOffsetY}
+          viewportHeight={effectiveViewportHeight}
+        />
+      ) : null}
+      <div
+        data-bracket-slide
+        data-capture-width={renderWidth}
+        data-capture-height={renderHeight}
+        className="absolute left-1/2 -translate-x-1/2 overflow-hidden bg-white"
+        style={{
+          top: effectiveSlideOffsetY,
+          width: renderWidth,
+          height: renderHeight,
+        }}
+      >
+        {slideContent}
+      </div>
     </div>
   );
 }

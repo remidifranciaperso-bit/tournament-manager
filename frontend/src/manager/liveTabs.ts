@@ -34,6 +34,14 @@ export function primaryTabLabel(
   return LIVE_PRIMARY_TABS.find((entry) => entry.id === tab)?.label ?? "";
 }
 
+export function mainPageHiddenBrushReserveLabel(
+  entry: LivePageEntry | undefined
+): string | null {
+  const raw = entry?.label?.trim();
+  if (!raw || !/^partie basse$/i.test(raw)) return null;
+  return raw;
+}
+
 /** Libellé brush affiché en tête de page (ex. « Classement 5-8 »). */
 export function formatPageBrushLabel(label: string | undefined): string | null {
   if (!label?.trim()) return null;

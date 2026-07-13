@@ -12,25 +12,27 @@ export const LIVE_BRUSH_LABEL_CLASS = [
   LIVE_BRUSH_LABEL_SIZE_CLASS,
 ].join(" ");
 
-const LIVE_TAB_TITLE_WRAPPER =
-  "shrink-0 px-4 pb-3 pt-1 sm:px-6 sm:pb-4";
-
 const LIVE_TAB_TITLE = [
-  LIVE_TAB_TITLE_WRAPPER,
+  "shrink-0 px-4 pb-3 pt-1 text-center",
   LIVE_BRUSH_LABEL_CLASS,
-  "text-center",
+  "sm:px-6 sm:pb-4",
 ].join(" ");
 
-export function LiveTabTitle({ label }: { label: string }) {
-  const hasLabel = label.trim().length > 0;
-  if (!hasLabel) {
-    return (
-      <div className={LIVE_TAB_TITLE_WRAPPER} aria-hidden>
-        <span className={`invisible block ${LIVE_BRUSH_LABEL_SIZE_CLASS}`}>
-          &nbsp;
-        </span>
-      </div>
-    );
+export function LiveTabTitle({
+  label,
+  reserveLabel = null,
+}: {
+  label: string;
+  reserveLabel?: string | null;
+}) {
+  const visible = label.trim();
+  const reserve = reserveLabel?.trim() ?? "";
+
+  if (!visible && reserve) {
+    return <h2 className={`${LIVE_TAB_TITLE} invisible`}>{reserve}</h2>;
   }
-  return <h2 className={LIVE_TAB_TITLE}>{label}</h2>;
+
+  if (!visible) return null;
+
+  return <h2 className={LIVE_TAB_TITLE}>{visible}</h2>;
 }

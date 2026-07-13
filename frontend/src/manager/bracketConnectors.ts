@@ -66,9 +66,8 @@ function feedBracketPath(from: PointPct, to: PointPct): string {
 }
 
 /**
- * Bracket inter-pages D2 → F, aligné sur le midX du bracket D1 → F.
- * Partie haute : prolongement vertical sous F vers le bas de page.
- * Partie basse : sortie verticale depuis D2 vers le haut de page.
+ * Bracket inter-pages D2 → F dans la slide (jusqu'au bord haut/bas de l'encart).
+ * Le prolongement dans la marge blanche est dessiné par ViewportCrossPageConnector.
  */
 function appendSplitCrossPagePaths(
   slots: ParsedMatchSlot[],
@@ -96,6 +95,42 @@ function appendSplitCrossPagePaths(
       `M ${outlet.x} ${outlet.y} L ${midX} ${outlet.y} L ${midX} 0`
     );
   }
+}
+
+export interface ViewportCrossPageStub {
+  midXSlidePct: number;
+  direction: "up" | "down";
+}
+
+/** Prolongement du bracket D2↔F dans la zone blanche autour de la slide. */
+export function getViewportCrossPageStub(
+  slots: ParsedMatchSlot[],
+  boxLayouts: Map<string, BoxRectPct>
+): ViewportCrossPageStub | null {
+  const slideCodes = new Set(slots.map((slot) => slot.code));
+  const slideHalf = inferSplitMainBracketHalf(slideCodes, slideCodes);
+  if (!slideHalf) return null;
+
+  const d1 = boxLayouts.get("D1");
+  const d2 = boxLayouts.get("D2");
+  const f = boxLayouts.get("F");
+
+  if (slideHalf === "upper" && d1 && f) {
+    return {
+      midXSlidePct: connectorMidX(parentOutlet(d1).x, childInlet(f).x),
+      direction: "down",
+    };
+  }
+
+  if (slideHalf === "lower" && d2) {
+    const outlet = parentOutlet(d2);
+    return {
+      midXSlidePct: connectorMidX(outlet.x, d2.left),
+      direction: "up",
+    };
+  }
+
+  return null;
 }
 
 export function buildBracketConnectors(

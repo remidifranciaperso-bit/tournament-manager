@@ -13,6 +13,7 @@ import {
   LIVE_PRIMARY_TABS,
   LIVE_TAB_WIDTH_CLASS,
   activeTabBrushLabel,
+  mainPageHiddenBrushReserveLabel,
   pageEntries,
   planningIndicesForPage,
   primaryTabLabel,
@@ -303,6 +304,11 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
     ]
   );
 
+  const tabTitleReserveLabel = useMemo(() => {
+    if (primaryTab !== "main") return null;
+    return mainPageHiddenBrushReserveLabel(mainPages[mainPage]);
+  }, [primaryTab, mainPages, mainPage]);
+
   return (
     <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-arena-950 text-white">
       <CourtBackground />
@@ -357,7 +363,10 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
           ].join(" ")}
         >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <LiveTabTitle label={activeTabLabel} />
+            <LiveTabTitle
+              label={activeTabLabel}
+              reserveLabel={tabTitleReserveLabel}
+            />
             <div
               className={
                 isBracketTab
