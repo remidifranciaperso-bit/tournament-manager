@@ -7,7 +7,8 @@ export type LivePrimaryTab =
   | "main"
   | "classement"
   | "planning"
-  | "final";
+  | "final"
+  | "retransmission";
 
 export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
   { id: "live", label: "Matchs en cours" },
@@ -17,6 +18,7 @@ export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
   { id: "planning", label: "Planning" },
   { id: "final", label: "Classement final" },
   { id: "avancement", label: "Avancement" },
+  { id: "retransmission", label: "Retransmission" },
 ];
 
 /** Libellé onglet classement : singulier s'il n'y a qu'une page (ex. 5-8 seul). */

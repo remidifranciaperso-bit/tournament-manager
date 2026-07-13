@@ -10,6 +10,7 @@ import { LiveBracketCrossPageOverlay } from "./LiveBracketCrossPageOverlay";
 import { BracketCrossPageMetricsProvider } from "./bracketCrossPageMetrics";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LivePlanningTab } from "./LivePlanningTab";
+import { LiveRetransmissionTab } from "./LiveRetransmissionTab";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { LiveTournamentData } from "./liveTypes";
 import {
@@ -455,6 +456,13 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                     fields={fields}
                   />
                 </LiveManagerDocumentPage>
+              </div>
+
+              <div className={stackedPanelClass(primaryTab === "retransmission")}>
+                <LiveRetransmissionTab
+                  classementPageCount={classementPages.length}
+                  active={primaryTab === "retransmission"}
+                />
               </div>
             </div>
             {isBracketTab ? (
