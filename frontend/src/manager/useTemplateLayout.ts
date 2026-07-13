@@ -10,6 +10,14 @@ export function useTemplateLayout(templateId: string) {
 
   useEffect(() => {
     let cancelled = false;
+
+    const cached = getCachedTemplateLayout(templateId);
+    if (cached) {
+      setLayout(cached);
+      setError(null);
+      return;
+    }
+
     setLayout(null);
     setError(null);
 
