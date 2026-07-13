@@ -84,6 +84,7 @@ interface LiveMatchsEnCoursTabProps {
   captureExportPages: () => Promise<Record<string, string>>;
   exportingPdf: boolean;
   onExportPhaseChange: (phase: ExportPhase) => void;
+  onPdfExported?: () => void;
   onStart: (initialMatchCodes: string[]) => void;
   onCompleteMatch: (
     code: string,
@@ -109,6 +110,7 @@ export function LiveMatchsEnCoursTab({
   captureExportPages,
   exportingPdf,
   onExportPhaseChange,
+  onPdfExported,
   onStart,
   onCompleteMatch,
   onRecordMatchLaunch,
@@ -437,6 +439,7 @@ export function LiveMatchsEnCoursTab({
                       captureExportPages,
                       onExportPhaseChange
                     );
+                    onPdfExported?.();
                   } catch (error) {
                     const message =
                       error instanceof Error

@@ -20,7 +20,15 @@ import {
   matchFormatsStepValid,
   packHasPoules,
 } from "../manager/matchFormats";
-import { ManagerMatchFormatsStep } from "../manager/ManagerMatchFormatsStep";
+import { ManagerLiveResumeDialog } from "../manager/ManagerLiveResumeDialog";
+import {
+  buildResumeSummary,
+  clearLiveSession,
+  loadLiveSession,
+  saveLiveSession,
+  snapshotToForm,
+  type StoredLiveSession,
+} from "../manager/liveSessionStore";
 import {
   ClubStep,
   FormatStep,
@@ -32,7 +40,7 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-73";
+const MANAGER_BUILD = "manager-preview-74";
 
 /** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack · 11 formats pack */
 const STEP_PARTICIPANTS = 2;
@@ -56,7 +64,46 @@ export default function ManagerPage() {
   const [pendingPackLiveData, setPendingPackLiveData] =
     useState<LiveTournamentData | null>(null);
   const [packHasPoulesFormat, setPackHasPoulesFormat] = useState(false);
+  const [resumeSession, setResumeSession] = useState<StoredLiveSession | null>(
+    null
+  );
+  const [resumeChecked, setResumeChecked] = useState(false);
   const genStartedRef = useRef(false);
+
+  useEffect(() => {
+    setResumeSession(loadLiveSession());
+    setResumeChecked(true);
+  }, []);
+
+  const enterLivePhase = useCallback(
+    (data: LiveTournamentData, formState: TournamentForm, equipes: number) => {
+      saveLiveSession(data, formState, equipes);
+      setLiveData(data);
+      setResumeSession(null);
+      setPhase("live");
+    },
+    []
+  );
+
+  const handleResumeSession = useCallback(() => {
+    if (!resumeSession) return;
+    setForm(snapshotToForm(resumeSession.form));
+    setLiveData(resumeSession.liveData);
+    setResumeSession(null);
+    setPhase("live");
+  }, [resumeSession]);
+
+  const handleDiscardSession = useCallback(() => {
+    if (resumeSession) {
+      clearLiveSession(resumeSession.liveData.live_token);
+    }
+    setResumeSession(null);
+  }, [resumeSession]);
+
+  const handlePdfExported = useCallback(() => {
+    if (liveData) clearLiveSession(liveData.live_token);
+    setResumeSession(null);
+  }, [liveData]);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
   const poulesDisponibles = nbEquipes === 20 || nbEquipes === 24;
@@ -151,10 +198,10 @@ export default function ManagerPage() {
 
   const handlePackFormatContinue = () => {
     if (!pendingPackLiveData || !matchFormatsStepValid(form)) return;
-    setLiveData(applyFormFormatsToLiveData(pendingPackLiveData, form));
+    const data = applyFormFormatsToLiveData(pendingPackLiveData, form);
     setPendingPackLiveData(null);
     setPackHasPoulesFormat(false);
-    setPhase("live");
+    enterLivePhase(data, form, data.meta.nb_equipes);
   };
   const goHome = () => setStep(0);
 
@@ -211,6 +258,17 @@ export default function ManagerPage() {
         form={form}
         nbEquipes={preview?.nb_equipes ?? liveData.meta.nb_equipes}
         liveData={liveData}
+        onPdfExported={handlePdfExported}
+      />
+    );
+  }
+
+  if (resumeChecked && resumeSession) {
+    return (
+      <ManagerLiveResumeDialog
+        summary={buildResumeSummary(resumeSession)}
+        onResume={handleResumeSession}
+        onDiscard={handleDiscardSession}
       />
     );
   }
@@ -412,7 +470,13 @@ export default function ManagerPage() {
                   ready={liveReady}
                   genreTournoi={form.genreTournoi}
                   onAccessLive={() => {
-                    if (liveData) setPhase("live");
+                    if (liveData) {
+                      enterLivePhase(
+                        liveData,
+                        form,
+                        preview?.nb_equipes ?? liveData.meta.nb_equipes
+                      );
+                    }
                   }}
                 />
               )}

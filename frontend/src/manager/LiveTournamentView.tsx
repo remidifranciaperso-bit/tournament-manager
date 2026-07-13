@@ -56,9 +56,10 @@ interface LiveTournamentViewProps {
   form: TournamentForm;
   nbEquipes: number;
   liveData: LiveTournamentData;
+  onPdfExported?: () => void;
 }
 
-export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
+export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentViewProps) {
   const {
     page_map,
     live_token,
@@ -400,6 +401,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   captureExportPages={captureExportPages}
                   exportingPdf={exportingPdf}
                   onExportPhaseChange={setExportPhase}
+                  onPdfExported={onPdfExported}
                   onStart={(initialMatchCodes) =>
                     progress.startTournament(initialMatchCodes)
                   }

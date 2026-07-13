@@ -27,6 +27,33 @@ function finishedAtKey(liveToken: string): string {
   return `live-finished-at-${liveToken}`;
 }
 
+export function readLiveProgressStats(
+  liveToken: string,
+  totalMatches: number
+): { done: number; started: boolean; finished: boolean } {
+  const state = loadState(liveToken);
+  const startedAt = loadStartedAt(liveToken);
+  const finishedAt = resolveFinishedAt(
+    liveToken,
+    state.completed.length,
+    totalMatches,
+    startedAt,
+    state.results
+  );
+
+  return {
+    done: state.completed.length,
+    started: startedAt !== null,
+    finished: finishedAt !== null,
+  };
+}
+
+export function clearLiveProgress(liveToken: string): void {
+  localStorage.removeItem(storageKey(liveToken));
+  localStorage.removeItem(startedAtKey(liveToken));
+  localStorage.removeItem(finishedAtKey(liveToken));
+}
+
 function loadState(liveToken: string): ProgressState {
   try {
     const raw = localStorage.getItem(storageKey(liveToken));
