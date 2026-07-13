@@ -92,23 +92,23 @@ export function buildMatchFormatSummaryRows(
   }
 
   const hasPoules = form.modeTournoi === "Poules + tableau final";
-  const autres: { label: string; code: MatchFormatCode }[] = [];
-
-  const classement = resolveMatchFormat(form.formatMatchClassement, principal);
-  if (classement !== principal) {
-    autres.push({ label: "Classements", code: classement });
-  }
-
-  const finale = resolveMatchFormat(form.formatMatchFinale, principal);
-  if (finale !== principal) {
-    autres.push({ label: "Finale", code: finale });
-  }
+  const autres: { category: string; code: MatchFormatCode }[] = [];
 
   if (hasPoules) {
     const poule = resolveMatchFormat(form.formatMatchPoule, principal);
     if (poule !== principal) {
-      autres.push({ label: "Poules", code: poule });
+      autres.push({ category: "poules", code: poule });
     }
+  }
+
+  const classement = resolveMatchFormat(form.formatMatchClassement, principal);
+  if (classement !== principal) {
+    autres.push({ category: "classement", code: classement });
+  }
+
+  const finale = resolveMatchFormat(form.formatMatchFinale, principal);
+  if (finale !== principal) {
+    autres.push({ category: "finale", code: finale });
   }
 
   if (autres.length === 0) {
@@ -119,7 +119,9 @@ export function buildMatchFormatSummaryRows(
     { label: "Format tableau principal", value: principal },
     {
       label: "Autres formats",
-      value: autres.map(({ label, code }) => `${label} ${code}`).join(" · "),
+      value: autres
+        .map(({ category, code }) => `${code} (${category})`)
+        .join(" ; "),
     },
   ];
 }

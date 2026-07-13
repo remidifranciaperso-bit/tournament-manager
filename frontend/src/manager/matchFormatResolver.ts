@@ -12,7 +12,7 @@ export function matchFormatCategory(tour: string): MatchFormatCategory {
 
   if (normalized.startsWith("poule")) return "poule";
   if (normalized.startsWith("classement")) return "classement";
-  if (normalized === "finale" || normalized === "petite finale") return "finale";
+  if (normalized === "finale") return "finale";
   return "tableau_principal";
 }
 
