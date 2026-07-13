@@ -141,7 +141,10 @@ export function LiveRetransmissionTab({
   );
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
-  const tabList = useMemo(() => [...selectedTabs], [selectedTabs]);
+  const tabList = useMemo(() => {
+    const ordered = tabOptions.map((entry) => entry.id);
+    return ordered.filter((id) => selectedTabs.has(id));
+  }, [tabOptions, selectedTabs]);
 
   const toggleDisplay = (id: string) => {
     setSelectedDisplayIds((prev) => {

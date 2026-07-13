@@ -155,10 +155,8 @@ export function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
           alt=""
           decoding="async"
           draggable={false}
-          className="block select-none"
+          className="block h-full w-full max-h-full max-w-full select-none object-contain"
           style={{
-            width: renderSize?.w,
-            height: renderSize?.h,
             pointerEvents: interactive ? "none" : "auto",
           }}
         />

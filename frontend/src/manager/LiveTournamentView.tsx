@@ -59,7 +59,7 @@ function DocumentTabPlaceholder({
 function stackedPanelClass(active: boolean) {
   return [
     "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
-    active ? "visible z-10" : "pointer-events-none invisible z-0",
+    active ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
   ].join(" ");
 }
 

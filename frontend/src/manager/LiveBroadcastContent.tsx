@@ -6,8 +6,8 @@ import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LivePlanningTab } from "./LivePlanningTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
+import { LiveCoverBroadcast } from "./LiveCoverBroadcast";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
-import { LivePdfPage } from "./LivePdfViewer";
 import { LiveTabTitle } from "./LiveTabTitle";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { BroadcastableTab } from "./liveRetransmission";
@@ -29,7 +29,9 @@ interface LiveBroadcastContentProps {
 function broadcastPanelClass(active: boolean) {
   return [
     "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
-    active ? "visible z-10" : "pointer-events-none invisible z-0",
+    active
+      ? "z-10 opacity-100"
+      : "pointer-events-none z-0 opacity-0",
   ].join(" ");
 }
 
@@ -53,10 +55,10 @@ export function LiveBroadcastContent({
 
   useEffect(() => {
     void fetchTemplateLayout(templateId);
-    const cover = new Image();
-    cover.decoding = "async";
-    cover.src = `/api/live/${live_token}/page/0.png`;
-  }, [templateId, live_token]);
+    const coverMask = new Image();
+    coverMask.decoding = "async";
+    coverMask.src = `/live-templates/${templateId}/0.png`;
+  }, [templateId]);
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -105,9 +107,12 @@ export function LiveBroadcastContent({
       </div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <div className={broadcastPanelClass(activeTab === "cover")}>
-          <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
-            <LivePdfPage pageUrl={`/api/live/${live_token}/page/0.png`} />
-          </LiveManagerDocumentPage>
+          <LiveCoverBroadcast
+            templateId={templateId}
+            fields={fields}
+            meta={meta}
+            liveToken={live_token}
+          />
         </div>
 
         <div className={broadcastPanelClass(activeTab === "live")}>
