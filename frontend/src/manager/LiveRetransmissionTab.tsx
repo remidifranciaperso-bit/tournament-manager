@@ -180,7 +180,7 @@ export function LiveRetransmissionTab({
               <SectionTitle
                 step={1}
                 title="Écrans détectés"
-                subtitle="Rétroprojecteurs et écrans externes uniquement — pas votre écran de pilotage."
+                subtitle="Sélectionnez le rétroprojecteur ou l'écran de retransmission."
               />
               <button
                 type="button"
