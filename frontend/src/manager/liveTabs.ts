@@ -1,3 +1,4 @@
+import type { BroadcastableTab } from "./liveRetransmission";
 import type { LivePageEntry, LivePageMap } from "./liveTypes";
 
 export type LivePrimaryTab =
@@ -55,6 +56,21 @@ export function formatPageBrushLabel(label: string | undefined): string | null {
     return suffix ? `Classement ${suffix}` : "Classement";
   }
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+export function broadcastTabBrushLabel(
+  tab: BroadcastableTab,
+  pages: {
+    main: LivePageEntry[];
+    classement: LivePageEntry[];
+    planning: LivePageEntry[];
+    mainPage: number;
+    classementPage: number;
+    planningPage: number;
+  }
+): string {
+  if (tab === "cover") return "";
+  return activeTabBrushLabel(tab, pages);
 }
 
 export function activeTabBrushLabel(

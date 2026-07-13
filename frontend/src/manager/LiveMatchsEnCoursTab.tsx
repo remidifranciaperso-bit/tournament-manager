@@ -95,6 +95,8 @@ interface LiveMatchsEnCoursTabProps {
   setAwaitingLaunch: React.Dispatch<React.SetStateAction<Set<string>>>;
   forcedUpcomingByTerrain: Record<string, string>;
   clearForcedForTerrain: (terrain: string) => void;
+  /** Mode affichage public (retransmission) : sans saisie ni actions organisateur. */
+  broadcast?: boolean;
 }
 
 export function LiveMatchsEnCoursTab({
@@ -118,6 +120,7 @@ export function LiveMatchsEnCoursTab({
   setAwaitingLaunch,
   forcedUpcomingByTerrain,
   clearForcedForTerrain,
+  broadcast = false,
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
   const [exportError, setExportError] = useState<string | null>(null);
@@ -268,6 +271,10 @@ export function LiveMatchsEnCoursTab({
   const finished =
     started && matches.length > 0 && completed.size >= matches.length;
 
+  const showCourts = broadcast
+    ? started
+    : started && !finished;
+
   const closeScoring = () => {
     scoreForm.close();
     setScoringState(null);
@@ -298,14 +305,17 @@ export function LiveMatchsEnCoursTab({
       )}
 
       <LiveProjectionPage club={meta.club} logoUrl={meta.logo_url}>
-        {started && !finished ? (
+        {showCourts ? (
           <LiveCourtsRow
           terrains={terrains}
           matchByTerrain={displayMatchByTerrain}
           emptyLabel=""
           theme="light"
           compact
-          getTerrainLibrePrompt={(terrain) => {
+          getTerrainLibrePrompt={
+            broadcast
+              ? undefined
+              : (terrain) => {
             if (!awaitingLaunch.has(terrain)) return undefined;
             const pending = nextLaunchByTerrain.get(terrain);
             if (!pending) {
@@ -316,10 +326,16 @@ export function LiveMatchsEnCoursTab({
               blockedMessage: launchBlockedMessage.get(terrain) ?? null,
             };
           }}
-          getScoring={(terrain) =>
+          getScoring={
+            broadcast
+              ? undefined
+              : (terrain) =>
             scoreForm.isOpen(terrain) ? scoringState ?? undefined : undefined
           }
-          renderFooter={(terrain, match) => {
+          renderFooter={
+            broadcast
+              ? () => <CourtFooterSlot compact />
+              : (terrain, match) => {
             if (awaitingLaunch.has(terrain)) {
               return <CourtFooterSlot compact />;
             }
@@ -387,7 +403,7 @@ export function LiveMatchsEnCoursTab({
         )}
       </LiveProjectionPage>
 
-      {!started && (
+      {!broadcast && !started && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
           <button
             type="button"
@@ -416,7 +432,7 @@ export function LiveMatchsEnCoursTab({
         </div>
       )}
 
-      {finished && (
+      {!broadcast && finished && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
           <div className="flex flex-col items-center gap-5 rounded-2xl border border-arena-600/25 bg-white px-8 py-6 text-center shadow-md sm:px-12 sm:py-8">
             <span

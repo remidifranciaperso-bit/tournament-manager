@@ -21,6 +21,8 @@ interface LiveProchainsMatchsTabProps {
   awaitingLaunch: Set<string>;
   forcedUpcomingByTerrain: Record<string, string>;
   applyForcedUpcoming: (next: Record<string, string>) => void;
+  /** Mode affichage public (retransmission) : sans actions organisateur. */
+  broadcast?: boolean;
 }
 
 export function LiveProchainsMatchsTab({
@@ -33,6 +35,7 @@ export function LiveProchainsMatchsTab({
   awaitingLaunch,
   forcedUpcomingByTerrain,
   applyForcedUpcoming,
+  broadcast = false,
 }: LiveProchainsMatchsTabProps) {
   const [forcePickerTerrain, setForcePickerTerrain] = useState<string | null>(
     null
@@ -104,18 +107,24 @@ export function LiveProchainsMatchsTab({
             renderFooter={(terrain, match) =>
               match ? (
                 <CourtFooterSlot compact>
-                  <div className="flex w-full items-stretch gap-2">
-                    <div className="flex min-h-[41px] flex-1 items-center justify-center rounded-xl border border-arena-600/30 bg-arena-600/10 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-arena-700">
+                  {broadcast ? (
+                    <div className="flex min-h-[41px] w-full items-center justify-center rounded-xl border border-arena-600/30 bg-arena-600/10 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-arena-700">
                       {match.heure ? `Prévu ${match.heure}` : "Heure à confirmer"}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setForcePickerTerrain(terrain)}
-                      className="flex min-h-[41px] shrink-0 items-center justify-center rounded-xl border border-arena-600/20 px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-arena-600/55 transition hover:border-arena-600/35 hover:text-arena-700"
-                    >
-                      Forcer un match
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex w-full items-stretch gap-2">
+                      <div className="flex min-h-[41px] flex-1 items-center justify-center rounded-xl border border-arena-600/30 bg-arena-600/10 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-arena-700">
+                        {match.heure ? `Prévu ${match.heure}` : "Heure à confirmer"}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setForcePickerTerrain(terrain)}
+                        className="flex min-h-[41px] shrink-0 items-center justify-center rounded-xl border border-arena-600/20 px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-arena-600/55 transition hover:border-arena-600/35 hover:text-arena-700"
+                      >
+                        Forcer un match
+                      </button>
+                    </div>
+                  )}
                 </CourtFooterSlot>
               ) : (
                 <CourtFooterSlot compact />
@@ -125,7 +134,7 @@ export function LiveProchainsMatchsTab({
         )}
       </LiveProjectionPage>
 
-      {forcePickerTerrain && (
+      {!broadcast && forcePickerTerrain && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/80 p-4 backdrop-blur-[2px]">
           <div className="flex max-h-[min(80vh,32rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-arena-600/25 bg-white shadow-lg">
             <div className="border-b border-arena-600/15 px-4 py-3">

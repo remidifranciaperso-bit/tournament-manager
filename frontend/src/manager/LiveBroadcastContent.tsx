@@ -11,7 +11,7 @@ import { resolveTemplateId } from "./resolveTemplateId";
 import type { BroadcastableTab } from "./liveRetransmission";
 import type { LiveTournamentData } from "./liveTypes";
 import {
-  activeTabBrushLabel,
+  broadcastTabBrushLabel,
   mainPageHiddenBrushReserveLabel,
   pageEntries,
   slideIndexAt,
@@ -57,7 +57,7 @@ export function LiveBroadcastContent({
 
   const tabLabel = useMemo(
     () =>
-      activeTabBrushLabel(activeTab, {
+      broadcastTabBrushLabel(activeTab, {
         main: mainPages,
         classement: classementPages,
         planning: planningPages,
@@ -68,6 +68,8 @@ export function LiveBroadcastContent({
     [activeTab, mainPages, classementPages, planningPages]
   );
 
+  const showTabTitle = activeTab !== "cover" && Boolean(tabLabel);
+
   const tabTitleReserveLabel = useMemo(() => {
     if (activeTab !== "main") return null;
     return mainPageHiddenBrushReserveLabel(mainPages[0]);
@@ -77,12 +79,26 @@ export function LiveBroadcastContent({
 
   return (
     <div className="pointer-events-none flex h-dvh w-full flex-col overflow-hidden bg-white select-none">
-      <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
-        <LiveTabTitle label={tabLabel} reserveLabel={tabTitleReserveLabel} />
-      </div>
+      {showTabTitle ? (
+        <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
+          <LiveTabTitle label={tabLabel} reserveLabel={tabTitleReserveLabel} />
+        </div>
+      ) : null}
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      {activeTab === "cover" ? (
+        <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+          <LiveBracketViewer
+            templateId={templateId}
+            slideIndex={0}
+            matches={matches}
+            matchResults={progress.matchResults}
+          />
+        </LiveManagerDocumentPage>
+      ) : null}
+
       {activeTab === "live" ? (
         <LiveMatchsEnCoursTab
+          broadcast
           terrains={meta.terrains}
           matches={matches}
           meta={meta}
@@ -116,6 +132,7 @@ export function LiveBroadcastContent({
 
       {activeTab === "upcoming" ? (
         <LiveProchainsMatchsTab
+          broadcast
           terrains={meta.terrains}
           matches={matches}
           meta={meta}
@@ -173,6 +190,7 @@ export function LiveBroadcastContent({
             completed={progress.completed}
             matchResults={progress.matchResults}
             onToggleDone={() => {}}
+            exportMode
           />
         </LiveManagerDocumentPage>
       ) : null}
