@@ -15,6 +15,7 @@ excels tests 2/
 anciennes et autres versions/
 pour bosser les plannifs/
 points/
+templates/
 *.docx
 _*.py
 
@@ -23,8 +24,9 @@ _*.py
 venv/
 env/
 
-# Frontend : dist pre-build commité, pas de rebuild Docker
+# Frontend : dist pre-build commité (public = dev uniquement, copié dans dist au build)
 frontend/node_modules/
+frontend/public/
 frontend/src/
 frontend/package.json
 frontend/package-lock.json
