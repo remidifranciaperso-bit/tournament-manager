@@ -12,8 +12,7 @@ interface LineSegment {
 function measureLine(
   shellEl: HTMLElement,
   slideEl: HTMLElement,
-  midXSlidePct: number,
-  direction: "up" | "down"
+  midXSlidePct: number
 ): LineSegment | null {
   const shellRect = shellEl.getBoundingClientRect();
   const slideRect = slideEl.getBoundingClientRect();
@@ -21,19 +20,14 @@ function measureLine(
 
   const x =
     slideRect.left - shellRect.left + (slideRect.width * midXSlidePct) / 100;
-  const slideTop = slideRect.top - shellRect.top;
-  const slideBottom = slideRect.bottom - shellRect.top;
-
-  const y1 = direction === "down" ? slideBottom : 0;
-  const y2 = direction === "down" ? shellRect.height : slideTop;
-
-  if (Math.abs(y2 - y1) < 0.5) return null;
+  const strokeWidth = Math.max(0.3, slideRect.width * 0.0008);
+  const overlap = Math.max(1, strokeWidth * 0.5);
 
   return {
     x,
-    y1,
-    y2,
-    strokeWidth: Math.max(0.3, slideRect.width * 0.0008),
+    y1: -overlap,
+    y2: shellRect.height + overlap,
+    strokeWidth,
   };
 }
 
@@ -48,10 +42,9 @@ export function LiveBracketCrossPageOverlay({
 
   const stub = context?.metrics?.stub ?? null;
   const midXSlidePct = stub?.midXSlidePct;
-  const direction = stub?.direction;
 
   useLayoutEffect(() => {
-    if (midXSlidePct == null || !direction) {
+    if (midXSlidePct == null) {
       setLine(null);
       return;
     }
@@ -65,7 +58,7 @@ export function LiveBracketCrossPageOverlay({
         setLine(null);
         return;
       }
-      const next = measureLine(shellEl, slideEl, midXSlidePct, direction);
+      const next = measureLine(shellEl, slideEl, midXSlidePct);
       setLine((prev) => {
         if (
           prev &&
@@ -93,7 +86,7 @@ export function LiveBracketCrossPageOverlay({
       observer.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, [shellRef, midXSlidePct, direction]);
+  }, [shellRef, midXSlidePct]);
 
   if (!line) return null;
 
@@ -111,7 +104,7 @@ export function LiveBracketCrossPageOverlay({
         y2={line.y2}
         stroke="#00B0F0"
         strokeWidth={line.strokeWidth}
-        strokeLinecap="butt"
+        strokeLinecap="square"
         shapeRendering="geometricPrecision"
       />
     </svg>

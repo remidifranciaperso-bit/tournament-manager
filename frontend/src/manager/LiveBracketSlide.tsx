@@ -108,7 +108,7 @@ function TemplateMatchBox({
         <p
           className={
             match.code === "F"
-              ? `pointer-events-none absolute bottom-full right-0 max-w-full origin-right truncate pb-0.5 text-right ${LIVE_BRUSH_LABEL_CLASS}`
+              ? `pointer-events-none absolute bottom-full right-2 max-w-[calc(100%-0.5rem)] origin-right whitespace-nowrap pb-0.5 text-right ${LIVE_BRUSH_LABEL_CLASS}`
               : `pointer-events-none absolute bottom-full left-1/2 w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${LIVE_BRUSH_LABEL_CLASS}`
           }
         >
