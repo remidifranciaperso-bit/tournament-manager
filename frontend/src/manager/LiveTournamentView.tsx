@@ -97,6 +97,14 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     void fetchTemplateLayout(templateId);
   }, [templateId]);
 
+  useEffect(() => {
+    const logoUrl = meta.logo_url?.trim();
+    if (!logoUrl) return;
+    const logo = new Image();
+    logo.decoding = "async";
+    logo.src = logoUrl;
+  }, [meta.logo_url]);
+
   const exportPayload = useMemo<LivePdfExportPayload>(() => {
     const match_results: LivePdfExportPayload["match_results"] = {};
     for (const [code, result] of Object.entries(progress.matchResults)) {

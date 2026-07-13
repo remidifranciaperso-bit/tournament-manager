@@ -1,7 +1,9 @@
 import type { PreviewResult, TournamentForm } from "./types";
 import type { LiveTournamentData } from "./manager/liveTypes";
 
-function normalizeLiveTournamentData(data: LiveTournamentData): LiveTournamentData {
+export function normalizeLiveTournamentData(
+  data: LiveTournamentData
+): LiveTournamentData {
   const meta = { ...data.meta };
   if (!meta.logo_url && data.logo_data_url) {
     meta.logo_url = data.logo_data_url;
