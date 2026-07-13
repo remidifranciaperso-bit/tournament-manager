@@ -19,5 +19,6 @@ const LIVE_TAB_TITLE = [
 ].join(" ");
 
 export function LiveTabTitle({ label }: { label: string }) {
+  if (!label.trim()) return null;
   return <h2 className={LIVE_TAB_TITLE}>{label}</h2>;
 }

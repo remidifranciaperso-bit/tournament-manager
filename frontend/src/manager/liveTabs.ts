@@ -13,16 +13,33 @@ export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
   { id: "live", label: "Matchs en cours" },
   { id: "upcoming", label: "Prochains matchs" },
   { id: "main", label: "Tableau principal" },
-  { id: "classement", label: "Matchs de classement" },
+  { id: "classement", label: "Tableaux de classement" },
   { id: "planning", label: "Planning" },
   { id: "final", label: "Classement final" },
   { id: "avancement", label: "Avancement" },
 ];
 
+/** Libellé onglet classement : singulier s'il n'y a qu'une page (ex. 5-8 seul). */
+export function classementPrimaryTabLabel(entryCount: number): string {
+  return entryCount <= 1 ? "Tableau de classement" : "Tableaux de classement";
+}
+
+export function primaryTabLabel(
+  tab: LivePrimaryTab,
+  classementPageCount = 0
+): string {
+  if (tab === "classement") {
+    return classementPrimaryTabLabel(classementPageCount);
+  }
+  return LIVE_PRIMARY_TABS.find((entry) => entry.id === tab)?.label ?? "";
+}
+
 /** Libellé brush affiché en tête de page (ex. « Classement 5-8 »). */
 export function formatPageBrushLabel(label: string | undefined): string | null {
   if (!label?.trim()) return null;
   const normalized = label.trim().replace(/\s+/g, " ");
+  if (/^partie basse$/i.test(normalized)) return null;
+  if (/^partie haute$/i.test(normalized)) return "Tableau Principal";
   if (/^classement\b/i.test(normalized)) {
     const suffix = normalized.replace(/^classement\s*/i, "").trim();
     return suffix ? `Classement ${suffix}` : "Classement";
@@ -47,13 +64,14 @@ export function activeTabBrushLabel(
   switch (tab) {
     case "main": {
       const label = formatPageBrushLabel(pages.main[pages.mainPage]?.label);
-      return label ?? primary;
+      if (label === null) return "";
+      return label || primary;
     }
     case "classement": {
       const label = formatPageBrushLabel(
         pages.classement[pages.classementPage]?.label
       );
-      return label ?? primary;
+      return label ?? classementPrimaryTabLabel(pages.classement.length);
     }
     case "planning": {
       const label = formatPageBrushLabel(

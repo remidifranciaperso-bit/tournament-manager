@@ -53,6 +53,9 @@ function bracketPathsToChild(
   return paths;
 }
 
+/** Aucun trait entrant (comme PF sur un tableau 8 équipes). */
+const NO_INCOMING_CONNECTOR_CODES = new Set(["PF", "C11_12"]);
+
 function feedBracketPath(from: PointPct, to: PointPct): string {
   const gap = to.x - from.x;
   if (gap <= 0.2) {
@@ -62,24 +65,13 @@ function feedBracketPath(from: PointPct, to: PointPct): string {
   return `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
 }
 
-/** Bracket D2 (partie basse) → F (partie haute) : sortie vers le haut de la slide. */
-function crossPageExitPath(parentRect: BoxRectPct): string {
-  const outlet = parentOutlet(parentRect);
-  const exitY = 1.5;
-  const midX = outlet.x + Math.max(2, (100 - outlet.x) * 0.25);
-  return `M ${outlet.x} ${outlet.y} L ${midX} ${outlet.y} L ${midX} ${exitY}`;
-}
-
-/** Entrée depuis la slide suivante (partie basse) vers le feed WIN_D2. */
-function crossPageEntryPath(feedField: LiveLayoutField): string {
-  const feedLeft = feedAnchor(feedField, "left");
-  const entryY = 98.5;
-  return `M ${feedLeft.x} ${entryY} L ${feedLeft.x} ${feedLeft.y}`;
-}
-
+/**
+ * Bracket inter-pages D2 → F, aligné sur le midX du bracket D1 → F.
+ * Partie haute : prolongement vertical sous F vers le bas de page.
+ * Partie basse : sortie verticale depuis D2 vers le haut de page.
+ */
 function appendSplitCrossPagePaths(
   slots: ParsedMatchSlot[],
-  feeds: LiveLayoutField[],
   boxLayouts: Map<string, BoxRectPct>,
   paths: string[]
 ): void {
@@ -87,21 +79,22 @@ function appendSplitCrossPagePaths(
   const slideHalf = inferSplitMainBracketHalf(slideCodes, slideCodes);
   if (!slideHalf) return;
 
-  const feedByKey = new Map(feeds.map((field) => [field.key, field]));
-  const slotByCode = new Set(slideCodes);
+  const d1 = boxLayouts.get("D1");
+  const d2 = boxLayouts.get("D2");
+  const f = boxLayouts.get("F");
 
-  if (slideHalf === "lower") {
-    const d2Rect = boxLayouts.get("D2");
-    if (d2Rect && !slotByCode.has("F") && !feedByKey.has("WIN_D2")) {
-      paths.push(crossPageExitPath(d2Rect));
-    }
+  if (slideHalf === "upper" && d1 && f) {
+    const midX = connectorMidX(parentOutlet(d1).x, childInlet(f).x);
+    const fY = childInlet(f).y;
+    paths.push(`M ${midX} ${fY} L ${midX} 98.5`);
   }
 
-  if (slideHalf === "upper") {
-    const winD2 = feedByKey.get("WIN_D2");
-    if (winD2 && !slotByCode.has("D2")) {
-      paths.push(crossPageEntryPath(winD2));
-    }
+  if (slideHalf === "lower" && d2) {
+    const outlet = parentOutlet(d2);
+    const midX = connectorMidX(outlet.x, d2.left);
+    paths.push(
+      `M ${outlet.x} ${outlet.y} L ${midX} ${outlet.y} L ${midX} 1.5`
+    );
   }
 }
 
@@ -122,7 +115,7 @@ export function buildBracketConnectors(
   const feedToChildLinks: Array<{ from: PointPct; to: PointPct }> = [];
 
   for (const slot of slots) {
-    if (slot.code === "PF") continue;
+    if (NO_INCOMING_CONNECTOR_CODES.has(slot.code)) continue;
 
     const match = matchesByCode.get(slot.code);
     if (!match) continue;
@@ -139,6 +132,8 @@ export function buildBracketConnectors(
     if (p2 && p2 !== p1) parentCodes.push(p2);
 
     for (const parentCode of parentCodes) {
+      if (slot.code === "F" && parentCode === "D2") continue;
+
       const parentSlot = slotByCode.get(parentCode);
       const parentRect = boxLayouts.get(parentCode);
 
@@ -179,7 +174,7 @@ export function buildBracketConnectors(
     paths.push(feedBracketPath(from, to));
   }
 
-  appendSplitCrossPagePaths(slots, feeds, boxLayouts, paths);
+  appendSplitCrossPagePaths(slots, boxLayouts, paths);
 
   if (!includeFeedConnectors) {
     return paths;
@@ -189,7 +184,8 @@ export function buildBracketConnectors(
     if (consumedFeeds.has(field.key)) continue;
 
     const code = field.key.replace(/^(WIN|LOSE|SECOND|THIRD)_/, "");
-    if (code === "PF") continue;
+    if (NO_INCOMING_CONNECTOR_CODES.has(code)) continue;
+    if (code === "D2" && field.key === "WIN_D2" && slotByCode.has("F")) continue;
 
     const parentSlot = slotByCode.get(code);
     if (!parentSlot) continue;

@@ -15,6 +15,7 @@ import {
   activeTabBrushLabel,
   pageEntries,
   planningIndicesForPage,
+  primaryTabLabel,
   slideIndexAt,
   subTabLabels,
   defaultMainSubPage,
@@ -321,9 +322,9 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
               type="button"
               onClick={() => selectPrimary(tab.id)}
               className={[tabClass(primaryTab === tab.id), "flex-1"].join(" ")}
-              title={tab.label}
+              title={primaryTabLabel(tab.id, classementPages.length)}
             >
-              {tab.label}
+              {primaryTabLabel(tab.id, classementPages.length)}
             </button>
           ))}
         </div>

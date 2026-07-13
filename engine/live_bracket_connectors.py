@@ -7,6 +7,8 @@ import re
 from engine.live_bracket_layout import parse_bracket_slide
 from engine.live_team_resolve import feed_key_from_team_label
 
+_NO_INCOMING_CONNECTOR_CODES = frozenset({"PF", "C11_12"})
+
 
 def _parent_code_from_label(label: str) -> str | None:
     feed = feed_key_from_team_label(label)
@@ -103,7 +105,7 @@ def build_bracket_connector_paths(
 
     for slot in slots:
         code = slot["code"]
-        if code == "PF":
+        if code in _NO_INCOMING_CONNECTOR_CODES:
             continue
         match = matches_by_code.get(code)
         if not match:
@@ -126,6 +128,8 @@ def build_bracket_connector_paths(
             parent_codes.append(p2)
 
         for parent_code in parent_codes:
+            if code == "F" and parent_code == "D2":
+                continue
             if parent_code in slot_by_code and parent_code in box_layouts:
                 parents_by_child.setdefault(code, []).append(box_layouts[parent_code])
                 continue
@@ -172,30 +176,33 @@ def build_bracket_connector_paths(
         elif min(h_on_slide) >= 5:
             slide_half = "lower"
 
-    feed_by_key = {field["key"]: field for field in feeds}
-    slot_codes = {slot["code"] for slot in slots}
+    d1_rect = box_layouts.get("D1")
+    d2_rect = box_layouts.get("D2")
+    f_rect = box_layouts.get("F")
 
-    if slide_half == "lower":
-        d2_rect = box_layouts.get("D2")
-        if d2_rect and "F" not in slot_codes and "WIN_D2" not in feed_by_key:
-            outlet_x, outlet_y = _parent_outlet(d2_rect)
-            exit_y = 1.5
-            mid_x = outlet_x + max(2.0, (100.0 - outlet_x) * 0.25)
-            paths.append([(outlet_x, outlet_y), (mid_x, outlet_y), (mid_x, exit_y)])
+    if slide_half == "upper" and d1_rect and f_rect:
+        outlet_x, _ = _parent_outlet(d1_rect)
+        child_x, child_y = _child_inlet(f_rect)
+        mid_x = _connector_mid_x(outlet_x, child_x)
+        paths.append([(mid_x, child_y), (mid_x, 98.5)])
 
-    if slide_half == "upper":
-        win_d2 = feed_by_key.get("WIN_D2")
-        if win_d2 and "D2" not in slot_codes:
-            feed_left = _feed_anchor(win_d2, "left")
-            entry_y = 98.5
-            paths.append([(feed_left[0], entry_y), feed_left])
+    if slide_half == "lower" and d2_rect:
+        outlet_x, outlet_y = _parent_outlet(d2_rect)
+        mid_x = _connector_mid_x(outlet_x, d2_rect["left"])
+        paths.append(
+            [(outlet_x, outlet_y), (mid_x, outlet_y), (mid_x, 1.5)]
+        )
 
     if include_feed_connectors:
         for field in feeds:
             if field["key"] in consumed_feeds:
                 continue
             code = re.sub(r"^(WIN|LOSE|SECOND|THIRD)_", "", field["key"])
-            if code == "PF" or code not in slot_by_code or code not in box_layouts:
+            if code in _NO_INCOMING_CONNECTOR_CODES:
+                continue
+            if field["key"] == "WIN_D2" and "F" in slot_by_code:
+                continue
+            if code not in slot_by_code or code not in box_layouts:
                 continue
             from_point = _parent_outlet(box_layouts[code])
             to_point = _feed_anchor(field, "right")
