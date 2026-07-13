@@ -6,10 +6,16 @@ import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LivePlanningTab } from "./LivePlanningTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
+import { LiveTabTitle } from "./LiveTabTitle";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { BroadcastableTab } from "./liveRetransmission";
 import type { LiveTournamentData } from "./liveTypes";
-import { pageEntries, slideIndexAt } from "./liveTabs";
+import {
+  activeTabBrushLabel,
+  mainPageHiddenBrushReserveLabel,
+  pageEntries,
+  slideIndexAt,
+} from "./liveTabs";
 import { useLiveProgress } from "./useLiveProgress";
 
 interface LiveBroadcastContentProps {
@@ -49,10 +55,32 @@ export function LiveBroadcastContent({
   const classementSlideIndex = slideIndexAt(classementPages, 0);
   const planningSlideIndex = slideIndexAt(planningPages, 0);
 
+  const tabLabel = useMemo(
+    () =>
+      activeTabBrushLabel(activeTab, {
+        main: mainPages,
+        classement: classementPages,
+        planning: planningPages,
+        mainPage: 0,
+        classementPage: 0,
+        planningPage: 0,
+      }),
+    [activeTab, mainPages, classementPages, planningPages]
+  );
+
+  const tabTitleReserveLabel = useMemo(() => {
+    if (activeTab !== "main") return null;
+    return mainPageHiddenBrushReserveLabel(mainPages[0]);
+  }, [activeTab, mainPages]);
+
   const [awaitingLaunch] = useState(() => new Set<string>());
 
   return (
     <div className="pointer-events-none flex h-dvh w-full flex-col overflow-hidden bg-white select-none">
+      <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
+        <LiveTabTitle label={tabLabel} reserveLabel={tabTitleReserveLabel} />
+      </div>
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {activeTab === "live" ? (
         <LiveMatchsEnCoursTab
           terrains={meta.terrains}
@@ -159,6 +187,7 @@ export function LiveBroadcastContent({
           />
         </LiveManagerDocumentPage>
       ) : null}
+      </div>
     </div>
   );
 }
