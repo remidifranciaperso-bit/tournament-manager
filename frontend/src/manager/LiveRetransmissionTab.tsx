@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { OptionCard, PrimaryButton } from "../components/ui";
+import { PrimaryButton } from "../components/ui";
 import {
   broadcastableTabs,
   DEFAULT_BROADCAST_TABS,
@@ -28,12 +28,12 @@ function SectionTitle({
 }) {
   return (
     <div className="mb-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-lime/55">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-arena-600/45">
         Étape {step}
       </p>
-      <h3 className="mt-1 font-display text-lg text-white sm:text-xl">{title}</h3>
+      <h3 className="mt-1 font-display text-lg text-arena-700 sm:text-xl">{title}</h3>
       {subtitle ? (
-        <p className="mt-1 text-sm leading-snug text-white/45">{subtitle}</p>
+        <p className="mt-1 text-sm leading-snug text-arena-600/50">{subtitle}</p>
       ) : null}
     </div>
   );
@@ -41,18 +41,12 @@ function SectionTitle({
 
 function DisplayStatusBadge({ display }: { display: DetectedDisplay }) {
   const label =
-    display.status === "connecting"
-      ? "Connexion…"
-      : display.isInternal
-        ? "Interne"
-        : "Externe";
+    display.status === "connecting" ? "Connexion…" : "Connecté";
 
   const tone =
     display.status === "connecting"
-      ? "border-amber-400/30 bg-amber-400/10 text-amber-200"
-      : display.isInternal
-        ? "border-white/15 bg-white/5 text-white/55"
-        : "border-lime/30 bg-lime/10 text-lime";
+      ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
+      : "border-template-blue/25 bg-template-blue/10 text-template-blue";
 
   return (
     <span
@@ -66,7 +60,7 @@ function DisplayStatusBadge({ display }: { display: DetectedDisplay }) {
   );
 }
 
-function DisplayIcon({ external }: { external: boolean }) {
+function DisplayIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -79,8 +73,36 @@ function DisplayIcon({ external }: { external: boolean }) {
       <rect x="2" y="4" width="20" height="13" rx="1.5" />
       <path d="M8 21h8" strokeLinecap="round" />
       <path d="M12 17v4" strokeLinecap="round" />
-      {external ? <circle cx="18" cy="7" r="1.5" fill="currentColor" /> : null}
+      <circle cx="18" cy="7" r="1.5" fill="currentColor" />
     </svg>
+  );
+}
+
+function ModeOptionCard({
+  active,
+  title,
+  subtitle,
+  onClick,
+}: {
+  active: boolean;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "flex w-full flex-col items-start gap-2 rounded-2xl border p-4 text-left transition",
+        active
+          ? "border-template-blue/35 bg-template-blue/[0.06] ring-1 ring-template-blue/20"
+          : "border-arena-600/15 bg-white hover:border-arena-600/30 hover:shadow-sm",
+      ].join(" ")}
+    >
+      <p className="font-semibold text-arena-700">{title}</p>
+      <p className="text-xs leading-snug text-arena-600/50">{subtitle}</p>
+    </button>
   );
 }
 
@@ -147,104 +169,94 @@ export function LiveRetransmissionTab({
       `Mode : ${modeLabel}`,
       `Onglets : ${tabLabels.join(" · ") || "—"}`,
     ];
-  }, [
-    selectedDisplayIds,
-    displays,
-    tabOptions,
-    selectedTabs,
-    mode,
-  ]);
+  }, [selectedDisplayIds, displays, tabOptions, selectedTabs, mode]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-arena-900/20">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-5 sm:px-6 sm:py-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
-          <header className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-lime/70">
-              Retransmission live
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-white/55">
-              Branchez un rétroprojecteur ou un écran externe : ils apparaissent
-              ci-dessous. Choisissez ensuite le mode et les onglets à diffuser.
-            </p>
-            {!apiSupported ? (
-              <p className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-100/80">
-                Détection avancée non disponible sur ce navigateur — seul
-                l&apos;écran principal est listé. Utilisez Chrome pour la
-                détection automatique des écrans externes.
-              </p>
-            ) : null}
-          </header>
-
           <section>
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <SectionTitle
                 step={1}
                 title="Écrans détectés"
-                subtitle="Sélectionnez l'écran ou le rétroprojecteur de retransmission."
+                subtitle="Rétroprojecteurs et écrans externes uniquement — pas votre écran de pilotage."
               />
               <button
                 type="button"
                 onClick={() => void scan()}
                 disabled={scanning}
-                className="shrink-0 rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/65 transition hover:border-lime/30 hover:text-lime disabled:opacity-50"
+                className="shrink-0 rounded-lg border border-arena-600/20 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-arena-600/70 transition hover:border-arena-600/40 hover:text-arena-700 disabled:opacity-50"
               >
                 {scanning ? "Analyse…" : "Actualiser"}
               </button>
             </div>
 
             {error ? (
-              <p className="mb-3 rounded-xl border border-red-400/25 bg-red-400/5 px-4 py-3 text-sm text-red-300">
+              <p className="mb-3 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm text-red-600">
                 {error}
               </p>
             ) : null}
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {displays.map((display) => {
-                const selected = selectedDisplayIds.includes(display.id);
-                return (
-                  <button
-                    key={display.id}
-                    type="button"
-                    onClick={() => toggleDisplay(display.id)}
-                    className={[
-                      "flex w-full flex-col gap-3 rounded-2xl border p-4 text-left transition",
-                      selected
-                        ? "border-lime/45 bg-lime/5 ring-1 ring-lime/25"
-                        : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div
-                        className={[
-                          "flex h-10 w-10 items-center justify-center rounded-xl",
-                          selected
-                            ? "bg-lime/20 text-lime"
-                            : "bg-white/5 text-white/50",
-                        ].join(" ")}
-                      >
-                        <DisplayIcon external={!display.isInternal} />
-                      </div>
-                      <DisplayStatusBadge display={display} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-white">{display.label}</p>
-                      <p className="mt-1 text-xs text-white/40">
-                        {display.width} × {display.height}
-                        {display.isPrimary ? " · Principal" : ""}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {displays.every((d) => d.isInternal) && apiSupported ? (
-              <p className="mt-3 text-xs text-white/40">
-                Aucun écran externe pour l&apos;instant — branchez un câble
-                HDMI/USB-C : la liste se met à jour automatiquement.
+            {!apiSupported ? (
+              <p className="mb-3 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-sm text-amber-800">
+                Détection automatique indisponible sur ce navigateur. Utilisez
+                Chrome pour lister les écrans externes branchés.
               </p>
             ) : null}
+
+            {displays.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-arena-600/20 bg-arena-600/[0.03] px-5 py-8 text-center">
+                <p className="text-sm font-medium text-arena-700">
+                  Aucun rétroprojecteur détecté
+                </p>
+                <p className="mt-2 text-sm text-arena-600/50">
+                  Branchez un écran externe (HDMI, USB-C…) — la liste se met à
+                  jour automatiquement.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {displays.map((display) => {
+                  const selected = selectedDisplayIds.includes(display.id);
+                  return (
+                    <button
+                      key={display.id}
+                      type="button"
+                      onClick={() => toggleDisplay(display.id)}
+                      className={[
+                        "flex w-full flex-col gap-3 rounded-2xl border p-4 text-left transition",
+                        selected
+                          ? "border-template-blue/40 bg-template-blue/[0.06] ring-1 ring-template-blue/20"
+                          : "border-arena-600/15 bg-white hover:border-arena-600/30 hover:shadow-sm",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div
+                          className={[
+                            "flex h-10 w-10 items-center justify-center rounded-xl",
+                            selected
+                              ? "bg-template-blue/15 text-template-blue"
+                              : "bg-arena-600/8 text-arena-600/55",
+                          ].join(" ")}
+                        >
+                          <DisplayIcon />
+                        </div>
+                        <DisplayStatusBadge display={display} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-arena-700">
+                          {display.label}
+                        </p>
+                        <p className="mt-1 text-xs text-arena-600/45">
+                          {display.width} × {display.height}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {selectedDisplayIds.length > 0 ? (
@@ -260,18 +272,17 @@ export function LiveRetransmissionTab({
               />
               <div className="grid gap-3 sm:grid-cols-2">
                 {RETRANSMISSION_MODES.map((option) => (
-                  <OptionCard
+                  <ModeOptionCard
                     key={option.id}
                     active={mode === option.id}
+                    title={option.title}
+                    subtitle={option.subtitle}
                     onClick={() => {
                       setMode(option.id);
                       if (option.id !== "multi" && selectedDisplayIds.length > 1) {
                         setSelectedDisplayIds((prev) => prev.slice(0, 1));
                       }
                     }}
-                    title={option.title}
-                    subtitle={option.subtitle}
-                    variant="lime"
                   />
                 ))}
               </div>
@@ -294,17 +305,17 @@ export function LiveRetransmissionTab({
                       className={[
                         "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition",
                         checked
-                          ? "border-lime/35 bg-lime/5"
-                          : "border-white/10 bg-white/[0.02] hover:border-white/20",
+                          ? "border-template-blue/30 bg-template-blue/[0.05]"
+                          : "border-arena-600/15 bg-white hover:border-arena-600/25",
                       ].join(" ")}
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleTab(tab.id)}
-                        className="h-4 w-4 rounded border-white/25 bg-transparent accent-lime"
+                        className="h-4 w-4 rounded border-arena-600/25 accent-template-blue"
                       />
-                      <span className="text-sm font-medium text-white/85">
+                      <span className="text-sm font-medium text-arena-700">
                         {tab.label}
                       </span>
                     </label>
@@ -315,13 +326,13 @@ export function LiveRetransmissionTab({
           ) : null}
 
           {canLaunch ? (
-            <section className="rounded-2xl border border-lime/20 bg-lime/[0.04] px-5 py-5">
+            <section className="rounded-2xl border border-arena-600/15 bg-arena-600/[0.03] px-5 py-5">
               <SectionTitle
                 step={4}
                 title="Lancer la retransmission"
                 subtitle="La connexion aux écrans sera activée dans une prochaine version."
               />
-              <ul className="mb-5 space-y-1 text-sm text-white/60">
+              <ul className="mb-5 space-y-1 text-sm text-arena-600/65">
                 {summaryLines.map((line) => (
                   <li key={line}>{line}</li>
                 ))}

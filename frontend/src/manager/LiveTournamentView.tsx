@@ -229,7 +229,11 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     primaryTab === "planning";
 
   const isProjectionTab = primaryTab === "live" || primaryTab === "upcoming";
-  const isWhitePanelTab = isProjectionTab || isBracketTab || primaryTab === "avancement";
+  const isWhitePanelTab =
+    isProjectionTab ||
+    isBracketTab ||
+    primaryTab === "avancement" ||
+    primaryTab === "retransmission";
 
   const activeTabLabel = useMemo(
     () =>

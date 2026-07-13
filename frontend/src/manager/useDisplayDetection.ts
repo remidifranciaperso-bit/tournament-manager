@@ -26,40 +26,29 @@ interface ScreenDetailsLike {
   removeEventListener?: (type: string, listener: () => void) => void;
 }
 
-function primaryDisplayFromWindow(): DetectedDisplay {
-  const screen = window.screen;
-  return {
-    id: "screen-primary",
-    label: "Écran principal",
-    width: screen.width,
-    height: screen.height,
-    isPrimary: true,
-    isInternal: true,
-    status: "connected",
-  };
-}
+function externalDisplaysOnly(
+  screens: ScreenDetailsLike["screens"]
+): DetectedDisplay[] {
+  let externalIndex = 0;
 
-function mapScreenDetails(screens: ScreenDetailsLike["screens"]): DetectedDisplay[] {
-  return screens.map((screen, index) => {
-    const id = `screen-${screen.left}x${screen.top}-${screen.width}x${screen.height}`;
-    const isExternal = !screen.isInternal;
+  return screens
+    .filter((screen) => !screen.isInternal && !screen.isPrimary)
+    .map((screen) => {
+      externalIndex += 1;
+      const id = `screen-${screen.left}x${screen.top}-${screen.width}x${screen.height}`;
 
-    return {
-      id,
-      label:
-        screen.label?.trim() ||
-        (screen.isPrimary
-          ? "Écran principal"
-          : isExternal
-            ? `Rétroprojecteur / écran externe ${index}`
-            : `Écran ${index + 1}`),
-      width: screen.width,
-      height: screen.height,
-      isPrimary: screen.isPrimary,
-      isInternal: screen.isInternal,
-      status: "connected",
-    };
-  });
+      return {
+        id,
+        label:
+          screen.label?.trim() ||
+          `Rétroprojecteur / écran externe ${externalIndex}`,
+        width: screen.width,
+        height: screen.height,
+        isPrimary: false,
+        isInternal: false,
+        status: "connected" as const,
+      };
+    });
 }
 
 async function readDisplays(): Promise<{
@@ -73,24 +62,17 @@ async function readDisplays(): Promise<{
   ).getScreenDetails;
 
   if (!getScreenDetails) {
-    return {
-      displays: [primaryDisplayFromWindow()],
-      apiSupported: false,
-    };
+    return { displays: [], apiSupported: false };
   }
 
   try {
     const details = await getScreenDetails();
-    const mapped = mapScreenDetails(details.screens);
     return {
-      displays: mapped.length > 0 ? mapped : [primaryDisplayFromWindow()],
+      displays: externalDisplaysOnly(details.screens),
       apiSupported: true,
     };
   } catch {
-    return {
-      displays: [primaryDisplayFromWindow()],
-      apiSupported: true,
-    };
+    return { displays: [], apiSupported: true };
   }
 }
 
@@ -111,7 +93,7 @@ export function useDisplayDetection(active: boolean) {
       setError(
         err instanceof Error ? err.message : "Impossible de détecter les écrans."
       );
-      setDisplays([primaryDisplayFromWindow()]);
+      setDisplays([]);
     } finally {
       setScanning(false);
     }
