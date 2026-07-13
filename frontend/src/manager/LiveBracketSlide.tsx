@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 import {
   parseBracketSlide,
@@ -6,6 +6,7 @@ import {
 } from "./bracketSlideLayout";
 import { resolveMatchBoxLayouts } from "./bracketBoxLayout";
 import { buildBracketConnectors, getViewportCrossPageStub } from "./bracketConnectors";
+import { useOptionalBracketCrossPageMetrics } from "./bracketCrossPageMetrics";
 import { mapFieldToProjection, type BoxRectPct } from "./bracketGeometry";
 import {
   ptOnSlide,
@@ -263,59 +264,11 @@ function BracketConnectors({
   );
 }
 
-function ViewportCrossPageConnector({
-  midXSlidePct,
-  direction,
-  slideWidth,
-  slideHeight,
-  slideOffsetY,
-  viewportHeight,
-}: {
-  midXSlidePct: number;
-  direction: "up" | "down";
-  slideWidth: number;
-  slideHeight: number;
-  slideOffsetY: number;
-  viewportHeight: number;
-}) {
-  const x = (slideWidth * midXSlidePct) / 100;
-  const strokeWidth = Math.max(0.3, slideWidth * 0.0008);
-  const fromY =
-    direction === "down" ? slideOffsetY + slideHeight : slideOffsetY;
-  const toY = direction === "down" ? viewportHeight : 0;
-
-  if (Math.abs(toY - fromY) < 0.5) return null;
-
-  return (
-    <svg
-      className="pointer-events-none absolute left-1/2 top-0 z-[5] block -translate-x-1/2"
-      width={slideWidth}
-      height={viewportHeight}
-      viewBox={`0 0 ${slideWidth} ${viewportHeight}`}
-      style={{ width: slideWidth, height: viewportHeight }}
-      aria-hidden
-    >
-      <line
-        x1={x}
-        y1={fromY}
-        x2={x}
-        y2={toY}
-        stroke="#00B0F0"
-        strokeWidth={strokeWidth}
-        strokeLinecap="butt"
-        shapeRendering="geometricPrecision"
-      />
-    </svg>
-  );
-}
-
 interface LiveBracketSlideProps {
   fields: LiveLayoutField[];
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   renderWidth: number;
-  viewportHeight?: number;
-  slideOffsetY?: number;
 }
 
 export function LiveBracketSlide({
@@ -323,9 +276,8 @@ export function LiveBracketSlide({
   matches,
   matchResults,
   renderWidth,
-  viewportHeight,
-  slideOffsetY = 0,
 }: LiveBracketSlideProps) {
+  const crossPageMetrics = useOptionalBracketCrossPageMetrics();
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
 
@@ -371,12 +323,37 @@ export function LiveBracketSlide({
     [parsed.matches, boxLayouts]
   );
 
-  const effectiveViewportHeight = viewportHeight ?? renderHeight;
-  const effectiveSlideOffsetY = viewportHeight != null ? slideOffsetY : 0;
-  const useViewportLayout = viewportHeight != null && viewportHeight > renderHeight;
+  useLayoutEffect(() => {
+    if (!crossPageMetrics) return;
 
-  const slideContent = (
-    <>
+    if (viewportCrossPageStub) {
+      crossPageMetrics.setMetrics({
+        stub: viewportCrossPageStub,
+        slideWidth: renderWidth,
+        slideHeight: renderHeight,
+      });
+    } else {
+      crossPageMetrics.setMetrics(null);
+    }
+
+    return () => {
+      crossPageMetrics.setMetrics(null);
+    };
+  }, [
+    crossPageMetrics,
+    viewportCrossPageStub,
+    renderWidth,
+    renderHeight,
+  ]);
+
+  return (
+    <div
+      data-bracket-slide
+      data-capture-width={renderWidth}
+      data-capture-height={renderHeight}
+      className="relative shrink-0 overflow-hidden bg-white"
+      style={{ width: renderWidth, height: renderHeight }}
+    >
       <BracketConnectors
         paths={connectorPaths}
         width={renderWidth}
@@ -425,51 +402,6 @@ export function LiveBracketSlide({
             scaleH={renderHeight}
           />
         ))}
-    </>
-  );
-
-  if (!useViewportLayout) {
-    return (
-      <div
-        data-bracket-slide
-        data-capture-width={renderWidth}
-        data-capture-height={renderHeight}
-        className="relative shrink-0 overflow-hidden bg-white"
-        style={{ width: renderWidth, height: renderHeight }}
-      >
-        {slideContent}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="relative mx-auto w-full shrink-0"
-      style={{ height: effectiveViewportHeight }}
-    >
-      {viewportCrossPageStub ? (
-        <ViewportCrossPageConnector
-          midXSlidePct={viewportCrossPageStub.midXSlidePct}
-          direction={viewportCrossPageStub.direction}
-          slideWidth={renderWidth}
-          slideHeight={renderHeight}
-          slideOffsetY={effectiveSlideOffsetY}
-          viewportHeight={effectiveViewportHeight}
-        />
-      ) : null}
-      <div
-        data-bracket-slide
-        data-capture-width={renderWidth}
-        data-capture-height={renderHeight}
-        className="absolute left-1/2 -translate-x-1/2 overflow-hidden bg-white"
-        style={{
-          top: effectiveSlideOffsetY,
-          width: renderWidth,
-          height: renderHeight,
-        }}
-      >
-        {slideContent}
-      </div>
     </div>
   );
 }

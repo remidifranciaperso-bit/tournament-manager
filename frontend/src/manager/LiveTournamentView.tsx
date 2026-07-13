@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
 import { LiveBracketViewer } from "./LiveBracketViewer";
+import { LiveBracketCrossPageOverlay } from "./LiveBracketCrossPageOverlay";
+import { BracketCrossPageMetricsProvider } from "./bracketCrossPageMetrics";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LivePlanningTab } from "./LivePlanningTab";
 import { resolveTemplateId } from "./resolveTemplateId";
@@ -120,6 +122,7 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
   const [exportPhase, setExportPhase] = useState<ExportPhase>("idle");
   const [exportCaptureTarget, setExportCaptureTarget] =
     useState<ExportCaptureTarget | null>(null);
+  const bracketShellRef = useRef<HTMLDivElement>(null);
   const exportingPdf = exportPhase !== "idle";
 
   const captureExportPages = useCallback(async () => {
@@ -362,7 +365,14 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
             primaryTab === "planning" ? "touch-manipulation" : "touch-none",
           ].join(" ")}
         >
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div
+            ref={isBracketTab ? bracketShellRef : undefined}
+            className={[
+              "flex min-h-0 flex-1 flex-col overflow-hidden",
+              isBracketTab ? "relative" : "",
+            ].join(" ")}
+          >
+            <BracketCrossPageMetricsProvider>
             <LiveTabTitle
               label={activeTabLabel}
               reserveLabel={tabTitleReserveLabel}
@@ -431,6 +441,10 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
 
               {isBracketTab && renderDocumentTab()}
             </div>
+            {isBracketTab ? (
+              <LiveBracketCrossPageOverlay shellRef={bracketShellRef} />
+            ) : null}
+            </BracketCrossPageMetricsProvider>
           </div>
         </div>
       </div>

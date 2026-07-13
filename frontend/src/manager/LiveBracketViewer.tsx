@@ -23,45 +23,32 @@ export function LiveBracketViewer({
   const { layout, loading, error } = useTemplateLayout(templateId);
   const slotRef = useRef<HTMLDivElement>(null);
   const [renderWidth, setRenderWidth] = useState(960);
-  const [slotHeight, setSlotHeight] = useState(0);
 
-  const computeSize = useCallback(() => {
+  const computeWidth = useCallback(() => {
     const slot = slotRef.current;
     if (!slot) return;
     const w = slot.clientWidth;
     const h = slot.clientHeight;
     if (w <= 0 || h <= 0) return;
     setRenderWidth(Math.floor(Math.min(w, h * SLIDE_ASPECT)));
-    setSlotHeight(h);
   }, []);
 
   useLayoutEffect(() => {
     if (fixedRenderWidth) {
       setRenderWidth(fixedRenderWidth);
-      setSlotHeight(0);
       return;
     }
 
     const slot = slotRef.current;
     if (!slot) return;
 
-    computeSize();
-    const observer = new ResizeObserver(() => computeSize());
+    computeWidth();
+    const observer = new ResizeObserver(() => computeWidth());
     observer.observe(slot);
     return () => observer.disconnect();
-  }, [fixedRenderWidth, computeSize, layout]);
+  }, [fixedRenderWidth, computeWidth, layout]);
 
   const effectiveWidth = fixedRenderWidth ?? renderWidth;
-  const slideHeight = Math.round(effectiveWidth / SLIDE_ASPECT);
-  const viewportHeight = fixedRenderWidth
-    ? slideHeight
-    : slotHeight > 0
-      ? slotHeight
-      : slideHeight;
-  const slideOffsetY =
-    fixedRenderWidth || slotHeight <= slideHeight
-      ? 0
-      : (slotHeight - slideHeight) / 2;
 
   if (loading) {
     return (
@@ -94,7 +81,7 @@ export function LiveBracketViewer({
       className={
         fixedRenderWidth
           ? "flex items-start justify-center bg-white"
-          : "relative flex min-h-0 flex-1 touch-none select-none items-stretch justify-center overflow-hidden bg-white px-2 pb-2 pt-0 sm:px-4 sm:pb-4"
+          : "flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white px-2 pb-2 pt-0 sm:px-4 sm:pb-4"
       }
     >
       <LiveBracketSlide
@@ -102,8 +89,6 @@ export function LiveBracketViewer({
         matches={matches}
         matchResults={matchResults}
         renderWidth={effectiveWidth}
-        viewportHeight={viewportHeight}
-        slideOffsetY={slideOffsetY}
       />
     </div>
   );
