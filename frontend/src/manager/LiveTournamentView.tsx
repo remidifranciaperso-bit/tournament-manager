@@ -429,7 +429,6 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
               <div className={stackedPanelClass(primaryTab === "avancement")}>
                 <LiveAvancementTab
                   elapsed={progress.elapsed}
-                  elapsedMs={progress.elapsedMs}
                   done={progress.done}
                   total={progress.total}
                   percent={progress.percent}
@@ -437,7 +436,6 @@ export function LiveTournamentView({ liveData }: LiveTournamentViewProps) {
                   logoUrl={meta.logo_url}
                   matchResults={progress.matchResults}
                   matchLaunches={progress.matchLaunches}
-                  nbTerrains={meta.terrains.length}
                   started={progress.started}
                   finished={progress.finished}
                 />
