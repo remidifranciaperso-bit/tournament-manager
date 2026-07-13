@@ -7,7 +7,7 @@ import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LivePlanningTab } from "./LivePlanningTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
-import { LivePdfPage } from "./LivePdfViewer";
+import { LivePdfPage, livePagePngUrl } from "./LivePdfViewer";
 import { LiveTabTitle } from "./LiveTabTitle";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { BroadcastableTab } from "./liveRetransmission";
@@ -53,12 +53,17 @@ export function LiveBroadcastContent({
   });
   const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
 
+  const coverPageUrl = useMemo(
+    () => livePagePngUrl(live_token, 0, 240),
+    [live_token]
+  );
+
   useEffect(() => {
     void fetchTemplateLayout(templateId);
     const coverPage = new Image();
     coverPage.decoding = "async";
-    coverPage.src = `/api/live/${live_token}/page/0.png`;
-  }, [templateId, live_token]);
+    coverPage.src = coverPageUrl;
+  }, [templateId, coverPageUrl]);
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -109,7 +114,6 @@ export function LiveBroadcastContent({
   );
 
   const tabTitleReserveLabel = useMemo(() => {
-    if (activeTab === "cover") return "Page de garde";
     if (activeTab !== "main") return null;
     return mainPageHiddenBrushReserveLabel(mainPages[mainPage]);
   }, [activeTab, mainPages, mainPage]);
@@ -118,12 +122,19 @@ export function LiveBroadcastContent({
 
   return (
     <div className="pointer-events-none flex h-dvh w-full flex-col overflow-hidden bg-white select-none">
-      <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
-        <LiveTabTitle label={tabLabel} reserveLabel={tabTitleReserveLabel} />
-      </div>
+      {activeTab !== "cover" ? (
+        <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
+          <LiveTabTitle label={tabLabel} reserveLabel={tabTitleReserveLabel} />
+        </div>
+      ) : null}
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        <div className={broadcastPanelClass(activeTab === "cover")}>
-          <LivePdfPage pageUrl={`/api/live/${live_token}/page/0.png`} />
+        <div
+          className={[
+            broadcastPanelClass(activeTab === "cover"),
+            activeTab === "cover" ? "flex min-h-0 flex-1 flex-col" : "",
+          ].join(" ")}
+        >
+          <LivePdfPage pageUrl={coverPageUrl} />
         </div>
 
         <div className={broadcastPanelClass(activeTab === "live")}>

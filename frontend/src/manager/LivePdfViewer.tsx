@@ -59,8 +59,17 @@ function useBlockZoom(containerRef: RefObject<HTMLElement | null>, enabled: bool
   }, [containerRef, enabled]);
 }
 
-function pagePngUrl(liveToken: string, slideIndex: number): string {
-  return `/api/live/${liveToken}/page/${slideIndex}.png`;
+function pagePngUrl(liveToken: string, slideIndex: number, dpi?: number): string {
+  const base = `/api/live/${liveToken}/page/${slideIndex}.png`;
+  return dpi ? `${base}?dpi=${dpi}` : base;
+}
+
+export function livePagePngUrl(
+  liveToken: string,
+  slideIndex: number,
+  dpi?: number
+): string {
+  return pagePngUrl(liveToken, slideIndex, dpi);
 }
 
 function usePrefetchPages(liveToken: string, indices: number[]) {
@@ -80,12 +89,18 @@ function usePrefetchPages(liveToken: string, indices: number[]) {
 interface LivePdfPageProps {
   pageUrl: string;
   checkboxes?: PlanningCheckboxOverlay[];
+  /** Ne pas agrandir au-delà de la résolution native de l'image. */
+  maxNativeScale?: boolean;
 }
 
 /** Compense le centrage flex + métriques fonte du ✓ vs la ☐ du PDF. */
 const CHECK_MARK_UPSHIFT_RATIO = 0.16;
 
-export function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
+export function LivePdfPage({
+  pageUrl,
+  checkboxes = [],
+  maxNativeScale = false,
+}: LivePdfPageProps) {
   const slotRef = useRef<HTMLDivElement>(null);
   const [renderSize, setRenderSize] = useState<{ w: number; h: number } | null>(
     null
@@ -106,11 +121,12 @@ export function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
     if (!img?.naturalWidth || !img?.naturalHeight) return;
 
     const fit = Math.min(slotW / img.naturalWidth, slotH / img.naturalHeight);
+    const scale = maxNativeScale ? Math.min(fit, 1) : fit;
     setRenderSize({
-      w: img.naturalWidth * fit,
-      h: img.naturalHeight * fit,
+      w: Math.floor(img.naturalWidth * scale),
+      h: Math.floor(img.naturalHeight * scale),
     });
-  }, []);
+  }, [maxNativeScale]);
 
   useEffect(() => {
     const slot = slotRef.current;
@@ -142,11 +158,11 @@ export function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
       style={interactive ? undefined : { touchAction: "none" }}
     >
       <div
-        className="relative shrink-0"
+        className="relative mx-auto shrink-0"
         style={
           renderSize
             ? { width: renderSize.w, height: renderSize.h }
-            : { width: "100%", height: "100%" }
+            : { width: "100%", height: "100%", maxHeight: "100%" }
         }
       >
         <img
@@ -155,9 +171,10 @@ export function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
           alt=""
           decoding="async"
           draggable={false}
-          className="block h-full w-full max-h-full max-w-full select-none object-contain"
+          className="block h-full w-full select-none"
           style={{
             pointerEvents: interactive ? "none" : "auto",
+            imageRendering: "auto",
           }}
         />
 

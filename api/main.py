@@ -425,8 +425,9 @@ async def generate_live(
 
 
 @app.get("/api/live/{token}/page/{index}.png")
-def live_page_png(token: str, index: int):
-    chemin = chemin_page_png(token, index)
+def live_page_png(token: str, index: int, dpi: int = 144):
+    dpi = max(96, min(int(dpi), 300))
+    chemin = chemin_page_png(token, index, dpi)
     if chemin is None:
         session = chemin_session(token)
         pdf_complet = chemin_pdf_complet(token)
@@ -435,9 +436,10 @@ def live_page_png(token: str, index: int):
 
         from engine.pdf_pages import generer_page_png
 
-        output = session / "pages" / f"{index}.png"
+        suffix = "" if dpi == 144 else f"@{dpi}"
+        output = session / "pages" / f"{index}{suffix}.png"
         try:
-            generer_page_png(pdf_complet, index, output)
+            generer_page_png(pdf_complet, index, output, dpi=dpi)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         chemin = output

@@ -107,12 +107,18 @@ def chemin_page(token: str, index: int) -> Path | None:
     return page if page.is_file() else None
 
 
-def chemin_page_png(token: str, index: int) -> Path | None:
+def chemin_page_png(token: str, index: int, dpi: int = 144) -> Path | None:
     session = chemin_session(token)
     if session is None:
         return None
-    page = session / "pages" / f"{index}.png"
-    return page if page.is_file() else None
+    suffix = "" if dpi == 144 else f"@{dpi}"
+    page = session / "pages" / f"{index}{suffix}.png"
+    if page.is_file():
+        return page
+    if suffix:
+        legacy = session / "pages" / f"{index}.png"
+        return legacy if legacy.is_file() else None
+    return None
 
 
 def nom_pdf(token: str) -> str:
