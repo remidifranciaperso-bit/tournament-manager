@@ -9,6 +9,7 @@ import zipfile
 from pathlib import Path
 
 from engine.live_snapshot import SNAPSHOT_VERSION
+from engine.pdf_pages import valider_pdf_fichier
 
 _CHAMPS_SNAPSHOT = (
     "version",
@@ -102,6 +103,7 @@ def extraire_pack_manager_live(
             raise ValueError(f"Snapshot illisible : {exc}") from exc
 
         valider_snapshot(snapshot)
+        valider_pdf_fichier(pdf_sortie)
         return pdf_sortie, snapshot, temp_dir, logo_sortie
     except Exception:
         shutil.rmtree(temp_dir, ignore_errors=True)

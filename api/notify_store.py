@@ -25,6 +25,11 @@ def nettoyer_expires() -> None:
 
 
 def enregistrer_pdf(pdf_path: Path) -> str:
+    from engine.pdf_pages import valider_pdf_fichier
+
+    pdf_path = Path(pdf_path)
+    valider_pdf_fichier(pdf_path)
+
     nettoyer_expires()
     token = uuid.uuid4().hex
     destination = _notify_dir() / f"{token}.pdf"

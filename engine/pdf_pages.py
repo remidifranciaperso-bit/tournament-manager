@@ -5,6 +5,37 @@ import fitz
 
 DPI_AFFICHAGE = 144
 
+PDF_MIN_BYTES = 128
+
+
+def valider_pdf_fichier(pdf_path: Path) -> None:
+    """Vérifie qu'un PDF Engine est lisible avant une session live."""
+    pdf_path = Path(pdf_path)
+    if not pdf_path.is_file():
+        raise ValueError(
+            "PDF Engine introuvable. Regénérez le tournoi avant de lancer le live."
+        )
+
+    size = pdf_path.stat().st_size
+    if size < PDF_MIN_BYTES:
+        raise ValueError(
+            "Le PDF Engine est vide ou invalide. Regénérez le tournoi avant de lancer le live."
+        )
+
+    with pdf_path.open("rb") as handle:
+        if handle.read(5) != b"%PDF-":
+            raise ValueError(
+                "Le fichier généré n'est pas un PDF valide. Regénérez le tournoi."
+            )
+
+
+def pdf_est_lisible(pdf_path: Path) -> bool:
+    try:
+        valider_pdf_fichier(pdf_path)
+    except ValueError:
+        return False
+    return True
+
 
 def lire_tailles_pages(
     pdf_path: Path,

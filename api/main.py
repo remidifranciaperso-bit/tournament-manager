@@ -268,6 +268,13 @@ async def init_live(
             detail="PDF Engine introuvable ou expiré. Regénérez le tournoi.",
         )
 
+    from engine.pdf_pages import valider_pdf_fichier
+
+    try:
+        valider_pdf_fichier(pdf_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
     try:
         heures = json.loads(heures_debut_jours)
         liste_terrains = json.loads(terrains)

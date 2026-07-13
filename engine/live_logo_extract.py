@@ -112,7 +112,16 @@ def extraire_logo_embarque_pdf(
     pdf_path = Path(pdf_path)
     output_path = Path(output_path)
 
-    doc = fitz.open(str(pdf_path))
+    from engine.pdf_pages import pdf_est_lisible
+
+    if not pdf_est_lisible(pdf_path):
+        return False
+
+    try:
+        doc = fitz.open(str(pdf_path))
+    except Exception:
+        return False
+
     try:
         best_xref: int | None = None
         best_area = float("inf")

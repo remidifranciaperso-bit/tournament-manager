@@ -38,6 +38,11 @@ def creer_session(
     page_indices: list[int] | None = None,
     page_sizes: dict[str, dict[str, float]] | None = None,
 ) -> tuple[str, Path, dict[str, dict[str, float]]]:
+    from engine.pdf_pages import valider_pdf_fichier
+
+    pdf_path = Path(pdf_path)
+    valider_pdf_fichier(pdf_path)
+
     nettoyer_sessions_expirees()
     token = uuid.uuid4().hex
     session_dir = _live_root() / token
@@ -48,6 +53,7 @@ def creer_session(
         shutil.move(str(pdf_path), str(dest_pdf))
     else:
         shutil.copy2(pdf_path, dest_pdf)
+    valider_pdf_fichier(dest_pdf)
     (session_dir / "filename.txt").write_text(pdf_filename, encoding="utf-8")
     if page_map is not None:
         (session_dir / "page_map.json").write_text(

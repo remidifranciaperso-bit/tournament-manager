@@ -89,9 +89,26 @@ def generer_pdf_via_engine(
                 "tournoi.pdf",
             )
             destination = output_dir / filename
+            total = 0
             with destination.open("wb") as handle:
                 for chunk in response.iter_bytes(65536):
                     if chunk:
                         handle.write(chunk)
+                        total += len(chunk)
+
+    if total < 128:
+        destination.unlink(missing_ok=True)
+        raise RuntimeError(
+            "Génération Engine distante : le PDF reçu est vide. "
+            "Réessayez dans quelques instants ou vérifiez le service Engine."
+        )
+
+    from engine.pdf_pages import valider_pdf_fichier
+
+    try:
+        valider_pdf_fichier(destination)
+    except ValueError as exc:
+        destination.unlink(missing_ok=True)
+        raise RuntimeError(str(exc)) from exc
 
     return destination
