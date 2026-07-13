@@ -1939,140 +1939,140 @@
   ],
   "10": [
     {
-      "key": "C17_20_1_CODE",
-      "left": 35.983,
+      "key": "C21_24_1_CODE",
+      "left": 35.984,
       "top": 21.087,
-      "width": 14.687,
+      "width": 14.611,
       "height": 3.815
     },
     {
-      "key": "C17_20_2_CODE",
-      "left": 35.983,
-      "top": 66.924,
-      "width": 14.687,
-      "height": 3.815
-    },
-    {
-      "key": "C17_20_2_HEURE",
-      "left": 48.677,
-      "top": 66.924,
-      "width": 15.261,
-      "height": 3.815
-    },
-    {
-      "key": "C19_20_CODE",
-      "left": 3.168,
-      "top": 44.88,
-      "width": 13.035,
-      "height": 3.815
-    },
-    {
-      "key": "C17_18_CODE",
-      "left": 68.727,
-      "top": 44.669,
-      "width": 13.035,
-      "height": 3.815
-    },
-    {
-      "key": "C17_18_HEURE",
-      "left": 82.734,
-      "top": 44.669,
-      "width": 13.948,
-      "height": 3.815
-    },
-    {
-      "key": "C17_20_1_TERRAIN",
+      "key": "C21_24_1_TERRAIN",
       "left": 35.926,
       "top": 21.087,
-      "width": 28.058,
+      "width": 27.968,
       "height": 6.283
     },
     {
-      "key": "C17_20_1_HEURE",
-      "left": 48.677,
+      "key": "C21_24_1_HEURE",
+      "left": 48.853,
       "top": 21.087,
-      "width": 15.261,
+      "width": 15.085,
       "height": 3.815
     },
     {
-      "key": "C17_20_2_TERRAIN",
-      "left": 35.924,
-      "top": 66.924,
-      "width": 28.058,
-      "height": 6.283
-    },
-    {
-      "key": "C19_20_TERRAIN",
-      "left": 3.108,
-      "top": 44.88,
-      "width": 27.935,
-      "height": 6.283
-    },
-    {
-      "key": "C19_20_HEURE",
-      "left": 17.266,
-      "top": 44.88,
-      "width": 13.857,
-      "height": 3.815
-    },
-    {
-      "key": "C17_18_TERRAIN",
-      "left": 68.681,
-      "top": 44.669,
-      "width": 28.034,
-      "height": 6.283
-    },
-    {
-      "key": "LOSE_P1",
+      "key": "LOSE_C17_24_1",
       "left": 35.615,
       "top": 26.022,
       "width": 25.431,
       "height": 3.141
     },
     {
-      "key": "LOSE_P2",
+      "key": "LOSE_C17_24_2",
       "left": 35.615,
       "top": 32.199,
       "width": 25.431,
       "height": 3.141
     },
     {
-      "key": "LOSE_P3",
+      "key": "C21_24_2_CODE",
+      "left": 35.984,
+      "top": 66.924,
+      "width": 14.611,
+      "height": 3.815
+    },
+    {
+      "key": "C21_24_2_TERRAIN",
+      "left": 35.924,
+      "top": 66.924,
+      "width": 27.968,
+      "height": 6.283
+    },
+    {
+      "key": "C21_24_2_HEURE",
+      "left": 48.853,
+      "top": 66.924,
+      "width": 15.085,
+      "height": 3.815
+    },
+    {
+      "key": "LOSE_C17_24_3",
       "left": 35.615,
       "top": 71.859,
       "width": 25.431,
       "height": 3.141
     },
     {
-      "key": "LOSE_P4",
+      "key": "LOSE_C17_24_4",
       "left": 35.615,
       "top": 78.036,
       "width": 25.431,
       "height": 3.141
     },
     {
-      "key": "LOSE_C17_20_1",
-      "left": 3.053,
+      "key": "C23_24_CODE",
+      "left": 3.169,
+      "top": 44.88,
+      "width": 13.033,
+      "height": 3.815
+    },
+    {
+      "key": "C23_24_TERRAIN",
+      "left": 3.108,
+      "top": 44.88,
+      "width": 28.014,
+      "height": 6.283
+    },
+    {
+      "key": "C23_24_HEURE",
+      "left": 16.202,
+      "top": 44.88,
+      "width": 14.877,
+      "height": 3.815
+    },
+    {
+      "key": "LOSE_C21_24_1",
+      "left": 3.016,
       "top": 49.815,
       "width": 25.431,
       "height": 3.141
     },
     {
-      "key": "LOSE_C17_20_2",
-      "left": 3.053,
+      "key": "LOSE_C21_24_2",
+      "left": 3.016,
       "top": 55.992,
       "width": 25.431,
       "height": 3.141
     },
     {
-      "key": "WIN_C17_20_1",
+      "key": "C21_22_CODE",
+      "left": 68.772,
+      "top": 44.669,
+      "width": 12.99,
+      "height": 3.815
+    },
+    {
+      "key": "C21_22_TERRAIN",
+      "left": 68.681,
+      "top": 44.669,
+      "width": 28.034,
+      "height": 6.283
+    },
+    {
+      "key": "C21_22_HEURE",
+      "left": 82.4,
+      "top": 44.669,
+      "width": 14.282,
+      "height": 3.815
+    },
+    {
+      "key": "WIN_C21_24_1",
       "left": 68.504,
       "top": 49.604,
       "width": 25.431,
       "height": 3.141
     },
     {
-      "key": "WIN_C17_20_2",
+      "key": "WIN_C21_24_2",
       "left": 68.504,
       "top": 55.781,
       "width": 25.431,

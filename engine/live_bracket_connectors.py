@@ -7,7 +7,7 @@ import re
 from engine.live_bracket_layout import parse_bracket_slide
 from engine.live_team_resolve import feed_key_from_team_label
 
-_NO_INCOMING_CONNECTOR_CODES = frozenset({"PF", "C11_12"})
+_NO_INCOMING_CONNECTOR_CODES = frozenset({"PF", "C11_12", "C19_20", "C23_24"})
 
 
 def _parent_code_from_label(label: str) -> str | None:
@@ -195,6 +195,8 @@ def build_bracket_connector_paths(
     if include_feed_connectors:
         for field in feeds:
             if field["key"] in consumed_feeds:
+                continue
+            if slide_half and re.match(r"^(WIN|LOSE)_H\d+$", field["key"]):
                 continue
             code = re.sub(r"^(WIN|LOSE|SECOND|THIRD)_", "", field["key"])
             if code in _NO_INCOMING_CONNECTOR_CODES:

@@ -147,6 +147,10 @@ def _is_prelim_only_slide(codes: set[str]) -> bool:
 def _detect_classement_eight_team_style(codes: set[str]) -> str | None:
     if "C9_16_1" in codes or "C9_12_1" in codes:
         return "main"
+    if "C17_24_1" in codes or "C17_20_1" in codes:
+        return "main1720"
+    if "C21_24_1" in codes:
+        return "ranking2124"
     if "C5_8_1" in codes or "C13_16_1" in codes:
         return "ranking"
     return None
@@ -233,6 +237,42 @@ def _apply_classement_main_eight_team(
         _set_eight_team_row(tops, "C9_10", "f", quarter_grid)
     if "C11_12" in codes:
         _set_eight_team_row(tops, "C11_12", "pf", quarter_grid)
+
+
+def _apply_classement_1720_eight_team(
+    codes: set[str],
+    tops: dict[str, float],
+    quarter_grid: dict,
+) -> None:
+    for index, code in enumerate(
+        ("C17_24_1", "C17_24_2", "C17_24_3", "C17_24_4")
+    ):
+        if code in codes:
+            _set_eight_team_row(tops, code, f"q{index}", quarter_grid)
+
+    if "C17_20_1" in codes:
+        _set_eight_team_row(tops, "C17_20_1", "d1", quarter_grid)
+    if "C17_20_2" in codes:
+        _set_eight_team_row(tops, "C17_20_2", "d2", quarter_grid)
+    if "C17_18" in codes:
+        _set_eight_team_row(tops, "C17_18", "f", quarter_grid)
+    if "C19_20" in codes:
+        _set_eight_team_row(tops, "C19_20", "pf", quarter_grid)
+
+
+def _apply_classement_2124_eight_team(
+    codes: set[str],
+    tops: dict[str, float],
+    quarter_grid: dict,
+) -> None:
+    if "C21_24_1" in codes:
+        _set_eight_team_row(tops, "C21_24_1", "d1", quarter_grid)
+    if "C21_24_2" in codes:
+        _set_eight_team_row(tops, "C21_24_2", "d2", quarter_grid)
+    if "C23_24" in codes:
+        _set_eight_team_row(tops, "C23_24", "f", quarter_grid)
+    if "C21_22" in codes:
+        _set_eight_team_row(tops, "C21_22", "f", quarter_grid)
 
 
 def _apply_classement_ranking_eight_team(
@@ -367,6 +407,10 @@ def resolve_match_box_layouts(
             _apply_main_bracket_positions(codes, tops, quarter_grid)
     elif classement_style == "main":
         _apply_classement_main_eight_team(codes, tops, quarter_grid)
+    elif classement_style == "main1720":
+        _apply_classement_1720_eight_team(codes, tops, quarter_grid)
+    elif classement_style == "ranking2124":
+        _apply_classement_2124_eight_team(codes, tops, quarter_grid)
     elif classement_style == "ranking":
         _apply_classement_ranking_eight_team(codes, tops, quarter_grid)
     elif not prelim_only:

@@ -156,12 +156,14 @@ export function inferSplitMainBracketHalf(
   return null;
 }
 
-type ClassementEightTeamStyle = "main" | "ranking";
+type ClassementEightTeamStyle = "main" | "main1720" | "ranking" | "ranking2124";
 
 function detectClassementEightTeamStyle(
   codes: Set<string>
 ): ClassementEightTeamStyle | null {
   if (codes.has("C9_16_1") || codes.has("C9_12_1")) return "main";
+  if (codes.has("C17_24_1") || codes.has("C17_20_1")) return "main1720";
+  if (codes.has("C21_24_1")) return "ranking2124";
   if (codes.has("C5_8_1") || codes.has("C13_16_1")) return "ranking";
   return null;
 }
@@ -283,6 +285,37 @@ function applyClassementMainEightTeam(
   if (codes.has("C11_12")) setEightTeamRow(tops, "C11_12", "pf", quarterGrid);
 }
 
+/** Classement 17-20 : même mise en page que 9-12. */
+function applyClassement1720EightTeam(
+  codes: Set<string>,
+  tops: Map<string, number>,
+  quarterGrid: VerticalGrid
+): void {
+  const firstRound = ["C17_24_1", "C17_24_2", "C17_24_3", "C17_24_4"] as const;
+  firstRound.forEach((code, index) => {
+    if (codes.has(code)) {
+      setEightTeamRow(tops, code, `q${index}` as EightTeamRow, quarterGrid);
+    }
+  });
+
+  if (codes.has("C17_20_1")) setEightTeamRow(tops, "C17_20_1", "d1", quarterGrid);
+  if (codes.has("C17_20_2")) setEightTeamRow(tops, "C17_20_2", "d2", quarterGrid);
+  if (codes.has("C17_18")) setEightTeamRow(tops, "C17_18", "f", quarterGrid);
+  if (codes.has("C19_20")) setEightTeamRow(tops, "C19_20", "pf", quarterGrid);
+}
+
+/** Classement 21-24 : même mise en page que 5-8 / 13-16. */
+function applyClassement2124EightTeam(
+  codes: Set<string>,
+  tops: Map<string, number>,
+  quarterGrid: VerticalGrid
+): void {
+  if (codes.has("C21_24_1")) setEightTeamRow(tops, "C21_24_1", "d1", quarterGrid);
+  if (codes.has("C21_24_2")) setEightTeamRow(tops, "C21_24_2", "d2", quarterGrid);
+  if (codes.has("C23_24")) setEightTeamRow(tops, "C23_24", "f", quarterGrid);
+  if (codes.has("C21_22")) setEightTeamRow(tops, "C21_22", "f", quarterGrid);
+}
+
 /** Classements 5-8 et 13-16 : calqués sur le slide C5_8 de 8 équipes. */
 function applyClassementRankingEightTeam(
   codes: Set<string>,
@@ -374,6 +407,10 @@ export function resolveMatchBoxLayouts(
     }
   } else if (classementStyle === "main") {
     applyClassementMainEightTeam(codes, tops, quarterGrid);
+  } else if (classementStyle === "main1720") {
+    applyClassement1720EightTeam(codes, tops, quarterGrid);
+  } else if (classementStyle === "ranking2124") {
+    applyClassement2124EightTeam(codes, tops, quarterGrid);
   } else if (classementStyle === "ranking") {
     applyClassementRankingEightTeam(codes, tops, quarterGrid);
   } else if (!prelimOnly) {

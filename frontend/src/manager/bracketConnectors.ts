@@ -54,7 +54,12 @@ function bracketPathsToChild(
 }
 
 /** Aucun trait entrant (comme PF sur un tableau 8 équipes). */
-const NO_INCOMING_CONNECTOR_CODES = new Set(["PF", "C11_12"]);
+const NO_INCOMING_CONNECTOR_CODES = new Set([
+  "PF",
+  "C11_12",
+  "C19_20",
+  "C23_24",
+]);
 
 function feedBracketPath(from: PointPct, to: PointPct): string {
   const gap = to.x - from.x;
@@ -142,6 +147,8 @@ export function buildBracketConnectors(
   const includeFeedConnectors = options?.includeFeedConnectors ?? true;
   const slotByCode = new Map(slots.map((slot) => [slot.code, slot]));
   const feedByKey = new Map(feeds.map((field) => [field.key, field]));
+  const slideCodes = new Set(slots.map((slot) => slot.code));
+  const splitHalf = inferSplitMainBracketHalf(slideCodes, slideCodes);
   const paths: string[] = [];
 
   const parentsByChild = new Map<string, BoxRectPct[]>();
@@ -215,6 +222,8 @@ export function buildBracketConnectors(
 
   for (const field of feeds) {
     if (consumedFeeds.has(field.key)) continue;
+
+    if (splitHalf && /^(WIN|LOSE)_H\d+$/.test(field.key)) continue;
 
     const code = field.key.replace(/^(WIN|LOSE|SECOND|THIRD)_/, "");
     if (NO_INCOMING_CONNECTOR_CODES.has(code)) continue;
