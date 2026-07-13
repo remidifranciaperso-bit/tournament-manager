@@ -34,7 +34,13 @@ from api.live_store import (
     chemin_session,
     nom_pdf,
 )
-from engine.remote_generate import engine_generate_url, generer_pdf_via_engine, preview_mode
+from engine.remote_generate import (
+    engine_distant_disponible,
+    engine_generate_url,
+    generer_pdf_via_engine,
+    preview_mode,
+    soffice_disponible,
+)
 
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
 _PYMUPDF_OK: bool | None = None
@@ -109,7 +115,7 @@ def health():
             pass
 
     remote_engine = engine_generate_url()
-    live_ready = soffice or bool(remote_engine)
+    live_ready = soffice_disponible() or bool(remote_engine)
 
     from engine.notify_engine import mode_notification
 
@@ -666,10 +672,19 @@ async def generate(
         form_fields["format_match_tableau_principal"] = format_match_tableau_principal
 
     remote_engine = engine_generate_url()
-    if preview_mode() and not remote_engine:
+    if preview_mode() and not remote_engine and not soffice_disponible():
         raise HTTPException(
             status_code=500,
-            detail="Preview Manager : ENGINE_GENERATE_URL est requis.",
+            detail=(
+                "Preview Manager : LibreOffice local ou ENGINE_GENERATE_URL "
+                "doit être disponible."
+            ),
+        )
+
+    if not remote_engine and not soffice_disponible():
+        raise HTTPException(
+            status_code=500,
+            detail="LibreOffice indisponible sur ce serveur.",
         )
 
     exports_dir = BASE_DIR / "exports"
@@ -678,18 +693,12 @@ async def generate(
     notify_token = None
     try:
         snapshot = None
-        if remote_engine:
-            pdf_path = generer_pdf_via_engine(
-                remote_engine,
-                excel_path=excel_path,
-                logo_path=logo_path,
-                form_fields=form_fields,
-                output_dir=exports_dir,
-            )
-        else:
+
+        def generer_en_local():
+            nonlocal snapshot
             from engine.tournament_engine import generate_tournament
 
-            pdf_path, snapshot = generate_tournament(
+            path, snap = generate_tournament(
                 excel_path=excel_path,
                 club=club,
                 date_tournoi=date_tournoi,
@@ -710,6 +719,25 @@ async def generate(
                 format_match_finale=format_match_finale,
                 format_match_poule=format_match_poule,
             )
+            snapshot = snap
+            return path
+
+        if remote_engine and engine_distant_disponible(remote_engine):
+            try:
+                pdf_path = generer_pdf_via_engine(
+                    remote_engine,
+                    excel_path=excel_path,
+                    logo_path=logo_path,
+                    form_fields=form_fields,
+                    output_dir=exports_dir,
+                )
+            except RuntimeError:
+                if soffice_disponible():
+                    pdf_path = generer_en_local()
+                else:
+                    raise
+        else:
+            pdf_path = generer_en_local()
 
         pdf_path = Path(pdf_path)
         notify_token = enregistrer_pdf(pdf_path)

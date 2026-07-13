@@ -6,6 +6,8 @@
 #
 # 2) tournament-manager-preview → branche feature/manager → HUB + Manager preview
 #    URL : https://tournament-manager-preview.onrender.com
+#    Génère le PDF en local (LibreOffice dans l'image Docker) si l'Engine prod
+#    est indisponible ; ENGINE_GENERATE_URL sert uniquement de relais optionnel.
 #    Chat "Manager" : push sur feature/manager, manual deploy ce service
 #
 # Creer le service preview : Render Dashboard → New → Web Service → meme repo,

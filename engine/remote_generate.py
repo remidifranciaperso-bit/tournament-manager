@@ -6,16 +6,36 @@ import httpx
 
 
 def engine_generate_url() -> str | None:
+    """URL Engine distante — uniquement pour la preview Manager."""
+    if os.environ.get("DEPLOY_TARGET") != "manager-preview":
+        return None
     explicit = os.environ.get("ENGINE_GENERATE_URL", "").strip()
     if explicit:
         return explicit.rstrip("/")
-    if os.environ.get("DEPLOY_TARGET") == "manager-preview":
-        return "https://tournament-manager.onrender.com"
-    return None
+    return "https://tournament-manager.onrender.com"
 
 
 def preview_mode() -> bool:
     return os.environ.get("DEPLOY_TARGET") == "manager-preview"
+
+
+def soffice_disponible() -> bool:
+    from engine.pdf_engine import trouver_soffice
+
+    return bool(trouver_soffice())
+
+
+def engine_distant_disponible(engine_url: str) -> bool:
+    """Vérifie que le service Engine distant expose une API live fonctionnelle."""
+    try:
+        with httpx.Client(timeout=httpx.Timeout(8.0, connect=5.0)) as client:
+            response = client.get(f"{engine_url.rstrip('/')}/api/health")
+        if response.status_code != 200:
+            return False
+        payload = response.json()
+        return bool(payload.get("soffice") or payload.get("live"))
+    except Exception:
+        return False
 
 
 def _filename_from_disposition(header: str | None, fallback: str) -> str:
@@ -71,37 +91,33 @@ def generer_pdf_via_engine(
         )
 
     timeout = httpx.Timeout(300.0, connect=60.0)
-    with httpx.Client(timeout=timeout) as client:
-        with client.stream(
-            "POST",
+    with httpx.Client(timeout=timeout, follow_redirects=True) as client:
+        response = client.post(
             f"{engine_url.rstrip('/')}/api/generate",
             data=form_fields,
             files=files,
-        ) as response:
-            if response.status_code != 200:
-                response.read()
-                raise RuntimeError(
-                    f"Génération Engine distante échouée : {_detail_from_response(response)}"
-                )
-
-            filename = _filename_from_disposition(
-                response.headers.get("content-disposition"),
-                "tournoi.pdf",
-            )
-            destination = output_dir / filename
-            total = 0
-            with destination.open("wb") as handle:
-                for chunk in response.iter_bytes(65536):
-                    if chunk:
-                        handle.write(chunk)
-                        total += len(chunk)
-
-    if total < 128:
-        destination.unlink(missing_ok=True)
-        raise RuntimeError(
-            "Génération Engine distante : le PDF reçu est vide. "
-            "Réessayez dans quelques instants ou vérifiez le service Engine."
         )
+
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Génération Engine distante échouée : {_detail_from_response(response)}"
+        )
+
+    content = response.content
+    if len(content) < 128:
+        content_type = response.headers.get("content-type", "inconnu")
+        raise RuntimeError(
+            "Génération Engine distante : le PDF reçu est vide "
+            f"({len(content)} octet, {content_type}). "
+            "Le service Engine distant est indisponible ou mal déployé."
+        )
+
+    filename = _filename_from_disposition(
+        response.headers.get("content-disposition"),
+        "tournoi.pdf",
+    )
+    destination = output_dir / filename
+    destination.write_bytes(content)
 
     from engine.pdf_pages import valider_pdf_fichier
 
