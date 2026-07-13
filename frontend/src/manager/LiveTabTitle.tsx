@@ -12,13 +12,25 @@ export const LIVE_BRUSH_LABEL_CLASS = [
   LIVE_BRUSH_LABEL_SIZE_CLASS,
 ].join(" ");
 
+const LIVE_TAB_TITLE_WRAPPER =
+  "shrink-0 px-4 pb-3 pt-1 sm:px-6 sm:pb-4";
+
 const LIVE_TAB_TITLE = [
-  "shrink-0 px-4 pb-3 pt-1 text-center",
+  LIVE_TAB_TITLE_WRAPPER,
   LIVE_BRUSH_LABEL_CLASS,
-  "sm:px-6 sm:pb-4",
+  "text-center",
 ].join(" ");
 
 export function LiveTabTitle({ label }: { label: string }) {
-  if (!label.trim()) return null;
+  const hasLabel = label.trim().length > 0;
+  if (!hasLabel) {
+    return (
+      <div className={LIVE_TAB_TITLE_WRAPPER} aria-hidden>
+        <span className={`invisible block ${LIVE_BRUSH_LABEL_SIZE_CLASS}`}>
+          &nbsp;
+        </span>
+      </div>
+    );
+  }
   return <h2 className={LIVE_TAB_TITLE}>{label}</h2>;
 }

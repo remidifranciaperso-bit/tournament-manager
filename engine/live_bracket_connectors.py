@@ -184,13 +184,13 @@ def build_bracket_connector_paths(
         outlet_x, _ = _parent_outlet(d1_rect)
         child_x, child_y = _child_inlet(f_rect)
         mid_x = _connector_mid_x(outlet_x, child_x)
-        paths.append([(mid_x, child_y), (mid_x, 98.5)])
+        paths.append([(mid_x, child_y), (mid_x, 100.0)])
 
     if slide_half == "lower" and d2_rect:
         outlet_x, outlet_y = _parent_outlet(d2_rect)
         mid_x = _connector_mid_x(outlet_x, d2_rect["left"])
         paths.append(
-            [(outlet_x, outlet_y), (mid_x, outlet_y), (mid_x, 1.5)]
+            [(outlet_x, outlet_y), (mid_x, outlet_y), (mid_x, 0.0)]
         )
 
     if include_feed_connectors:

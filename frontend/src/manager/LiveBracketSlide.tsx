@@ -105,7 +105,11 @@ function TemplateMatchBox({
     >
       {placementLabel && (
         <p
-          className={`pointer-events-none absolute bottom-full left-1/2 w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${LIVE_BRUSH_LABEL_CLASS}`}
+          className={
+            match.code === "F"
+              ? `pointer-events-none absolute bottom-full left-full ml-[0.35em] w-max max-w-[160%] truncate pb-0.5 text-left ${LIVE_BRUSH_LABEL_CLASS}`
+              : `pointer-events-none absolute bottom-full left-1/2 w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${LIVE_BRUSH_LABEL_CLASS}`
+          }
         >
           {placementLabel}
         </p>

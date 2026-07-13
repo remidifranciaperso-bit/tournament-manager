@@ -86,14 +86,14 @@ function appendSplitCrossPagePaths(
   if (slideHalf === "upper" && d1 && f) {
     const midX = connectorMidX(parentOutlet(d1).x, childInlet(f).x);
     const fY = childInlet(f).y;
-    paths.push(`M ${midX} ${fY} L ${midX} 98.5`);
+    paths.push(`M ${midX} ${fY} L ${midX} 100`);
   }
 
   if (slideHalf === "lower" && d2) {
     const outlet = parentOutlet(d2);
     const midX = connectorMidX(outlet.x, d2.left);
     paths.push(
-      `M ${outlet.x} ${outlet.y} L ${midX} ${outlet.y} L ${midX} 1.5`
+      `M ${outlet.x} ${outlet.y} L ${midX} ${outlet.y} L ${midX} 0`
     );
   }
 }
