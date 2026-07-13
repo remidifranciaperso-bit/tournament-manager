@@ -6,8 +6,8 @@ import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LivePlanningTab } from "./LivePlanningTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
-import { LiveCoverBroadcast } from "./LiveCoverBroadcast";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
+import { LivePdfPage } from "./LivePdfViewer";
 import { LiveTabTitle } from "./LiveTabTitle";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { BroadcastableTab } from "./liveRetransmission";
@@ -24,20 +24,20 @@ import { useLiveProgress } from "./useLiveProgress";
 interface LiveBroadcastContentProps {
   liveData: LiveTournamentData;
   activeTab: BroadcastableTab;
+  activeSubPage?: number;
 }
 
 function broadcastPanelClass(active: boolean) {
   return [
     "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
-    active
-      ? "z-10 opacity-100"
-      : "pointer-events-none z-0 opacity-0",
+    active ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
   ].join(" ");
 }
 
 export function LiveBroadcastContent({
   liveData,
   activeTab,
+  activeSubPage,
 }: LiveBroadcastContentProps) {
   const {
     meta,
@@ -55,10 +55,10 @@ export function LiveBroadcastContent({
 
   useEffect(() => {
     void fetchTemplateLayout(templateId);
-    const coverMask = new Image();
-    coverMask.decoding = "async";
-    coverMask.src = `/live-templates/${templateId}/0.png`;
-  }, [templateId]);
+    const coverPage = new Image();
+    coverPage.decoding = "async";
+    coverPage.src = `/api/live/${live_token}/page/0.png`;
+  }, [templateId, live_token]);
 
   const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
   const classementPages = useMemo(
@@ -70,14 +70,22 @@ export function LiveBroadcastContent({
     [page_map]
   );
 
-  const mainPage = useMemo(
-    () => defaultMainSubPage(mainPages, matches, progress.completed),
-    [mainPages, matches, progress.completed]
-  );
+  const mainPage =
+    activeTab === "main" && activeSubPage !== undefined
+      ? activeSubPage
+      : defaultMainSubPage(mainPages, matches, progress.completed);
+  const classementPage =
+    activeTab === "classement" && activeSubPage !== undefined
+      ? activeSubPage
+      : 0;
+  const planningPage =
+    activeTab === "planning" && activeSubPage !== undefined
+      ? activeSubPage
+      : 0;
 
   const mainSlideIndex = slideIndexAt(mainPages, mainPage);
-  const classementSlideIndex = slideIndexAt(classementPages, 0);
-  const planningSlideIndex = slideIndexAt(planningPages, 0);
+  const classementSlideIndex = slideIndexAt(classementPages, classementPage);
+  const planningSlideIndex = slideIndexAt(planningPages, planningPage);
 
   const tabLabel = useMemo(
     () =>
@@ -86,10 +94,18 @@ export function LiveBroadcastContent({
         classement: classementPages,
         planning: planningPages,
         mainPage,
-        classementPage: 0,
-        planningPage: 0,
+        classementPage,
+        planningPage,
       }),
-    [activeTab, mainPages, classementPages, planningPages, mainPage]
+    [
+      activeTab,
+      mainPages,
+      classementPages,
+      planningPages,
+      mainPage,
+      classementPage,
+      planningPage,
+    ]
   );
 
   const tabTitleReserveLabel = useMemo(() => {
@@ -107,12 +123,7 @@ export function LiveBroadcastContent({
       </div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <div className={broadcastPanelClass(activeTab === "cover")}>
-          <LiveCoverBroadcast
-            templateId={templateId}
-            fields={fields}
-            meta={meta}
-            liveToken={live_token}
-          />
+          <LivePdfPage pageUrl={`/api/live/${live_token}/page/0.png`} />
         </div>
 
         <div className={broadcastPanelClass(activeTab === "live")}>

@@ -2,8 +2,33 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { LiveBroadcastContent } from "../manager/LiveBroadcastContent";
 import { loadBroadcastOutput } from "../manager/liveBroadcastStore";
-import type { BroadcastableTab } from "../manager/liveRetransmission";
+import {
+  expandBroadcastSchedule,
+  type BroadcastFrame,
+} from "../manager/liveRetransmission";
 import { loadLiveSession } from "../manager/liveSessionStore";
+
+function resolveActiveFrame(
+  output: NonNullable<ReturnType<typeof loadBroadcastOutput>>,
+  liveData: NonNullable<ReturnType<typeof loadLiveSession>>["liveData"],
+  rotateIndex: number
+): BroadcastFrame | null {
+  if (output.tabs.length === 0) return null;
+
+  switch (output.mode) {
+    case "rotation": {
+      const frames = expandBroadcastSchedule(output.tabs, liveData.page_map);
+      return frames[rotateIndex % frames.length] ?? null;
+    }
+    case "fixed":
+    case "mirror":
+      return { tab: output.fixedTab ?? output.tabs[0] };
+    case "multi":
+      return { tab: output.dedicatedTab ?? output.tabs[0] };
+    default:
+      return { tab: output.tabs[0] };
+  }
+}
 
 export default function LiveAffichagePage() {
   const { token } = useParams<{ token: string }>();
@@ -17,31 +42,25 @@ export default function LiveAffichagePage() {
 
   const [rotateIndex, setRotateIndex] = useState(0);
 
-  const activeTab = useMemo((): BroadcastableTab | null => {
-    if (!output || output.tabs.length === 0) return null;
+  const rotationFrames = useMemo(() => {
+    if (!output || !liveData || output.mode !== "rotation") return [];
+    return expandBroadcastSchedule(output.tabs, liveData.page_map);
+  }, [output, liveData]);
 
-    switch (output.mode) {
-      case "fixed":
-      case "mirror":
-        return output.fixedTab ?? output.tabs[0] ?? null;
-      case "multi":
-        return output.dedicatedTab ?? output.tabs[0] ?? null;
-      case "rotation":
-        return output.tabs[rotateIndex % output.tabs.length] ?? null;
-      default:
-        return output.tabs[0] ?? null;
-    }
-  }, [output, rotateIndex]);
+  const activeFrame = useMemo((): BroadcastFrame | null => {
+    if (!output || !liveData) return null;
+    return resolveActiveFrame(output, liveData, rotateIndex);
+  }, [output, liveData, rotateIndex]);
 
   useEffect(() => {
-    if (!output || output.mode !== "rotation" || output.tabs.length <= 1) return;
+    if (rotationFrames.length <= 1) return;
 
     const timer = window.setInterval(() => {
-      setRotateIndex((index) => (index + 1) % output.tabs.length);
-    }, output.rotationSeconds * 1000);
+      setRotateIndex((index) => (index + 1) % rotationFrames.length);
+    }, (output?.rotationSeconds ?? 10) * 1000);
 
     return () => window.clearInterval(timer);
-  }, [output]);
+  }, [rotationFrames.length, output?.rotationSeconds]);
 
   useEffect(() => {
     const enterFullscreen = () => {
@@ -61,7 +80,7 @@ export default function LiveAffichagePage() {
     );
   }
 
-  if (!liveData || !activeTab) {
+  if (!liveData || !activeFrame) {
     return (
       <div className="flex h-dvh items-center justify-center bg-white px-6 text-center">
         <p className="text-sm text-arena-600/60">
@@ -73,5 +92,11 @@ export default function LiveAffichagePage() {
     );
   }
 
-  return <LiveBroadcastContent liveData={liveData} activeTab={activeTab} />;
+  return (
+    <LiveBroadcastContent
+      liveData={liveData}
+      activeTab={activeFrame.tab}
+      activeSubPage={activeFrame.subPage}
+    />
+  );
 }

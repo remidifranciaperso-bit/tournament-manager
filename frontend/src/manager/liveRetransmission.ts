@@ -1,5 +1,6 @@
 import type { LivePrimaryTab } from "./liveTabs";
-import { LIVE_PRIMARY_TABS, primaryTabLabel } from "./liveTabs";
+import { LIVE_PRIMARY_TABS, pageEntries, primaryTabLabel } from "./liveTabs";
+import type { LivePageMap } from "./liveTypes";
 
 /** Onglets du manager pouvant être retransmis (hors Retransmission). */
 export type BroadcastableTab =
@@ -72,4 +73,42 @@ export const DEFAULT_BROADCAST_TABS: BroadcastableTab[] = [
   "main",
 ];
 
-export const DEFAULT_ROTATION_SECONDS = 30;
+export const DEFAULT_ROTATION_SECONDS = 10;
+
+/** Une étape du défilement (onglet + sous-onglet éventuel). */
+export interface BroadcastFrame {
+  tab: BroadcastableTab;
+  subPage?: number;
+}
+
+const SINGLE_FRAME_TABS = new Set<BroadcastableTab>([
+  "cover",
+  "live",
+  "upcoming",
+  "avancement",
+  "final",
+]);
+
+export function expandBroadcastTab(
+  tab: BroadcastableTab,
+  pageMap: LivePageMap
+): BroadcastFrame[] {
+  if (SINGLE_FRAME_TABS.has(tab)) {
+    return [{ tab }];
+  }
+
+  const section =
+    tab === "main" || tab === "classement" || tab === "planning" ? tab : null;
+  if (!section) return [{ tab }];
+
+  const pages = pageEntries(pageMap, section);
+  if (pages.length === 0) return [{ tab }];
+  return pages.map((_, subPage) => ({ tab, subPage }));
+}
+
+export function expandBroadcastSchedule(
+  tabs: BroadcastableTab[],
+  pageMap: LivePageMap
+): BroadcastFrame[] {
+  return tabs.flatMap((tab) => expandBroadcastTab(tab, pageMap));
+}
