@@ -47,9 +47,11 @@ export function LiveBracketCrossPageOverlay({
   const [line, setLine] = useState<LineSegment | null>(null);
 
   const stub = context?.metrics?.stub ?? null;
+  const midXSlidePct = stub?.midXSlidePct;
+  const direction = stub?.direction;
 
   useLayoutEffect(() => {
-    if (!stub || !context?.metrics) {
+    if (midXSlidePct == null || !direction) {
       setLine(null);
       return;
     }
@@ -63,9 +65,20 @@ export function LiveBracketCrossPageOverlay({
         setLine(null);
         return;
       }
-      setLine(
-        measureLine(shellEl, slideEl, stub.midXSlidePct, stub.direction)
-      );
+      const next = measureLine(shellEl, slideEl, midXSlidePct, direction);
+      setLine((prev) => {
+        if (
+          prev &&
+          next &&
+          prev.x === next.x &&
+          prev.y1 === next.y1 &&
+          prev.y2 === next.y2 &&
+          prev.strokeWidth === next.strokeWidth
+        ) {
+          return prev;
+        }
+        return next;
+      });
     };
 
     update();
@@ -80,7 +93,7 @@ export function LiveBracketCrossPageOverlay({
       observer.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, [shellRef, stub, context?.metrics]);
+  }, [shellRef, midXSlidePct, direction]);
 
   if (!line) return null;
 

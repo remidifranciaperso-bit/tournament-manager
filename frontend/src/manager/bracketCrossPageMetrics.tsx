@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useMemo,
   useState,
@@ -11,6 +12,20 @@ export interface BracketCrossPageMetrics {
   stub: ViewportCrossPageStub;
   slideWidth: number;
   slideHeight: number;
+}
+
+function metricsEqual(
+  a: BracketCrossPageMetrics | null,
+  b: BracketCrossPageMetrics | null
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.slideWidth === b.slideWidth &&
+    a.slideHeight === b.slideHeight &&
+    a.stub.midXSlidePct === b.stub.midXSlidePct &&
+    a.stub.direction === b.stub.direction
+  );
 }
 
 interface BracketCrossPageMetricsContextValue {
@@ -26,8 +41,18 @@ export function BracketCrossPageMetricsProvider({
 }: {
   children: ReactNode;
 }) {
-  const [metrics, setMetrics] = useState<BracketCrossPageMetrics | null>(null);
-  const value = useMemo(() => ({ metrics, setMetrics }), [metrics]);
+  const [metrics, setMetricsState] = useState<BracketCrossPageMetrics | null>(
+    null
+  );
+
+  const setMetrics = useCallback((next: BracketCrossPageMetrics | null) => {
+    setMetricsState((prev) => (metricsEqual(prev, next) ? prev : next));
+  }, []);
+
+  const value = useMemo(
+    () => ({ metrics, setMetrics }),
+    [metrics, setMetrics]
+  );
 
   return (
     <BracketCrossPageMetricsContext.Provider value={value}>

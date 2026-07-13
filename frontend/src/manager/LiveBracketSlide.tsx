@@ -278,6 +278,7 @@ export function LiveBracketSlide({
   renderWidth,
 }: LiveBracketSlideProps) {
   const crossPageMetrics = useOptionalBracketCrossPageMetrics();
+  const setCrossPageMetrics = crossPageMetrics?.setMetrics;
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
 
@@ -324,23 +325,23 @@ export function LiveBracketSlide({
   );
 
   useLayoutEffect(() => {
-    if (!crossPageMetrics) return;
+    if (!setCrossPageMetrics) return;
 
     if (viewportCrossPageStub) {
-      crossPageMetrics.setMetrics({
+      setCrossPageMetrics({
         stub: viewportCrossPageStub,
         slideWidth: renderWidth,
         slideHeight: renderHeight,
       });
     } else {
-      crossPageMetrics.setMetrics(null);
+      setCrossPageMetrics(null);
     }
 
     return () => {
-      crossPageMetrics.setMetrics(null);
+      setCrossPageMetrics(null);
     };
   }, [
-    crossPageMetrics,
+    setCrossPageMetrics,
     viewportCrossPageStub,
     renderWidth,
     renderHeight,
