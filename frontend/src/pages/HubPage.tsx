@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { CourtBackground } from "../components/CourtBackground";
 import { IconLogo, IconTrophy, IconGrid } from "../components/Icons";
 
-const HUB_BUILD = "manager-preview-1";
+import { MANAGER_PREVIEW_BUILD } from "../managerPreviewBuild";
 
 export default function HubPage() {
   return (
@@ -54,7 +54,7 @@ export default function HubPage() {
         </div>
 
         <p className="mt-10 text-[10px] uppercase tracking-widest text-white/25">
-          preview {HUB_BUILD}
+          preview {MANAGER_PREVIEW_BUILD}
         </p>
       </div>
     </div>
