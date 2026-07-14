@@ -167,7 +167,16 @@ export function buildBracketConnectors(
     if (p2 && p2 !== p1) parentCodes.push(p2);
 
     for (const parentCode of parentCodes) {
-      if (slot.code === "F" && parentCode === "D2") continue;
+      // D2→F n'est court-circuité que si D2 est sur une AUTRE page (tableau 16
+      // scindé, prolongement inter-pages). Sur un tableau 8 (D2 et F ensemble),
+      // on trace le connecteur normalement.
+      if (
+        slot.code === "F" &&
+        parentCode === "D2" &&
+        !slotByCode.has("D2")
+      ) {
+        continue;
+      }
 
       const parentSlot = slotByCode.get(parentCode);
       const parentRect = boxLayouts.get(parentCode);
