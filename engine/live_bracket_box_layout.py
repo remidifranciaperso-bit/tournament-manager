@@ -236,7 +236,12 @@ def _apply_classement_main_eight_team(
     if "C9_10" in codes:
         _set_eight_team_row(tops, "C9_10", "f", quarter_grid)
     if "C11_12" in codes:
-        _set_eight_team_row(tops, "C11_12", "pf", quarter_grid)
+        # 12 éq. : tableau 9-12 « miroir » (4 boîtes) → C11_12 face à C9_10.
+        # 16 éq. : vraie petite finale (8 boîtes) en bas.
+        four_box_mirror = "C9_12_1" in codes and "C9_16_1" not in codes
+        _set_eight_team_row(
+            tops, "C11_12", "f" if four_box_mirror else "pf", quarter_grid
+        )
 
 
 def _apply_classement_1720_eight_team(
@@ -257,7 +262,12 @@ def _apply_classement_1720_eight_team(
     if "C17_18" in codes:
         _set_eight_team_row(tops, "C17_18", "f", quarter_grid)
     if "C19_20" in codes:
-        _set_eight_team_row(tops, "C19_20", "pf", quarter_grid)
+        # 20 éq. : tableau 17-20 « miroir » (4 boîtes) → C19_20 face à C17_18.
+        # 24 éq. : vraie petite finale (8 boîtes) en bas.
+        four_box_mirror = "C17_20_1" in codes and "C17_24_1" not in codes
+        _set_eight_team_row(
+            tops, "C19_20", "f" if four_box_mirror else "pf", quarter_grid
+        )
 
 
 def _apply_classement_2124_eight_team(

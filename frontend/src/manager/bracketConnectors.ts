@@ -56,6 +56,23 @@ function bracketPathsToChild(
 /** Aucun trait entrant (comme PF sur un tableau 8 équipes). */
 const NO_INCOMING_CONNECTOR_CODES = new Set(["PF", "C11_12", "C19_20"]);
 
+/**
+ * Jeu « sans trait entrant » ajusté à la slide. Sur les tableaux « miroir » à
+ * 4 boîtes (12 éq. : classement 9-12 ; 20 éq. : classement 17-20), la finale des
+ * perdants (C11_12 / C19_20) est reliée aux demies comme C7_8 en 8 équipes.
+ * Sur les tableaux 8 boîtes (16/24 éq.) elle reste une vraie petite finale sans trait.
+ */
+function noIncomingCodesForSlide(slideCodes: Set<string>): Set<string> {
+  const set = new Set(NO_INCOMING_CONNECTOR_CODES);
+  if (slideCodes.has("C9_12_1") && !slideCodes.has("C9_16_1")) {
+    set.delete("C11_12");
+  }
+  if (slideCodes.has("C17_20_1") && !slideCodes.has("C17_24_1")) {
+    set.delete("C19_20");
+  }
+  return set;
+}
+
 function feedBracketPath(from: PointPct, to: PointPct): string {
   const gap = to.x - from.x;
   if (gap <= 0.2) {
@@ -144,13 +161,14 @@ export function buildBracketConnectors(
   const feedByKey = new Map(feeds.map((field) => [field.key, field]));
   const slideCodes = new Set(slots.map((slot) => slot.code));
   const splitHalf = inferSplitMainBracketHalf(slideCodes, slideCodes);
+  const noIncoming = noIncomingCodesForSlide(slideCodes);
   const paths: string[] = [];
 
   const parentsByChild = new Map<string, BoxRectPct[]>();
   const feedToChildLinks: Array<{ from: PointPct; to: PointPct }> = [];
 
   for (const slot of slots) {
-    if (NO_INCOMING_CONNECTOR_CODES.has(slot.code)) continue;
+    if (noIncoming.has(slot.code)) continue;
 
     const match = matchesByCode.get(slot.code);
     if (!match) continue;
@@ -245,7 +263,7 @@ export function buildBracketConnectors(
 
     if (splitHalf && /^(WIN|LOSE)_H\d+$/.test(field.key)) continue;
     if (splitHalf && /^H\d+$/.test(code)) continue;
-    if (NO_INCOMING_CONNECTOR_CODES.has(code)) continue;
+    if (noIncoming.has(code)) continue;
     if (code === "D2" && field.key === "WIN_D2" && slotByCode.has("F")) continue;
 
     const parentSlot = slotByCode.get(code);

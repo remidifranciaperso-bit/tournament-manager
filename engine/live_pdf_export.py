@@ -32,15 +32,37 @@ def _footer_reference_slide_index(page_map: dict, source: fitz.Document) -> int:
     return min(1, max(0, source.page_count - 1))
 
 
+def _charger_logo(logo_path: Path | None) -> tuple[bytes | None, tuple[int, int] | None]:
+    """Charge le logo de session déjà préparé (bon ratio, identique au live)."""
+    if logo_path is None:
+        return None, None
+    logo_path = Path(logo_path)
+    if not logo_path.is_file():
+        return None, None
+    try:
+        logo_bytes = logo_path.read_bytes()
+        if len(logo_bytes) < 32:
+            return None, None
+        from PIL import Image
+
+        with Image.open(logo_path) as img:
+            return logo_bytes, (int(img.width), int(img.height))
+    except Exception:
+        return None, None
+
+
 def exporter_pdf_tournoi_manager(
     source_pdf: Path,
     output_pdf: Path,
     *,
     page_map: dict,
     captures: dict[str, str],
+    logo_path: Path | None = None,
 ) -> None:
     source = fitz.open(str(source_pdf))
     merged = fitz.open()
+
+    logo_bytes, logo_wh = _charger_logo(logo_path)
 
     try:
         if source.page_count == 0:
@@ -80,6 +102,8 @@ def exporter_pdf_tournoi_manager(
                     footer_slide_index=(
                         footer_reference if section == "planning" else None
                     ),
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
                 )
 
         if merged.page_count == 0:

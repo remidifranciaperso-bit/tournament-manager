@@ -58,6 +58,18 @@ def _footer_logo_clip(engine_rect: fitz.Rect) -> fitz.Rect:
     return fitz.Rect(side, footer_top, width - side, engine_rect.height)
 
 
+def _contain_rect(zone: fitz.Rect, img_w: float, img_h: float) -> fitz.Rect:
+    """Sous-rectangle de ``zone`` respectant le ratio du logo (contain, centré)."""
+    if img_w <= 0 or img_h <= 0 or zone.width <= 0 or zone.height <= 0:
+        return zone
+    scale = min(zone.width / img_w, zone.height / img_h)
+    draw_w = img_w * scale
+    draw_h = img_h * scale
+    x0 = zone.x0 + (zone.width - draw_w) / 2
+    y0 = zone.y0 + (zone.height - draw_h) / 2
+    return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
+
+
 def composer_page_export(
     page: fitz.Page,
     source: fitz.Document,
@@ -66,6 +78,8 @@ def composer_page_export(
     *,
     section: str = "main",
     footer_slide_index: int | None = None,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
 ) -> None:
     """Fond blanc + bandeaux Engine (slide courante) + capture Manager."""
     rect = page.rect
@@ -96,11 +110,18 @@ def composer_page_export(
     header_dest = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
     _fit_pdf_clip(page, source, slide_index, header_clip, header_dest)
 
-    footer_engine_page = source[footer_index]
-    footer_engine_rect = footer_engine_page.rect
-    footer_clip = _footer_logo_clip(footer_engine_rect)
     footer_dest = fitz.Rect(rect.x0, rect.y1 - footer_h, rect.x1, rect.y1)
-    _fit_pdf_clip(page, source, footer_index, footer_clip, footer_dest)
+    if logo_bytes and logo_wh:
+        # Logo de session (bon ratio, identique au live) : couvre le pied Engine
+        # (ex. calque « score: » des tours préliminaires) et reste homogène.
+        page.draw_rect(footer_dest, color=None, fill=(1, 1, 1), overlay=False)
+        dest = _contain_rect(footer_dest, logo_wh[0], logo_wh[1])
+        page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
+    else:
+        footer_engine_page = source[footer_index]
+        footer_engine_rect = footer_engine_page.rect
+        footer_clip = _footer_logo_clip(footer_engine_rect)
+        _fit_pdf_clip(page, source, footer_index, footer_clip, footer_dest)
 
     page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
 

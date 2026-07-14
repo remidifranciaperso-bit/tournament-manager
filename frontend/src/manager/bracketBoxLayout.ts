@@ -282,7 +282,12 @@ function applyClassementMainEightTeam(
   if (codes.has("C9_12_1")) setEightTeamRow(tops, "C9_12_1", "d1", quarterGrid);
   if (codes.has("C9_12_2")) setEightTeamRow(tops, "C9_12_2", "d2", quarterGrid);
   if (codes.has("C9_10")) setEightTeamRow(tops, "C9_10", "f", quarterGrid);
-  if (codes.has("C11_12")) setEightTeamRow(tops, "C11_12", "pf", quarterGrid);
+  if (codes.has("C11_12")) {
+    // 12 équipes : tableau 9-12 « miroir » à 4 boîtes → C11_12 face à C9_10
+    // (même hauteur, à gauche). 16 équipes : vraie petite finale (8 boîtes) en bas.
+    const fourBoxMirror = codes.has("C9_12_1") && !codes.has("C9_16_1");
+    setEightTeamRow(tops, "C11_12", fourBoxMirror ? "f" : "pf", quarterGrid);
+  }
 }
 
 /** Classement 17-20 : même mise en page que 9-12. */
@@ -301,7 +306,12 @@ function applyClassement1720EightTeam(
   if (codes.has("C17_20_1")) setEightTeamRow(tops, "C17_20_1", "d1", quarterGrid);
   if (codes.has("C17_20_2")) setEightTeamRow(tops, "C17_20_2", "d2", quarterGrid);
   if (codes.has("C17_18")) setEightTeamRow(tops, "C17_18", "f", quarterGrid);
-  if (codes.has("C19_20")) setEightTeamRow(tops, "C19_20", "pf", quarterGrid);
+  if (codes.has("C19_20")) {
+    // 20 équipes : tableau 17-20 « miroir » à 4 boîtes → C19_20 face à C17_18.
+    // 24 équipes : vraie petite finale (8 boîtes) en bas.
+    const fourBoxMirror = codes.has("C17_20_1") && !codes.has("C17_24_1");
+    setEightTeamRow(tops, "C19_20", fourBoxMirror ? "f" : "pf", quarterGrid);
+  }
 }
 
 /** Classement 21-24 : même mise en page que 5-8 / 13-16. */

@@ -90,6 +90,14 @@ def build_bracket_connector_paths(
     match_codes = {match["code"] for match in matches}
     box_layouts = resolve_match_box_layouts(slots, match_codes=match_codes)
 
+    slide_codes = {slot["code"] for slot in slots}
+    no_incoming = set(_NO_INCOMING_CONNECTOR_CODES)
+    # Tableaux « miroir » à 4 boîtes : la finale des perdants est reliée aux demies.
+    if "C9_12_1" in slide_codes and "C9_16_1" not in slide_codes:
+        no_incoming.discard("C11_12")
+    if "C17_20_1" in slide_codes and "C17_24_1" not in slide_codes:
+        no_incoming.discard("C19_20")
+
     consumed_feeds: set[str] = set()
     for slot in slots:
         match = matches_by_code.get(slot["code"])
@@ -117,7 +125,7 @@ def build_bracket_connector_paths(
 
     for slot in slots:
         code = slot["code"]
-        if code in _NO_INCOMING_CONNECTOR_CODES:
+        if code in no_incoming:
             continue
         match = matches_by_code.get(code)
         if not match:
@@ -212,7 +220,7 @@ def build_bracket_connector_paths(
             code = re.sub(r"^(WIN|LOSE|SECOND|THIRD)_", "", field["key"])
             if slide_half and re.match(r"^H\d+$", code):
                 continue
-            if code in _NO_INCOMING_CONNECTOR_CODES:
+            if code in no_incoming:
                 continue
             if field["key"] == "WIN_D2" and "F" in slot_by_code:
                 continue

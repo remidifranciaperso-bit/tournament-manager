@@ -561,6 +561,7 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
             chemin_export,
             page_map=carte,
             captures=captures,
+            logo_path=chemin_logo(token),
         )
     except (RuntimeError, FileNotFoundError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
