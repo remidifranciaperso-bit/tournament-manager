@@ -4,7 +4,10 @@ import {
   parseBracketSlide,
   SLIDE_ASPECT,
 } from "./bracketSlideLayout";
-import { resolveMatchBoxLayouts } from "./bracketBoxLayout";
+import {
+  inferSplitMainBracketHalf,
+  resolveMatchBoxLayouts,
+} from "./bracketBoxLayout";
 import { buildBracketConnectors, getViewportCrossPageStub } from "./bracketConnectors";
 import { mapFieldToProjection, type BoxRectPct } from "./bracketGeometry";
 import {
@@ -73,6 +76,7 @@ function TemplateMatchBox({
   winnerSide,
   scaleH,
   placementLabel,
+  splitMainBracket,
 }: {
   match: LiveMatch;
   box: BoxRectPct;
@@ -82,6 +86,7 @@ function TemplateMatchBox({
   winnerSide: 1 | 2 | null;
   scaleH: number;
   placementLabel: string | null;
+  splitMainBracket: boolean;
 }) {
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const team1Px = teamFontSize(team1, scaleH);
@@ -105,7 +110,13 @@ function TemplateMatchBox({
     >
       {placementLabel && (
         <p
-          className={`pointer-events-none absolute bottom-full left-1/2 w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${LIVE_BRUSH_LABEL_CLASS}`}
+          className={`pointer-events-none absolute bottom-full w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${
+            // Petite finale (3-4) : excentrée un peu à droite quand le tableau
+            // principal est sur deux pages (16/20/24 éq.), centrée sinon (8/12).
+            placementLabel === "3-4" && splitMainBracket
+              ? "left-[72%]"
+              : "left-1/2"
+          } ${LIVE_BRUSH_LABEL_CLASS}`}
         >
           {placementLabel}
         </p>
@@ -297,6 +308,12 @@ export function LiveBracketSlide({
     [parsed.matches, matches]
   );
 
+  const splitMainBracket = useMemo(() => {
+    const slideCodes = new Set(parsed.matches.map((slot) => slot.code));
+    const allCodes = new Set(matches.map((match) => match.code));
+    return inferSplitMainBracketHalf(slideCodes, allCodes) != null;
+  }, [parsed.matches, matches]);
+
   const connectorPaths = useMemo(() => {
     const isClassementSlide =
       parsed.matches.length > 0 &&
@@ -365,6 +382,7 @@ export function LiveBracketSlide({
             winnerSide={result?.winner ?? null}
             scaleH={renderHeight}
             placementLabel={matchPlacementLabel(match.tour)}
+            splitMainBracket={splitMainBracket}
           />
         );
       })}
