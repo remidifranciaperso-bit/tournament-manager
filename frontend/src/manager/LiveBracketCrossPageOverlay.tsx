@@ -24,10 +24,17 @@ function measureLine(
   const slideBottom = slideRect.bottom - shellRect.top;
   const strokeWidth = Math.max(0.3, slideRect.width * 0.0008);
   const overlap = Math.max(1, strokeWidth * 0.5);
+  // Côté slide, on recouvre généreusement vers le HAUT (partie basse) où la
+  // première boîte (D2) est loin du bord : ça comble tout écart de mesure et
+  // supprime le petit trou entre la marge et le stub interne. Vers le BAS
+  // (partie haute) la finale touche presque le bord, donc on reste discret.
+  const innerOverlapUp = Math.max(overlap, slideRect.height * 0.1);
 
   const y1 = direction === "down" ? slideBottom - overlap : -overlap;
   const y2 =
-    direction === "down" ? shellRect.height + overlap : slideTop + overlap;
+    direction === "down"
+      ? shellRect.height + overlap
+      : slideTop + innerOverlapUp;
 
   if (Math.abs(y2 - y1) < 0.5) return null;
 
@@ -93,15 +100,33 @@ export function LiveBracketCrossPageOverlay({
 
     update();
 
+    // La position de la slide peut encore bouger après ce premier passage
+    // (en-tête du document, centrage, chargement du logo). Sans re-mesure, le
+    // haut mesuré reste trop haut et laisse un trou marge↔stub. On re-mesure
+    // sur quelques frames et au chargement des images du panneau.
+    const raf1 = requestAnimationFrame(() => {
+      update();
+      requestAnimationFrame(update);
+    });
+    const timer = window.setTimeout(update, 120);
+
     const observer = new ResizeObserver(update);
     observer.observe(shellEl);
     const slideEl = findVisibleSlide();
     if (slideEl) observer.observe(slideEl);
 
+    const imgs = Array.from(shellEl.querySelectorAll("img"));
+    imgs.forEach((img) => img.addEventListener("load", update));
+
     window.addEventListener("resize", update);
+    window.addEventListener("load", update);
     return () => {
+      cancelAnimationFrame(raf1);
+      window.clearTimeout(timer);
       observer.disconnect();
+      imgs.forEach((img) => img.removeEventListener("load", update));
       window.removeEventListener("resize", update);
+      window.removeEventListener("load", update);
     };
   }, [shellRef, activeKey]);
 
