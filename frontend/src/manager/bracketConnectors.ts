@@ -101,8 +101,9 @@ function appendSplitCrossPagePaths(
 
   if (slideHalf === "upper" && d1 && f) {
     const midX = connectorMidX(parentOutlet(d1).x, childInlet(f).x);
-    const fBottom = f.top + f.height;
-    paths.push(`M ${midX} ${fBottom} L ${midX} 100`);
+    // Continuité : le prolongement inter-pages démarre à la jonction D1→F
+    // (centre de F) pour combler le trou jusqu'au bord bas de la feuille.
+    paths.push(`M ${midX} ${childInlet(f).y} L ${midX} 100`);
   }
 
   if (slideHalf === "lower" && d2) {

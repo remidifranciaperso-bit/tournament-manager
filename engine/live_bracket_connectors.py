@@ -201,10 +201,11 @@ def build_bracket_connector_paths(
 
     if slide_half == "upper" and d1_rect and f_rect:
         outlet_x, _ = _parent_outlet(d1_rect)
-        child_x, _ = _child_inlet(f_rect)
+        child_x, child_y = _child_inlet(f_rect)
         mid_x = _connector_mid_x(outlet_x, child_x)
-        f_bottom = f_rect["top"] + f_rect["height"]
-        paths.append([(mid_x, f_bottom), (mid_x, 100.0)])
+        # Continuité : le prolongement inter-pages démarre à la jonction D1→F
+        # (centre de F) pour combler le trou jusqu'au bord bas de la feuille.
+        paths.append([(mid_x, child_y), (mid_x, 100.0)])
 
     if slide_half == "lower" and d2_rect:
         outlet_x, _ = _parent_outlet(d2_rect)

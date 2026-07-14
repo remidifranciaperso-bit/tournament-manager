@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { CourtBackground } from "../components/CourtBackground";
 import { IconLogo, IconTrophy, IconGrid } from "../components/Icons";
 
-const HUB_BUILD = "manager-preview-102";
+const HUB_BUILD = "manager-preview-103";
 
 export default function HubPage() {
   return (

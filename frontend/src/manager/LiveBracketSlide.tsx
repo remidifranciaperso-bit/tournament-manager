@@ -111,9 +111,10 @@ function TemplateMatchBox({
       {placementLabel && (
         <p
           className={`pointer-events-none absolute bottom-full w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${
-            // Petite finale (3-4) : excentrée un peu à droite quand le tableau
-            // principal est sur deux pages (16/20/24 éq.), centrée sinon (8/12).
-            placementLabel === "3-4" && splitMainBracket
+            // Finale (1-2) : excentrée un peu à droite quand le tableau principal
+            // est sur deux pages (16/20/24 éq.), centrée sinon (8/12). Le 3-4
+            // reste centré dans tous les cas.
+            placementLabel === "1-2" && splitMainBracket
               ? "left-[72%]"
               : "left-1/2"
           } ${LIVE_BRUSH_LABEL_CLASS}`}
