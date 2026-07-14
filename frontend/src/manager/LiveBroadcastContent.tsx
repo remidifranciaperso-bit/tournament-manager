@@ -120,7 +120,10 @@ export function LiveBroadcastContent({
   const broadcastMainShellRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="pointer-events-none flex h-dvh w-full flex-col overflow-hidden bg-white select-none">
+    <div
+      ref={broadcastMainShellRef}
+      className="pointer-events-none relative flex h-dvh w-full flex-col overflow-hidden bg-white select-none"
+    >
       <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
         <LiveTabTitle
           label={activeTab === "cover" ? "" : tabLabel}
@@ -200,24 +203,14 @@ export function LiveBroadcastContent({
 
         <div className={broadcastPanelClass(activeTab === "main")}>
           {mainSlideIndex !== null ? (
-            <div
-              ref={broadcastMainShellRef}
-              className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
-            >
-              <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
-                <LiveBracketViewer
-                  templateId={templateId}
-                  slideIndex={mainSlideIndex}
-                  matches={matches}
-                  matchResults={progress.matchResults}
-                />
-              </LiveManagerDocumentPage>
-              <LiveBracketCrossPageOverlay
-                shellRef={broadcastMainShellRef}
-                activeKey={`${activeTab}:main:${mainPage}`}
-                slideSelector="[data-bracket-slide]"
+            <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+              <LiveBracketViewer
+                templateId={templateId}
+                slideIndex={mainSlideIndex}
+                matches={matches}
+                matchResults={progress.matchResults}
               />
-            </div>
+            </LiveManagerDocumentPage>
           ) : null}
         </div>
 
@@ -260,6 +253,13 @@ export function LiveBroadcastContent({
           </LiveManagerDocumentPage>
         </div>
       </div>
+      {activeTab === "main" ? (
+        <LiveBracketCrossPageOverlay
+          shellRef={broadcastMainShellRef}
+          activeKey={`${activeTab}:main:${mainPage}`}
+          slideSelector=".z-10 [data-bracket-slide]"
+        />
+      ) : null}
     </div>
   );
 }
