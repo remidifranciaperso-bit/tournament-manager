@@ -204,6 +204,7 @@ export function LiveBroadcastContent({
                 slideIndex={mainSlideIndex}
                 matches={matches}
                 matchResults={progress.matchResults}
+                active={activeTab === "main"}
               />
             </LiveManagerDocumentPage>
           ) : null}
@@ -217,6 +218,7 @@ export function LiveBroadcastContent({
                 slideIndex={classementSlideIndex}
                 matches={matches}
                 matchResults={progress.matchResults}
+                active={activeTab === "classement"}
               />
             </LiveManagerDocumentPage>
           ) : null}

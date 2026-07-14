@@ -11,6 +11,8 @@ interface LiveBracketViewerProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   fixedRenderWidth?: number;
+  /** Seul le panneau visible publie les métriques inter-pages (panneaux empilés). */
+  active?: boolean;
 }
 
 export function LiveBracketViewer({
@@ -19,6 +21,7 @@ export function LiveBracketViewer({
   matches,
   matchResults,
   fixedRenderWidth,
+  active = true,
 }: LiveBracketViewerProps) {
   const { layout, loading, error } = useTemplateLayout(templateId);
   const slotRef = useRef<HTMLDivElement>(null);
@@ -62,7 +65,7 @@ export function LiveBracketViewer({
 
   const slotClass = fixedRenderWidth
     ? "flex items-start justify-center bg-white transition-none"
-    : "flex h-full min-h-0 w-full flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white px-2 pb-2 pt-0 transition-none sm:px-4 sm:pb-4";
+    : "flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden bg-white px-2 pb-2 pt-0 transition-none sm:px-4 sm:pb-4";
 
   return (
     <div ref={slotRef} className={slotClass}>
@@ -72,6 +75,7 @@ export function LiveBracketViewer({
           matches={matches}
           matchResults={matchResults}
           renderWidth={effectiveWidth}
+          active={active}
         />
       ) : error ? (
         <p className="py-8 text-center text-sm text-red-500/80">
@@ -81,17 +85,7 @@ export function LiveBracketViewer({
         <p className="py-8 text-center text-sm text-arena-600/55">
           Aucune donnée pour cette page.
         </p>
-      ) : (
-        <div
-          aria-hidden
-          className="max-h-full max-w-full shrink-0"
-          style={{
-            width: effectiveWidth > 0 ? effectiveWidth : "min(100%, 70vh)",
-            aspectRatio: String(SLIDE_ASPECT),
-            visibility: "hidden",
-          }}
-        />
-      )}
+      ) : null}
     </div>
   );
 }

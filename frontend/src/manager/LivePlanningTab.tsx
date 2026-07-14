@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { buildPlanningRows } from "./buildPlanningTable";
 import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -34,6 +34,13 @@ export function LivePlanningTab({
   onToggleDone,
   exportMode = false,
 }: LivePlanningTabProps) {
+  const pageRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [naturalHeight, setNaturalHeight] = useState<number | undefined>(
+    undefined
+  );
+
   const rows = useMemo(
     () =>
       buildPlanningRows(
@@ -51,10 +58,52 @@ export function LivePlanningTab({
     return map;
   }, [matches]);
 
+  useLayoutEffect(() => {
+    if (exportMode) {
+      setScale(1);
+      return;
+    }
+
+    const page = pageRef.current;
+    const card = cardRef.current;
+    if (!page || !card) return;
+
+    const apply = () => {
+      const availW = page.clientWidth;
+      const availH = page.clientHeight;
+      const naturalW = card.offsetWidth;
+      const naturalH = card.offsetHeight;
+      if (availW <= 0 || availH <= 0 || naturalW <= 0 || naturalH <= 0) return;
+
+      const nextScale = Math.min(1, availW / naturalW, availH / naturalH);
+      setScale((prev) => (prev === nextScale ? prev : nextScale));
+      const nextHeight = Math.ceil(naturalH * nextScale);
+      setNaturalHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+    };
+
+    apply();
+    const observer = new ResizeObserver(() => apply());
+    observer.observe(page);
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [exportMode, rows.length]);
+
   return (
-    <div className={exportMode ? "bg-white px-3 py-4" : LIVE_TABLE_PAGE}>
-      <div className={exportMode ? "w-full" : LIVE_TABLE_PAGE_INNER}>
+    <div ref={pageRef} className={exportMode ? "bg-white px-3 py-4" : LIVE_TABLE_PAGE}>
+      <div
+        className={exportMode ? "w-full" : LIVE_TABLE_PAGE_INNER}
+        style={
+          exportMode
+            ? undefined
+            : {
+                transform: `scale(${scale})`,
+                transformOrigin: "center center",
+                height: naturalHeight,
+              }
+        }
+      >
         <div
+          ref={cardRef}
           className={
             exportMode
               ? "mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm"

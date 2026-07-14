@@ -396,6 +396,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       slideIndex={mainSlideIndex}
                       matches={matches}
                       matchResults={progress.matchResults}
+                      active={primaryTab === "main"}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -415,6 +416,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       slideIndex={classementSlideIndex}
                       matches={matches}
                       matchResults={progress.matchResults}
+                      active={primaryTab === "classement"}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
