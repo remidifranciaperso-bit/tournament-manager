@@ -1,8 +1,10 @@
 import { flushSync } from "react-dom";
 import { captureElementImage } from "./captureElement";
 import type { LivePageMap } from "./liveTypes";
-import type { LivePrimaryTab } from "./liveTabs";
 import { pageEntries } from "./liveTabs";
+
+/** Sections capturées pour l'export PDF (sous-ensemble des onglets). */
+export type CaptureSection = "main" | "classement" | "planning" | "final";
 
 export function captureKey(section: string, slideIndex: number): string {
   return `${section}:${slideIndex}`;
@@ -13,7 +15,7 @@ export function captureFieldName(key: string): string {
 }
 
 export interface ScreenCaptureNavigation {
-  showPage: (tab: LivePrimaryTab, subPage: number) => void;
+  showPage: (tab: CaptureSection, subPage: number) => void;
   restore: () => void;
 }
 

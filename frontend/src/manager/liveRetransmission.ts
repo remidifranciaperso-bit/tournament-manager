@@ -2,9 +2,9 @@ import type { LivePrimaryTab } from "./liveTabs";
 import { LIVE_PRIMARY_TABS, pageEntries, primaryTabLabel } from "./liveTabs";
 import type { LivePageMap } from "./liveTypes";
 
-/** Onglets du manager pouvant être retransmis (hors Retransmission). */
+/** Onglets du manager pouvant être retransmis (hors Retransmission / Poules). */
 export type BroadcastableTab =
-  | Exclude<LivePrimaryTab, "retransmission">
+  | Exclude<LivePrimaryTab, "retransmission" | "poules">
   | "cover";
 
 export type RetransmissionMode =
@@ -59,7 +59,7 @@ export function broadcastableTabs(
   };
   const tabs = LIVE_PRIMARY_TABS.filter(
     (tab): tab is { id: Exclude<BroadcastableTab, "cover">; label: string } =>
-      tab.id !== "retransmission"
+      tab.id !== "retransmission" && tab.id !== "poules"
   ).map((tab) => ({
     id: tab.id,
     label: primaryTabLabel(tab.id, classementPageCount),

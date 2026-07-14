@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
+import { useTemplateLayout } from "./useTemplateLayout";
+import { poolLetters } from "./buildPoolStandings";
+import { LivePoolsTab } from "./LivePoolsTab";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
@@ -128,10 +131,46 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     meta.nb_equipes,
   ]);
 
-  const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
+  const { layout: templateLayout } = useTemplateLayout(templateId);
+
+  // Slides de poules (boîtes PA_M*/PB_M*…) : sortis du « Tableau principal »
+  // pour être regroupés dans l'onglet dédié « Poules ».
+  const poolSlideIndices = useMemo(() => {
+    const set = new Set<number>();
+    if (!templateLayout) return set;
+    for (const [key, slideFields] of Object.entries(templateLayout)) {
+      if (slideFields.some((field) => /^P[A-D]_M\d+_/.test(field.key))) {
+        set.add(Number.parseInt(key, 10));
+      }
+    }
+    return set;
+  }, [templateLayout]);
+
+  const mainPages = useMemo(
+    () =>
+      pageEntries(page_map, "main").filter(
+        (entry) => !poolSlideIndices.has(entry.index)
+      ),
+    [page_map, poolSlideIndices]
+  );
   const classementPages = useMemo(
     () => pageEntries(page_map, "classement"),
     [page_map]
+  );
+
+  const poolLettersList = useMemo(() => poolLetters(matches), [matches]);
+  const isPoolFormat = poolLettersList.length > 0;
+  const poulesPages = useMemo(
+    () =>
+      isPoolFormat
+        ? ["Composition", ...poolLettersList.map((letter) => `Poule ${letter}`)]
+        : [],
+    [isPoolFormat, poolLettersList]
+  );
+  const visiblePrimaryTabs = useMemo(
+    () =>
+      LIVE_PRIMARY_TABS.filter((tab) => tab.id !== "poules" || isPoolFormat),
+    [isPoolFormat]
   );
   const planningPages = useMemo(
     () => pageEntries(page_map, "planning"),
@@ -142,6 +181,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
   const [mainPage, setMainPage] = useState(0);
   const [classementPage, setClassementPage] = useState(0);
   const [planningPage, setPlanningPage] = useState(0);
+  const [poulesPage, setPoulesPage] = useState(0);
   const [awaitingLaunch, setAwaitingLaunch] = useState<Set<string>>(
     () => new Set()
   );
@@ -170,10 +210,12 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
         return subTabLabels(classementPages);
       case "planning":
         return subTabLabels(planningPages);
+      case "poules":
+        return poulesPages.length > 1 ? poulesPages : [];
       default:
         return [];
     }
-  }, [primaryTab, mainPages, classementPages, planningPages]);
+  }, [primaryTab, mainPages, classementPages, planningPages, poulesPages]);
 
   const showSubTabs = activeSubPages.length > 1;
 
@@ -183,7 +225,9 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
         ? mainPage
         : primaryTab === "classement"
           ? classementPage
-          : planningPage;
+          : primaryTab === "poules"
+            ? poulesPage
+            : planningPage;
 
     return activeSubPages.map((label, i) => ({
       key: `${primaryTab}-${i}`,
@@ -192,10 +236,18 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
       onSelect: () => {
         if (primaryTab === "main") setMainPage(i);
         else if (primaryTab === "classement") setClassementPage(i);
+        else if (primaryTab === "poules") setPoulesPage(i);
         else setPlanningPage(i);
       },
     }));
-  }, [activeSubPages, primaryTab, mainPage, classementPage, planningPage]);
+  }, [
+    activeSubPages,
+    primaryTab,
+    mainPage,
+    classementPage,
+    planningPage,
+    poulesPage,
+  ]);
 
   const selectPrimary = (id: LivePrimaryTab) => {
     setPrimaryTab(id);
@@ -204,6 +256,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     }
     if (id === "classement") setClassementPage(0);
     if (id === "planning") setPlanningPage(0);
+    if (id === "poules") setPoulesPage(0);
   };
 
   const mainSlideIndex = useMemo(
@@ -233,28 +286,32 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     isProjectionTab ||
     isBracketTab ||
     primaryTab === "avancement" ||
+    primaryTab === "poules" ||
     primaryTab === "retransmission";
 
-  const activeTabLabel = useMemo(
-    () =>
-      activeTabBrushLabel(primaryTab, {
-        main: mainPages,
-        classement: classementPages,
-        planning: planningPages,
-        mainPage,
-        classementPage,
-        planningPage,
-      }),
-    [
-      primaryTab,
-      mainPages,
-      classementPages,
-      planningPages,
+  const activeTabLabel = useMemo(() => {
+    if (primaryTab === "poules") {
+      return poulesPages[poulesPage] ?? "Poules";
+    }
+    return activeTabBrushLabel(primaryTab, {
+      main: mainPages,
+      classement: classementPages,
+      planning: planningPages,
       mainPage,
       classementPage,
       planningPage,
-    ]
-  );
+    });
+  }, [
+    primaryTab,
+    mainPages,
+    classementPages,
+    planningPages,
+    mainPage,
+    classementPage,
+    planningPage,
+    poulesPages,
+    poulesPage,
+  ]);
 
   const tabTitleReserveLabel = useMemo(() => {
     if (primaryTab !== "main") return null;
@@ -274,7 +331,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
         </h1>
 
         <div className="mt-3 flex shrink-0 gap-0.5 overflow-hidden sm:gap-1">
-          {LIVE_PRIMARY_TABS.map((tab) => (
+          {visiblePrimaryTabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -387,6 +444,26 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   finished={progress.finished}
                 />
               </div>
+
+              {isPoolFormat ? (
+                <div className={stackedPanelClass(primaryTab === "poules")}>
+                  <LiveManagerDocumentPage
+                    club={meta.club}
+                    logoUrl={meta.logo_url}
+                  >
+                    <LivePoolsTab
+                      view={
+                        poulesPage === 0
+                          ? "composition"
+                          : { letter: poolLettersList[poulesPage - 1] }
+                      }
+                      matches={matches}
+                      matchResults={progress.matchResults}
+                      fields={fields}
+                    />
+                  </LiveManagerDocumentPage>
+                </div>
+              ) : null}
 
               <div className={stackedPanelClass(primaryTab === "main")}>
                 {mainSlideIndex !== null ? (

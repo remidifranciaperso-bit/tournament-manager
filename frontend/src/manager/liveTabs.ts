@@ -5,6 +5,7 @@ export type LivePrimaryTab =
   | "avancement"
   | "live"
   | "upcoming"
+  | "poules"
   | "main"
   | "classement"
   | "planning"
@@ -14,6 +15,7 @@ export type LivePrimaryTab =
 export const LIVE_PRIMARY_TABS: { id: LivePrimaryTab; label: string }[] = [
   { id: "live", label: "Matchs en cours" },
   { id: "upcoming", label: "Prochains matchs" },
+  { id: "poules", label: "Poules" },
   { id: "main", label: "Tableau principal" },
   { id: "classement", label: "Tableaux de classement" },
   { id: "planning", label: "Planning" },
@@ -112,7 +114,8 @@ export function activeTabBrushLabel(
 
 export const LIVE_PRIMARY_TAB_COUNT = LIVE_PRIMARY_TABS.length;
 
-export const LIVE_TAB_WIDTH_CLASS = `w-[calc((100%-1.25rem)/${LIVE_PRIMARY_TAB_COUNT})]`;
+/** Largeur d'un sous-onglet : divisée par 8 (base historique hors onglet Poules). */
+export const LIVE_TAB_WIDTH_CLASS = `w-[calc((100%-1.25rem)/8)]`;
 
 export function pageEntries(
   pageMap: LivePageMap,

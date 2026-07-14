@@ -67,7 +67,7 @@ function teamFontSize(text: string, scaleH: number): number {
   return ptOnSlide(pt, scaleH);
 }
 
-function TemplateMatchBox({
+export function TemplateMatchBox({
   match,
   box,
   team1,
