@@ -18,6 +18,10 @@ ENGINE_FOOTER_RATIO = 0.042
 ENGINE_FOOTER_LOGO_WIDTH_RATIO = 1 / 3
 PDF_LOGO_MAX_PX = 220
 
+# Emplacement garde par défaut (templates sans {{LOGO}}, ex. 32 éq.) :
+# grand, en haut, centré — fractions (x0, y0, x1, y1), calqué sur les autres templates.
+GARDE_LOGO_BOX_DEFAUT = (0.27, 0.055, 0.72, 0.165)
+
 # Type d'une boîte {{LOGO}} en fractions de la diapo : (x0, y0, x1, y1).
 LogoBox = tuple[float, float, float, float]
 
@@ -134,28 +138,46 @@ def appliquer_logo_sur_pdf(
     # Fichier temporaire dans le même dossier que le PDF (évite errno 18 sur Render).
     temp_path = pdf_path.parent / f".{pdf_path.stem}-logo-{uuid.uuid4().hex}.pdf"
 
+    mode_defaut = not logo_boxes
+
     doc = fitz.open(str(pdf_path))
     try:
         for index, page in enumerate(doc):
             rect = page.rect
-            if logo_boxes:
-                # Gabarit {{LOGO}} : overlay transparent (garde sur fond photo).
-                zones = [
-                    fitz.Rect(
-                        rect.x0 + fx0 * rect.width,
-                        rect.y0 + fy0 * rect.height,
-                        rect.x0 + fx1 * rect.width,
-                        rect.y0 + fy1 * rect.height,
+            if not mode_defaut:
+                # Gabarit {{LOGO}} du template : overlay transparent (les zones
+                # ont été vidées lors du remplissage, rien à masquer).
+                cibles = [
+                    (
+                        fitz.Rect(
+                            rect.x0 + fx0 * rect.width,
+                            rect.y0 + fy0 * rect.height,
+                            rect.x0 + fx1 * rect.width,
+                            rect.y0 + fy1 * rect.height,
+                        ),
+                        False,
                     )
                     for (fx0, fy0, fx1, fy1) in logo_boxes.get(index, [])
                 ]
-                effacer_fond = False
+            elif index == 0:
+                # Template sans {{LOGO}} (ex. 32 éq.) : logo grand en tête de garde.
+                fx0, fy0, fx1, fy1 = GARDE_LOGO_BOX_DEFAUT
+                cibles = [
+                    (
+                        fitz.Rect(
+                            rect.x0 + fx0 * rect.width,
+                            rect.y0 + fy0 * rect.height,
+                            rect.x0 + fx1 * rect.width,
+                            rect.y0 + fy1 * rect.height,
+                        ),
+                        False,
+                    )
+                ]
             else:
-                # Repli : bande pied sur fond blanc (comportement historique).
-                zones = [_zone_logo_pied(page)]
-                effacer_fond = True
+                # Pages de contenu : bande pied sur fond blanc (masque le libellé).
+                cibles = [(_zone_logo_pied(page), True)]
 
-            for zone in zones:
+            for zone, effacer_fond in cibles:
                 if effacer_fond:
                     page.draw_rect(zone, color=None, fill=(1, 1, 1), overlay=True)
                 dest = contain_rect(zone, img_w, img_h)
