@@ -146,13 +146,25 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     return set;
   }, [templateLayout]);
 
-  const mainPages = useMemo(
-    () =>
-      pageEntries(page_map, "main").filter(
-        (entry) => !poolSlideIndices.has(entry.index)
-      ),
-    [page_map, poolSlideIndices]
-  );
+  const mainPages = useMemo(() => {
+    const filtered = pageEntries(page_map, "main").filter(
+      (entry) => !poolSlideIndices.has(entry.index)
+    );
+    // Format à poules : les libellés « Partie N » (issus du comptage global des
+    // slides) n'ont plus de sens une fois les poules extraites → on ré-étiquette
+    // le tableau principal restant (1 page = Tableau principal, 2 = haute/basse).
+    if (poolSlideIndices.size === 0) return filtered;
+    if (filtered.length === 1) {
+      return [{ ...filtered[0], label: "Tableau principal" }];
+    }
+    if (filtered.length === 2) {
+      return [
+        { ...filtered[0], label: "Partie haute" },
+        { ...filtered[1], label: "Partie basse" },
+      ];
+    }
+    return filtered;
+  }, [page_map, poolSlideIndices]);
   const classementPages = useMemo(
     () => pageEntries(page_map, "classement"),
     [page_map]

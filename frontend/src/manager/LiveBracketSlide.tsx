@@ -25,6 +25,7 @@ import {
   buildMatchesByCode,
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
+import { buildPoolQualifierMap } from "./buildPoolStandings";
 import { LIVE_BRUSH_LABEL_CLASS } from "./LiveTabTitle";
 import { matchPlacementLabel } from "./matchPlacementLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -32,7 +33,8 @@ import type { StoredMatchResult } from "./useLiveProgress";
 function resolveFeedContent(
   key: string,
   matchesByCode: Map<string, LiveMatch>,
-  matchResults: Record<string, StoredMatchResult>
+  matchResults: Record<string, StoredMatchResult>,
+  poolQualifiers: Map<string, string>
 ): string {
   const win = key.match(/^WIN_(.+)$/);
   const lose = key.match(/^LOSE_(.+)$/);
@@ -45,7 +47,12 @@ function resolveFeedContent(
 
   const side = win ? result.winner : result.loser;
   const raw = side === 1 ? parent.equipe1 : parent.equipe2;
-  const resolved = resolveTeamLabelDeep(raw, matchesByCode, matchResults);
+  const resolved = resolveTeamLabelDeep(
+    raw,
+    matchesByCode,
+    matchResults,
+    poolQualifiers
+  );
   const text = resolved || formatFeedKey(key);
   return formatTeamWithInitials(text);
 }
@@ -53,9 +60,15 @@ function resolveFeedContent(
 function resolveTeamDisplay(
   label: string,
   matchesByCode: Map<string, LiveMatch>,
-  matchResults: Record<string, StoredMatchResult>
+  matchResults: Record<string, StoredMatchResult>,
+  poolQualifiers: Map<string, string>
 ): string {
-  const resolved = resolveTeamLabelDeep(label, matchesByCode, matchResults);
+  const resolved = resolveTeamLabelDeep(
+    label,
+    matchesByCode,
+    matchResults,
+    poolQualifiers
+  );
   const text = resolved !== label.trim() ? resolved : formatTeamSlot(label);
   return formatTeamWithInitials(text);
 }
@@ -286,6 +299,10 @@ export function LiveBracketSlide({
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
+  const poolQualifiers = useMemo(
+    () => buildPoolQualifierMap(matches, matchResults),
+    [matches, matchResults]
+  );
 
   const renderHeight = Math.round(renderWidth / SLIDE_ASPECT);
   const consumedFeeds = useMemo(() => {
@@ -372,12 +389,14 @@ export function LiveBracketSlide({
             team1={resolveTeamDisplay(
               match.equipe1,
               matchesByCode,
-              matchResults
+              matchResults,
+              poolQualifiers
             )}
             team2={resolveTeamDisplay(
               match.equipe2,
               matchesByCode,
-              matchResults
+              matchResults,
+              poolQualifiers
             )}
             score={result?.display ?? null}
             winnerSide={result?.winner ?? null}
@@ -394,7 +413,12 @@ export function LiveBracketSlide({
           <FeedLabel
             key={field.key}
             field={field}
-            text={resolveFeedContent(field.key, matchesByCode, matchResults)}
+            text={resolveFeedContent(
+              field.key,
+              matchesByCode,
+              matchResults,
+              poolQualifiers
+            )}
             scaleH={renderHeight}
           />
         ))}

@@ -18,10 +18,16 @@ export function buildMatchesByCode(
 export function resolveTeamLabel(
   label: string,
   matchesByCode: Map<string, LiveMatch>,
-  matchResults: Record<string, StoredMatchResult>
+  matchResults: Record<string, StoredMatchResult>,
+  poolQualifiers?: Map<string, string>
 ): string {
   const text = label.trim();
   if (!text) return label;
+
+  if (poolQualifiers) {
+    const qualified = poolQualifiers.get(text);
+    if (qualified) return qualified;
+  }
 
   let role: "winner" | "loser" | null = null;
   let parentCode: string | null = null;
@@ -55,10 +61,22 @@ export function resolveTeamLabelDeep(
   label: string,
   matchesByCode: Map<string, LiveMatch>,
   matchResults: Record<string, StoredMatchResult>,
+  poolQualifiers?: Map<string, string>,
   depth = 0
 ): string {
   if (depth > 8) return label;
-  const resolved = resolveTeamLabel(label, matchesByCode, matchResults);
+  const resolved = resolveTeamLabel(
+    label,
+    matchesByCode,
+    matchResults,
+    poolQualifiers
+  );
   if (resolved === label) return label;
-  return resolveTeamLabelDeep(resolved, matchesByCode, matchResults, depth + 1);
+  return resolveTeamLabelDeep(
+    resolved,
+    matchesByCode,
+    matchResults,
+    poolQualifiers,
+    depth + 1
+  );
 }

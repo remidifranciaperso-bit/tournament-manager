@@ -129,3 +129,43 @@ export function buildPoolStandings(
     rank: index + 1,
   }));
 }
+
+/** Une poule est terminée quand tous ses matchs ont un résultat validé. */
+function isPoolComplete(
+  pool: LiveMatch[],
+  matchResults: Record<string, StoredMatchResult>
+): boolean {
+  return pool.length > 0 && pool.every((match) => matchResults[match.code]);
+}
+
+/**
+ * Table de résolution des qualifiés de poule (« Vainqueur/Deuxième/Troisième
+ * Poule X » → équipe réelle), uniquement pour les poules terminées et donc au
+ * classement définitif. Utilisée par le tableau principal pour remplir les
+ * boîtes une fois les poules jouées.
+ */
+export function buildPoolQualifierMap(
+  matches: LiveMatch[],
+  matchResults: Record<string, StoredMatchResult>
+): Map<string, string> {
+  const map = new Map<string, string>();
+
+  for (const letter of poolLetters(matches)) {
+    const pool = poolMatches(matches, letter);
+    if (!isPoolComplete(pool, matchResults)) continue;
+
+    const standings = buildPoolStandings(pool, matchResults);
+    if (standings[0]) {
+      map.set(`Vainqueur Poule ${letter}`, standings[0].team);
+    }
+    if (standings[1]) {
+      map.set(`Deuxième Poule ${letter}`, standings[1].team);
+      map.set(`Second Poule ${letter}`, standings[1].team);
+    }
+    if (standings[2]) {
+      map.set(`Troisième Poule ${letter}`, standings[2].team);
+    }
+  }
+
+  return map;
+}

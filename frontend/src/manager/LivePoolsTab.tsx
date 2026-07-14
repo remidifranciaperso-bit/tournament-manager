@@ -182,6 +182,11 @@ function CompositionView({
   return (
     <ScaledPage rows={letters.length + exempts.length}>
       <div className="flex flex-col gap-4">
+        {exempts.length > 0 ? (
+          <div className="mx-auto" style={{ width: (POOL_BASE_WIDTH - 16) / 2 }}>
+            <RosterCard title="Têtes de série (exemptées)" teams={exempts} />
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-4">
           {letters.map((letter) => (
             <RosterCard
@@ -191,9 +196,6 @@ function CompositionView({
             />
           ))}
         </div>
-        {exempts.length > 0 ? (
-          <RosterCard title="Têtes de série (exemptées)" teams={exempts} />
-        ) : null}
       </div>
     </ScaledPage>
   );

@@ -1,5 +1,8 @@
 const ICONE_VAINQUEUR = "🏆 ";
 const ICONE_PERDANT = "❌ ";
+const ICONE_POULE_1 = "🥇 ";
+const ICONE_POULE_2 = "🥈 ";
+const ICONE_POULE_3 = "🥉 ";
 
 /** Formate un libellé d'équipe comme le moteur PPTX (``equipe_label_court``). */
 export function formatTeamSlot(label: string): string {
@@ -7,13 +10,13 @@ export function formatTeamSlot(label: string): string {
   if (!text) return "—";
 
   if (text.startsWith("Vainqueur Poule ")) {
-    return `1er ${text.replace("Vainqueur ", "")}:`;
+    return `${ICONE_POULE_1}${text.replace("Vainqueur ", "")}:`;
   }
   if (text.startsWith("Deuxième Poule ") || text.startsWith("Second Poule ")) {
-    return `2e ${text.replace(/^(Deuxième|Second) /, "")}:`;
+    return `${ICONE_POULE_2}${text.replace(/^(Deuxième|Second) /, "")}:`;
   }
   if (text.startsWith("Troisième Poule ")) {
-    return `3 ${text.replace("Troisième ", "")}:`;
+    return `${ICONE_POULE_3}${text.replace("Troisième ", "")}:`;
   }
   if (text.startsWith("Vainqueur ")) {
     return `${ICONE_VAINQUEUR}${text.replace("Vainqueur ", "")}:`;
@@ -31,13 +34,13 @@ export function formatCourtTeamSlot(label: string): string {
   if (!text) return "—";
 
   if (text.startsWith("Vainqueur Poule ")) {
-    return `1er ${text.replace("Vainqueur ", "")}`;
+    return `${ICONE_POULE_1}${text.replace("Vainqueur ", "")}`;
   }
   if (text.startsWith("Deuxième Poule ") || text.startsWith("Second Poule ")) {
-    return `2e ${text.replace(/^(Deuxième|Second) /, "")}`;
+    return `${ICONE_POULE_2}${text.replace(/^(Deuxième|Second) /, "")}`;
   }
   if (text.startsWith("Troisième Poule ")) {
-    return `3 ${text.replace("Troisième ", "")}`;
+    return `${ICONE_POULE_3}${text.replace("Troisième ", "")}`;
   }
   if (text.startsWith("Vainqueur ")) {
     return `${ICONE_VAINQUEUR}${text.replace("Vainqueur ", "")}`;
@@ -81,7 +84,7 @@ export function feedKeyFromTeamLabel(label: string): string | null {
 }
 
 const PLACEHOLDER_PREFIX =
-  /^(Vainqueur|Perdant|Deuxième|Second|Troisième|🏆|❌|1er|2e|3 )/i;
+  /^(Vainqueur|Perdant|Deuxième|Second|Troisième|🏆|❌|🥇|🥈|🥉|1er|2e|3 )/i;
 
 export function isBracketPlaceholder(text: string): boolean {
   return PLACEHOLDER_PREFIX.test(text.trim());
