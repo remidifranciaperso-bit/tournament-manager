@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo } from "react";
+import { useMemo } from "react";
 import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 import {
   parseBracketSlide,
@@ -6,7 +6,6 @@ import {
 } from "./bracketSlideLayout";
 import { resolveMatchBoxLayouts } from "./bracketBoxLayout";
 import { buildBracketConnectors, getViewportCrossPageStub } from "./bracketConnectors";
-import { useOptionalBracketCrossPageMetrics } from "./bracketCrossPageMetrics";
 import { mapFieldToProjection, type BoxRectPct } from "./bracketGeometry";
 import {
   ptOnSlide,
@@ -106,11 +105,7 @@ function TemplateMatchBox({
     >
       {placementLabel && (
         <p
-          className={
-            match.code === "F"
-              ? `pointer-events-none absolute bottom-full right-2 max-w-[calc(100%-0.5rem)] origin-right whitespace-nowrap pb-0.5 text-right ${LIVE_BRUSH_LABEL_CLASS}`
-              : `pointer-events-none absolute bottom-full left-1/2 w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${LIVE_BRUSH_LABEL_CLASS}`
-          }
+          className={`pointer-events-none absolute bottom-full left-1/2 w-max max-w-[220%] -translate-x-1/2 truncate pb-0.5 text-center ${LIVE_BRUSH_LABEL_CLASS}`}
         >
           {placementLabel}
         </p>
@@ -277,8 +272,6 @@ export function LiveBracketSlide({
   matchResults,
   renderWidth,
 }: LiveBracketSlideProps) {
-  const crossPageMetrics = useOptionalBracketCrossPageMetrics();
-  const setCrossPageMetrics = crossPageMetrics?.setMetrics;
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
 
@@ -324,34 +317,17 @@ export function LiveBracketSlide({
     [parsed.matches, boxLayouts]
   );
 
-  useLayoutEffect(() => {
-    if (!setCrossPageMetrics) return;
-
-    if (viewportCrossPageStub) {
-      setCrossPageMetrics({
-        stub: viewportCrossPageStub,
-        slideWidth: renderWidth,
-        slideHeight: renderHeight,
-      });
-    } else {
-      setCrossPageMetrics(null);
-    }
-
-    return () => {
-      setCrossPageMetrics(null);
-    };
-  }, [
-    setCrossPageMetrics,
-    viewportCrossPageStub,
-    renderWidth,
-    renderHeight,
-  ]);
-
   return (
     <div
       data-bracket-slide
       data-capture-width={renderWidth}
       data-capture-height={renderHeight}
+      data-crosspage-midx={
+        viewportCrossPageStub ? viewportCrossPageStub.midXSlidePct : undefined
+      }
+      data-crosspage-dir={
+        viewportCrossPageStub ? viewportCrossPageStub.direction : undefined
+      }
       className="relative shrink-0 overflow-hidden bg-white"
       style={{ width: renderWidth, height: renderHeight }}
     >

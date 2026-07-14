@@ -1,6 +1,5 @@
 import { useLayoutEffect, useState } from "react";
 import type { RefObject } from "react";
-import { useOptionalBracketCrossPageMetrics } from "./bracketCrossPageMetrics";
 
 interface LineSegment {
   x: number;
@@ -35,35 +34,48 @@ function measureLine(
   return { x, y1, y2, strokeWidth };
 }
 
-/** Prolongement inter-pages dans les marges blanches (haut ou bas du panneau). */
+/**
+ * Prolongement inter-pages D2↔F dans les marges blanches (haut ou bas du panneau).
+ * Mesure directement le slide bracket VISIBLE (panneaux empilés) via ses attributs
+ * data-crosspage-*, indépendamment des autres onglets montés.
+ */
 export function LiveBracketCrossPageOverlay({
   shellRef,
+  activeKey,
 }: {
   shellRef: RefObject<HTMLElement | null>;
+  activeKey?: string;
 }) {
-  const context = useOptionalBracketCrossPageMetrics();
   const [line, setLine] = useState<LineSegment | null>(null);
 
-  const stub = context?.metrics?.stub ?? null;
-  const midXSlidePct = stub?.midXSlidePct;
-  const direction = stub?.direction;
-
   useLayoutEffect(() => {
-    if (midXSlidePct == null || !direction) {
-      setLine(null);
-      return;
-    }
-
     const shellEl = shellRef.current;
     if (!shellEl) return;
 
+    const findVisibleSlide = () =>
+      shellEl.querySelector<HTMLElement>(".visible.z-10 [data-bracket-slide]");
+
     const update = () => {
-      const slideEl = shellEl.querySelector<HTMLElement>("[data-bracket-slide]");
+      const slideEl = findVisibleSlide();
       if (!slideEl) {
         setLine(null);
         return;
       }
-      const next = measureLine(shellEl, slideEl, midXSlidePct, direction);
+
+      const midXRaw = slideEl.getAttribute("data-crosspage-midx");
+      const dir = slideEl.getAttribute("data-crosspage-dir");
+      if (midXRaw == null || (dir !== "up" && dir !== "down")) {
+        setLine(null);
+        return;
+      }
+
+      const midXSlidePct = Number.parseFloat(midXRaw);
+      if (!Number.isFinite(midXSlidePct)) {
+        setLine(null);
+        return;
+      }
+
+      const next = measureLine(shellEl, slideEl, midXSlidePct, dir);
       setLine((prev) => {
         if (
           prev &&
@@ -83,7 +95,7 @@ export function LiveBracketCrossPageOverlay({
 
     const observer = new ResizeObserver(update);
     observer.observe(shellEl);
-    const slideEl = shellEl.querySelector<HTMLElement>("[data-bracket-slide]");
+    const slideEl = findVisibleSlide();
     if (slideEl) observer.observe(slideEl);
 
     window.addEventListener("resize", update);
@@ -91,7 +103,7 @@ export function LiveBracketCrossPageOverlay({
       observer.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, [shellRef, midXSlidePct, direction]);
+  }, [shellRef, activeKey]);
 
   if (!line) return null;
 

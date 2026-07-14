@@ -41,7 +41,7 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-95";
+const MANAGER_BUILD = "manager-preview-96";
 
 /** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack · 11 formats pack */
 const STEP_PARTICIPANTS = 2;

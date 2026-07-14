@@ -471,7 +471,10 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               </div>
             </div>
             {isBracketTab ? (
-              <LiveBracketCrossPageOverlay shellRef={bracketShellRef} />
+              <LiveBracketCrossPageOverlay
+                shellRef={bracketShellRef}
+                activeKey={`${primaryTab}:${mainPage}:${classementPage}`}
+              />
             ) : null}
             </BracketCrossPageMetricsProvider>
           </div>
