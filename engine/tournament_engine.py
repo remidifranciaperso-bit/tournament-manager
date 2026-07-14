@@ -104,9 +104,10 @@ def generate_tournament(
     gc.collect()
 
     if logo_pdf_differe and logo_fichier is not None:
-        from engine.pdf_footer import appliquer_logo_sur_pdf
+        from engine.pdf_footer import appliquer_logo_sur_pdf, logo_boxes_par_diapo
 
-        appliquer_logo_sur_pdf(pdf_path, logo_fichier)
+        logo_boxes = logo_boxes_par_diapo(template_path)
+        appliquer_logo_sur_pdf(pdf_path, logo_fichier, logo_boxes)
         gc.collect()
 
     return pdf_path, snapshot
