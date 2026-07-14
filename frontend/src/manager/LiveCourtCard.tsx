@@ -148,6 +148,7 @@ function GamesSelect({
 }
 
 function footnoteUsesTwoLines(footnote: string): boolean {
+  if (footnote.includes("\n")) return true;
   const terrain = footnote.replace(/^Match en cours\s+(?:sur\s+)?/i, "").trim();
   if (/^\d+$/.test(terrain)) return false;
   if (/^terrain\s+\d+$/i.test(terrain)) return false;
@@ -177,7 +178,10 @@ function TeamBadge({
     isBracketPlaceholder(team.player1) &&
     !team.player2 &&
     !team.seed;
-  const longFootnote = Boolean(footnote && footnoteUsesTwoLines(footnote));
+  const explicitFootnoteBreak = Boolean(footnote?.includes("\n"));
+  const longFootnote = Boolean(
+    footnote && (explicitFootnoteBreak || footnoteUsesTwoLines(footnote))
+  );
 
   if (centerPlaceholder) {
     return (
@@ -223,9 +227,17 @@ function TeamBadge({
         ) : footnote ? (
           <p
             className={`${theme.seed} max-w-full text-center ${longFootnote ? "leading-tight" : ""}`}
-            style={longFootnote ? { fontSize: "10px" } : undefined}
+            style={
+              longFootnote && !explicitFootnoteBreak
+                ? { fontSize: "10px" }
+                : undefined
+            }
           >
-            {footnote}
+            {footnote.split("\n").map((line, index) => (
+              <span key={index} className="block">
+                {line}
+              </span>
+            ))}
           </p>
         ) : (
           team.seed && <p className={theme.seed}>{team.seed}</p>
@@ -517,7 +529,7 @@ export function LiveCourtsRow({
       ref={slotRef}
       className={[
         "flex min-h-0 flex-1 justify-center overflow-hidden px-4 sm:px-8",
-        compact ? "items-center py-0" : "items-center py-6",
+        compact ? "items-start pt-0" : "items-center py-6",
       ].join(" ")}
     >
       <div

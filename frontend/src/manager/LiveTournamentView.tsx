@@ -59,7 +59,7 @@ function DocumentTabPlaceholder({
 function stackedPanelClass(active: boolean) {
   return [
     "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
-    active ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
+    active ? "visible z-10" : "pointer-events-none invisible z-0",
   ].join(" ");
 }
 
@@ -96,14 +96,6 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
   useEffect(() => {
     void fetchTemplateLayout(templateId);
   }, [templateId]);
-
-  useEffect(() => {
-    const logoUrl = meta.logo_url?.trim();
-    if (!logoUrl) return;
-    const logo = new Image();
-    logo.decoding = "async";
-    logo.src = logoUrl;
-  }, [meta.logo_url]);
 
   const exportPayload = useMemo<LivePdfExportPayload>(() => {
     const match_results: LivePdfExportPayload["match_results"] = {};

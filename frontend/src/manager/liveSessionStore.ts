@@ -1,6 +1,5 @@
 import type { TournamentForm } from "../types";
 import { defaultForm } from "../types";
-import { normalizeLiveTournamentData } from "../api";
 import type { LiveTournamentData } from "./liveTypes";
 import { clearLiveProgress, readLiveProgressStats } from "./useLiveProgress";
 import { clearBroadcastSession } from "./liveBroadcastStore";
@@ -109,10 +108,7 @@ export function loadLiveSession(): StoredLiveSession | null {
     if (parsed.version !== 1 || !parsed.liveData?.live_token) return null;
     if (!Array.isArray(parsed.liveData.matches)) return null;
 
-    return {
-      ...parsed,
-      liveData: normalizeLiveTournamentData(parsed.liveData),
-    };
+    return parsed;
   } catch {
     return null;
   }

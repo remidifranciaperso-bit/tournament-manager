@@ -116,10 +116,10 @@ function toDisplay(
     equipe2: formatTeamForCourt(resolved2, slotFormat),
     heure: match.heure?.trim() || null,
     equipe1Footnote: inProgressTerrain1
-      ? `Match en cours sur ${inProgressTerrain1}`
+      ? `Match en cours sur\n${inProgressTerrain1}`
       : null,
     equipe2Footnote: inProgressTerrain2
-      ? `Match en cours sur ${inProgressTerrain2}`
+      ? `Match en cours sur\n${inProgressTerrain2}`
       : null,
   };
 }

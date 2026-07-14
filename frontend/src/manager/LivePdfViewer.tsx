@@ -59,17 +59,8 @@ function useBlockZoom(containerRef: RefObject<HTMLElement | null>, enabled: bool
   }, [containerRef, enabled]);
 }
 
-function pagePngUrl(liveToken: string, slideIndex: number, dpi?: number): string {
-  const base = `/api/live/${liveToken}/page/${slideIndex}.png`;
-  return dpi ? `${base}?dpi=${dpi}` : base;
-}
-
-export function livePagePngUrl(
-  liveToken: string,
-  slideIndex: number,
-  dpi?: number
-): string {
-  return pagePngUrl(liveToken, slideIndex, dpi);
+function pagePngUrl(liveToken: string, slideIndex: number): string {
+  return `/api/live/${liveToken}/page/${slideIndex}.png`;
 }
 
 function usePrefetchPages(liveToken: string, indices: number[]) {
@@ -89,50 +80,19 @@ function usePrefetchPages(liveToken: string, indices: number[]) {
 interface LivePdfPageProps {
   pageUrl: string;
   checkboxes?: PlanningCheckboxOverlay[];
-  /** Ne pas agrandir au-delà de la résolution native de l'image. */
-  maxNativeScale?: boolean;
 }
 
 /** Compense le centrage flex + métriques fonte du ✓ vs la ☐ du PDF. */
 const CHECK_MARK_UPSHIFT_RATIO = 0.16;
 
-function LivePdfPageStatic({ pageUrl }: { pageUrl: string }) {
-  const slotRef = useRef<HTMLDivElement>(null);
-  useBlockZoom(slotRef, true);
-
-  return (
-    <div
-      ref={slotRef}
-      className="flex h-full min-h-0 w-full touch-none select-none items-center justify-center overflow-hidden bg-white transition-none"
-      style={{ touchAction: "none" }}
-    >
-      <img
-        key={pageUrl}
-        src={pageUrl}
-        alt=""
-        decoding="async"
-        draggable={false}
-        className="block max-h-full max-w-full select-none object-contain"
-      />
-    </div>
-  );
-}
-
-function LivePdfPageInteractive({
-  pageUrl,
-  checkboxes,
-  maxNativeScale = false,
-}: {
-  pageUrl: string;
-  checkboxes: PlanningCheckboxOverlay[];
-  maxNativeScale?: boolean;
-}) {
+export function LivePdfPage({ pageUrl, checkboxes = [] }: LivePdfPageProps) {
   const slotRef = useRef<HTMLDivElement>(null);
   const [renderSize, setRenderSize] = useState<{ w: number; h: number } | null>(
     null
   );
+  const interactive = checkboxes.length > 0;
 
-  useBlockZoom(slotRef, false);
+  useBlockZoom(slotRef, !interactive);
 
   const computeScale = useCallback(() => {
     const slot = slotRef.current;
@@ -146,12 +106,11 @@ function LivePdfPageInteractive({
     if (!img?.naturalWidth || !img?.naturalHeight) return;
 
     const fit = Math.min(slotW / img.naturalWidth, slotH / img.naturalHeight);
-    const scale = maxNativeScale ? Math.min(fit, 1) : fit;
     setRenderSize({
-      w: Math.floor(img.naturalWidth * scale),
-      h: Math.floor(img.naturalHeight * scale),
+      w: img.naturalWidth * fit,
+      h: img.naturalHeight * fit,
     });
-  }, [maxNativeScale]);
+  }, []);
 
   useEffect(() => {
     const slot = slotRef.current;
@@ -176,14 +135,18 @@ function LivePdfPageInteractive({
   return (
     <div
       ref={slotRef}
-      className="flex min-h-0 flex-1 touch-manipulation select-none items-center justify-center overflow-hidden bg-white transition-none"
+      className={[
+        "flex min-h-0 flex-1 select-none items-center justify-center overflow-hidden bg-white",
+        interactive ? "touch-manipulation" : "touch-none",
+      ].join(" ")}
+      style={interactive ? undefined : { touchAction: "none" }}
     >
       <div
-        className="relative mx-auto shrink-0"
+        className="relative shrink-0"
         style={
           renderSize
             ? { width: renderSize.w, height: renderSize.h }
-            : { width: "100%", height: "100%", maxHeight: "100%" }
+            : { width: "100%", height: "100%" }
         }
       >
         <img
@@ -192,10 +155,11 @@ function LivePdfPageInteractive({
           alt=""
           decoding="async"
           draggable={false}
-          className="block h-full w-full select-none"
+          className="block select-none"
           style={{
-            pointerEvents: "none",
-            imageRendering: "auto",
+            width: renderSize?.w,
+            height: renderSize?.h,
+            pointerEvents: interactive ? "none" : "auto",
           }}
         />
 
@@ -256,23 +220,6 @@ function LivePdfPageInteractive({
       </div>
     </div>
   );
-}
-
-export function LivePdfPage({
-  pageUrl,
-  checkboxes = [],
-  maxNativeScale = false,
-}: LivePdfPageProps) {
-  if (checkboxes.length > 0) {
-    return (
-      <LivePdfPageInteractive
-        pageUrl={pageUrl}
-        checkboxes={checkboxes}
-        maxNativeScale={maxNativeScale}
-      />
-    );
-  }
-  return <LivePdfPageStatic pageUrl={pageUrl} />;
 }
 
 export interface LivePdfViewerProps {

@@ -7,7 +7,7 @@ import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LivePlanningTab } from "./LivePlanningTab";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
-import { LivePdfPage, livePagePngUrl } from "./LivePdfViewer";
+import { LivePdfPage } from "./LivePdfViewer";
 import { LiveTabTitle } from "./LiveTabTitle";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { BroadcastableTab } from "./liveRetransmission";
@@ -53,10 +53,7 @@ export function LiveBroadcastContent({
   });
   const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
 
-  const coverPageUrl = useMemo(
-    () => livePagePngUrl(live_token, 0, 240),
-    [live_token]
-  );
+  const coverPageUrl = `/api/live/${live_token}/page/0.png?dpi=240`;
 
   useEffect(() => {
     void fetchTemplateLayout(templateId);

@@ -32,13 +32,7 @@ export function LiveTabTitle({
     return <h2 className={`${LIVE_TAB_TITLE} invisible`}>{reserve}</h2>;
   }
 
-  if (!visible) {
-    return (
-      <h2 className={`${LIVE_TAB_TITLE} invisible`} aria-hidden>
-        {"\u00A0"}
-      </h2>
-    );
-  }
+  if (!visible) return null;
 
   return <h2 className={LIVE_TAB_TITLE}>{visible}</h2>;
 }
