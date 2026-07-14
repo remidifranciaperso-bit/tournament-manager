@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveBracketViewer } from "./LiveBracketViewer";
+import { LiveBracketCrossPageOverlay } from "./LiveBracketCrossPageOverlay";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LivePlanningTab } from "./LivePlanningTab";
@@ -116,6 +117,7 @@ export function LiveBroadcastContent({
   }, [activeTab, mainPages, mainPage]);
 
   const [awaitingLaunch] = useState(() => new Set<string>());
+  const broadcastMainShellRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="pointer-events-none flex h-dvh w-full flex-col overflow-hidden bg-white select-none">
@@ -198,14 +200,24 @@ export function LiveBroadcastContent({
 
         <div className={broadcastPanelClass(activeTab === "main")}>
           {mainSlideIndex !== null ? (
-            <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
-              <LiveBracketViewer
-                templateId={templateId}
-                slideIndex={mainSlideIndex}
-                matches={matches}
-                matchResults={progress.matchResults}
+            <div
+              ref={broadcastMainShellRef}
+              className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+            >
+              <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+                <LiveBracketViewer
+                  templateId={templateId}
+                  slideIndex={mainSlideIndex}
+                  matches={matches}
+                  matchResults={progress.matchResults}
+                />
+              </LiveManagerDocumentPage>
+              <LiveBracketCrossPageOverlay
+                shellRef={broadcastMainShellRef}
+                activeKey={`${activeTab}:main:${mainPage}`}
+                slideSelector="[data-bracket-slide]"
               />
-            </LiveManagerDocumentPage>
+            </div>
           ) : null}
         </div>
 

@@ -9,8 +9,11 @@ from PIL import Image, ImageOps
 from engine.logo_trim import rogner_image
 
 MAX_LOGO_BYTES = 2 * 1024 * 1024
-MAX_LOGO_PX = 320
-UPLOAD_LOGO_MAX_PX = 240
+# Résolution conservée assez haute pour que le grand logo de la page de garde
+# reste net (il est affiché en grand), les petits pieds de page n'étant qu'un
+# sous-échantillonnage du même fichier.
+MAX_LOGO_PX = 720
+UPLOAD_LOGO_MAX_PX = 720
 
 
 def preparer_logo_fichier(chemin: Path, *, max_px: int = MAX_LOGO_PX) -> Path:

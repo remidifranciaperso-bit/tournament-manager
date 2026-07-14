@@ -16,7 +16,9 @@ import fitz
 
 ENGINE_FOOTER_RATIO = 0.042
 ENGINE_FOOTER_LOGO_WIDTH_RATIO = 1 / 3
-PDF_LOGO_MAX_PX = 220
+# Assez haut pour un grand logo de garde net ; les pieds de page réutilisent le
+# même flux image (déduplication PyMuPDF) donc l'impact taille est négligeable.
+PDF_LOGO_MAX_PX = 720
 
 # Emplacement garde par défaut (templates sans {{LOGO}}, ex. 32 éq.) :
 # grand, en haut, centré — fractions (x0, y0, x1, y1), calqué sur les autres templates.

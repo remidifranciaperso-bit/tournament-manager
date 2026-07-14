@@ -49,9 +49,11 @@ function measureLine(
 export function LiveBracketCrossPageOverlay({
   shellRef,
   activeKey,
+  slideSelector = ".visible.z-10 [data-bracket-slide]",
 }: {
   shellRef: RefObject<HTMLElement | null>;
   activeKey?: string;
+  slideSelector?: string;
 }) {
   const [line, setLine] = useState<LineSegment | null>(null);
 
@@ -60,7 +62,7 @@ export function LiveBracketCrossPageOverlay({
     if (!shellEl) return;
 
     const findVisibleSlide = () =>
-      shellEl.querySelector<HTMLElement>(".visible.z-10 [data-bracket-slide]");
+      shellEl.querySelector<HTMLElement>(slideSelector);
 
     const update = () => {
       const slideEl = findVisibleSlide();
@@ -128,7 +130,7 @@ export function LiveBracketCrossPageOverlay({
       window.removeEventListener("resize", update);
       window.removeEventListener("load", update);
     };
-  }, [shellRef, activeKey]);
+  }, [shellRef, activeKey, slideSelector]);
 
   if (!line) return null;
 
