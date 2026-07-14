@@ -58,9 +58,7 @@ export function LiveBracketCrossPageOverlay({
     if (!shellEl) return;
 
     const update = () => {
-      const slideEl = shellEl.querySelector<HTMLElement>(
-        ".visible.z-10 [data-bracket-slide]"
-      );
+      const slideEl = shellEl.querySelector<HTMLElement>("[data-bracket-slide]");
       if (!slideEl) {
         setLine(null);
         return;
@@ -85,9 +83,7 @@ export function LiveBracketCrossPageOverlay({
 
     const observer = new ResizeObserver(update);
     observer.observe(shellEl);
-    const slideEl = shellEl.querySelector<HTMLElement>(
-      ".visible.z-10 [data-bracket-slide]"
-    );
+    const slideEl = shellEl.querySelector<HTMLElement>("[data-bracket-slide]");
     if (slideEl) observer.observe(slideEl);
 
     window.addEventListener("resize", update);

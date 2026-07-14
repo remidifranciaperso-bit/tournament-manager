@@ -56,13 +56,6 @@ function DocumentTabPlaceholder({
   );
 }
 
-function stackedPanelClass(active: boolean) {
-  return [
-    "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
-    active ? "visible z-10" : "pointer-events-none invisible z-0",
-  ].join(" ");
-}
-
 function tabClass(active: boolean) {
   return [
     TAB_BASE,
@@ -332,7 +325,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               />
             </div>
             <div className="relative min-h-0 flex-1 overflow-hidden transition-none">
-              <div className={stackedPanelClass(primaryTab === "live")}>
+              {primaryTab === "live" ? (
                 <LiveMatchsEnCoursTab
                   terrains={meta.terrains}
                   matches={matches}
@@ -357,9 +350,9 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
                   clearForcedForTerrain={progress.clearForcedForTerrain}
                 />
-              </div>
+              ) : null}
 
-              <div className={stackedPanelClass(primaryTab === "upcoming")}>
+              {primaryTab === "upcoming" ? (
                 <LiveProchainsMatchsTab
                   terrains={meta.terrains}
                   matches={matches}
@@ -371,9 +364,9 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
                   applyForcedUpcoming={progress.applyForcedUpcoming}
                 />
-              </div>
+              ) : null}
 
-              <div className={stackedPanelClass(primaryTab === "avancement")}>
+              {primaryTab === "avancement" ? (
                 <LiveAvancementTab
                   elapsed={progress.elapsed}
                   done={progress.done}
@@ -386,17 +379,16 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   started={progress.started}
                   finished={progress.finished}
                 />
-              </div>
+              ) : null}
 
-              <div className={stackedPanelClass(primaryTab === "main")}>
-                {mainSlideIndex !== null ? (
+              {primaryTab === "main" ? (
+                mainSlideIndex !== null ? (
                   <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                     <LiveBracketViewer
                       templateId={templateId}
                       slideIndex={mainSlideIndex}
                       matches={matches}
                       matchResults={progress.matchResults}
-                      active={primaryTab === "main"}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -405,18 +397,17 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                     logoUrl={meta.logo_url}
                     message="Aucune page disponible pour cet onglet."
                   />
-                )}
-              </div>
+                )
+              ) : null}
 
-              <div className={stackedPanelClass(primaryTab === "classement")}>
-                {classementSlideIndex !== null ? (
+              {primaryTab === "classement" ? (
+                classementSlideIndex !== null ? (
                   <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                     <LiveBracketViewer
                       templateId={templateId}
                       slideIndex={classementSlideIndex}
                       matches={matches}
                       matchResults={progress.matchResults}
-                      active={primaryTab === "classement"}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -425,16 +416,11 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                     logoUrl={meta.logo_url}
                     message="Aucune page disponible pour cet onglet."
                   />
-                )}
-              </div>
+                )
+              ) : null}
 
-              <div
-                className={[
-                  stackedPanelClass(primaryTab === "planning"),
-                  "touch-manipulation",
-                ].join(" ")}
-              >
-                {planningSlideIndex !== null ? (
+              {primaryTab === "planning" ? (
+                planningSlideIndex !== null ? (
                   <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                     <LivePlanningTab
                       layoutFields={planning_layout[String(planningSlideIndex)] ?? []}
@@ -450,10 +436,10 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                     logoUrl={meta.logo_url}
                     message="Aucune page disponible pour cet onglet."
                   />
-                )}
-              </div>
+                )
+              ) : null}
 
-              <div className={stackedPanelClass(primaryTab === "final")}>
+              {primaryTab === "final" ? (
                 <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                   <LiveFinalRankingTab
                     meta={meta}
@@ -462,15 +448,15 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                     fields={fields}
                   />
                 </LiveManagerDocumentPage>
-              </div>
+              ) : null}
 
-              <div className={stackedPanelClass(primaryTab === "retransmission")}>
+              {primaryTab === "retransmission" ? (
                 <LiveRetransmissionTab
                   liveToken={live_token}
                   classementPageCount={classementPages.length}
-                  active={primaryTab === "retransmission"}
+                  active
                 />
-              </div>
+              ) : null}
             </div>
             {isBracketTab ? (
               <LiveBracketCrossPageOverlay shellRef={bracketShellRef} />

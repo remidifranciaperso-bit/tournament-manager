@@ -232,10 +232,10 @@ export function buildBracketConnectors(
   for (const field of feeds) {
     if (consumedFeeds.has(field.key)) continue;
 
+    const code = field.key.replace(/^(WIN|LOSE|SECOND|THIRD)_/, "");
+
     if (splitHalf && /^(WIN|LOSE)_H\d+$/.test(field.key)) continue;
     if (splitHalf && /^H\d+$/.test(code)) continue;
-
-    const code = field.key.replace(/^(WIN|LOSE|SECOND|THIRD)_/, "");
     if (NO_INCOMING_CONNECTOR_CODES.has(code)) continue;
     if (code === "D2" && field.key === "WIN_D2" && slotByCode.has("F")) continue;
 
