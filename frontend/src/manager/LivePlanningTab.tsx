@@ -21,7 +21,10 @@ interface LivePlanningTabProps {
   completed: Set<string>;
   matchResults: Record<string, StoredMatchResult>;
   onToggleDone: (code: string) => void;
+  /** Affiche la durée (lecture seule) au lieu de la case à cocher. */
   exportMode?: boolean;
+  /** Rendu statique pleine largeur pour la capture PDF (pas de mise à l'échelle). */
+  capture?: boolean;
 }
 
 /** Largeur de référence du tableau planning en live (avant mise à l'échelle). */
@@ -34,6 +37,7 @@ export function LivePlanningTab({
   matchResults,
   onToggleDone,
   exportMode = false,
+  capture = false,
 }: LivePlanningTabProps) {
   const pageRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -58,7 +62,7 @@ export function LivePlanningTab({
   }, [matches]);
 
   useLayoutEffect(() => {
-    if (exportMode) return;
+    if (capture) return;
 
     const page = pageRef.current;
     const card = cardRef.current;
@@ -84,7 +88,7 @@ export function LivePlanningTab({
     observer.observe(page);
     observer.observe(card);
     return () => observer.disconnect();
-  }, [exportMode, rows.length]);
+  }, [capture, rows.length]);
 
   const table = (
     <table
@@ -154,7 +158,7 @@ export function LivePlanningTab({
     </table>
   );
 
-  if (exportMode) {
+  if (capture) {
     return (
       <div className="bg-white px-3 py-4">
         <div className="w-full">

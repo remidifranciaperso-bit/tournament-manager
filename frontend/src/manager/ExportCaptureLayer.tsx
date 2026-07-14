@@ -40,6 +40,14 @@ export function ExportCaptureLayer({
   const { section, subPage } = target;
 
   if (section === "final") {
+    const finalPages = pageEntries(pageMap, "final");
+    const finalPageCount = Math.max(1, finalPages.length);
+    const chunk = Math.ceil(meta.nb_equipes / finalPageCount);
+    const placeRange: [number, number] = [
+      subPage * chunk + 1,
+      Math.min(meta.nb_equipes, (subPage + 1) * chunk),
+    ];
+
     return (
       <div
         id="export-capture-layer"
@@ -58,7 +66,8 @@ export function ExportCaptureLayer({
             matches={matches}
             matchResults={matchResults}
             fields={fields}
-            exportMode
+            capture
+            placeRange={finalPageCount > 1 ? placeRange : undefined}
           />
         </LiveManagerDocumentPage>
       </div>
@@ -95,6 +104,7 @@ export function ExportCaptureLayer({
             matchResults={matchResults}
             onToggleDone={() => {}}
             exportMode
+            capture
           />
         </LiveManagerDocumentPage>
       </div>

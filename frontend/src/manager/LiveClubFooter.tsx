@@ -28,7 +28,7 @@ export function LiveClubFooter({ club, logoUrl }: LiveClubFooterProps) {
           onError={() => setLogoFailed(true)}
         />
       ) : (
-        <p className="max-w-[34%] truncate text-center font-noto text-xs font-medium text-arena-700 sm:text-sm">
+        <p className="line-clamp-2 max-w-[90%] text-center font-noto text-xs font-medium leading-snug text-arena-700 sm:text-sm">
           {clubLabel}
         </p>
       )}

@@ -497,6 +497,8 @@ export function LiveCourtsRow({
   compact = false,
 }: LiveCourtsRowProps) {
   const slotRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
   const updateScale = useCallback(() => {
@@ -508,7 +510,14 @@ export function LiveCourtsRow({
     }
     const height = slot.clientHeight;
     if (height <= 0) return;
-    const next = Math.min(1, height / COMPACT_COURT_CARD_HEIGHT_PX);
+    const heightScale = height / COMPACT_COURT_CARD_HEIGHT_PX;
+
+    const availW = wrapperRef.current?.clientWidth ?? 0;
+    const naturalW = contentRef.current?.offsetWidth ?? 0;
+    const widthScale =
+      availW > 0 && naturalW > 0 ? availW / naturalW : 1;
+
+    const next = Math.min(1, heightScale, widthScale);
     setScale((prev) => (prev === next ? prev : next));
   }, [compact]);
 
@@ -519,6 +528,8 @@ export function LiveCourtsRow({
     updateScale();
     const observer = new ResizeObserver(() => updateScale());
     observer.observe(slot);
+    const content = contentRef.current;
+    if (content) observer.observe(content);
     return () => observer.disconnect();
   }, [updateScale]);
 
@@ -533,13 +544,17 @@ export function LiveCourtsRow({
       ].join(" ")}
     >
       <div
+        ref={wrapperRef}
         className={[
-          "flex w-full justify-center overflow-x-auto overscroll-x-contain",
-          compact ? "overflow-y-hidden" : "",
+          "flex w-full justify-center",
+          compact
+            ? "overflow-hidden"
+            : "overflow-x-auto overscroll-x-contain",
         ].join(" ")}
         style={compact ? { height: scaledHeight } : undefined}
       >
         <div
+          ref={contentRef}
           className="flex shrink-0 items-start justify-center gap-8 transition-none sm:gap-12"
           style={
             compact

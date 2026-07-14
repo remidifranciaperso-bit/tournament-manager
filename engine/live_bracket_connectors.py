@@ -140,7 +140,9 @@ def build_bracket_connector_paths(
             parent_codes.append(p2)
 
         for parent_code in parent_codes:
-            if code == "F" and parent_code == "D2":
+            # D2→F court-circuité seulement si D2 est sur une autre page
+            # (tableau 16 scindé). Sur un tableau 8 (D2 et F ensemble), on trace.
+            if code == "F" and parent_code == "D2" and "D2" not in slot_by_code:
                 continue
             if parent_code in slot_by_code and parent_code in box_layouts:
                 parents_by_child.setdefault(code, []).append(box_layouts[parent_code])

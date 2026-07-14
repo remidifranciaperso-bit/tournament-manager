@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { LiveProjectionPage } from "./LiveProjectionPage";
 
@@ -13,6 +14,9 @@ interface LiveAvancementTabProps {
   started: boolean;
   finished: boolean;
 }
+
+/** Largeur de référence de l'onglet avancement (avant mise à l'échelle). */
+const AVANCEMENT_BASE_WIDTH = 576;
 
 function averageMatchMinutes(
   results: Record<string, StoredMatchResult>,
@@ -70,10 +74,60 @@ export function LiveAvancementTab({
   const clampedPercent = Math.max(0, Math.min(100, percent));
   const avgMatch = averageMatchMinutes(matchResults, matchLaunches);
 
+  const pageRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [naturalHeight, setNaturalHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const page = pageRef.current;
+    const card = cardRef.current;
+    if (!page || !card) return;
+
+    const apply = () => {
+      const availW = page.clientWidth;
+      const availH = page.clientHeight;
+      const naturalH = card.offsetHeight;
+      if (availW <= 0 || availH <= 0 || naturalH <= 0) return;
+
+      const nextScale = Math.min(
+        1,
+        availW / AVANCEMENT_BASE_WIDTH,
+        availH / naturalH
+      );
+      setScale((prev) => (prev === nextScale ? prev : nextScale));
+      setNaturalHeight((prev) => (prev === naturalH ? prev : naturalH));
+    };
+
+    apply();
+    const observer = new ResizeObserver(() => apply());
+    observer.observe(page);
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <LiveProjectionPage club={club} logoUrl={logoUrl}>
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 sm:py-6">
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-4 sm:gap-5">
+      <div
+        ref={pageRef}
+        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-4 py-4 sm:px-6 sm:py-6"
+      >
+        <div
+          className="relative shrink-0"
+          style={{
+            width: AVANCEMENT_BASE_WIDTH * scale,
+            height: naturalHeight * scale || undefined,
+          }}
+        >
+        <div
+          ref={cardRef}
+          className="absolute left-0 top-0 flex w-full flex-col gap-4 sm:gap-5"
+          style={{
+            width: AVANCEMENT_BASE_WIDTH,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        >
           <section className="overflow-hidden rounded-[1.75rem] border border-arena-600/15 bg-white shadow-sm">
             <div className="bg-template-blue/[0.06] px-5 py-8 text-center sm:px-8 sm:py-10">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-arena-600/50">
@@ -129,6 +183,7 @@ export function LiveAvancementTab({
               }
             />
           </div>
+        </div>
         </div>
       </div>
     </LiveProjectionPage>
