@@ -70,6 +70,24 @@ def _contain_rect(zone: fitz.Rect, img_w: float, img_h: float) -> fitz.Rect:
     return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
 
 
+def _parse_crosspage_stub(
+    crosspage_stub: dict | None,
+) -> tuple[str | None, float | None]:
+    """(direction, midX%) du prolongement inter-pages D2↔F, ou (None, None)."""
+    if not crosspage_stub:
+        return None, None
+    direction = crosspage_stub.get("dir")
+    if direction not in ("up", "down"):
+        return None, None
+    try:
+        midx = float(crosspage_stub.get("midx"))
+    except (TypeError, ValueError):
+        return None, None
+    if not 0.0 <= midx <= 100.0:
+        return None, None
+    return direction, midx
+
+
 def composer_page_export(
     page: fitz.Page,
     source: fitz.Document,
@@ -80,6 +98,7 @@ def composer_page_export(
     footer_slide_index: int | None = None,
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
+    crosspage_stub: dict | None = None,
 ) -> None:
     """Fond blanc + bandeaux Engine (slide courante) + capture Manager."""
     rect = page.rect
@@ -92,6 +111,8 @@ def composer_page_export(
         rect.x1,
         rect.y1 - footer_h,
     )
+
+    stub_dir, stub_midx = _parse_crosspage_stub(crosspage_stub)
 
     page.draw_rect(rect, color=None, fill=(1, 1, 1), overlay=False)
 
@@ -108,7 +129,13 @@ def composer_page_export(
         0, 0, engine_rect.width, engine_rect.height * ENGINE_HEADER_RATIO
     )
     header_dest = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
-    _fit_pdf_clip(page, source, slide_index, header_clip, header_dest)
+    if stub_dir == "up":
+        # Partie basse d'un tableau sur deux feuilles : la bande haute Engine ne
+        # contient pas de titre mais le calque du tableau (boîte H5). On la
+        # laisse blanche ; le connecteur D2→F sera prolongé jusqu'au bord haut.
+        page.draw_rect(header_dest, color=None, fill=(1, 1, 1), overlay=False)
+    else:
+        _fit_pdf_clip(page, source, slide_index, header_clip, header_dest)
 
     footer_dest = fitz.Rect(rect.x0, rect.y1 - footer_h, rect.x1, rect.y1)
     if logo_bytes and logo_wh:
@@ -164,6 +191,32 @@ def composer_page_export(
                 fill=(1, 1, 1),
                 overlay=False,
             )
+
+        # Prolongement du connecteur inter-pages D2↔F jusqu'au bord de la feuille
+        # (tableau principal sur deux pages), pour la continuité une fois les
+        # deux feuilles assemblées. La capture s'arrête au bord de son encart :
+        # on complète dans la bande haute (partie basse) ou basse (partie haute).
+        if stub_dir and stub_midx is not None and draw_w > 0:
+            x = x0 + draw_w * stub_midx / 100.0
+            stroke = max(0.4, draw_w * 0.0008)
+            color = (0.0, 176 / 255.0, 240 / 255.0)
+            # Petit chevauchement dans la capture (même axe, même couleur, donc
+            # invisible) pour combler tout arrondi à la jonction bande↔capture.
+            overlap = max(4.0, draw_h * 0.02)
+            if stub_dir == "up":
+                page.draw_line(
+                    fitz.Point(x, rect.y0),
+                    fitz.Point(x, y0 + overlap),
+                    color=color,
+                    width=stroke,
+                )
+            else:  # down : partie haute → prolonge vers le bas
+                page.draw_line(
+                    fitz.Point(x, y0 + draw_h - overlap),
+                    fitz.Point(x, rect.y1),
+                    color=color,
+                    width=stroke,
+                )
     finally:
         image.close()
 

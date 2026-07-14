@@ -58,6 +58,7 @@ def exporter_pdf_tournoi_manager(
     page_map: dict,
     captures: dict[str, str],
     logo_path: Path | None = None,
+    crosspage_stubs: dict[str, dict] | None = None,
 ) -> None:
     source = fitz.open(str(source_pdf))
     merged = fitz.open()
@@ -104,6 +105,7 @@ def exporter_pdf_tournoi_manager(
                     ),
                     logo_bytes=logo_bytes,
                     logo_wh=logo_wh,
+                    crosspage_stub=(crosspage_stubs or {}).get(key),
                 )
 
         if merged.page_count == 0:

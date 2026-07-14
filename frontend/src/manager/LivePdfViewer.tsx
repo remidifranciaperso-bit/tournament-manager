@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { buildExportFormData } from "./captureExportPages";
+import {
+  buildExportFormData,
+  type CrossPageStub,
+  type ManagerExportCapture,
+} from "./captureExportPages";
 import type { ExportPhase } from "./exportCapture";
 import type { PlanningCheckboxOverlay } from "./planningOverlays";
 import type { LiveLayoutField, LiveMatch, LivePageMap, LiveTournamentMeta } from "./liveTypes";
@@ -15,6 +19,7 @@ export interface LivePdfExportPayload {
   planning_layout: Record<string, LiveLayoutField[]>;
   nb_equipes: number;
   captures?: Record<string, string>;
+  crosspage_stubs?: Record<string, CrossPageStub>;
 }
 
 function triggerPdfDownload(blob: Blob, filename: string) {
@@ -272,13 +277,14 @@ export async function downloadTournamentExportPdf(
   liveToken: string,
   _filename: string,
   payload: LivePdfExportPayload,
-  capturePages: () => Promise<Record<string, string>>,
+  capturePages: () => Promise<ManagerExportCapture>,
   onPhase?: (phase: ExportPhase) => void
 ): Promise<void> {
   onPhase?.("capture");
   let captures: Record<string, string>;
+  let crosspageStubs: Record<string, CrossPageStub>;
   try {
-    captures = await capturePages();
+    ({ captures, crosspageStubs } = await capturePages());
   } catch (error) {
     onPhase?.("idle");
     throw error;
@@ -293,7 +299,7 @@ export async function downloadTournamentExportPdf(
 
   const { captures: _omit, ...payloadWithoutCaptures } = payload;
   const form = buildExportFormData(
-    { ...payloadWithoutCaptures },
+    { ...payloadWithoutCaptures, crosspage_stubs: crosspageStubs },
     captures
   );
 

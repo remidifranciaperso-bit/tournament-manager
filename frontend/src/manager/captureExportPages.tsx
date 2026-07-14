@@ -59,11 +59,33 @@ function captureSelector(
   return `${EXPORT_LAYER} [data-export-capture="bracket"]`;
 }
 
+export interface CrossPageStub {
+  midx: number;
+  dir: "up" | "down";
+}
+
+export interface ManagerExportCapture {
+  captures: Record<string, string>;
+  crosspageStubs: Record<string, CrossPageStub>;
+}
+
+function readCrossPageStub(target: HTMLElement): CrossPageStub | null {
+  const slide = target.querySelector<HTMLElement>("[data-bracket-slide]");
+  if (!slide) return null;
+  const midRaw = slide.getAttribute("data-crosspage-midx");
+  const dir = slide.getAttribute("data-crosspage-dir");
+  if (midRaw == null || (dir !== "up" && dir !== "down")) return null;
+  const midx = Number.parseFloat(midRaw);
+  if (!Number.isFinite(midx)) return null;
+  return { midx, dir };
+}
+
 export async function captureManagerExportPages(
   pageMap: LivePageMap,
   navigation: ScreenCaptureNavigation
-): Promise<Record<string, string>> {
+): Promise<ManagerExportCapture> {
   const captures: Record<string, string> = {};
+  const crosspageStubs: Record<string, CrossPageStub> = {};
 
   try {
     for (const section of ["main", "classement", "planning", "final"] as const) {
@@ -77,6 +99,10 @@ export async function captureManagerExportPages(
         const target = await waitForScreenTarget(captureSelector(section));
         const key = captureKey(section, entry.index);
         captures[key] = await captureElementImage(target, { highQuality: true });
+        if (section === "main") {
+          const stub = readCrossPageStub(target);
+          if (stub) crosspageStubs[key] = stub;
+        }
       }
     }
   } finally {
@@ -85,7 +111,7 @@ export async function captureManagerExportPages(
     });
   }
 
-  return captures;
+  return { captures, crosspageStubs };
 }
 
 function dataUrlToBlob(dataUrl: string): Blob {

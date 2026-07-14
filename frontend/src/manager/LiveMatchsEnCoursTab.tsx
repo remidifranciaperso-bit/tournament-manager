@@ -13,6 +13,7 @@ import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
 import type { ExportPhase } from "./exportCapture";
 import { downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
+import type { ManagerExportCapture } from "./captureExportPages";
 import { LiveProjectionPage } from "./LiveProjectionPage";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { useMatchScoreDraft } from "./useMatchScoreDraft";
@@ -81,7 +82,7 @@ interface LiveMatchsEnCoursTabProps {
   liveToken: string;
   pdfFilename: string;
   exportPayload: LivePdfExportPayload;
-  captureExportPages: () => Promise<Record<string, string>>;
+  captureExportPages: () => Promise<ManagerExportCapture>;
   exportingPdf: boolean;
   onExportPhaseChange: (phase: ExportPhase) => void;
   onPdfExported?: () => void;

@@ -56,6 +56,7 @@ class LivePdfExportBody(BaseModel):
     planning_layout: dict | None = None
     nb_equipes: int | None = None
     captures: dict[str, str] | None = None
+    crosspage_stubs: dict[str, dict] | None = None
 
 
 app = FastAPI(title="Tournament Manager")
@@ -562,6 +563,7 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
             page_map=carte,
             captures=captures,
             logo_path=chemin_logo(token),
+            crosspage_stubs=(body.crosspage_stubs if body else None),
         )
     except (RuntimeError, FileNotFoundError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
