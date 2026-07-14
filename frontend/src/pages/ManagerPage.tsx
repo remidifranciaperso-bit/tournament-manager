@@ -41,7 +41,7 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-import { MANAGER_PREVIEW_BUILD } from "../managerPreviewBuild";
+const MANAGER_BUILD = "manager-preview-95";
 
 /** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack · 11 formats pack */
 const STEP_PARTICIPANTS = 2;
@@ -381,7 +381,7 @@ export default function ManagerPage() {
           </button>
           <p className="text-sm font-medium text-white/55">Tournoi live</p>
           <p className="mt-2 text-[10px] uppercase tracking-widest text-white/25">
-            build {MANAGER_PREVIEW_BUILD}
+            build {MANAGER_BUILD}
           </p>
         </div>
         <Stepper

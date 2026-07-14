@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useMemo } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 import {
   parseBracketSlide,
@@ -269,7 +269,6 @@ interface LiveBracketSlideProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   renderWidth: number;
-  active?: boolean;
 }
 
 export function LiveBracketSlide({
@@ -277,11 +276,9 @@ export function LiveBracketSlide({
   matches,
   matchResults,
   renderWidth,
-  active = true,
 }: LiveBracketSlideProps) {
   const crossPageMetrics = useOptionalBracketCrossPageMetrics();
   const setCrossPageMetrics = crossPageMetrics?.setMetrics;
-  const metricsOwnerId = useId();
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
 
@@ -328,28 +325,23 @@ export function LiveBracketSlide({
   );
 
   useLayoutEffect(() => {
-    if (!setCrossPageMetrics || !active) return;
+    if (!setCrossPageMetrics) return;
 
     if (viewportCrossPageStub) {
-      setCrossPageMetrics(
-        {
-          stub: viewportCrossPageStub,
-          slideWidth: renderWidth,
-          slideHeight: renderHeight,
-        },
-        metricsOwnerId
-      );
+      setCrossPageMetrics({
+        stub: viewportCrossPageStub,
+        slideWidth: renderWidth,
+        slideHeight: renderHeight,
+      });
     } else {
-      setCrossPageMetrics(null, metricsOwnerId);
+      setCrossPageMetrics(null);
     }
 
     return () => {
-      setCrossPageMetrics(null, metricsOwnerId);
+      setCrossPageMetrics(null);
     };
   }, [
-    active,
     setCrossPageMetrics,
-    metricsOwnerId,
     viewportCrossPageStub,
     renderWidth,
     renderHeight,

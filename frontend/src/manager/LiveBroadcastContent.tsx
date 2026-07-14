@@ -27,6 +27,13 @@ interface LiveBroadcastContentProps {
   activeSubPage?: number;
 }
 
+function broadcastPanelClass(active: boolean) {
+  return [
+    "absolute inset-0 flex min-h-0 flex-col overflow-hidden",
+    active ? "z-10" : "pointer-events-none z-0 opacity-0",
+  ].join(" ");
+}
+
 export function LiveBroadcastContent({
   liveData,
   activeTab,
@@ -121,9 +128,11 @@ export function LiveBroadcastContent({
         />
       </div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        {activeTab === "cover" ? <LivePdfPage pageUrl={coverPageUrl} /> : null}
+        <div className={broadcastPanelClass(activeTab === "cover")}>
+          <LivePdfPage pageUrl={coverPageUrl} />
+        </div>
 
-        {activeTab === "live" ? (
+        <div className={broadcastPanelClass(activeTab === "live")}>
           <LiveMatchsEnCoursTab
             broadcast
             terrains={meta.terrains}
@@ -155,9 +164,9 @@ export function LiveBroadcastContent({
             forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
             clearForcedForTerrain={() => {}}
           />
-        ) : null}
+        </div>
 
-        {activeTab === "upcoming" ? (
+        <div className={broadcastPanelClass(activeTab === "upcoming")}>
           <LiveProchainsMatchsTab
             broadcast
             terrains={meta.terrains}
@@ -170,9 +179,9 @@ export function LiveBroadcastContent({
             forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
             applyForcedUpcoming={() => {}}
           />
-        ) : null}
+        </div>
 
-        {activeTab === "avancement" ? (
+        <div className={broadcastPanelClass(activeTab === "avancement")}>
           <LiveAvancementTab
             elapsed={progress.elapsed}
             done={progress.done}
@@ -185,44 +194,50 @@ export function LiveBroadcastContent({
             started={progress.started}
             finished={progress.finished}
           />
-        ) : null}
+        </div>
 
-        {activeTab === "main" && mainSlideIndex !== null ? (
-          <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
-            <LiveBracketViewer
-              templateId={templateId}
-              slideIndex={mainSlideIndex}
-              matches={matches}
-              matchResults={progress.matchResults}
-            />
-          </LiveManagerDocumentPage>
-        ) : null}
+        <div className={broadcastPanelClass(activeTab === "main")}>
+          {mainSlideIndex !== null ? (
+            <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+              <LiveBracketViewer
+                templateId={templateId}
+                slideIndex={mainSlideIndex}
+                matches={matches}
+                matchResults={progress.matchResults}
+              />
+            </LiveManagerDocumentPage>
+          ) : null}
+        </div>
 
-        {activeTab === "classement" && classementSlideIndex !== null ? (
-          <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
-            <LiveBracketViewer
-              templateId={templateId}
-              slideIndex={classementSlideIndex}
-              matches={matches}
-              matchResults={progress.matchResults}
-            />
-          </LiveManagerDocumentPage>
-        ) : null}
+        <div className={broadcastPanelClass(activeTab === "classement")}>
+          {classementSlideIndex !== null ? (
+            <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+              <LiveBracketViewer
+                templateId={templateId}
+                slideIndex={classementSlideIndex}
+                matches={matches}
+                matchResults={progress.matchResults}
+              />
+            </LiveManagerDocumentPage>
+          ) : null}
+        </div>
 
-        {activeTab === "planning" && planningSlideIndex !== null ? (
-          <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
-            <LivePlanningTab
-              layoutFields={planning_layout[String(planningSlideIndex)] ?? []}
-              matches={matches}
-              completed={progress.completed}
-              matchResults={progress.matchResults}
-              onToggleDone={() => {}}
-              exportMode
-            />
-          </LiveManagerDocumentPage>
-        ) : null}
+        <div className={broadcastPanelClass(activeTab === "planning")}>
+          {planningSlideIndex !== null ? (
+            <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+              <LivePlanningTab
+                layoutFields={planning_layout[String(planningSlideIndex)] ?? []}
+                matches={matches}
+                completed={progress.completed}
+                matchResults={progress.matchResults}
+                onToggleDone={() => {}}
+                exportMode
+              />
+            </LiveManagerDocumentPage>
+          ) : null}
+        </div>
 
-        {activeTab === "final" ? (
+        <div className={broadcastPanelClass(activeTab === "final")}>
           <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
             <LiveFinalRankingTab
               meta={meta}
@@ -231,7 +246,7 @@ export function LiveBroadcastContent({
               fields={fields}
             />
           </LiveManagerDocumentPage>
-        ) : null}
+        </div>
       </div>
     </div>
   );

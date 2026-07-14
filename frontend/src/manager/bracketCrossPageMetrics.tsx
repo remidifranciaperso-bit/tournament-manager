@@ -3,7 +3,6 @@ import {
   useCallback,
   useContext,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -31,10 +30,7 @@ function metricsEqual(
 
 interface BracketCrossPageMetricsContextValue {
   metrics: BracketCrossPageMetrics | null;
-  setMetrics: (
-    metrics: BracketCrossPageMetrics | null,
-    ownerId?: string
-  ) => void;
+  setMetrics: (metrics: BracketCrossPageMetrics | null) => void;
 }
 
 const BracketCrossPageMetricsContext =
@@ -48,22 +44,10 @@ export function BracketCrossPageMetricsProvider({
   const [metrics, setMetricsState] = useState<BracketCrossPageMetrics | null>(
     null
   );
-  const ownerRef = useRef<string | null>(null);
 
-  const setMetrics = useCallback(
-    (next: BracketCrossPageMetrics | null, ownerId?: string) => {
-      setMetricsState((prev) => {
-        if (next === null) {
-          if (ownerId != null && ownerRef.current !== ownerId) return prev;
-          ownerRef.current = null;
-          return null;
-        }
-        ownerRef.current = ownerId ?? null;
-        return metricsEqual(prev, next) ? prev : next;
-      });
-    },
-    []
-  );
+  const setMetrics = useCallback((next: BracketCrossPageMetrics | null) => {
+    setMetricsState((prev) => (metricsEqual(prev, next) ? prev : next));
+  }, []);
 
   const value = useMemo(
     () => ({ metrics, setMetrics }),
