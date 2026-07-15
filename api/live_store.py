@@ -1,18 +1,48 @@
 import gc
 import json
+import os
 import shutil
 import time
 import uuid
 from pathlib import Path
 
-BASE_LIVE_DIR = Path(__file__).resolve().parent.parent / "exports" / "_live"
-TTL_SECONDS = 6 * 60 * 60
+
+def _base_live_dir() -> Path:
+    """Racine des sessions live.
+
+    Sur un déploiement avec disque persistant (``LIVE_DATA_DIR``), les sessions
+    survivent aux redéploiements et aux redémarrages — indispensable pour les
+    tournois sur plusieurs jours. Sinon, repli sur ``exports/_live`` (local).
+    """
+    custom = os.environ.get("LIVE_DATA_DIR")
+    if custom:
+        return Path(custom)
+    return Path(__file__).resolve().parent.parent / "exports" / "_live"
+
+
+BASE_LIVE_DIR = _base_live_dir()
+# Durée de vie longue : un tournoi peut s'étaler sur plusieurs jours (poules
+# J1, tableau J2/J3…). On ne purge qu'au bout d'une semaine d'inactivité.
+TTL_SECONDS = 7 * 24 * 60 * 60
+# Rafraîchit au plus une fois par heure le mtime d'une session consultée, pour
+# la maintenir « active » sans I/O superflue à chaque requête.
+_TOUCH_MIN_INTERVAL = 60 * 60
 
 
 def _live_root() -> Path:
     dossier = BASE_LIVE_DIR
     dossier.mkdir(parents=True, exist_ok=True)
     return dossier
+
+
+def _toucher_session(dossier: Path) -> None:
+    """Repousse l'expiration d'une session tant qu'elle est consultée/jouée."""
+    try:
+        now = time.time()
+        if now - dossier.stat().st_mtime >= _TOUCH_MIN_INTERVAL:
+            os.utime(dossier, (now, now))
+    except OSError:
+        pass
 
 
 def nettoyer_sessions_expirees() -> None:
@@ -88,7 +118,10 @@ def chemin_session(token: str) -> Path | None:
     if not token or not token.isalnum():
         return None
     dossier = _live_root() / token
-    return dossier if dossier.is_dir() else None
+    if not dossier.is_dir():
+        return None
+    _toucher_session(dossier)
+    return dossier
 
 
 def chemin_pdf_complet(token: str) -> Path | None:

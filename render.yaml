@@ -43,6 +43,13 @@ services:
     dockerContext: .
     healthCheckPath: /api/health
     autoDeploy: true
+    # Disque persistant : les sessions live (full.pdf + page_map) survivent aux
+    # redéploiements et redémarrages. Indispensable pour les tournois sur
+    # plusieurs jours (sinon « PDF live introuvable » à l'export le lendemain).
+    disk:
+      name: live-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: DEPLOY_TARGET
         value: manager-preview
@@ -52,6 +59,8 @@ services:
         value: libreoffice
       - key: PDF_IMAGE_MAX_DPI
         value: "96"
+      - key: LIVE_DATA_DIR
+        value: /data/_live
       - key: OWNER_EMAIL
         value: remi.difrancia.perso@gmail.com
       - key: EMAIL_FROM
