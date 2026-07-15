@@ -37,6 +37,16 @@ function broadcastPanelClass(active: boolean) {
   ].join(" ");
 }
 
+// La page de garde occupe toute la fenêtre (indépendamment du bandeau titre)
+// pour rester centrée et éviter tout redimensionnement — donc tout effet de
+// zoom — quand le défilement automatique revient sur elle.
+function coverOverlayClass(active: boolean) {
+  return [
+    "absolute inset-0 flex min-h-0 flex-col overflow-hidden bg-white",
+    active ? "z-20" : "pointer-events-none z-0 opacity-0",
+  ].join(" ");
+}
+
 export function LiveBroadcastContent({
   liveData,
   activeTab,
@@ -166,7 +176,12 @@ export function LiveBroadcastContent({
       className="pointer-events-none relative flex h-dvh w-full flex-col overflow-hidden bg-white select-none"
     >
       {/* La page de garde occupe toute la fenêtre (aucun titre) pour rester
-          centrée verticalement ; les autres onglets gardent leur bandeau titre. */}
+          centrée verticalement ; les autres onglets gardent leur bandeau titre.
+          Rendue en surimpression plein écran pour que sa taille ne dépende pas
+          du bandeau titre (sinon zoom au retour du défilement). */}
+      <div className={coverOverlayClass(activeTab === "cover")}>
+        <LivePdfPage pageUrl={coverPageUrl} />
+      </div>
       {activeTab !== "cover" ? (
         <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
           <LiveTabTitle
@@ -176,10 +191,6 @@ export function LiveBroadcastContent({
         </div>
       ) : null}
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        <div className={broadcastPanelClass(activeTab === "cover")}>
-          <LivePdfPage pageUrl={coverPageUrl} />
-        </div>
-
         <div className={broadcastPanelClass(activeTab === "poules")}>
           <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
             <LivePoolsTab
