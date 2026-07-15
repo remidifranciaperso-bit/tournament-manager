@@ -398,6 +398,7 @@ export function LiveMatchsEnCoursTab({
           emptyLabel=""
           theme="light"
           compact
+          verticalCenter={broadcast}
           getTerrainLibrePrompt={
             broadcast
               ? undefined

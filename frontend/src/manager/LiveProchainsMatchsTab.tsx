@@ -127,6 +127,7 @@ export function LiveProchainsMatchsTab({
             emptyLabel=""
             theme="light"
             compact
+            verticalCenter={broadcast}
             renderFooter={(terrain, match) => {
               if (broadcast) return <CourtFooterSlot compact />;
               // Terrain avec un prochain match : heure prévue + forçage.

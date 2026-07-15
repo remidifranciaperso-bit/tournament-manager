@@ -484,6 +484,8 @@ interface LiveCourtsRowProps {
   emptyLabel?: string;
   theme?: LiveCourtTheme;
   compact?: boolean;
+  /** Centre verticalement les terrains dans l'espace disponible (projection). */
+  verticalCenter?: boolean;
 }
 
 export function LiveCourtsRow({
@@ -495,6 +497,7 @@ export function LiveCourtsRow({
   emptyLabel,
   theme = "dark",
   compact = false,
+  verticalCenter = false,
 }: LiveCourtsRowProps) {
   const slotRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -540,7 +543,11 @@ export function LiveCourtsRow({
       ref={slotRef}
       className={[
         "flex min-h-0 flex-1 justify-center overflow-hidden px-4 sm:px-8",
-        compact ? "items-start pt-0" : "items-center py-6",
+        compact
+          ? verticalCenter
+            ? "items-center"
+            : "items-start pt-0"
+          : "items-center py-6",
       ].join(" ")}
     >
       <div
