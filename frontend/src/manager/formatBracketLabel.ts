@@ -69,17 +69,26 @@ export function formatFeedKey(key: string): string {
   return key;
 }
 
+/**
+ * Normalise un code de balise vers la convention des templates (majuscules,
+ * underscores). « H1 » → « H1 » ; « Poule A » → « POULE_A » (clé feed
+ * ``WIN_POULE_A``/``SECOND_POULE_A`` des tableaux à poules).
+ */
+function normalizeFeedCode(code: string): string {
+  return code.trim().toUpperCase().replace(/\s+/g, "_");
+}
+
 /** Déduit la clé WIN_/LOSE_ d'un libellé « Vainqueur H1 » / « Perdant Q2 ». */
 export function feedKeyFromTeamLabel(label: string): string | null {
   const text = label.trim();
   const win = text.match(/^Vainqueur\s+(.+)$/i);
-  if (win) return `WIN_${win[1].trim()}`;
+  if (win) return `WIN_${normalizeFeedCode(win[1])}`;
   const lose = text.match(/^Perdant\s+(.+)$/i);
-  if (lose) return `LOSE_${lose[1].trim()}`;
+  if (lose) return `LOSE_${normalizeFeedCode(lose[1])}`;
   const second = text.match(/^(?:Deuxième|Second)\s+(.+)$/i);
-  if (second) return `SECOND_${second[1].trim()}`;
+  if (second) return `SECOND_${normalizeFeedCode(second[1])}`;
   const third = text.match(/^Troisième\s+(.+)$/i);
-  if (third) return `THIRD_${third[1].trim()}`;
+  if (third) return `THIRD_${normalizeFeedCode(third[1])}`;
   return null;
 }
 
