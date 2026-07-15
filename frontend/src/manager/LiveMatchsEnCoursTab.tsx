@@ -108,6 +108,8 @@ interface LiveMatchsEnCoursTabProps {
   setAwaitingLaunch: React.Dispatch<React.SetStateAction<Set<string>>>;
   forcedUpcomingByTerrain: Record<string, string>;
   clearForcedForTerrain: (terrain: string) => void;
+  /** Réaffecte un match forcé lancé sur un terrain libre autre que le sien. */
+  assignMatchTerrain: (code: string, terrain: string) => void;
   /** Mode affichage public (retransmission) : sans saisie ni actions organisateur. */
   broadcast?: boolean;
 }
@@ -135,6 +137,7 @@ export function LiveMatchsEnCoursTab({
   setAwaitingLaunch,
   forcedUpcomingByTerrain,
   clearForcedForTerrain,
+  assignMatchTerrain,
   broadcast = false,
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
@@ -202,7 +205,15 @@ export function LiveMatchsEnCoursTab({
 
   const launchNextOnTerrain = useCallback((terrain: string) => {
     const pending = nextLaunchByTerrain.get(terrain);
-    if (pending) onRecordMatchLaunch(pending.code);
+    if (pending) {
+      onRecordMatchLaunch(pending.code);
+      // Match forcé lancé sur un terrain autre que le sien : on le rattache au
+      // terrain choisi pour qu'il s'affiche bien « en cours » sur ce terrain.
+      const liveMatch = matchLookup.get(pending.code);
+      if (liveMatch && liveMatch.terrain !== terrain) {
+        assignMatchTerrain(pending.code, terrain);
+      }
+    }
     clearForcedForTerrain(terrain);
     setAwaitingLaunch((prev) => {
       const next = new Set(prev);
@@ -215,7 +226,13 @@ export function LiveMatchsEnCoursTab({
       next.delete(terrain);
       return next;
     });
-  }, [nextLaunchByTerrain, onRecordMatchLaunch, clearForcedForTerrain]);
+  }, [
+    nextLaunchByTerrain,
+    onRecordMatchLaunch,
+    clearForcedForTerrain,
+    matchLookup,
+    assignMatchTerrain,
+  ]);
 
   const handleLaunchNextOnTerrain = useCallback(
     (terrain: string) => {

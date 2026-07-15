@@ -136,6 +136,20 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     meta.nb_equipes,
   ]);
 
+  // Matchs réaffectés à un autre terrain via « forcer un match » sur un terrain
+  // libre (rattrapage de retard) : on applique l'override de terrain pour que le
+  // match apparaisse bien sur le terrain choisi dans les onglets « en cours » et
+  // « suivants ». Le reste (tableau, planning, poules…) reste inchangé.
+  const courtMatches = useMemo(() => {
+    const overrides = progress.terrainOverrides;
+    if (!overrides || Object.keys(overrides).length === 0) return matches;
+    return matches.map((m) =>
+      overrides[m.code] && overrides[m.code] !== m.terrain
+        ? { ...m, terrain: overrides[m.code] }
+        : m
+    );
+  }, [matches, progress.terrainOverrides]);
+
   const { layout: templateLayout } = useTemplateLayout(templateId);
 
   // Slides de poules (boîtes PA_M*/PB_M*…) : sortis du « Tableau principal »
@@ -418,7 +432,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               <div className={stackedPanelClass(primaryTab === "live")}>
                 <LiveMatchsEnCoursTab
                   terrains={meta.terrains}
-                  matches={matches}
+                  matches={courtMatches}
                   meta={meta}
                   started={progress.started}
                   completed={progress.completed}
@@ -441,13 +455,14 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   setAwaitingLaunch={setAwaitingLaunch}
                   forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
                   clearForcedForTerrain={progress.clearForcedForTerrain}
+                  assignMatchTerrain={progress.assignMatchTerrain}
                 />
               </div>
 
               <div className={stackedPanelClass(primaryTab === "upcoming")}>
                 <LiveProchainsMatchsTab
                   terrains={meta.terrains}
-                  matches={matches}
+                  matches={courtMatches}
                   meta={meta}
                   completed={progress.completed}
                   matchResults={progress.matchResults}

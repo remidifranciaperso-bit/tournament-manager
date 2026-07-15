@@ -13,6 +13,9 @@ interface ProgressState {
   results: Record<string, StoredMatchResult>;
   launches?: Record<string, number>;
   forcedUpcoming?: Record<string, string>;
+  /** Réaffectation de terrain (code match → terrain) pour un match forcé
+   * lancé sur un terrain autre que le sien (rattrapage de retard). */
+  terrainOverrides?: Record<string, string>;
 }
 
 function storageKey(liveToken: string): string {
@@ -81,12 +84,25 @@ export function clearLiveProgress(liveToken: string): void {
 function loadState(liveToken: string): ProgressState {
   try {
     const raw = localStorage.getItem(storageKey(liveToken));
-    if (!raw) return { completed: [], results: {}, launches: {}, forcedUpcoming: {} };
+    if (!raw)
+      return {
+        completed: [],
+        results: {},
+        launches: {},
+        forcedUpcoming: {},
+        terrainOverrides: {},
+      };
 
     const parsed = JSON.parse(raw) as ProgressState | string[];
 
     if (Array.isArray(parsed)) {
-      return { completed: parsed, results: {}, launches: {}, forcedUpcoming: {} };
+      return {
+        completed: parsed,
+        results: {},
+        launches: {},
+        forcedUpcoming: {},
+        terrainOverrides: {},
+      };
     }
 
     return {
@@ -94,9 +110,16 @@ function loadState(liveToken: string): ProgressState {
       results: parsed.results ?? {},
       launches: parsed.launches ?? {},
       forcedUpcoming: parsed.forcedUpcoming ?? {},
+      terrainOverrides: parsed.terrainOverrides ?? {},
     };
   } catch {
-    return { completed: [], results: {}, launches: {}, forcedUpcoming: {} };
+    return {
+      completed: [],
+      results: {},
+      launches: {},
+      forcedUpcoming: {},
+      terrainOverrides: {},
+    };
   }
 }
 
@@ -205,6 +228,11 @@ export function useLiveProgress(
   >(() => loadState(liveToken).forcedUpcoming ?? {});
   const forcedUpcomingRef = useRef(forcedUpcomingByTerrain);
   forcedUpcomingRef.current = forcedUpcomingByTerrain;
+  const [terrainOverrides, setTerrainOverrides] = useState<
+    Record<string, string>
+  >(() => loadState(liveToken).terrainOverrides ?? {});
+  const terrainOverridesRef = useRef(terrainOverrides);
+  terrainOverridesRef.current = terrainOverrides;
   const [startedAt, setStartedAt] = useState<number | null>(() =>
     loadStartedAt(liveToken)
   );
@@ -229,6 +257,7 @@ export function useLiveProgress(
     setMatchResults(state.results);
     setMatchLaunches(state.launches ?? {});
     setForcedUpcomingByTerrain(state.forcedUpcoming ?? {});
+    setTerrainOverrides(state.terrainOverrides ?? {});
     setActiveDay(loadActiveDay(liveToken));
     const nextStartedAt = loadStartedAt(liveToken);
     setStartedAt(nextStartedAt);
@@ -253,6 +282,7 @@ export function useLiveProgress(
       setMatchResults(state.results);
       setMatchLaunches(state.launches ?? {});
       setForcedUpcomingByTerrain(state.forcedUpcoming ?? {});
+      setTerrainOverrides(state.terrainOverrides ?? {});
       setActiveDay(loadActiveDay(liveToken));
       const nextStartedAt = loadStartedAt(liveToken);
       setStartedAt(nextStartedAt);
@@ -327,6 +357,7 @@ export function useLiveProgress(
         results: resultsNext,
         launches: launchesNext,
         forcedUpcoming: forcedUpcomingRef.current,
+        terrainOverrides: terrainOverridesRef.current,
       });
     },
     [liveToken]
@@ -376,6 +407,27 @@ export function useLiveProgress(
         const next = { ...prev };
         delete next[terrain];
         forcedUpcomingRef.current = next;
+        setCompleted((completedPrev) => {
+          setMatchResults((resultsPrev) => {
+            persistState(completedPrev, resultsPrev, matchLaunches);
+            return resultsPrev;
+          });
+          return completedPrev;
+        });
+        return next;
+      });
+    },
+    [matchLaunches, persistState]
+  );
+
+  /** Réaffecte un match à un terrain (match forcé lancé sur un terrain libre
+   * autre que le sien). Persisté pour survivre aux rechargements. */
+  const assignMatchTerrain = useCallback(
+    (code: string, terrain: string) => {
+      setTerrainOverrides((prev) => {
+        if (prev[code] === terrain) return prev;
+        const next = { ...prev, [code]: terrain };
+        terrainOverridesRef.current = next;
         setCompleted((completedPrev) => {
           setMatchResults((resultsPrev) => {
             persistState(completedPrev, resultsPrev, matchLaunches);
@@ -533,6 +585,8 @@ export function useLiveProgress(
     forceUpcomingMatch,
     applyForcedUpcoming,
     clearForcedForTerrain,
+    terrainOverrides,
+    assignMatchTerrain,
     toggleMatch,
     completeMatch,
     recordMatchLaunch,

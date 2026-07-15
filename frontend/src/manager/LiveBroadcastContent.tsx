@@ -56,6 +56,17 @@ export function LiveBroadcastContent({
   });
   const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
 
+  // Reflète les matchs forcés sur un terrain libre dans les onglets terrains.
+  const courtMatches = useMemo(() => {
+    const overrides = progress.terrainOverrides;
+    if (!overrides || Object.keys(overrides).length === 0) return matches;
+    return matches.map((m) =>
+      overrides[m.code] && overrides[m.code] !== m.terrain
+        ? { ...m, terrain: overrides[m.code] }
+        : m
+    );
+  }, [matches, progress.terrainOverrides]);
+
   const coverPageUrl = `/api/live/${live_token}/page/0.png?dpi=240`;
 
   useEffect(() => {
@@ -188,7 +199,7 @@ export function LiveBroadcastContent({
           <LiveMatchsEnCoursTab
             broadcast
             terrains={meta.terrains}
-            matches={matches}
+            matches={courtMatches}
             meta={meta}
             started={progress.started}
             completed={progress.completed}
@@ -217,6 +228,7 @@ export function LiveBroadcastContent({
             setAwaitingLaunch={() => undefined}
             forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
             clearForcedForTerrain={() => {}}
+            assignMatchTerrain={() => {}}
           />
         </div>
 
@@ -224,7 +236,7 @@ export function LiveBroadcastContent({
           <LiveProchainsMatchsTab
             broadcast
             terrains={meta.terrains}
-            matches={matches}
+            matches={courtMatches}
             meta={meta}
             completed={progress.completed}
             matchResults={progress.matchResults}
