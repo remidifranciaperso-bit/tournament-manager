@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
-import { useTemplateLayout } from "./useTemplateLayout";
-import {
-  poolLetters,
-  poolSlideIndicesFromLayout,
-} from "./buildPoolStandings";
+import { poolLetters } from "./buildPoolStandings";
 import { LivePoolsTab } from "./LivePoolsTab";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveBracketViewer } from "./LiveBracketViewer";
@@ -69,29 +65,28 @@ export function LiveBroadcastContent({
     coverPage.src = coverPageUrl;
   }, [templateId, coverPageUrl]);
 
-  const { layout: templateLayout } = useTemplateLayout(templateId);
-  const poolSlideIndices = useMemo(
-    () => poolSlideIndicesFromLayout(templateLayout),
-    [templateLayout]
-  );
   const poolLettersList = useMemo(() => poolLetters(matches), [matches]);
 
   const mainPages = useMemo(() => {
-    const filtered = pageEntries(page_map, "main").filter(
-      (entry) => !poolSlideIndices.has(entry.index)
-    );
-    if (poolSlideIndices.size === 0) return filtered;
-    if (filtered.length === 1) {
-      return [{ ...filtered[0], label: "Tableau principal" }];
+    const all = pageEntries(page_map, "main");
+    const poolCount = poolLettersList.length;
+    if (poolCount === 0) return all;
+    // Format à poules : les poolCount premières pages sont les poules (onglet
+    // dédié) ; le bracket restant est ré-étiqueté comme les formats sans poule
+    // (1 page = Tableau principal, 2 = Partie haute/basse → titre « Tableau
+    // principal » en haut, rien en bas via formatPageBrushLabel).
+    const bracket = all.slice(poolCount);
+    if (bracket.length === 1) {
+      return [{ ...bracket[0], label: "Tableau principal" }];
     }
-    if (filtered.length === 2) {
+    if (bracket.length === 2) {
       return [
-        { ...filtered[0], label: "Partie haute" },
-        { ...filtered[1], label: "Partie basse" },
+        { ...bracket[0], label: "Partie haute" },
+        { ...bracket[1], label: "Partie basse" },
       ];
     }
-    return filtered;
-  }, [page_map, poolSlideIndices]);
+    return bracket;
+  }, [page_map, poolLettersList]);
   const classementPages = useMemo(
     () => pageEntries(page_map, "classement"),
     [page_map]

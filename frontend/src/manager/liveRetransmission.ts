@@ -7,10 +7,13 @@ export type BroadcastableTab = Exclude<LivePrimaryTab, "retransmission"> | "cove
 
 /** Contexte poules pour l'expansion des frames de projection. */
 export interface BroadcastPoolContext {
-  /** Lettres des poules présentes (A, B, …). */
+  /**
+   * Lettres des poules présentes (A, B, …), déduites des matchs (toujours
+   * disponible, contrairement au layout de template chargé en asynchrone).
+   * Les slides de poules sont les premières pages du tableau principal
+   * (Partie 1-4), le bracket suit ; on en déduit le découpage sans layout.
+   */
   poolLetters: string[];
-  /** Indices des slides de poules (retirés du tableau principal). */
-  poolSlideIndices: Set<number>;
 }
 
 export type RetransmissionMode =
@@ -117,9 +120,11 @@ export function expandBroadcastTab(
   if (!section) return [{ tab }];
 
   let pages = pageEntries(pageMap, section);
-  if (section === "main" && ctx?.poolSlideIndices?.size) {
-    // Les slides de poules sont projetées via l'onglet Poules, pas ici.
-    pages = pages.filter((entry) => !ctx.poolSlideIndices.has(entry.index));
+  const poolCount = ctx?.poolLetters.length ?? 0;
+  if (section === "main" && poolCount > 0) {
+    // Les slides de poules (les poolCount premières) sont projetées via
+    // l'onglet Poules ; on ne garde que le bracket.
+    pages = pages.slice(poolCount);
   }
   if (pages.length === 0) return [{ tab }];
   return pages.map((_, subPage) => ({ tab, subPage }));

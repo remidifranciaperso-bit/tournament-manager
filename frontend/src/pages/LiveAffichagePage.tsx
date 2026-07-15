@@ -7,12 +7,7 @@ import {
   type BroadcastFrame,
   type BroadcastPoolContext,
 } from "../manager/liveRetransmission";
-import {
-  poolLetters,
-  poolSlideIndicesFromLayout,
-} from "../manager/buildPoolStandings";
-import { resolveTemplateId } from "../manager/resolveTemplateId";
-import { useTemplateLayout } from "../manager/useTemplateLayout";
+import { poolLetters } from "../manager/buildPoolStandings";
 import { loadLiveSession } from "../manager/liveSessionStore";
 
 function resolveActiveFrame(
@@ -54,15 +49,10 @@ export default function LiveAffichagePage() {
 
   const [rotateIndex, setRotateIndex] = useState(0);
 
-  const templateId = liveData ? resolveTemplateId(liveData.meta) : "";
-  const { layout } = useTemplateLayout(templateId);
   const poolCtx = useMemo<BroadcastPoolContext | undefined>(() => {
     if (!liveData) return undefined;
-    return {
-      poolLetters: poolLetters(liveData.matches),
-      poolSlideIndices: poolSlideIndicesFromLayout(layout),
-    };
-  }, [liveData, layout]);
+    return { poolLetters: poolLetters(liveData.matches) };
+  }, [liveData]);
 
   const rotationFrames = useMemo(() => {
     if (!output || !liveData || output.mode !== "rotation") return [];
