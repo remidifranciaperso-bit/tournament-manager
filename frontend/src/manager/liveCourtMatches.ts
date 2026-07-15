@@ -209,6 +209,22 @@ export function buildForceMatchOptions(
   const matchesByCode = buildMatchesByCode(matches);
   const poolQualifiers = buildPoolQualifierMap(matches, matchResults);
 
+  const resolveTeam = (label: string): string =>
+    formatTeamWithInitials(
+      resolveTeamLabelDeep(label, matchesByCode, matchResults, poolQualifiers)
+    );
+
+  // Équipes déjà engagées dans un match « en cours » : indisponibles pour un
+  // forçage (une seule équipe occupée suffit à griser le choix).
+  const busyTeams = new Set<string>();
+  for (const match of matches) {
+    if (!inProgressCodes.has(match.code)) continue;
+    for (const label of [match.equipe1, match.equipe2]) {
+      const team = resolveTeam(label).trim();
+      if (team) busyTeams.add(team);
+    }
+  }
+
   return [...matches]
     .filter(
       (match) =>
@@ -220,25 +236,15 @@ export function buildForceMatchOptions(
       (a, b) => a.ordre_planning - b.ordre_planning || a.ordre - b.ordre
     )
     .map((match) => {
-      const resolved1 = resolveTeamLabelDeep(
-        match.equipe1,
-        matchesByCode,
-        matchResults,
-        poolQualifiers
-      );
-      const resolved2 = resolveTeamLabelDeep(
-        match.equipe2,
-        matchesByCode,
-        matchResults,
-        poolQualifiers
-      );
-      const equipe1 = formatTeamWithInitials(resolved1);
-      const equipe2 = formatTeamWithInitials(resolved2);
+      const equipe1 = resolveTeam(match.equipe1);
+      const equipe2 = resolveTeam(match.equipe2);
+      const teamsBusy =
+        busyTeams.has(equipe1.trim()) || busyTeams.has(equipe2.trim());
 
       return {
         code: match.code,
         label: `${match.code} — ${match.tour} - ${equipe1} vs ${equipe2}`,
-        selectable: areCourtTeamsKnown(equipe1, equipe2),
+        selectable: areCourtTeamsKnown(equipe1, equipe2) && !teamsBusy,
       };
     });
 }
