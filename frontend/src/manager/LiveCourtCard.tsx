@@ -293,6 +293,8 @@ interface LiveCourtCardProps {
     onLaunch?: () => void;
     blockedMessage?: string | null;
     noMoreMatches?: boolean;
+    /** Libellé du panneau « plus de match » (jour terminé sur formats multi-jours). */
+    noMoreMatchesLabel?: string;
   };
 }
 
@@ -367,7 +369,7 @@ export function LiveCourtCard({
                   className="font-brush text-[clamp(1.5rem,6vw,2.5rem)] leading-none text-template-blue"
                   style={{ textShadow: "0 0 24px rgba(26,58,92,0.12)" }}
                 >
-                  Aucun match à suivre
+                  {terrainLibrePrompt.noMoreMatchesLabel ?? "Aucun match à suivre"}
                 </span>
               </div>
             ) : (

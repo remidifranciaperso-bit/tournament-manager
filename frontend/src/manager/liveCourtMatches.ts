@@ -1,6 +1,7 @@
 import { areCourtTeamsKnown } from "./courtTeamsReady";
 import type { LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
+import { buildPoolQualifierMap } from "./buildPoolStandings";
 import {
   buildMatchesByCode,
   resolveTeamLabelDeep,
@@ -79,7 +80,8 @@ function toDisplay(
   matchesByCode: Map<string, LiveMatch>,
   matchResults: Record<string, StoredMatchResult>,
   inProgressByCode: Map<string, string>,
-  slotFormat: CourtTeamSlotFormat
+  slotFormat: CourtTeamSlotFormat,
+  poolQualifiers?: Map<string, string>
 ): CourtMatchDisplay {
   const rawEquipe1 = match.equipe1?.trim() || "—";
   const rawEquipe2 = match.equipe2?.trim() || "—";
@@ -87,12 +89,14 @@ function toDisplay(
   const resolved1 = resolveTeamLabelDeep(
     rawEquipe1,
     matchesByCode,
-    matchResults
+    matchResults,
+    poolQualifiers
   );
   const resolved2 = resolveTeamLabelDeep(
     rawEquipe2,
     matchesByCode,
-    matchResults
+    matchResults,
+    poolQualifiers
   );
 
   const isPlaceholder1 = isBracketPlaceholder(resolved1);
@@ -198,14 +202,19 @@ export function buildForceMatchOptions(
   matches: LiveMatch[],
   completed: Set<string>,
   inProgressCodes: Set<string>,
-  matchResults: Record<string, StoredMatchResult>
+  matchResults: Record<string, StoredMatchResult>,
+  /** Jour actif : on n'autorise pas à forcer un match des jours suivants. */
+  maxDay?: number
 ): ForceMatchOption[] {
   const matchesByCode = buildMatchesByCode(matches);
+  const poolQualifiers = buildPoolQualifierMap(matches, matchResults);
 
   return [...matches]
     .filter(
       (match) =>
-        !completed.has(match.code) && !inProgressCodes.has(match.code)
+        !completed.has(match.code) &&
+        !inProgressCodes.has(match.code) &&
+        (maxDay == null || (match.jour ?? 1) <= maxDay)
     )
     .sort(
       (a, b) => a.ordre_planning - b.ordre_planning || a.ordre - b.ordre
@@ -214,12 +223,14 @@ export function buildForceMatchOptions(
       const resolved1 = resolveTeamLabelDeep(
         match.equipe1,
         matchesByCode,
-        matchResults
+        matchResults,
+        poolQualifiers
       );
       const resolved2 = resolveTeamLabelDeep(
         match.equipe2,
         matchesByCode,
-        matchResults
+        matchResults,
+        poolQualifiers
       );
       const equipe1 = formatTeamWithInitials(resolved1);
       const equipe2 = formatTeamWithInitials(resolved2);
@@ -300,9 +311,14 @@ export function matchQueuesByTerrain(
   matchResults: Record<string, StoredMatchResult> = {},
   awaitingLaunch: Set<string> = new Set(),
   slotFormat: CourtTeamSlotFormat = "bracket",
-  forcedUpcomingByTerrain?: Map<string, string>
+  forcedUpcomingByTerrain?: Map<string, string>,
+  /** Jour actif : les matchs des jours suivants sont exclus des files terrains. */
+  maxDay?: number
 ): TerrainMatchQueues {
   const matchesByCode = buildMatchesByCode(matches);
+  // Résout « Vainqueur/2e Poule X » vers l'équipe réelle dès qu'une poule est
+  // terminée, pour débloquer les matchs alimentés par les poules.
+  const poolQualifiers = buildPoolQualifierMap(matches, matchResults);
   const inProgressByCode = inProgressTerrainByMatchCode(
     matches,
     terrains,
@@ -321,7 +337,9 @@ export function matchQueuesByTerrain(
 
   for (const terrain of terrains) {
     const queue = sortMatchesForTerrain(matches, terrain).filter(
-      (match) => !completed.has(match.code)
+      (match) =>
+        !completed.has(match.code) &&
+        (maxDay == null || (match.jour ?? 1) <= maxDay)
     );
     const forcedMatch = resolveForcedMatch(
       terrain,
@@ -339,7 +357,8 @@ export function matchQueuesByTerrain(
             matchesByCode,
             matchResults,
             inProgressByCode,
-            slotFormat
+            slotFormat,
+            poolQualifiers
           )
         : null
     );
@@ -358,7 +377,8 @@ export function matchQueuesByTerrain(
             matchesByCode,
             matchResults,
             inProgressByCode,
-            slotFormat
+            slotFormat,
+            poolQualifiers
           )
         : null
     );
@@ -373,7 +393,8 @@ export function matchQueuesByTerrain(
             matchesByCode,
             matchResults,
             inProgressByCode,
-            slotFormat
+            slotFormat,
+            poolQualifiers
           )
         : null
     );

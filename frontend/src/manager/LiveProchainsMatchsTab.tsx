@@ -21,6 +21,8 @@ interface LiveProchainsMatchsTabProps {
   awaitingLaunch: Set<string>;
   forcedUpcomingByTerrain: Record<string, string>;
   applyForcedUpcoming: (next: Record<string, string>) => void;
+  /** Jour actif : masque les matchs des jours suivants (formats multi-jours). */
+  activeDay: number;
   /** Mode affichage public (retransmission) : sans actions organisateur. */
   broadcast?: boolean;
 }
@@ -35,6 +37,7 @@ export function LiveProchainsMatchsTab({
   awaitingLaunch,
   forcedUpcomingByTerrain,
   applyForcedUpcoming,
+  activeDay,
   broadcast = false,
 }: LiveProchainsMatchsTabProps) {
   const [forcePickerTerrain, setForcePickerTerrain] = useState<string | null>(
@@ -46,6 +49,8 @@ export function LiveProchainsMatchsTab({
     [forcedUpcomingByTerrain]
   );
 
+  const gateDay = meta.nb_jours > 1 ? activeDay : undefined;
+
   const matchByTerrain = useMemo(() => {
     const queues = matchQueuesByTerrain(
       matches,
@@ -54,10 +59,19 @@ export function LiveProchainsMatchsTab({
       matchResults,
       awaitingLaunch,
       "upcoming",
-      forcedMap
+      forcedMap,
+      gateDay
     );
     return upcomingDisplayByTerrain(queues, terrains, awaitingLaunch);
-  }, [matches, terrains, completed, matchResults, awaitingLaunch, forcedMap]);
+  }, [
+    matches,
+    terrains,
+    completed,
+    matchResults,
+    awaitingLaunch,
+    forcedMap,
+    gateDay,
+  ]);
 
   const forceMatchOptions = useMemo(() => {
     const inProgressCodes = inProgressMatchCodes(
@@ -70,9 +84,10 @@ export function LiveProchainsMatchsTab({
       matches,
       completed,
       inProgressCodes,
-      matchResults
+      matchResults,
+      gateDay
     );
-  }, [matches, terrains, completed, awaitingLaunch, matchResults]);
+  }, [matches, terrains, completed, awaitingLaunch, matchResults, gateDay]);
 
   const handleForceMatch = (terrain: string, matchCode: string) => {
     const next = computeForcedUpcomingAfterForce(

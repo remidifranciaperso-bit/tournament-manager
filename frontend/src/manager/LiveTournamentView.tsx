@@ -410,6 +410,8 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   captureExportPages={captureExportPages}
                   exportPhase={exportPhase}
                   onExportPhaseChange={setExportPhase}
+                  activeDay={progress.activeDay}
+                  onAdvanceDay={progress.advanceToDay}
                   onPdfExported={onPdfExported}
                   onStart={(initialMatchCodes) =>
                     progress.startTournament(initialMatchCodes)
@@ -434,6 +436,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   awaitingLaunch={awaitingLaunch}
                   forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
                   applyForcedUpcoming={progress.applyForcedUpcoming}
+                  activeDay={progress.activeDay}
                 />
               </div>
 

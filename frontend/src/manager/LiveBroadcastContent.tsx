@@ -208,6 +208,8 @@ export function LiveBroadcastContent({
             captureExportPages={async () => ({})}
             exportPhase="idle"
             onExportPhaseChange={() => {}}
+            activeDay={progress.activeDay}
+            onAdvanceDay={() => {}}
             onStart={() => {}}
             onCompleteMatch={() => {}}
             onRecordMatchLaunch={() => {}}
@@ -230,6 +232,7 @@ export function LiveBroadcastContent({
             awaitingLaunch={awaitingLaunch}
             forcedUpcomingByTerrain={progress.forcedUpcomingByTerrain}
             applyForcedUpcoming={() => {}}
+            activeDay={progress.activeDay}
           />
         </div>
 

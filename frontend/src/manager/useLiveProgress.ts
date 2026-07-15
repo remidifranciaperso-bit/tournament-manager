@@ -27,6 +27,29 @@ function finishedAtKey(liveToken: string): string {
   return `live-finished-at-${liveToken}`;
 }
 
+function activeDayKey(liveToken: string): string {
+  return `live-active-day-${liveToken}`;
+}
+
+function loadActiveDay(liveToken: string): number {
+  try {
+    const raw = localStorage.getItem(activeDayKey(liveToken));
+    if (!raw) return 1;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 1 ? Math.floor(value) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function saveActiveDay(liveToken: string, day: number): void {
+  localStorage.setItem(activeDayKey(liveToken), String(day));
+}
+
+function clearActiveDay(liveToken: string): void {
+  localStorage.removeItem(activeDayKey(liveToken));
+}
+
 export function readLiveProgressStats(
   liveToken: string,
   totalMatches: number
@@ -52,6 +75,7 @@ export function clearLiveProgress(liveToken: string): void {
   localStorage.removeItem(storageKey(liveToken));
   localStorage.removeItem(startedAtKey(liveToken));
   localStorage.removeItem(finishedAtKey(liveToken));
+  clearActiveDay(liveToken);
 }
 
 function loadState(liveToken: string): ProgressState {
@@ -194,6 +218,9 @@ export function useLiveProgress(
       state.results
     );
   });
+  const [activeDay, setActiveDay] = useState<number>(() =>
+    loadActiveDay(liveToken)
+  );
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -202,6 +229,7 @@ export function useLiveProgress(
     setMatchResults(state.results);
     setMatchLaunches(state.launches ?? {});
     setForcedUpcomingByTerrain(state.forcedUpcoming ?? {});
+    setActiveDay(loadActiveDay(liveToken));
     const nextStartedAt = loadStartedAt(liveToken);
     setStartedAt(nextStartedAt);
     setFinishedAt(
@@ -225,6 +253,7 @@ export function useLiveProgress(
       setMatchResults(state.results);
       setMatchLaunches(state.launches ?? {});
       setForcedUpcomingByTerrain(state.forcedUpcoming ?? {});
+      setActiveDay(loadActiveDay(liveToken));
       const nextStartedAt = loadStartedAt(liveToken);
       setStartedAt(nextStartedAt);
       setFinishedAt(
@@ -384,7 +413,34 @@ export function useLiveProgress(
       const at = Date.now();
       setStartedAt(at);
       saveStartedAt(liveToken, at);
+      setActiveDay(1);
+      saveActiveDay(liveToken, 1);
       if (initialMatchCodes.length === 0) return;
+
+      setMatchLaunches((prev) => {
+        const next = { ...prev };
+        for (const code of initialMatchCodes) {
+          if (!next[code]) next[code] = at;
+        }
+        setCompleted((completedPrev) => {
+          setMatchResults((resultsPrev) => {
+            persistState(completedPrev, resultsPrev, next);
+            return resultsPrev;
+          });
+          return completedPrev;
+        });
+        return next;
+      });
+    },
+    [liveToken, persistState]
+  );
+
+  /** Passe au jour suivant et lance les premiers matchs de ce jour (chronométrage). */
+  const advanceToDay = useCallback(
+    (day: number, initialMatchCodes: string[] = []) => {
+      const at = Date.now();
+      setActiveDay(day);
+      saveActiveDay(liveToken, day);
 
       setMatchLaunches((prev) => {
         const next = { ...prev };
@@ -488,5 +544,7 @@ export function useLiveProgress(
     started: startedAt !== null,
     finished: finishedAt !== null,
     startTournament,
+    activeDay,
+    advanceToDay,
   };
 }

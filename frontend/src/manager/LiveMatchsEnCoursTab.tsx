@@ -93,6 +93,10 @@ interface LiveMatchsEnCoursTabProps {
   captureExportPages: () => Promise<ManagerExportCapture>;
   exportPhase: ExportPhase;
   onExportPhaseChange: (phase: ExportPhase) => void;
+  /** Jour actif du tournoi (1 pour les formats 1 jour). */
+  activeDay: number;
+  /** Passe au jour suivant en lançant ses premiers matchs. */
+  onAdvanceDay: (nextDay: number, initialMatchCodes: string[]) => void;
   onPdfExported?: () => void;
   onStart: (initialMatchCodes: string[]) => void;
   onCompleteMatch: (
@@ -121,6 +125,8 @@ export function LiveMatchsEnCoursTab({
   captureExportPages,
   exportPhase,
   onExportPhaseChange,
+  activeDay,
+  onAdvanceDay,
   onPdfExported,
   onStart,
   onCompleteMatch,
@@ -149,6 +155,9 @@ export function LiveMatchsEnCoursTab({
     [forcedUpcomingByTerrain]
   );
 
+  const multiDay = meta.nb_jours > 1;
+  const gateDay = multiDay ? activeDay : undefined;
+
   const { current: matchByTerrain, nextLaunch: nextLaunchByTerrain } = useMemo(
     () =>
       matchQueuesByTerrain(
@@ -158,9 +167,18 @@ export function LiveMatchsEnCoursTab({
         matchResults,
         awaitingLaunch,
         "bracket",
-        forcedMap
+        forcedMap,
+        gateDay
       ),
-    [matches, terrains, completed, matchResults, awaitingLaunch, forcedMap]
+    [
+      matches,
+      terrains,
+      completed,
+      matchResults,
+      awaitingLaunch,
+      forcedMap,
+      gateDay,
+    ]
   );
 
   const displayMatchByTerrain = useMemo(() => {
@@ -281,6 +299,47 @@ export function LiveMatchsEnCoursTab({
   const finished =
     started && matches.length > 0 && completed.size >= matches.length;
 
+  const dayMatches = useMemo(
+    () =>
+      multiDay ? matches.filter((match) => (match.jour ?? 1) === activeDay) : [],
+    [multiDay, matches, activeDay]
+  );
+  const dayComplete =
+    dayMatches.length > 0 && dayMatches.every((match) => completed.has(match.code));
+  const isLastDay = activeDay >= meta.nb_jours;
+  const showDayEnd =
+    !broadcast && started && !finished && multiDay && dayComplete && !isLastDay;
+
+  const handleStartNextDay = useCallback(() => {
+    const nextDay = activeDay + 1;
+    const nextDayMatches = matches.filter(
+      (match) => (match.jour ?? 1) <= nextDay
+    );
+    const { current } = matchQueuesByTerrain(
+      nextDayMatches,
+      terrains,
+      completed,
+      matchResults,
+      new Set(),
+      "bracket",
+      undefined,
+      nextDay
+    );
+    const initialCodes = terrains
+      .map((terrain) => current.get(terrain)?.code)
+      .filter((code): code is string => Boolean(code));
+    setAwaitingLaunch(new Set());
+    onAdvanceDay(nextDay, initialCodes);
+  }, [
+    activeDay,
+    matches,
+    terrains,
+    completed,
+    matchResults,
+    onAdvanceDay,
+    setAwaitingLaunch,
+  ]);
+
   const showCourts = broadcast
     ? started
     : started && !finished;
@@ -329,7 +388,12 @@ export function LiveMatchsEnCoursTab({
             if (!awaitingLaunch.has(terrain)) return undefined;
             const pending = nextLaunchByTerrain.get(terrain);
             if (!pending) {
-              return { noMoreMatches: true };
+              return {
+                noMoreMatches: true,
+                noMoreMatchesLabel: multiDay
+                  ? "Aucun match à suivre pour aujourd'hui"
+                  : undefined,
+              };
             }
             return {
               onLaunch: () => handleLaunchNextOnTerrain(terrain),
@@ -499,6 +563,26 @@ export function LiveMatchsEnCoursTab({
             {exportError && (
               <p className="max-w-md text-sm text-red-600">{exportError}</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {showDayEnd && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
+          <div className="flex flex-col items-center gap-5 rounded-2xl border border-arena-600/25 bg-white px-8 py-6 text-center shadow-md sm:px-12 sm:py-8">
+            <span
+              className="font-brush text-[clamp(2rem,8vw,3.5rem)] leading-none text-arena-700"
+              style={{ textShadow: "0 0 24px rgba(26,58,92,0.12)" }}
+            >
+              Fin du jour {activeDay}
+            </span>
+            <button
+              type="button"
+              onClick={handleStartNextDay}
+              className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15"
+            >
+              Commencer le jour {activeDay + 1}
+            </button>
           </div>
         </div>
       )}
