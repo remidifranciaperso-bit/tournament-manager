@@ -17,15 +17,30 @@ export interface PlanningRow {
   duration: string;
 }
 
-function planningIndices(layoutFields: LiveLayoutField[]): number[] {
-  const numbers = new Set<number>();
+interface PlanningSlot {
+  /** Jour (préfixe J{n}) pour les plannings multi-jours, sinon null. */
+  day: number | null;
+  /** Numéro PL{n} (recommence à 1 à chaque jour dans les templates multi-jours). */
+  index: number;
+}
+
+function planningSlots(layoutFields: LiveLayoutField[]): PlanningSlot[] {
+  const slots: PlanningSlot[] = [];
+  const seen = new Set<string>();
 
   for (const field of layoutFields) {
-    const match = field.key.match(/^(?:J\d+_)?PL(\d+)_CODE$/);
-    if (match) numbers.add(Number.parseInt(match[1], 10));
+    const match = field.key.match(/^(?:J(\d+)_)?PL(\d+)_CODE$/);
+    if (!match) continue;
+    if (seen.has(field.key)) continue;
+    seen.add(field.key);
+    slots.push({
+      day: match[1] !== undefined ? Number.parseInt(match[1], 10) : null,
+      index: Number.parseInt(match[2], 10),
+    });
   }
 
-  return [...numbers].sort((a, b) => a - b);
+  slots.sort((a, b) => (a.day ?? 0) - (b.day ?? 0) || a.index - b.index);
+  return slots;
 }
 
 function sortedPlanningMatches(matches: LiveMatch[]): LiveMatch[] {
@@ -52,9 +67,22 @@ export function buildPlanningRows(
   const matchesByCode = buildMatchesByCode(matches);
   const ordered = sortedPlanningMatches(matches);
 
-  return planningIndices(layoutFields)
-    .map((plIndex) => {
-      const match = ordered[plIndex - 1];
+  // Plannings multi-jours : les balises J{jour}_PL{n} recommencent à 1 chaque
+  // jour. On regroupe les matchs par jour (ordre_planning continu → jours
+  // contigus), à l'identique du découpage du moteur Engine (J{jour}_PL{n} =
+  // n-ième match du jour). Les plannings 1 jour (PL{n} sans préfixe) gardent
+  // l'indexation globale, inchangée.
+  const byDay = new Map<number, LiveMatch[]>();
+  for (const match of ordered) {
+    const bucket = byDay.get(match.jour);
+    if (bucket) bucket.push(match);
+    else byDay.set(match.jour, [match]);
+  }
+
+  return planningSlots(layoutFields)
+    .map((slot) => {
+      const source = slot.day != null ? byDay.get(slot.day) ?? [] : ordered;
+      const match = source[slot.index - 1];
       if (!match) return null;
 
       return {
