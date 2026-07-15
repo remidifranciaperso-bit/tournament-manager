@@ -388,12 +388,7 @@ export function LiveMatchsEnCoursTab({
             if (!awaitingLaunch.has(terrain)) return undefined;
             const pending = nextLaunchByTerrain.get(terrain);
             if (!pending) {
-              return {
-                noMoreMatches: true,
-                noMoreMatchesLabel: multiDay
-                  ? "Aucun match à suivre pour aujourd'hui"
-                  : undefined,
-              };
+              return { noMoreMatches: true };
             }
             return {
               onLaunch: () => handleLaunchNextOnTerrain(terrain),

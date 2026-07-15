@@ -196,15 +196,19 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     useState<ExportCaptureTarget | null>(null);
   const bracketShellRef = useRef<HTMLDivElement>(null);
   const captureExportPages = useCallback(async () => {
-    return captureManagerExportPages(page_map, {
-      showPage: (tab, subPage) => {
-        setExportCaptureTarget({ section: tab, subPage });
+    return captureManagerExportPages(
+      page_map,
+      {
+        showPage: (tab, subPage) => {
+          setExportCaptureTarget({ section: tab, subPage });
+        },
+        restore: () => {
+          setExportCaptureTarget(null);
+        },
       },
-      restore: () => {
-        setExportCaptureTarget(null);
-      },
-    });
-  }, [page_map]);
+      poolSlideIndices
+    );
+  }, [page_map, poolSlideIndices]);
 
   const activeSubPages = useMemo(() => {
     switch (primaryTab) {

@@ -83,15 +83,20 @@ def exporter_pdf_tournoi_manager(
                 slide_index = int(entry["index"])
                 key = capture_key(section, slide_index)
                 capture_data = captures.get(key)
-                if not capture_data:
-                    raise RuntimeError(
-                        f"Capture Manager manquante pour la page {key}."
-                    )
 
                 if slide_index < 0 or slide_index >= source.page_count:
                     raise RuntimeError(
                         f"Page Engine introuvable pour l'index {slide_index}."
                     )
+
+                if not capture_data:
+                    # Pas de capture Manager pour cette page (ex. slides de
+                    # poules « Partie 1-4 », sans rendu bracket côté Manager) :
+                    # on conserve la page Engine d'origine telle quelle.
+                    merged.insert_pdf(
+                        source, from_page=slide_index, to_page=slide_index
+                    )
+                    continue
 
                 page = merged.new_page(width=page_rect.width, height=page_rect.height)
                 composer_page_export(

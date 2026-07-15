@@ -84,7 +84,12 @@ function readCrossPageStub(target: HTMLElement): CrossPageStub | null {
 
 export async function captureManagerExportPages(
   pageMap: LivePageMap,
-  navigation: ScreenCaptureNavigation
+  navigation: ScreenCaptureNavigation,
+  /**
+   * Slides « main » à ne pas capturer (ex. pages de poules, sans rendu bracket
+   * côté Manager). Le backend conserve alors la page Engine d'origine.
+   */
+  skipSlideIndices?: Set<number>
 ): Promise<ManagerExportCapture> {
   const captures: Record<string, string> = {};
   const crosspageStubs: Record<string, CrossPageStub> = {};
@@ -93,6 +98,9 @@ export async function captureManagerExportPages(
     for (const section of ["main", "classement", "planning", "final"] as const) {
       for (let page = 0; page < pageEntries(pageMap, section).length; page += 1) {
         const entry = pageEntries(pageMap, section)[page];
+        if (section === "main" && skipSlideIndices?.has(entry.index)) {
+          continue;
+        }
         flushSync(() => {
           navigation.showPage(section, page);
         });
@@ -100,7 +108,21 @@ export async function captureManagerExportPages(
         await waitForPaint();
         const target = await waitForScreenTarget(captureSelector(section));
         const key = captureKey(section, entry.index);
-        captures[key] = await captureElementImage(target, { highQuality: true });
+        let image: string;
+        try {
+          image = await captureElementImage(target, { highQuality: true });
+        } catch (error) {
+          // Capture vide (page sans contenu Manager, ex. slide de poule non
+          // filtrée) : on la saute, le backend garde la page Engine d'origine.
+          if (
+            error instanceof Error &&
+            error.message.includes("capture écran est vide")
+          ) {
+            continue;
+          }
+          throw error;
+        }
+        captures[key] = image;
         if (section === "main") {
           const stub = readCrossPageStub(target);
           if (stub) crosspageStubs[key] = stub;
