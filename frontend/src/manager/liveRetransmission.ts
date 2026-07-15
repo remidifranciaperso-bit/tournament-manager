@@ -2,10 +2,16 @@ import type { LivePrimaryTab } from "./liveTabs";
 import { LIVE_PRIMARY_TABS, pageEntries, primaryTabLabel } from "./liveTabs";
 import type { LivePageMap } from "./liveTypes";
 
-/** Onglets du manager pouvant être retransmis (hors Retransmission / Poules). */
-export type BroadcastableTab =
-  | Exclude<LivePrimaryTab, "retransmission" | "poules">
-  | "cover";
+/** Onglets du manager pouvant être retransmis (hors Retransmission). */
+export type BroadcastableTab = Exclude<LivePrimaryTab, "retransmission"> | "cover";
+
+/** Contexte poules pour l'expansion des frames de projection. */
+export interface BroadcastPoolContext {
+  /** Lettres des poules présentes (A, B, …). */
+  poolLetters: string[];
+  /** Indices des slides de poules (retirés du tableau principal). */
+  poolSlideIndices: Set<number>;
+}
 
 export type RetransmissionMode =
   | "fixed"
@@ -51,7 +57,8 @@ export function broadcastTabLabel(
 }
 
 export function broadcastableTabs(
-  classementPageCount = 0
+  classementPageCount = 0,
+  isPoolFormat = false
 ): { id: BroadcastableTab; label: string }[] {
   const cover: { id: BroadcastableTab; label: string } = {
     id: "cover",
@@ -59,7 +66,7 @@ export function broadcastableTabs(
   };
   const tabs = LIVE_PRIMARY_TABS.filter(
     (tab): tab is { id: Exclude<BroadcastableTab, "cover">; label: string } =>
-      tab.id !== "retransmission" && tab.id !== "poules"
+      tab.id !== "retransmission" && (tab.id !== "poules" || isPoolFormat)
   ).map((tab) => ({
     id: tab.id,
     label: primaryTabLabel(tab.id, classementPageCount),
@@ -91,8 +98,16 @@ const SINGLE_FRAME_TABS = new Set<BroadcastableTab>([
 
 export function expandBroadcastTab(
   tab: BroadcastableTab,
-  pageMap: LivePageMap
+  pageMap: LivePageMap,
+  ctx?: BroadcastPoolContext
 ): BroadcastFrame[] {
+  if (tab === "poules") {
+    const count = ctx?.poolLetters.length ?? 0;
+    if (count === 0) return [];
+    // Composition (subPage 0) + une page par poule.
+    return Array.from({ length: count + 1 }, (_, subPage) => ({ tab, subPage }));
+  }
+
   if (SINGLE_FRAME_TABS.has(tab)) {
     return [{ tab }];
   }
@@ -101,14 +116,33 @@ export function expandBroadcastTab(
     tab === "main" || tab === "classement" || tab === "planning" ? tab : null;
   if (!section) return [{ tab }];
 
-  const pages = pageEntries(pageMap, section);
+  let pages = pageEntries(pageMap, section);
+  if (section === "main" && ctx?.poolSlideIndices?.size) {
+    // Les slides de poules sont projetées via l'onglet Poules, pas ici.
+    pages = pages.filter((entry) => !ctx.poolSlideIndices.has(entry.index));
+  }
   if (pages.length === 0) return [{ tab }];
   return pages.map((_, subPage) => ({ tab, subPage }));
 }
 
 export function expandBroadcastSchedule(
   tabs: BroadcastableTab[],
-  pageMap: LivePageMap
+  pageMap: LivePageMap,
+  ctx?: BroadcastPoolContext
 ): BroadcastFrame[] {
-  return tabs.flatMap((tab) => expandBroadcastTab(tab, pageMap));
+  let effectiveTabs = tabs;
+  // Format à poules : si « Tableau principal » est retransmis mais pas encore
+  // « Poules », on insère Poules juste avant (les anciennes pages blanches
+  // « Partie 1-4 » deviennent les pages de poules avec leur contenu).
+  if (
+    ctx &&
+    ctx.poolLetters.length > 0 &&
+    tabs.includes("main") &&
+    !tabs.includes("poules")
+  ) {
+    effectiveTabs = tabs.flatMap((tab) =>
+      tab === "main" ? (["poules", "main"] as BroadcastableTab[]) : [tab]
+    );
+  }
+  return effectiveTabs.flatMap((tab) => expandBroadcastTab(tab, pageMap, ctx));
 }

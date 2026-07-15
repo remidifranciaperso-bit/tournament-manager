@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
+import { useTemplateLayout } from "./useTemplateLayout";
+import {
+  poolLetters,
+  poolSlideIndicesFromLayout,
+} from "./buildPoolStandings";
+import { LivePoolsTab } from "./LivePoolsTab";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveBracketViewer } from "./LiveBracketViewer";
 import { LiveBracketCrossPageOverlay } from "./LiveBracketCrossPageOverlay";
@@ -63,7 +69,29 @@ export function LiveBroadcastContent({
     coverPage.src = coverPageUrl;
   }, [templateId, coverPageUrl]);
 
-  const mainPages = useMemo(() => pageEntries(page_map, "main"), [page_map]);
+  const { layout: templateLayout } = useTemplateLayout(templateId);
+  const poolSlideIndices = useMemo(
+    () => poolSlideIndicesFromLayout(templateLayout),
+    [templateLayout]
+  );
+  const poolLettersList = useMemo(() => poolLetters(matches), [matches]);
+
+  const mainPages = useMemo(() => {
+    const filtered = pageEntries(page_map, "main").filter(
+      (entry) => !poolSlideIndices.has(entry.index)
+    );
+    if (poolSlideIndices.size === 0) return filtered;
+    if (filtered.length === 1) {
+      return [{ ...filtered[0], label: "Tableau principal" }];
+    }
+    if (filtered.length === 2) {
+      return [
+        { ...filtered[0], label: "Partie haute" },
+        { ...filtered[1], label: "Partie basse" },
+      ];
+    }
+    return filtered;
+  }, [page_map, poolSlideIndices]);
   const classementPages = useMemo(
     () => pageEntries(page_map, "classement"),
     [page_map]
@@ -116,6 +144,13 @@ export function LiveBroadcastContent({
     return mainPageHiddenBrushReserveLabel(mainPages[mainPage]);
   }, [activeTab, mainPages, mainPage]);
 
+  const poulesPage =
+    activeTab === "poules" && activeSubPage !== undefined ? activeSubPage : 0;
+  const poulesLabel =
+    poulesPage === 0
+      ? "Composition"
+      : `Poule ${poolLettersList[poulesPage - 1] ?? ""}`;
+
   const [awaitingLaunch] = useState(() => new Set<string>());
   const broadcastMainShellRef = useRef<HTMLDivElement>(null);
 
@@ -124,17 +159,34 @@ export function LiveBroadcastContent({
       ref={broadcastMainShellRef}
       className="pointer-events-none relative flex h-dvh w-full flex-col overflow-hidden bg-white select-none"
     >
-      <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
-        <LiveTabTitle
-          label={activeTab === "cover" ? "" : tabLabel}
-          reserveLabel={
-            activeTab === "cover" ? "Page de garde" : tabTitleReserveLabel
-          }
-        />
-      </div>
+      {/* La page de garde occupe toute la fenêtre (aucun titre) pour rester
+          centrée verticalement ; les autres onglets gardent leur bandeau titre. */}
+      {activeTab !== "cover" ? (
+        <div className="flex shrink-0 items-end justify-center px-4 pb-2 pt-1 min-h-[clamp(2.75rem,6vw,3.75rem)] sm:px-6 sm:pb-3">
+          <LiveTabTitle
+            label={activeTab === "poules" ? poulesLabel : tabLabel}
+            reserveLabel={tabTitleReserveLabel}
+          />
+        </div>
+      ) : null}
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <div className={broadcastPanelClass(activeTab === "cover")}>
           <LivePdfPage pageUrl={coverPageUrl} />
+        </div>
+
+        <div className={broadcastPanelClass(activeTab === "poules")}>
+          <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
+            <LivePoolsTab
+              view={
+                poulesPage === 0
+                  ? "composition"
+                  : { letter: poolLettersList[poulesPage - 1] }
+              }
+              matches={matches}
+              matchResults={progress.matchResults}
+              fields={fields}
+            />
+          </LiveManagerDocumentPage>
         </div>
 
         <div className={broadcastPanelClass(activeTab === "live")}>

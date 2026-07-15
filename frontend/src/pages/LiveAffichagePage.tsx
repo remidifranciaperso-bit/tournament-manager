@@ -5,19 +5,31 @@ import { loadBroadcastOutput } from "../manager/liveBroadcastStore";
 import {
   expandBroadcastSchedule,
   type BroadcastFrame,
+  type BroadcastPoolContext,
 } from "../manager/liveRetransmission";
+import {
+  poolLetters,
+  poolSlideIndicesFromLayout,
+} from "../manager/buildPoolStandings";
+import { resolveTemplateId } from "../manager/resolveTemplateId";
+import { useTemplateLayout } from "../manager/useTemplateLayout";
 import { loadLiveSession } from "../manager/liveSessionStore";
 
 function resolveActiveFrame(
   output: NonNullable<ReturnType<typeof loadBroadcastOutput>>,
   liveData: NonNullable<ReturnType<typeof loadLiveSession>>["liveData"],
-  rotateIndex: number
+  rotateIndex: number,
+  poolCtx?: BroadcastPoolContext
 ): BroadcastFrame | null {
   if (output.tabs.length === 0) return null;
 
   switch (output.mode) {
     case "rotation": {
-      const frames = expandBroadcastSchedule(output.tabs, liveData.page_map);
+      const frames = expandBroadcastSchedule(
+        output.tabs,
+        liveData.page_map,
+        poolCtx
+      );
       return frames[rotateIndex % frames.length] ?? null;
     }
     case "fixed":
@@ -42,15 +54,25 @@ export default function LiveAffichagePage() {
 
   const [rotateIndex, setRotateIndex] = useState(0);
 
+  const templateId = liveData ? resolveTemplateId(liveData.meta) : "";
+  const { layout } = useTemplateLayout(templateId);
+  const poolCtx = useMemo<BroadcastPoolContext | undefined>(() => {
+    if (!liveData) return undefined;
+    return {
+      poolLetters: poolLetters(liveData.matches),
+      poolSlideIndices: poolSlideIndicesFromLayout(layout),
+    };
+  }, [liveData, layout]);
+
   const rotationFrames = useMemo(() => {
     if (!output || !liveData || output.mode !== "rotation") return [];
-    return expandBroadcastSchedule(output.tabs, liveData.page_map);
-  }, [output, liveData]);
+    return expandBroadcastSchedule(output.tabs, liveData.page_map, poolCtx);
+  }, [output, liveData, poolCtx]);
 
   const activeFrame = useMemo((): BroadcastFrame | null => {
     if (!output || !liveData) return null;
-    return resolveActiveFrame(output, liveData, rotateIndex);
-  }, [output, liveData, rotateIndex]);
+    return resolveActiveFrame(output, liveData, rotateIndex, poolCtx);
+  }, [output, liveData, rotateIndex, poolCtx]);
 
   useEffect(() => {
     if (rotationFrames.length <= 1) return;

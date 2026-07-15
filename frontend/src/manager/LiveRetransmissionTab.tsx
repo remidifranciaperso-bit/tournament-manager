@@ -25,6 +25,7 @@ import { extendedModeHint } from "./displayWindow";
 interface LiveRetransmissionTabProps {
   liveToken: string;
   classementPageCount: number;
+  isPoolFormat?: boolean;
   active: boolean;
 }
 
@@ -120,14 +121,15 @@ function ModeOptionCard({
 export function LiveRetransmissionTab({
   liveToken,
   classementPageCount,
+  isPoolFormat = false,
   active,
 }: LiveRetransmissionTabProps) {
   const { displays, layoutMode, extendedMode, scanning, apiSupported, error, scan } =
     useDisplayDetection(active);
 
   const tabOptions = useMemo(
-    () => broadcastableTabs(classementPageCount),
-    [classementPageCount]
+    () => broadcastableTabs(classementPageCount, isPoolFormat),
+    [classementPageCount, isPoolFormat]
   );
 
   const [selectedDisplayIds, setSelectedDisplayIds] = useState<string[]>([]);

@@ -3,7 +3,7 @@ import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
 import { useTemplateLayout } from "./useTemplateLayout";
-import { poolLetters } from "./buildPoolStandings";
+import { poolLetters, poolSlideIndicesFromLayout } from "./buildPoolStandings";
 import { LivePoolsTab } from "./LivePoolsTab";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
@@ -135,16 +135,10 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
 
   // Slides de poules (boîtes PA_M*/PB_M*…) : sortis du « Tableau principal »
   // pour être regroupés dans l'onglet dédié « Poules ».
-  const poolSlideIndices = useMemo(() => {
-    const set = new Set<number>();
-    if (!templateLayout) return set;
-    for (const [key, slideFields] of Object.entries(templateLayout)) {
-      if (slideFields.some((field) => /^P[A-D]_M\d+_/.test(field.key))) {
-        set.add(Number.parseInt(key, 10));
-      }
-    }
-    return set;
-  }, [templateLayout]);
+  const poolSlideIndices = useMemo(
+    () => poolSlideIndicesFromLayout(templateLayout),
+    [templateLayout]
+  );
 
   const mainPages = useMemo(() => {
     const filtered = pageEntries(page_map, "main").filter(
@@ -555,6 +549,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                 <LiveRetransmissionTab
                   liveToken={live_token}
                   classementPageCount={classementPages.length}
+                  isPoolFormat={isPoolFormat}
                   active={primaryTab === "retransmission"}
                 />
               </div>

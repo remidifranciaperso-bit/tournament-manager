@@ -1,5 +1,19 @@
-import type { LiveMatch } from "./liveTypes";
+import type { LiveLayout, LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
+
+/** Indices des slides de poules (contiennent des boîtes PA_M, PB_M, …). */
+export function poolSlideIndicesFromLayout(
+  layout: LiveLayout | null
+): Set<number> {
+  const set = new Set<number>();
+  if (!layout) return set;
+  for (const [key, slideFields] of Object.entries(layout)) {
+    if (slideFields.some((field) => /^P[A-D]_M\d+_/.test(field.key))) {
+      set.add(Number.parseInt(key, 10));
+    }
+  }
+  return set;
+}
 
 /** Lettre de poule d'un code match (``PA_M3`` → ``A``), sinon ``null``. */
 export function poolLetterFromCode(code: string): string | null {
