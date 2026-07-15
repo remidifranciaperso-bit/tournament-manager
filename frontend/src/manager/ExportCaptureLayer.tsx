@@ -3,6 +3,7 @@ import { LiveBracketViewer } from "./LiveBracketViewer";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
 import { LivePlanningTab } from "./LivePlanningTab";
+import { LivePoolsTab } from "./LivePoolsTab";
 import { pageEntries, planningIndicesForPage, slideIndexAt } from "./liveTabs";
 import type {
   LiveLayoutField,
@@ -38,6 +39,33 @@ export function ExportCaptureLayer({
   if (!target) return null;
 
   const { section, subPage } = target;
+
+  if (section === "pools") {
+    const view = target.poolView ?? "composition";
+    return (
+      <div
+        id="export-capture-layer"
+        className="pointer-events-none fixed -left-[120vw] top-0 z-0 inline-block bg-white"
+        style={{ width: EXPORT_CAPTURE_WIDTH }}
+        aria-hidden
+      >
+        <LiveManagerDocumentPage
+          club={meta.club}
+          logoUrl={meta.logo_url}
+          capture="pools"
+          showFooter={false}
+        >
+          <LivePoolsTab
+            view={view}
+            matches={matches}
+            matchResults={matchResults}
+            fields={fields}
+            capture
+          />
+        </LiveManagerDocumentPage>
+      </div>
+    );
+  }
 
   if (section === "final") {
     const finalPages = pageEntries(pageMap, "final");

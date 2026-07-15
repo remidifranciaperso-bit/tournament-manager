@@ -15,6 +15,37 @@ export function poolSlideIndicesFromLayout(
   return set;
 }
 
+/** Slide de poule (Partie N) → lettre de poule (index de slide → « A », …). */
+export function poolSlideLettersFromLayout(
+  layout: LiveLayout | null
+): Map<number, string> {
+  const map = new Map<number, string>();
+  if (!layout) return map;
+  for (const [key, slideFields] of Object.entries(layout)) {
+    for (const field of slideFields) {
+      const m = field.key.match(/^P([A-D])_M\d+_/);
+      if (m) {
+        map.set(Number.parseInt(key, 10), m[1]);
+        break;
+      }
+    }
+  }
+  return map;
+}
+
+/** Index de la slide « Composition » (champs POULE_X_n_EQ), sinon ``null``. */
+export function compositionSlideIndexFromLayout(
+  layout: LiveLayout | null
+): number | null {
+  if (!layout) return null;
+  for (const [key, slideFields] of Object.entries(layout)) {
+    if (slideFields.some((field) => /^POULE_[A-Z]_\d+_EQ$/.test(field.key))) {
+      return Number.parseInt(key, 10);
+    }
+  }
+  return null;
+}
+
 /** Lettre de poule d'un code match (``PA_M3`` → ``A``), sinon ``null``. */
 export function poolLetterFromCode(code: string): string | null {
   const m = code.match(/^P([A-Z])_M\d+$/);

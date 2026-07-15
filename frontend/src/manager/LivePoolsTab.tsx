@@ -33,6 +33,8 @@ interface LivePoolsTabProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   fields: Record<string, string>;
+  /** Rendu statique pleine largeur pour la capture PDF (pas de mise à l'échelle). */
+  capture?: boolean;
 }
 
 /** Roster d'une poule (équipes uniques, ordre d'apparition). */
@@ -93,12 +95,23 @@ function useFitScale(rows: number) {
 
 function ScaledPage({
   rows,
+  capture = false,
   children,
 }: {
   rows: number;
+  capture?: boolean;
   children: React.ReactNode;
 }) {
   const { pageRef, cardRef, scale, naturalHeight } = useFitScale(rows);
+  if (capture) {
+    return (
+      <div className="bg-white px-3 py-4">
+        <div className="mx-auto" style={{ width: POOL_BASE_WIDTH }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       ref={pageRef}
@@ -172,15 +185,17 @@ function RosterCard({
 function CompositionView({
   matches,
   fields,
+  capture = false,
 }: {
   matches: LiveMatch[];
   fields: Record<string, string>;
+  capture?: boolean;
 }) {
   const letters = useMemo(() => poolLetters(matches), [matches]);
   const exempts = useMemo(() => exemptTeams(fields), [fields]);
 
   return (
-    <ScaledPage rows={letters.length + exempts.length}>
+    <ScaledPage rows={letters.length + exempts.length} capture={capture}>
       <div className="flex flex-col gap-4">
         {exempts.length > 0 ? (
           <div className="mx-auto" style={{ width: (POOL_BASE_WIDTH - 16) / 2 }}>
@@ -205,10 +220,12 @@ function PoolView({
   letter,
   matches,
   matchResults,
+  capture = false,
 }: {
   letter: string;
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
+  capture?: boolean;
 }) {
   const pool = useMemo(() => poolMatches(matches, letter), [matches, letter]);
   const standings = useMemo(
@@ -219,7 +236,7 @@ function PoolView({
   const columns = 3;
 
   return (
-    <ScaledPage rows={pool.length + standings.length}>
+    <ScaledPage rows={pool.length + standings.length} capture={capture}>
       <div className="flex flex-col gap-5">
         <div
           className="mx-auto grid justify-center gap-x-6 gap-y-8"
@@ -308,15 +325,19 @@ export function LivePoolsTab({
   matches,
   matchResults,
   fields,
+  capture = false,
 }: LivePoolsTabProps) {
   if (view === "composition") {
-    return <CompositionView matches={matches} fields={fields} />;
+    return (
+      <CompositionView matches={matches} fields={fields} capture={capture} />
+    );
   }
   return (
     <PoolView
       letter={view.letter}
       matches={matches}
       matchResults={matchResults}
+      capture={capture}
     />
   );
 }

@@ -3,7 +3,12 @@ import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
 import { useTemplateLayout } from "./useTemplateLayout";
-import { poolLetters, poolSlideIndicesFromLayout } from "./buildPoolStandings";
+import {
+  compositionSlideIndexFromLayout,
+  poolLetters,
+  poolSlideIndicesFromLayout,
+  poolSlideLettersFromLayout,
+} from "./buildPoolStandings";
 import { LivePoolsTab } from "./LivePoolsTab";
 import { LiveAvancementTab } from "./LiveAvancementTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
@@ -140,6 +145,16 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     [templateLayout]
   );
 
+  // Export PDF des poules : mapping slide → lettre + index de la composition.
+  const poolSlideLetters = useMemo(
+    () => poolSlideLettersFromLayout(templateLayout),
+    [templateLayout]
+  );
+  const compositionSlideIndex = useMemo(
+    () => compositionSlideIndexFromLayout(templateLayout),
+    [templateLayout]
+  );
+
   const mainPages = useMemo(() => {
     const filtered = pageEntries(page_map, "main").filter(
       (entry) => !poolSlideIndices.has(entry.index)
@@ -199,16 +214,16 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     return captureManagerExportPages(
       page_map,
       {
-        showPage: (tab, subPage) => {
-          setExportCaptureTarget({ section: tab, subPage });
+        showPage: (nextTarget) => {
+          setExportCaptureTarget(nextTarget);
         },
         restore: () => {
           setExportCaptureTarget(null);
         },
       },
-      poolSlideIndices
+      { compositionSlideIndex, poolSlideLetters }
     );
-  }, [page_map, poolSlideIndices]);
+  }, [page_map, compositionSlideIndex, poolSlideLetters]);
 
   const activeSubPages = useMemo(() => {
     switch (primaryTab) {

@@ -3,6 +3,7 @@ import {
   buildMatchesByCode,
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
+import { buildPoolQualifierMap } from "./buildPoolStandings";
 import { formatTeamWithInitials } from "./formatBracketLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { formatMatchDurationMinutes } from "./useLiveProgress";
@@ -52,9 +53,15 @@ function sortedPlanningMatches(matches: LiveMatch[]): LiveMatch[] {
 function resolvePlanningTeam(
   label: string,
   matchesByCode: Map<string, LiveMatch>,
-  matchResults: Record<string, StoredMatchResult>
+  matchResults: Record<string, StoredMatchResult>,
+  poolQualifiers: Map<string, string>
 ): string {
-  const resolved = resolveTeamLabelDeep(label, matchesByCode, matchResults).trim();
+  const resolved = resolveTeamLabelDeep(
+    label,
+    matchesByCode,
+    matchResults,
+    poolQualifiers
+  ).trim();
   return resolved ? formatTeamWithInitials(resolved) : "—";
 }
 
@@ -65,6 +72,7 @@ export function buildPlanningRows(
   matchResults: Record<string, StoredMatchResult>
 ): PlanningRow[] {
   const matchesByCode = buildMatchesByCode(matches);
+  const poolQualifiers = buildPoolQualifierMap(matches, matchResults);
   const ordered = sortedPlanningMatches(matches);
 
   // Plannings multi-jours : les balises J{jour}_PL{n} recommencent à 1 chaque
@@ -92,12 +100,14 @@ export function buildPlanningRows(
         equipe1: resolvePlanningTeam(
           match.equipe1,
           matchesByCode,
-          matchResults
+          matchResults,
+          poolQualifiers
         ),
         equipe2: resolvePlanningTeam(
           match.equipe2,
           matchesByCode,
-          matchResults
+          matchResults,
+          poolQualifiers
         ),
         done: completed.has(match.code),
         duration: formatMatchDurationMinutes(

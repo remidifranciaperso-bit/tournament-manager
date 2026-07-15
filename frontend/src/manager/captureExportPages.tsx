@@ -1,10 +1,16 @@
 import { flushSync } from "react-dom";
 import { captureElementImage } from "./captureElement";
+import type { ExportCaptureTarget, ExportPoolView } from "./exportCapture";
 import type { LivePageMap } from "./liveTypes";
 import { pageEntries } from "./liveTabs";
 
 /** Sections capturées pour l'export PDF (sous-ensemble des onglets). */
-export type CaptureSection = "main" | "classement" | "planning" | "final";
+export type CaptureSection =
+  | "main"
+  | "classement"
+  | "planning"
+  | "final"
+  | "pools";
 
 export function captureKey(section: string, slideIndex: number): string {
   return `${section}:${slideIndex}`;
@@ -15,8 +21,20 @@ export function captureFieldName(key: string): string {
 }
 
 export interface ScreenCaptureNavigation {
-  showPage: (tab: CaptureSection, subPage: number) => void;
+  showPage: (target: ExportCaptureTarget) => void;
   restore: () => void;
+}
+
+/** Clé de capture de la page « Composition » des poules (insérée après participants). */
+export function compositionCaptureKey(slideIndex: number): string {
+  return `composition:${slideIndex}`;
+}
+
+export interface PoolExportPlan {
+  /** Index de slide Engine de la page « Composition » (POULE_*_EQ), ou null. */
+  compositionSlideIndex: number | null;
+  /** Slide de poule (« Partie N ») → lettre de poule (index de slide → « A », …). */
+  poolSlideLetters: Map<number, string>;
 }
 
 async function waitForPaint(): Promise<void> {
@@ -49,14 +67,15 @@ async function waitForScreenTarget(
 
 const EXPORT_LAYER = "#export-capture-layer";
 
-function captureSelector(
-  section: "main" | "classement" | "planning" | "final"
-): string {
+function captureSelector(section: CaptureSection): string {
   if (section === "final") {
     return `${EXPORT_LAYER} [data-export-capture="final"]`;
   }
   if (section === "planning") {
     return `${EXPORT_LAYER} [data-export-capture="planning"]`;
+  }
+  if (section === "pools") {
+    return `${EXPORT_LAYER} [data-export-capture="pools"]`;
   }
   return `${EXPORT_LAYER} [data-export-capture="bracket"]`;
 }
@@ -82,49 +101,86 @@ function readCrossPageStub(target: HTMLElement): CrossPageStub | null {
   return { midx, dir };
 }
 
+async function captureTarget(
+  navigation: ScreenCaptureNavigation,
+  target: ExportCaptureTarget,
+  selectorSection: CaptureSection
+): Promise<{ image: string; element: HTMLElement } | null> {
+  flushSync(() => {
+    navigation.showPage(target);
+  });
+  await waitForPaint();
+  const element = await waitForScreenTarget(captureSelector(selectorSection));
+  try {
+    const image = await captureElementImage(element, { highQuality: true });
+    return { image, element };
+  } catch (error) {
+    // Capture vide (page sans contenu Manager) : on la saute, le backend garde
+    // la page Engine d'origine.
+    if (
+      error instanceof Error &&
+      error.message.includes("capture écran est vide")
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 export async function captureManagerExportPages(
   pageMap: LivePageMap,
   navigation: ScreenCaptureNavigation,
   /**
-   * Slides « main » à ne pas capturer (ex. pages de poules, sans rendu bracket
-   * côté Manager). Le backend conserve alors la page Engine d'origine.
+   * Plan d'export des poules : page « Composition » (insérée après participants)
+   * et pages de poules (« Partie N ») rendues depuis l'onglet Poules du Manager.
    */
-  skipSlideIndices?: Set<number>
+  poolExport?: PoolExportPlan
 ): Promise<ManagerExportCapture> {
   const captures: Record<string, string> = {};
   const crosspageStubs: Record<string, CrossPageStub> = {};
+  const poolSlideLetters = poolExport?.poolSlideLetters ?? new Map<number, string>();
 
   try {
+    // Page « Composition » des poules (rosters) : capturée depuis l'onglet
+    // Poules et insérée par le backend juste après la page participants.
+    if (poolExport?.compositionSlideIndex != null) {
+      const captured = await captureTarget(
+        navigation,
+        { section: "pools", subPage: 0, poolView: "composition" },
+        "pools"
+      );
+      if (captured) {
+        captures[compositionCaptureKey(poolExport.compositionSlideIndex)] =
+          captured.image;
+      }
+    }
+
     for (const section of ["main", "classement", "planning", "final"] as const) {
       for (let page = 0; page < pageEntries(pageMap, section).length; page += 1) {
         const entry = pageEntries(pageMap, section)[page];
-        if (section === "main" && skipSlideIndices?.has(entry.index)) {
-          continue;
-        }
-        flushSync(() => {
-          navigation.showPage(section, page);
-        });
+        const poolLetter =
+          section === "main" ? poolSlideLetters.get(entry.index) : undefined;
 
-        await waitForPaint();
-        const target = await waitForScreenTarget(captureSelector(section));
+        const poolView: ExportPoolView | undefined = poolLetter
+          ? { letter: poolLetter }
+          : undefined;
+        const target: ExportCaptureTarget = poolView
+          ? { section: "pools", subPage: page, poolView }
+          : { section, subPage: page };
+
+        const captured = await captureTarget(
+          navigation,
+          target,
+          poolView ? "pools" : section
+        );
+        if (!captured) continue;
+
+        // Les pages de poules sont enregistrées sous la clé « main » de leur
+        // slide : le backend les composite comme n'importe quelle page principale.
         const key = captureKey(section, entry.index);
-        let image: string;
-        try {
-          image = await captureElementImage(target, { highQuality: true });
-        } catch (error) {
-          // Capture vide (page sans contenu Manager, ex. slide de poule non
-          // filtrée) : on la saute, le backend garde la page Engine d'origine.
-          if (
-            error instanceof Error &&
-            error.message.includes("capture écran est vide")
-          ) {
-            continue;
-          }
-          throw error;
-        }
-        captures[key] = image;
-        if (section === "main") {
-          const stub = readCrossPageStub(target);
+        captures[key] = captured.image;
+        if (section === "main" && !poolView) {
+          const stub = readCrossPageStub(captured.element);
           if (stub) crosspageStubs[key] = stub;
         }
       }

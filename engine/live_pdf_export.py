@@ -78,6 +78,28 @@ def exporter_pdf_tournoi_manager(
 
         footer_reference = _footer_reference_slide_index(page_map, source)
 
+        # Page « Composition » des poules : insérée juste après les participants,
+        # avec la capture du Manager (rosters remplis) sur la slide Engine.
+        for key, capture_data in captures.items():
+            if not key.startswith("composition:") or not capture_data:
+                continue
+            try:
+                comp_index = int(key.split(":", 1)[1])
+            except (ValueError, IndexError):
+                continue
+            if comp_index < 0 or comp_index >= source.page_count:
+                continue
+            page = merged.new_page(width=page_rect.width, height=page_rect.height)
+            composer_page_export(
+                page,
+                source,
+                comp_index,
+                capture_data,
+                section="main",
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
+            )
+
         for section in ("main", "classement", "planning", "final"):
             for entry in page_map.get(section, []):
                 slide_index = int(entry["index"])

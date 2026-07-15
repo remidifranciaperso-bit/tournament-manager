@@ -5,7 +5,7 @@ interface LiveManagerDocumentPageProps {
   children: ReactNode;
   club: string;
   logoUrl?: string | null;
-  capture?: "bracket" | "final" | "planning";
+  capture?: "bracket" | "final" | "planning" | "pools";
   showFooter?: boolean;
 }
 
