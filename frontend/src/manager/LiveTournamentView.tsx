@@ -195,8 +195,6 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
   const [exportCaptureTarget, setExportCaptureTarget] =
     useState<ExportCaptureTarget | null>(null);
   const bracketShellRef = useRef<HTMLDivElement>(null);
-  const exportingPdf = exportPhase !== "idle";
-
   const captureExportPages = useCallback(async () => {
     return captureManagerExportPages(page_map, {
       showPage: (tab, subPage) => {
@@ -297,6 +295,9 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
 
   const activeTabLabel = useMemo(() => {
     if (primaryTab === "poules") {
+      // Titre (brush) : « Composition des poules » pour le sous-onglet
+      // Composition ; le libellé de la pastille reste « Composition ».
+      if (poulesPage === 0) return "Composition des poules";
       return poulesPages[poulesPage] ?? "Poules";
     }
     return activeTabBrushLabel(primaryTab, {
@@ -407,7 +408,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   pdfFilename={pdf_filename}
                   exportPayload={exportPayload}
                   captureExportPages={captureExportPages}
-                  exportingPdf={exportingPdf}
+                  exportPhase={exportPhase}
                   onExportPhaseChange={setExportPhase}
                   onPdfExported={onPdfExported}
                   onStart={(initialMatchCodes) =>

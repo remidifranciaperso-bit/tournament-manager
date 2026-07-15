@@ -143,7 +143,7 @@ export function LiveBroadcastContent({
     activeTab === "poules" && activeSubPage !== undefined ? activeSubPage : 0;
   const poulesLabel =
     poulesPage === 0
-      ? "Composition"
+      ? "Composition des poules"
       : `Poule ${poolLettersList[poulesPage - 1] ?? ""}`;
 
   const [awaitingLaunch] = useState(() => new Set<string>());
@@ -206,7 +206,7 @@ export function LiveBroadcastContent({
               nb_equipes: meta.nb_equipes,
             }}
             captureExportPages={async () => ({})}
-            exportingPdf={false}
+            exportPhase="idle"
             onExportPhaseChange={() => {}}
             onStart={() => {}}
             onCompleteMatch={() => {}}

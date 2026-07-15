@@ -19,6 +19,14 @@ import type { StoredMatchResult } from "./useLiveProgress";
 import { useMatchScoreDraft } from "./useMatchScoreDraft";
 import type { ValidatedMatchScore } from "./matchScoreRules";
 
+/** Largeur de la barre de progression bleue selon la phase d'export PDF. */
+const EXPORT_PROGRESS_WIDTH: Record<ExportPhase, string> = {
+  idle: "0%",
+  capture: "40%",
+  upload: "75%",
+  download: "100%",
+};
+
 interface ScoringBridgeProps {
   format: MatchFormatCode;
   equipe1: string;
@@ -83,7 +91,7 @@ interface LiveMatchsEnCoursTabProps {
   pdfFilename: string;
   exportPayload: LivePdfExportPayload;
   captureExportPages: () => Promise<ManagerExportCapture>;
-  exportingPdf: boolean;
+  exportPhase: ExportPhase;
   onExportPhaseChange: (phase: ExportPhase) => void;
   onPdfExported?: () => void;
   onStart: (initialMatchCodes: string[]) => void;
@@ -111,7 +119,7 @@ export function LiveMatchsEnCoursTab({
   pdfFilename,
   exportPayload,
   captureExportPages,
-  exportingPdf,
+  exportPhase,
   onExportPhaseChange,
   onPdfExported,
   onStart,
@@ -124,6 +132,7 @@ export function LiveMatchsEnCoursTab({
   broadcast = false,
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
+  const exportingPdf = exportPhase !== "idle";
   const [exportError, setExportError] = useState<string | null>(null);
   const [launchBlockedMessage, setLaunchBlockedMessage] = useState<
     Map<string, string>
@@ -442,36 +451,51 @@ export function LiveMatchsEnCoursTab({
             >
               Tournoi terminé
             </span>
-            <button
-              type="button"
-              disabled={exportingPdf}
-              onClick={() => {
-                setExportError(null);
-                void (async () => {
-                  try {
-                    await downloadTournamentExportPdf(
-                      liveToken,
-                      pdfFilename,
-                      exportPayload,
-                      captureExportPages,
-                      onExportPhaseChange
-                    );
-                    onPdfExported?.();
-                  } catch (error) {
-                    const message =
-                      error instanceof Error
-                        ? error.message
-                        : "Export PDF impossible.";
-                    setExportError(message);
-                  } finally {
-                    onExportPhaseChange("idle");
-                  }
-                })();
-              }}
-              className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15 disabled:cursor-wait disabled:opacity-60"
-            >
-              {exportingPdf ? "Téléchargement…" : "Exporter le PDF du tournoi"}
-            </button>
+            {exportingPdf ? (
+              <div className="w-72 max-w-full">
+                <p className="mb-2 text-center text-sm font-semibold text-template-blue">
+                  {exportPhase === "download"
+                    ? "Téléchargement du PDF…"
+                    : "Préparation du PDF…"}
+                </p>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-template-blue/15">
+                  <div
+                    className="h-full rounded-full bg-template-blue transition-[width] duration-500 ease-out"
+                    style={{ width: EXPORT_PROGRESS_WIDTH[exportPhase] }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setExportError(null);
+                  void (async () => {
+                    try {
+                      await downloadTournamentExportPdf(
+                        liveToken,
+                        pdfFilename,
+                        exportPayload,
+                        captureExportPages,
+                        onExportPhaseChange
+                      );
+                      onPdfExported?.();
+                    } catch (error) {
+                      const message =
+                        error instanceof Error
+                          ? error.message
+                          : "Export PDF impossible.";
+                      setExportError(message);
+                    } finally {
+                      onExportPhaseChange("idle");
+                    }
+                  })();
+                }}
+                className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15"
+              >
+                Exporter le PDF du tournoi
+              </button>
+            )}
             {exportError && (
               <p className="max-w-md text-sm text-red-600">{exportError}</p>
             )}

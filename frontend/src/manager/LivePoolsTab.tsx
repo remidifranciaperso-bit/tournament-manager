@@ -139,13 +139,13 @@ function RosterCard({
       <table className={LIVE_TABLE}>
         <thead>
           <tr className="bg-template-blue text-white">
-            <th className={LIVE_TABLE_HEAD}>{title}</th>
+            <th className={`text-center ${LIVE_TABLE_HEAD}`}>{title}</th>
           </tr>
         </thead>
         <tbody>
           {teams.length === 0 ? (
             <tr className={LIVE_TABLE_ROW}>
-              <td className={LIVE_TABLE_CELL_NOTO}>
+              <td className={`${LIVE_TABLE_CELL_NOTO} text-center`}>
                 <span className="text-arena-600/35">—</span>
               </td>
             </tr>
@@ -155,7 +155,7 @@ function RosterCard({
               return (
                 <tr key={`${team}-${index}`} className={LIVE_TABLE_ROW}>
                   <td
-                    className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(label)}`}
+                    className={`${LIVE_TABLE_CELL_NOTO} text-center ${liveTeamTextClass(label)}`}
                   >
                     {label}
                   </td>

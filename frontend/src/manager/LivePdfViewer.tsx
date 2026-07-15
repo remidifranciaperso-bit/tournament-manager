@@ -323,6 +323,10 @@ export async function downloadTournamentExportPdf(
 
   const result = (await res.json()) as { download_url?: string };
   const downloadUrl = result.download_url ?? `/api/live/${liveToken}/pdf/export`;
+  onPhase?.("download");
   downloadViaHiddenFrame(downloadUrl);
+  // Laisse la barre afficher « Téléchargement du PDF » un instant avant de
+  // refermer l'overlay (le téléchargement via iframe est fire-and-forget).
+  await new Promise((resolve) => window.setTimeout(resolve, 1400));
   onPhase?.("idle");
 }
