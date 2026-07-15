@@ -104,7 +104,8 @@ export function LiveProchainsMatchsTab({
       matches,
       completed,
       awaitingLaunch,
-      forcedUpcomingByTerrain
+      forcedUpcomingByTerrain,
+      gateDay
     );
     applyForcedUpcoming(next);
     setForcePickerTerrain(null);

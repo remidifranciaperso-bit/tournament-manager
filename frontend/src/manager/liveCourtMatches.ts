@@ -250,17 +250,22 @@ export function computeForcedUpcomingAfterForce(
   matches: LiveMatch[],
   completed: Set<string>,
   awaitingLaunch: Set<string>,
-  forcedUpcomingByTerrain: Record<string, string>
+  forcedUpcomingByTerrain: Record<string, string>,
+  /** Jour actif : un match déplacé ne peut pas être remplacé par un match
+   * d'un jour suivant (formats multi-jours). */
+  maxDay?: number
 ): Record<string, string> {
   const forcedMap = new Map(Object.entries(forcedUpcomingByTerrain));
   const next: Record<string, string> = { ...forcedUpcomingByTerrain };
+  const withinDay = (match: LiveMatch) =>
+    maxDay == null || (match.jour ?? 1) <= maxDay;
 
   for (const [terrain, code] of Object.entries(next)) {
     if (code === matchCode) delete next[terrain];
   }
 
   const targetQueue = sortMatchesForTerrain(matches, targetTerrain).filter(
-    (match) => !completed.has(match.code)
+    (match) => !completed.has(match.code) && withinDay(match)
   );
   const displaced = naturalUpcomingInQueue(
     targetQueue,
@@ -273,7 +278,7 @@ export function computeForcedUpcomingAfterForce(
     if (terrain === targetTerrain || awaitingLaunch.has(terrain)) continue;
 
     const queue = sortMatchesForTerrain(matches, terrain).filter(
-      (match) => !completed.has(match.code)
+      (match) => !completed.has(match.code) && withinDay(match)
     );
     const naturalUpcoming = naturalUpcomingInQueue(
       queue,
