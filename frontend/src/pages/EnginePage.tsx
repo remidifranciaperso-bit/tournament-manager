@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { generateTournament, previewExcel, notifyOwnerAfterDownload, buildTournamentResume, downloadManagerLiveBundle } from "../api";
 import { CourtBackground } from "../components/CourtBackground";
@@ -36,9 +36,11 @@ const WIZARD_STEPS = STEPS.slice(1);
 
 /** 1 = Participants (accueil Engine supprimé, entrée directe depuis le Hub). */
 const STEP_ENTRY = 1;
+const ENGINE_PARTICIPANTS_PATH = "/engine/participants";
 
 export default function EnginePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(STEP_ENTRY);
   const [form, setForm] = useState<TournamentForm>(defaultForm);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
@@ -51,6 +53,38 @@ export default function EnginePage() {
   const [liveSnapshotAvailable, setLiveSnapshotAvailable] = useState(false);
   const notifyTokenRef = useRef<string | null>(null);
   const genStartedRef = useRef(false);
+
+  const resetWizard = useCallback(() => {
+    setStep(STEP_ENTRY);
+    setForm(defaultForm);
+    setPreview(null);
+    setPreviewError(null);
+    setPreviewLoading(false);
+    setGenerating(false);
+    setGenError(null);
+    setPdfUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setPdfFilename("tournoi.pdf");
+    setLiveSnapshotAvailable(false);
+    notifyTokenRef.current = null;
+    genStartedRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    const path = location.pathname.replace(/\/$/, "") || "/";
+    if (path === "/engine") {
+      navigate(ENGINE_PARTICIPANTS_PATH, { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    const state = location.state as { fromHub?: boolean } | null;
+    if (!state?.fromHub) return;
+    resetWizard();
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, navigate, resetWizard]);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
   const poulesDisponibles = nbEquipes === 20 || nbEquipes === 24;

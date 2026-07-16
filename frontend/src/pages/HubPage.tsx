@@ -10,7 +10,7 @@ import {
   HUB_LIVE_ITEMS,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-145";
+const HUB_BUILD = "manager-preview-146";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
@@ -213,8 +213,10 @@ export default function HubPage() {
               <div className="grid w-full max-w-4xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-8">
                 <ProductChoice
                   title="Engine"
-                  ctaLabel="Faire mon dossier tournoi"
-                  onCta={() => navigate("/engine")}
+                  ctaLabel="Commencer mon dossier tournoi"
+                  onCta={() =>
+                    navigate("/engine/participants", { state: { fromHub: true } })
+                  }
                   highlightItems={HUB_ENGINE_ITEMS}
                 />
                 <ProductChoice
