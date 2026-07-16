@@ -18,16 +18,22 @@ const BRUSH_GLOW =
 const CHOICE_TITLE =
   "font-brush text-[clamp(1.5rem,4.5vw,2.65rem)] leading-[1.02] text-lime";
 
+/** Encarts Hub : fond semi-opaque + flou pour lisibilité sur la photo. */
+const HUB_HIGHLIGHT_PANEL_SURFACE =
+  "rounded-2xl border-2 border-lime/40 bg-black/60 shadow-[0_10px_36px_rgba(0,0,0,0.42)] ring-1 ring-white/10 backdrop-blur-lg";
+
 /** Encarts Engine / Live : largeur et hauteur strictement identiques. */
 const PRODUCT_HIGHLIGHT_PANEL_CLASS =
-  "lime-panel box-border flex h-[12.25rem] w-full items-center justify-center p-5 sm:h-[13rem] sm:p-6";
+  `${HUB_HIGHLIGHT_PANEL_SURFACE} box-border flex h-[12.25rem] w-full items-center justify-center p-5 sm:h-[13rem] sm:p-6`;
 
 function HubEntryCta({
   children,
   onClick,
+  large = false,
 }: {
   children: string;
   onClick: () => void;
+  large?: boolean;
 }) {
   return (
     <motion.button
@@ -35,7 +41,12 @@ function HubEntryCta({
       onClick={onClick}
       whileHover={{ scale: 1.005 }}
       whileTap={{ scale: 0.995 }}
-      className="inline-flex items-center justify-center rounded-xl border border-lime/40 bg-lime/5 px-10 py-4 text-base font-semibold tracking-wide text-lime ring-1 ring-lime/30 transition hover:border-lime/50 hover:bg-lime/[0.08]"
+      className={[
+        "inline-flex items-center justify-center rounded-xl border border-lime/40 bg-lime/5 font-semibold tracking-wide text-lime ring-1 ring-lime/30 transition hover:border-lime/50 hover:bg-lime/[0.08]",
+        large
+          ? "px-14 py-5 text-lg sm:px-16 sm:py-[1.35rem] sm:text-xl"
+          : "px-10 py-4 text-base",
+      ].join(" ")}
     >
       {children}
     </motion.button>
@@ -65,11 +76,11 @@ function HubHighlight({
   return (
     <li
       className={[
-        "flex gap-1.5 leading-snug text-white/55 sm:gap-2",
+        "flex gap-1.5 leading-snug sm:gap-2",
         centered ? "items-center justify-center" : "items-start justify-start",
         product
-          ? "min-h-0 text-sm sm:text-[15px]"
-          : "min-h-[1.125rem] text-xs sm:min-h-[1.25rem] sm:text-sm",
+          ? "min-h-0 text-sm text-white/85 sm:text-[15px]"
+          : "min-h-[1.125rem] text-xs text-white/85 sm:min-h-[1.25rem] sm:text-sm",
       ].join(" ")}
     >
       {!product && (
@@ -92,7 +103,7 @@ function HighlightPanel({
   right: string[];
 }) {
   return (
-    <div className="lime-panel mx-auto w-fit max-w-full p-5 sm:p-6">
+    <div className={`${HUB_HIGHLIGHT_PANEL_SURFACE} mx-auto w-fit max-w-full p-5 sm:p-6`}>
       <div className="grid grid-cols-2 gap-x-8 sm:gap-x-10">
         <ul className="m-0 flex list-none flex-col gap-y-2 sm:gap-y-2.5">
           {left.map((item) => (
@@ -123,7 +134,7 @@ function ProductHighlightPanel({ items }: { items: string[] }) {
 
 function HubTaglines() {
   return (
-    <div className="flex shrink-0 flex-col items-center text-center">
+    <div className="mt-4 flex shrink-0 flex-col items-center text-center sm:mt-5">
       <p className="text-sm font-medium text-white/70 sm:text-base">
         Générateur professionnel de tournois Padel
       </p>
@@ -172,7 +183,7 @@ export default function HubPage() {
             "mx-auto flex min-h-0 h-full w-full max-w-5xl flex-col overflow-hidden px-2",
             choosing
               ? "items-center justify-start gap-3 pt-[clamp(0.25rem,1.5vh,0.75rem)] sm:gap-4"
-              : "items-center justify-center gap-3 sm:gap-4",
+              : "items-center justify-start gap-4 pt-[clamp(2.75rem,7vh,5rem)] sm:gap-5",
           ].join(" ")}
         >
           <h1
@@ -203,8 +214,8 @@ export default function HubPage() {
                   left={HUB_COMMON_LEFT}
                   right={HUB_COMMON_RIGHT}
                 />
-                <div className="mt-6 sm:mt-7">
-                  <HubEntryCta onClick={() => setChoosing(true)}>
+                <div className="mt-8 sm:mt-10">
+                  <HubEntryCta large onClick={() => setChoosing(true)}>
                     Commencer
                   </HubEntryCta>
                 </div>
