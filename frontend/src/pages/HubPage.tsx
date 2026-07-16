@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { IconCheck } from "../components/Icons";
-import { GhostButton } from "../components/ui";
 import { ProductEntryLayout } from "../components/ProductEntry";
 import {
   HUB_COMMON_LEFT,
@@ -196,14 +195,6 @@ export default function HubPage() {
     setChoosing(true);
   }, []);
 
-  const leaveChoosing = useCallback(() => {
-    if (window.history.state?.[HUB_CHOOSE_HISTORY_KEY]) {
-      window.history.back();
-      return;
-    }
-    setChoosing(false);
-  }, []);
-
   return (
     <div className="min-h-screen h-dvh overflow-hidden">
       <ProductEntryLayout compact>
@@ -233,7 +224,7 @@ export default function HubPage() {
             className={[
               "flex min-h-0 w-full flex-col overflow-hidden",
               choosing
-                ? "mt-[clamp(1rem,4.5vh,2.75rem)] flex-none items-center justify-start"
+                ? "mt-[clamp(1.5rem,6vh,3.5rem)] flex-none items-center justify-start"
                 : "mt-2 flex-1 items-center justify-center sm:mt-3",
             ].join(" ")}
           >
@@ -250,11 +241,7 @@ export default function HubPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex w-full max-w-4xl flex-col items-center gap-4 sm:gap-5">
-                <div className="w-full">
-                  <GhostButton onClick={leaveChoosing}>← Précédent</GhostButton>
-                </div>
-                <div className="grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-8">
+              <div className="grid w-full max-w-4xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-8">
                 <ProductChoice
                   title="Engine"
                   ctaLabel="Commencer mon dossier tournoi"
@@ -269,7 +256,6 @@ export default function HubPage() {
                   onCta={() => navigate("/manager")}
                   highlightItems={HUB_LIVE_ITEMS}
                 />
-              </div>
               </div>
             )}
           </div>
