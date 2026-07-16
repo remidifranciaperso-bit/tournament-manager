@@ -58,9 +58,17 @@ def init_live_from_snapshot(
         "pdf_filename": pdf_filename,
         "live_version": "engine-pdf",
     }
-    logo_png = snapshot.get("logo_png")
-    if logo_png:
-        payload["logo_png"] = logo_png
+    logo_session = chemin_logo(live_token)
+    if logo_session is not None:
+        import base64
+
+        payload["logo_png"] = base64.b64encode(logo_session.read_bytes()).decode(
+            "ascii"
+        )
+    else:
+        logo_png = snapshot.get("logo_png")
+        if logo_png:
+            payload["logo_png"] = logo_png
     return payload
 
 

@@ -93,6 +93,7 @@ export function ManagerStartStep({
             dropHint="Glissez votre pack ZIP ici"
             icon={<IconUpload className="h-9 w-9" />}
             prominent
+            engineDropStyle
             loading={packLoading}
           />
 

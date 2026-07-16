@@ -12,17 +12,34 @@ def preparer_logo_import(
     snapshot: dict,
     logo_path: Path | str | None = None,
 ) -> Path | None:
-    """Logo snapshot pack (prioritaire) ou fichier ZIP — copie directe comme live Excel."""
-    decoded = materialiser_logo_snapshot(snapshot, pdf_path.parent)
-    if decoded is not None and decoded.is_file():
-        return decoded
+    """Prépare le logo pack comme le live Excel (_ecrire_logo_temporaire)."""
+    dest_dir = Path(pdf_path).parent
 
-    if logo_path is not None:
-        source = Path(logo_path)
-        if source.is_file() and source.stat().st_size > 64:
-            return source
+    source = materialiser_logo_snapshot(snapshot, dest_dir)
+    if source is None or not source.is_file():
+        if logo_path is not None:
+            candidat = Path(logo_path)
+            if candidat.is_file() and candidat.stat().st_size > 64:
+                source = candidat
 
-    return None
+    if source is None:
+        return None
+
+    from engine.logo_prepare import (
+        UPLOAD_LOGO_MAX_PX,
+        preparer_logo_fichier,
+        preparer_logo_png_export,
+    )
+
+    # Même pipeline que le wizard Engine : rognage contenu + PNG 720px.
+    prepare_path = dest_dir / "logo_live.png"
+    payload = preparer_logo_png_export(source, max_px=UPLOAD_LOGO_MAX_PX)
+    if payload:
+        prepare_path.write_bytes(payload)
+        return prepare_path
+
+    # Repli strict live Excel : preparer_logo_fichier après upload.
+    return preparer_logo_fichier(source, max_px=UPLOAD_LOGO_MAX_PX)
 
 
 def logo_url_pour_meta(live_token: str) -> str | None:

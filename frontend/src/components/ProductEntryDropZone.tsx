@@ -12,6 +12,8 @@ interface ProductEntryDropZoneProps {
   dropHint?: string;
   icon?: ReactNode;
   prominent?: boolean;
+  /** Bordure pointillée + néon au survol (style FileDrop Engine logo). */
+  engineDropStyle?: boolean;
   loading?: boolean;
   disabled?: boolean;
 }
@@ -26,6 +28,7 @@ export function ProductEntryDropZone({
   dropHint = "Glissez votre fichier ici",
   icon,
   prominent = false,
+  engineDropStyle = false,
   loading = false,
   disabled = false,
 }: ProductEntryDropZoneProps) {
@@ -58,24 +61,37 @@ export function ProductEntryDropZone({
       }}
       className={[
         "group relative flex w-full cursor-pointer flex-col items-center justify-center text-center transition",
+        engineDropStyle ? "overflow-hidden border-2 border-dashed" : "",
         prominent
-          ? "min-h-[12.5rem] gap-4 rounded-2xl border px-6 py-8 shadow-lime backdrop-blur-[2px] sm:px-8 sm:py-10"
+          ? "min-h-[12.5rem] gap-4 rounded-2xl px-6 py-8 backdrop-blur-[2px] sm:px-8 sm:py-10"
           : "min-h-[7.5rem] gap-3 rounded-xl border px-5 py-5 backdrop-blur-[2px]",
+        !engineDropStyle && prominent ? "border shadow-lime" : "",
         disabled || loading
           ? "cursor-wait border-white/10 bg-black/25 opacity-80"
           : over
-            ? prominent
-              ? "border-lime/75 bg-black/50"
-              : "border-white/25 bg-black/35"
-            : file
-              ? prominent
-                ? "border-lime/55 bg-black/45"
-                : "border-lime/30 bg-black/30"
+            ? engineDropStyle
+              ? "border-lime/60 bg-lime/5 shadow-lime"
               : prominent
-                ? "border-lime/50 bg-black/40 hover:border-lime/75 hover:bg-black/50"
-                : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-black/30",
+                ? "border-lime/75 bg-black/50"
+                : "border-white/25 bg-black/35"
+            : file
+              ? engineDropStyle
+                ? "border-lime/40 bg-lime/5 shadow-lime"
+                : prominent
+                  ? "border-lime/55 bg-black/45"
+                  : "border-lime/30 bg-black/30"
+              : engineDropStyle
+                ? "border-lime/25 bg-lime/[0.03] hover:border-lime/45 hover:bg-lime/5"
+                : prominent
+                  ? "border-lime/50 bg-black/40 hover:border-lime/75 hover:bg-black/50"
+                  : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-black/30",
       ].join(" ")}
     >
+      {engineDropStyle ? (
+        <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
+          <div className="absolute inset-0 bg-gradient-to-b from-lime/5 to-transparent" />
+        </div>
+      ) : null}
       <input
         ref={inputRef}
         type="file"
