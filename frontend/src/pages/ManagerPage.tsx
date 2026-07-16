@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { previewExcel, generateLiveTournament } from "../api";
 import { CourtBackground } from "../components/CourtBackground";
-import { LiveNightCourtBackground } from "../manager/LiveNightCourtBackground";
 import { PadelBall } from "../components/PadelBall";
 import { RacketProgress } from "../components/RacketProgress";
 import { Stepper, StepperMobile } from "../components/Stepper";
@@ -42,7 +41,7 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-124";
+const MANAGER_BUILD = "manager-preview-125";
 
 /** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack · 11 formats pack */
 const STEP_PARTICIPANTS = 2;
@@ -289,14 +288,13 @@ export default function ManagerPage() {
   if (step === 1) {
     return (
       <div className="relative flex h-dvh w-full flex-col overflow-hidden">
-        <LiveNightCourtBackground />
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <ManagerStartStep
             onExcelStart={() => setStep(STEP_PARTICIPANTS)}
             onPackStart={() => setStep(STEP_PACK_IMPORT)}
           />
         </div>
-        <div className="absolute bottom-6 left-6 z-20">
+        <div className="absolute bottom-[clamp(4.5rem,9.5vh,6.25rem)] left-6 z-20">
           <GhostButton onClick={goBack}>← Retour</GhostButton>
         </div>
       </div>
