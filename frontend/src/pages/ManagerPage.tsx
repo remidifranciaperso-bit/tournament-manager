@@ -9,7 +9,6 @@ import { GhostButton, PrimaryButton } from "../components/ui";
 import { LiveTournamentView } from "../manager/LiveTournamentView";
 import type { LiveTournamentData } from "../manager/liveTypes";
 import { ManagerLiveGenerationStep } from "../manager/ManagerLiveGenerationStep";
-import { ManagerPackImportStep } from "../manager/ManagerPackImportStep";
 import { ManagerStartStep } from "../manager/ManagerStartStep";
 import { defaultForm, type PreviewResult, type TournamentForm } from "../types";
 import { MANAGER_WIZARD_STEPS } from "../wizard/constants";
@@ -41,15 +40,12 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-126";
+const MANAGER_BUILD = "manager-preview-127";
 
-/** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack · 11 formats pack */
+/** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 11 formats pack */
 const STEP_PARTICIPANTS = 2;
 const STEP_GENERATE = 9;
-const STEP_PACK_IMPORT = 10;
 const STEP_PACK_FORMAT = 11;
-
-/** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 10 import pack */
 
 export default function ManagerPage() {
   const [phase, setPhase] = useState<"setup" | "live">("setup");
@@ -187,10 +183,6 @@ export default function ManagerPage() {
     if (step === STEP_PACK_FORMAT) {
       setPendingPackLiveData(null);
       setPackHasPoulesFormat(false);
-      setStep(STEP_PACK_IMPORT);
-      return;
-    }
-    if (step === STEP_PACK_IMPORT) {
       setStep(1);
       return;
     }
@@ -290,8 +282,20 @@ export default function ManagerPage() {
       <div className="relative flex h-dvh w-full flex-col overflow-hidden">
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <ManagerStartStep
-            onExcelStart={() => setStep(STEP_PARTICIPANTS)}
-            onPackStart={() => setStep(STEP_PACK_IMPORT)}
+            onPackConfirmed={(data) => {
+              const hasPoules = packHasPoules(data);
+              setPendingPackLiveData(data);
+              setPackHasPoulesFormat(hasPoules);
+              setForm((prev) => ({
+                ...prev,
+                ...hydrateFormFromPackMeta(data.meta, hasPoules),
+              }));
+              setStep(STEP_PACK_FORMAT);
+            }}
+            onExcelFile={(file) => {
+              setForm((prev) => ({ ...prev, excelFile: file }));
+              setStep(STEP_PARTICIPANTS);
+            }}
           />
         </div>
         <div className="absolute bottom-[clamp(4.5rem,9.5vh,6.25rem)] left-6 z-20">
@@ -328,31 +332,6 @@ export default function ManagerPage() {
               </PrimaryButton>
             </div>
           </footer>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === STEP_PACK_IMPORT) {
-    return (
-      <div className="relative flex h-dvh w-full flex-col overflow-hidden">
-        <CourtBackground />
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-8 sm:px-8">
-          <ManagerPackImportStep
-            onReady={(data) => {
-              const hasPoules = packHasPoules(data);
-              setPendingPackLiveData(data);
-              setPackHasPoulesFormat(hasPoules);
-              setForm((prev) => ({
-                ...prev,
-                ...hydrateFormFromPackMeta(data.meta, hasPoules),
-              }));
-              setStep(STEP_PACK_FORMAT);
-            }}
-          />
-        </div>
-        <div className="absolute bottom-6 left-6 z-20">
-          <GhostButton onClick={goBack}>← Retour</GhostButton>
         </div>
       </div>
     );

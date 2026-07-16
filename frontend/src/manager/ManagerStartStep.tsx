@@ -1,19 +1,76 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { initLiveFromPack } from "../api";
 import { IconTrophy, IconUpload } from "../components/Icons";
+import { ProductEntryDropZone } from "../components/ProductEntryDropZone";
 import {
   ProductBrushHeadline,
   ProductEntryLayout,
 } from "../components/ProductEntry";
+import { ManagerPackSummaryDialog } from "./ManagerPackSummaryDialog";
+import type { LiveTournamentData } from "./liveTypes";
+
+const PACK_DESCRIPTION =
+  "Importez le ZIP téléchargé depuis Engine (PDF + fichier .live.json). Le tableau et les convocations restent identiques à la génération Engine.";
 
 export function ManagerStartStep({
-  onExcelStart,
-  onPackStart,
+  onPackConfirmed,
+  onExcelFile,
 }: {
-  onExcelStart: () => void;
-  onPackStart: () => void;
+  onPackConfirmed: (data: LiveTournamentData) => void;
+  onExcelFile: (file: File) => void;
 }) {
+  const [packFile, setPackFile] = useState<File | null>(null);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [packLoading, setPackLoading] = useState(false);
+  const [packError, setPackError] = useState<string | null>(null);
+  const [pendingPack, setPendingPack] = useState<LiveTournamentData | null>(null);
+
+  const handlePackFile = async (file: File | null) => {
+    setPackFile(file);
+    setPackError(null);
+    setPendingPack(null);
+    if (!file) return;
+
+    setPackLoading(true);
+    try {
+      const data = await initLiveFromPack(file);
+      setPendingPack(data);
+    } catch (err) {
+      setPackFile(null);
+      setPackError(
+        err instanceof Error
+          ? err.message
+          : "Impossible d'importer le pack Manager Live."
+      );
+    } finally {
+      setPackLoading(false);
+    }
+  };
+
+  const handleExcelFile = (file: File | null) => {
+    setExcelFile(file);
+    if (file) onExcelFile(file);
+  };
+
+  const cancelPackSummary = () => {
+    setPendingPack(null);
+    setPackFile(null);
+  };
+
   return (
     <ProductEntryLayout>
+      {pendingPack ? (
+        <ManagerPackSummaryDialog
+          meta={pendingPack.meta}
+          onConfirm={() => {
+            onPackConfirmed(pendingPack);
+            setPendingPack(null);
+          }}
+          onCancel={cancelPackSummary}
+        />
+      ) : null}
+
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -27,39 +84,33 @@ export function ManagerStartStep({
         </h2>
 
         <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-5">
-          <motion.button
-            type="button"
-            onClick={onPackStart}
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.99 }}
-            className="group flex min-h-[12.5rem] flex-col items-center justify-center gap-4 rounded-2xl border border-lime/50 bg-black/40 px-8 py-10 shadow-lime backdrop-blur-[2px] transition hover:border-lime/75 hover:bg-black/50"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-lime/15 text-lime transition group-hover:bg-lime/20">
-              <IconUpload className="h-9 w-9" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-lg font-semibold text-white sm:text-xl">
-                Importer un pack
-              </span>
-              <span className="text-sm text-white/55">
-                Pack ZIP depuis Engine
-              </span>
-            </div>
-          </motion.button>
+          <ProductEntryDropZone
+            accept=".zip"
+            file={packFile}
+            onFile={handlePackFile}
+            title="Importer un pack"
+            description={PACK_DESCRIPTION}
+            dropHint="Glissez votre pack ZIP ici"
+            icon={<IconUpload className="h-9 w-9" />}
+            prominent
+            loading={packLoading}
+          />
 
-          <motion.button
-            type="button"
-            onClick={onExcelStart}
-            whileHover={{ y: -1 }}
-            whileTap={{ scale: 0.99 }}
-            className="group flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-black/20 px-5 py-3.5 backdrop-blur-[2px] transition hover:border-white/20 hover:bg-black/30"
-          >
-            <IconTrophy className="h-5 w-5 shrink-0 text-lime/55 group-hover:text-lime/80" />
-            <span className="text-sm font-medium text-white/60 group-hover:text-white/80">
-              Depuis un Excel
-            </span>
-          </motion.button>
+          <ProductEntryDropZone
+            accept=".xlsx,.xls"
+            file={excelFile}
+            onFile={handleExcelFile}
+            title="Depuis un fichier Excel"
+            dropHint="Glissez votre fichier Excel ici"
+            icon={<IconTrophy className="h-7 w-7" />}
+          />
         </div>
+
+        {packError ? (
+          <p className="mt-5 max-w-md rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {packError}
+          </p>
+        ) : null}
       </motion.div>
     </ProductEntryLayout>
   );
