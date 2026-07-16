@@ -7,7 +7,8 @@ export function LiveNightCourtBackground() {
         alt=""
         decoding="async"
         draggable={false}
-        className="h-full w-full object-contain object-center"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 object-center"
+        style={{ width: "105%", height: "105%", objectFit: "cover" }}
       />
       {/* Fondu noir sur les bandes vides + léger vignettage aux bords. */}
       <div
