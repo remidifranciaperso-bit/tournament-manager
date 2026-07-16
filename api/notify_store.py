@@ -105,37 +105,40 @@ def creer_archive_manager_live(token: str) -> Path | None:
 
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.write(pdf_path, arcname=pdf_path.name)
-        zf.write(snapshot_path, arcname=f"{base}.live.json")
+
+        import base64
+
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
         logo_path = chemin_logo_notify(token)
-        if logo_path is not None:
-            zf.write(logo_path, arcname="logo.png")
-        else:
-            import base64
+        logo_bytes: bytes | None = None
 
-            logo_ajoute = False
+        if logo_path is not None and logo_path.is_file():
+            logo_bytes = logo_path.read_bytes()
+        elif snapshot.get("logo_png"):
             try:
-                snapshot = json.loads(
-                    snapshot_path.read_text(encoding="utf-8")
-                )
-                logo_b64 = snapshot.get("logo_png")
-                if logo_b64:
-                    logo_bytes = base64.b64decode(logo_b64)
-                    if len(logo_bytes) >= 64:
-                        zf.writestr("logo.png", logo_bytes)
-                        logo_ajoute = True
-            except (OSError, json.JSONDecodeError, ValueError, TypeError):
-                pass
+                logo_bytes = base64.b64decode(snapshot["logo_png"])
+            except (ValueError, TypeError):
+                logo_bytes = None
 
-            if not logo_ajoute:
-                from engine.live_logo_extract import extraire_logo_embarque_pdf
+        if logo_bytes is None or len(logo_bytes) < 64:
+            from engine.live_logo_session import _logo_depuis_pdf
+            import tempfile as tmpmod
 
-                fd, temp_name = tempfile.mkstemp(suffix=".png")
-                os.close(fd)
-                temp_logo = Path(temp_name)
-                try:
-                    if extraire_logo_embarque_pdf(pdf_path, temp_logo):
-                        zf.write(temp_logo, arcname="logo.png")
-                finally:
-                    temp_logo.unlink(missing_ok=True)
+            pack_dir = Path(tmpmod.mkdtemp(prefix="pack-logo-"))
+            try:
+                prepared = _logo_depuis_pdf(pdf_path, pack_dir)
+                if prepared is not None and prepared.is_file():
+                    logo_bytes = prepared.read_bytes()
+            finally:
+                shutil.rmtree(pack_dir, ignore_errors=True)
+
+        if logo_bytes and len(logo_bytes) >= 64:
+            snapshot["logo_png"] = base64.b64encode(logo_bytes).decode("ascii")
+            zf.writestr("logo.png", logo_bytes)
+
+        zf.writestr(
+            f"{base}.live.json",
+            json.dumps(snapshot, ensure_ascii=False),
+        )
 
     return archive

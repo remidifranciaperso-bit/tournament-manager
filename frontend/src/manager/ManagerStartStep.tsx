@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { initLiveFromPack } from "../api";
+import { FileDrop } from "../components/FileDrop";
 import { IconTrophy, IconUpload } from "../components/Icons";
+import { PadelBall } from "../components/PadelBall";
 import { ProductEntryDropZone } from "../components/ProductEntryDropZone";
 import {
   ProductBrushHeadline,
@@ -27,6 +29,7 @@ export function ManagerStartStep({
   const [pendingPack, setPendingPack] = useState<LiveTournamentData | null>(null);
 
   const handlePackFile = async (file: File | null) => {
+    if (packLoading) return;
     setPackFile(file);
     setPackError(null);
     setPendingPack(null);
@@ -84,18 +87,31 @@ export function ManagerStartStep({
         </h2>
 
         <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-5">
-          <ProductEntryDropZone
-            accept=".zip"
-            file={packFile}
-            onFile={handlePackFile}
-            title="Importer un pack"
-            description={PACK_DESCRIPTION}
-            dropHint="Glissez votre pack ZIP ici"
-            icon={<IconUpload className="h-9 w-9" />}
-            prominent
-            engineDropStyle
-            loading={packLoading}
-          />
+          <div className="relative w-full">
+            <FileDrop
+              accept=".zip"
+              file={packFile}
+              onFile={handlePackFile}
+              title="Importer un pack"
+              hint={
+                packLoading
+                  ? "Import du pack en cours…"
+                  : "Glissez votre pack ZIP ici"
+              }
+              icon={<IconUpload className="h-7 w-7" />}
+              variant="lime"
+            />
+            {packLoading ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl bg-black/45">
+                <PadelBall size={36} spinning realistic />
+              </div>
+            ) : null}
+            {!packFile ? (
+              <p className="mt-3 text-center text-[11px] leading-snug text-white/45 sm:text-xs">
+                {PACK_DESCRIPTION}
+              </p>
+            ) : null}
+          </div>
 
           <ProductEntryDropZone
             accept=".xlsx,.xls"

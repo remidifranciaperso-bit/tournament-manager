@@ -104,6 +104,74 @@ def _smallest_logo_candidates(page: fitz.Page, doc: fitz.Document) -> list[tuple
     return candidates
 
 
+def _garde_candidates(page: fitz.Page, doc: fitz.Document) -> list[tuple[float, int]]:
+    """Logo grand en tête de garde (meilleure qualité que le pied de page PDF)."""
+    header_y_max = page.rect.height * 0.22
+    page_area = page.rect.width * page.rect.height
+    candidates: list[tuple[float, int]] = []
+
+    for xref, width_px, height_px, bbox in _iter_page_images(page, doc):
+        if bbox is None:
+            continue
+        if bbox.y0 > header_y_max:
+            continue
+        if width_px < 48 or height_px < 48:
+            continue
+        bbox_area = bbox.width * bbox.height
+        if bbox_area > page_area * 0.15:
+            continue
+        if width_px > 512 or height_px > 512:
+            continue
+        area = float(width_px * height_px)
+        candidates.append((area, xref))
+
+    return candidates
+
+
+def extraire_logo_qualite_pdf(
+    pdf_path: Path,
+    output_path: Path,
+) -> bool:
+    """Extrait le logo le plus net du PDF (garde 1re page, sinon pied de page)."""
+    pdf_path = Path(pdf_path)
+    output_path = Path(output_path)
+
+    from engine.pdf_pages import pdf_est_lisible
+
+    if not pdf_est_lisible(pdf_path):
+        return False
+
+    try:
+        doc = fitz.open(str(pdf_path))
+    except Exception:
+        return False
+
+    try:
+        best_xref: int | None = None
+        best_score = -1.0
+
+        if doc.page_count > 0:
+            for area, xref in _garde_candidates(doc[0], doc):
+                if area > best_score:
+                    best_score = area
+                    best_xref = xref
+
+        if best_xref is None:
+            for area, xref in _footer_candidates(doc[0], doc):
+                if area > best_score:
+                    best_score = area
+                    best_xref = xref
+
+        if best_xref is None:
+            return False
+
+        pix = fitz.Pixmap(doc, best_xref)
+        _pixmap_to_png(pix, output_path)
+        return output_path.is_file() and output_path.stat().st_size > 128
+    finally:
+        doc.close()
+
+
 def extraire_logo_embarque_pdf(
     pdf_path: Path,
     output_path: Path,
