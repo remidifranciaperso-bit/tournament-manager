@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { IconCheck } from "../components/Icons";
 import { ProductEntryLayout } from "../components/ProductEntry";
@@ -11,7 +11,7 @@ import {
 } from "../wizard/constants";
 
 const HUB_BUILD = "manager-preview-146";
-const HUB_CHOOSE_HISTORY_KEY = "hub-choose";
+export const HUB_CHOOSE_SEARCH = "hub=choose";
 
 /** Largeur commune des CTA et encarts Engine / Live. */
 const PRODUCT_CHOICE_ACTION_WIDTH = "w-full max-w-[22rem] sm:max-w-[24rem]";
@@ -182,18 +182,12 @@ function ProductChoice({
 
 export default function HubPage() {
   const navigate = useNavigate();
-  const [choosing, setChoosing] = useState(false);
-
-  useEffect(() => {
-    const onPopState = () => setChoosing(false);
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const choosing = searchParams.get("hub") === "choose";
 
   const enterChoosing = useCallback(() => {
-    window.history.pushState({ [HUB_CHOOSE_HISTORY_KEY]: true }, "");
-    setChoosing(true);
-  }, []);
+    setSearchParams({ hub: "choose" });
+  }, [setSearchParams]);
 
   return (
     <div className="min-h-screen h-dvh overflow-hidden">

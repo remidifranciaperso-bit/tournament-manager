@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { initLiveFromPack } from "../api";
 import { FileDrop } from "../components/FileDrop";
 import { IconTable, IconUpload } from "../components/Icons";
@@ -70,19 +69,17 @@ export function ManagerStartStep({
         />
       ) : null}
 
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="mx-auto flex w-full max-w-3xl flex-col items-center overflow-hidden px-2 pt-[clamp(2.75rem,7vh,5rem)] text-center"
-      >
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center overflow-hidden px-2 pt-[clamp(2.75rem,7vh,5rem)] text-center">
         <ProductBrushHeadline product="Live" />
 
-        <p className="mx-auto mt-4 max-w-xl text-sm leading-snug text-white/50 sm:mt-5 sm:text-base">
-          Importez le pack ZIP téléchargé depuis Engine (PDF + fichier .live.json).
-          <br />
-          Le tableau et les convocations restent identiques à la génération Engine.
-        </p>
+        <div className="mx-auto mt-4 max-w-2xl text-sm text-white/50 sm:mt-5 sm:text-base">
+          <p className="leading-snug">
+            Importez le pack ZIP téléchargé depuis Engine (PDF + fichier .live.json).
+          </p>
+          <p className="mt-1 leading-snug">
+            Le tableau et les convocations restent identiques à la génération Engine.
+          </p>
+        </div>
 
         <div className="mt-9 flex w-full max-w-md flex-col items-stretch gap-6 sm:mt-10">
           <div className="w-full text-left">
@@ -119,7 +116,7 @@ export function ManagerStartStep({
             {packError}
           </p>
         ) : null}
-      </motion.div>
+      </div>
     </ProductEntryLayout>
   );
 }

@@ -22,6 +22,7 @@ import {
 } from "../manager/matchFormats";
 import { ManagerMatchFormatsStep } from "../manager/ManagerMatchFormatsStep";
 import { ManagerLiveResumeDialog } from "../manager/ManagerLiveResumeDialog";
+import { HUB_CHOOSE_SEARCH } from "./HubPage";
 import {
   buildResumeSummary,
   clearLiveSession,
@@ -188,7 +189,7 @@ export default function ManagerPage() {
       return;
     }
     if (step === STEP_ENTRY) {
-      navigate("/");
+      navigate(`/?${HUB_CHOOSE_SEARCH}`);
       return;
     }
     setStep((s) => Math.max(s - 1, STEP_ENTRY));
