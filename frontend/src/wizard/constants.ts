@@ -1,3 +1,5 @@
+import { FORMATS_SUPPORTES } from "../types";
+
 export const ENGINE_WELCOME_LEFT = [
   "Dossier tournoi complet",
   "Tableau de convocations",
@@ -28,6 +30,19 @@ export const MANAGER_WELCOME_RIGHT = [
   "Planning dynamique",
   "Classement final",
   "Interface sans distraction",
+];
+
+/** Highlights communs Hub (écran d'accueil plateforme). */
+export const HUB_COMMON_LEFT = [
+  "Tableaux pré-remplis",
+  `${FORMATS_SUPPORTES.join("/")} équipes`,
+  "Barèmes de points FFT intégrés",
+];
+
+export const HUB_COMMON_RIGHT = [
+  "Tableau & planning figés",
+  "PDF prêt à imprimer",
+  "Gestion du jour J",
 ];
 
 export const MANAGER_WIZARD_STEPS = [

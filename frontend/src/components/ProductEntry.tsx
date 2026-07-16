@@ -36,12 +36,23 @@ export function ProductEntryLogoStrip() {
 }
 
 /** Coque plein écran partagée Live / Engine (fond nuit + contenu + bandeau logos). */
-export function ProductEntryLayout({ children }: { children: ReactNode }) {
+export function ProductEntryLayout({
+  children,
+  compact = false,
+}: {
+  children: ReactNode;
+  compact?: boolean;
+}) {
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
       <LiveNightCourtBackground />
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-        <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-4 py-8 sm:px-6 sm:py-10">
+        <main
+          className={[
+            "flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-4 sm:px-6",
+            compact ? "py-3 sm:py-4" : "py-8 sm:py-10",
+          ].join(" ")}
+        >
           {children}
         </main>
         <ProductEntryLogoStrip />
