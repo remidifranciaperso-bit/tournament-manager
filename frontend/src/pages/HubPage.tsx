@@ -10,7 +10,7 @@ import {
   HUB_LIVE_ITEMS,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-143";
+const HUB_BUILD = "manager-preview-144";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";

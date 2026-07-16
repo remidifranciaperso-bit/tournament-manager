@@ -50,10 +50,10 @@ export const HUB_COMMON_RIGHT = [
 export const HUB_ENGINE_ITEMS = [
   "Import simple d'un fichier Excel",
   "Dossier tournoi complet",
-  "PDF prêt à imprimer",
   "Convocations des équipes",
   "Tableaux pré-remplis",
   "Planning des matchs",
+  "PDF prêt à imprimer",
 ];
 
 export const HUB_LIVE_ITEMS = [
