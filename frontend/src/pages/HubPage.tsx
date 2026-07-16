@@ -18,9 +18,9 @@ const BRUSH_GLOW =
 const CHOICE_TITLE =
   "font-brush text-[clamp(1.5rem,4.5vw,2.65rem)] leading-[1.02] text-lime";
 
-/** Encarts Hub : verre dépoli transparent pour lisibilité sans masquer le fond. */
+/** Encarts Hub : verre très léger pour laisser deviner le fond. */
 const HUB_HIGHLIGHT_PANEL_SURFACE =
-  "rounded-2xl border-2 border-lime/40 bg-white/[0.04] shadow-lime ring-1 ring-white/10 backdrop-blur-2xl";
+  "rounded-2xl border-2 border-lime/35 bg-white/[0.015] shadow-lime ring-1 ring-white/5 backdrop-blur-md";
 
 /** Encarts Engine / Live : largeur et hauteur strictement identiques. */
 const PRODUCT_HIGHLIGHT_PANEL_CLASS =
