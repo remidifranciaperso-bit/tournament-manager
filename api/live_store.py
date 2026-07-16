@@ -27,6 +27,8 @@ TTL_SECONDS = 7 * 24 * 60 * 60
 # Rafraîchit au plus une fois par heure le mtime d'une session consultée, pour
 # la maintenir « active » sans I/O superflue à chaque requête.
 _TOUCH_MIN_INTERVAL = 60 * 60
+_CLEANUP_MIN_INTERVAL = 60 * 60
+_last_cleanup_at = 0.0
 
 
 def _live_root() -> Path:
@@ -46,7 +48,12 @@ def _toucher_session(dossier: Path) -> None:
 
 
 def nettoyer_sessions_expirees() -> None:
-    seuil = time.time() - TTL_SECONDS
+    global _last_cleanup_at
+    now = time.time()
+    if now - _last_cleanup_at < _CLEANUP_MIN_INTERVAL:
+        return
+    _last_cleanup_at = now
+    seuil = now - TTL_SECONDS
     for dossier in _live_root().iterdir():
         if not dossier.is_dir():
             continue

@@ -85,7 +85,11 @@ app.add_middleware(
 
 def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(upload.file.read())
+        while True:
+            chunk = upload.file.read(1024 * 1024)
+            if not chunk:
+                break
+            tmp.write(chunk)
         return Path(tmp.name)
 
 
@@ -783,6 +787,9 @@ class SpaStaticFiles(StaticFiles):
     """Fallback index.html pour les routes front (HashRouter : /manager, /engine…)."""
 
     async def get_response(self, path: str, scope):
+        # Ne jamais intercepter l'API : évite un fallback HTML sur les routes /api.
+        if path == "api" or path.startswith("api/"):
+            raise StarletteHTTPException(404)
         try:
             return await super().get_response(path, scope)
         except StarletteHTTPException as exc:

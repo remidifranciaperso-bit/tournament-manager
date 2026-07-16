@@ -209,12 +209,18 @@ export async function generateTournament(
 }
 
 export async function initLiveFromPack(packFile: File): Promise<LiveTournamentData> {
-  await assertLiveApiReady();
-
   const body = new FormData();
   body.append("pack", packFile);
 
-  const res = await fetch("/api/live/init-from-pack", { method: "POST", body });
+  let res: Response;
+  try {
+    res = await fetch("/api/live/init-from-pack", { method: "POST", body });
+  } catch {
+    throw new Error(
+      "Connexion interrompue pendant l'import du pack. " +
+        "Patientez quelques secondes et réessayez."
+    );
+  }
   if (!res.ok) throw new Error(await readError(res));
 
   const data = normalizeLiveTournamentData(

@@ -37,8 +37,10 @@ def init_live_from_snapshot(
     )
 
     from engine.live_logo_extract import assurer_logo_session
+    from api.live_store import chemin_logo
 
-    assurer_logo_session(live_token)
+    if chemin_logo(live_token) is None:
+        assurer_logo_session(live_token)
 
     meta = dict(snapshot["meta"])
     logo_url = logo_url_pour_meta(live_token)
