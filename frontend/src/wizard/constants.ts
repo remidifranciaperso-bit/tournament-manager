@@ -54,12 +54,14 @@ export const HUB_ENGINE_ITEMS = [
   "Tableaux pré-remplis",
   "Planning des matchs",
   "PDF prêt à imprimer",
+  "Pack Engine pour Live ultérieur",
 ];
 
 export const HUB_LIVE_ITEMS = [
   "Visu des matchs en cours et à suivre",
   "Saisie des scores (tous formats)",
   "Remplissage automatique des tableaux",
+  "Remplissage automatique du classement",
   "Planning dynamique",
   "Mode projection possible",
   "PDF téléchargeable en fin de tournoi",
