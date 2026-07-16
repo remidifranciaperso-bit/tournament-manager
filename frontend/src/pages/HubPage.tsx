@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { IconCheck } from "../components/Icons";
+import { GhostButton } from "../components/ui";
 import { ProductEntryLayout } from "../components/ProductEntry";
 import {
   HUB_COMMON_LEFT,
@@ -11,6 +12,10 @@ import {
 } from "../wizard/constants";
 
 const HUB_BUILD = "manager-preview-146";
+const HUB_CHOOSE_HISTORY_KEY = "hub-choose";
+
+/** Largeur commune des CTA et encarts Engine / Live. */
+const PRODUCT_CHOICE_ACTION_WIDTH = "w-full max-w-[22rem] sm:max-w-[24rem]";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
@@ -30,10 +35,12 @@ function HubEntryCta({
   children,
   onClick,
   large = false,
+  fullWidth = false,
 }: {
   children: string;
   onClick: () => void;
   large?: boolean;
+  fullWidth?: boolean;
 }) {
   return (
     <motion.button
@@ -42,7 +49,8 @@ function HubEntryCta({
       whileHover={{ scale: 1.005 }}
       whileTap={{ scale: 0.995 }}
       className={[
-        "inline-flex items-center justify-center rounded-xl border border-lime/40 bg-lime/5 font-semibold tracking-wide text-lime ring-1 ring-lime/30 transition hover:border-lime/50 hover:bg-lime/[0.08]",
+        "items-center justify-center rounded-xl border border-lime/40 bg-lime/5 font-semibold tracking-wide text-lime ring-1 ring-lime/30 transition hover:border-lime/50 hover:bg-lime/[0.08]",
+        fullWidth ? "flex w-full" : "inline-flex",
         large
           ? "px-14 py-5 text-lg sm:px-16 sm:py-[1.35rem] sm:text-xl"
           : "px-10 py-4 text-base",
@@ -123,7 +131,7 @@ function HighlightPanel({
 function ProductHighlightPanel({ items }: { items: string[] }) {
   return (
     <div className={PRODUCT_HIGHLIGHT_PANEL_CLASS}>
-      <ul className="m-0 flex h-full w-fit max-w-full list-none flex-col justify-between">
+      <ul className="m-0 flex h-full w-full list-none flex-col items-center justify-between">
         {items.map((item) => (
           <HubHighlight key={item} item={item} product centered nowrap />
         ))}
@@ -161,10 +169,12 @@ function ProductChoice({
       <h2 className={CHOICE_TITLE} style={{ textShadow: BRUSH_GLOW }}>
         {title}
       </h2>
-      <div className="mt-5 sm:mt-6">
-        <HubEntryCta onClick={onCta}>{ctaLabel}</HubEntryCta>
+      <div className={`mt-5 sm:mt-6 ${PRODUCT_CHOICE_ACTION_WIDTH}`}>
+        <HubEntryCta fullWidth onClick={onCta}>
+          {ctaLabel}
+        </HubEntryCta>
       </div>
-      <div className="mt-6 w-full sm:mt-7">
+      <div className={`mt-4 w-full sm:mt-5 ${PRODUCT_CHOICE_ACTION_WIDTH}`}>
         <ProductHighlightPanel items={highlightItems} />
       </div>
     </div>
@@ -174,6 +184,25 @@ function ProductChoice({
 export default function HubPage() {
   const navigate = useNavigate();
   const [choosing, setChoosing] = useState(false);
+
+  useEffect(() => {
+    const onPopState = () => setChoosing(false);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const enterChoosing = useCallback(() => {
+    window.history.pushState({ [HUB_CHOOSE_HISTORY_KEY]: true }, "");
+    setChoosing(true);
+  }, []);
+
+  const leaveChoosing = useCallback(() => {
+    if (window.history.state?.[HUB_CHOOSE_HISTORY_KEY]) {
+      window.history.back();
+      return;
+    }
+    setChoosing(false);
+  }, []);
 
   return (
     <div className="min-h-screen h-dvh overflow-hidden">
@@ -204,7 +233,7 @@ export default function HubPage() {
             className={[
               "flex min-h-0 w-full flex-col overflow-hidden",
               choosing
-                ? "mt-[clamp(1.5rem,6vh,3.5rem)] flex-none items-center justify-start"
+                ? "mt-[clamp(1rem,4.5vh,2.75rem)] flex-none items-center justify-start"
                 : "mt-2 flex-1 items-center justify-center sm:mt-3",
             ].join(" ")}
           >
@@ -215,13 +244,17 @@ export default function HubPage() {
                   right={HUB_COMMON_RIGHT}
                 />
                 <div className="mt-8 sm:mt-10">
-                  <HubEntryCta large onClick={() => setChoosing(true)}>
+                  <HubEntryCta large onClick={enterChoosing}>
                     Commencer
                   </HubEntryCta>
                 </div>
               </div>
             ) : (
-              <div className="grid w-full max-w-4xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-8">
+              <div className="flex w-full max-w-4xl flex-col items-center gap-4 sm:gap-5">
+                <div className="w-full">
+                  <GhostButton onClick={leaveChoosing}>← Précédent</GhostButton>
+                </div>
+                <div className="grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-8">
                 <ProductChoice
                   title="Engine"
                   ctaLabel="Commencer mon dossier tournoi"
@@ -236,6 +269,7 @@ export default function HubPage() {
                   onCta={() => navigate("/manager")}
                   highlightItems={HUB_LIVE_ITEMS}
                 />
+              </div>
               </div>
             )}
           </div>
