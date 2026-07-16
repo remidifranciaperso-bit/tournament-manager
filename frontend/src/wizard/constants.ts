@@ -62,15 +62,11 @@ export const HUB_ENGINE_RIGHT = [
   "Planning des matchs",
 ];
 
-export const HUB_LIVE_LEFT = [
-  "Visualisation des matchs en cours et à suivre",
-  "Saisie des scores (tous formats de score)",
+export const HUB_LIVE_ITEMS = [
+  "Visu des matchs en cours et à suivre",
+  "Saisie des scores (tous formats)",
   "Remplissage automatique des tableaux",
   "Planning dynamique",
-];
-
-export const HUB_LIVE_RIGHT = [
-  "Remplissage automatique du classement",
   "Mode projection possible",
   "PDF téléchargeable en fin de tournoi",
 ];
