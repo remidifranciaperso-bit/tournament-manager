@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { initLiveFromPack } from "../api";
 import { FileDrop } from "../components/FileDrop";
 import { IconTrophy, IconUpload } from "../components/Icons";
-import { PadelBall } from "../components/PadelBall";
 import { ProductEntryDropZone } from "../components/ProductEntryDropZone";
 import {
   ProductBrushHeadline,
@@ -11,9 +10,6 @@ import {
 } from "../components/ProductEntry";
 import { ManagerPackSummaryDialog } from "./ManagerPackSummaryDialog";
 import type { LiveTournamentData } from "./liveTypes";
-
-const PACK_DESCRIPTION =
-  "Importez le ZIP téléchargé depuis Engine (PDF + fichier .live.json). Le tableau et les convocations restent identiques à la génération Engine.";
 
 export function ManagerStartStep({
   onPackConfirmed,
@@ -82,35 +78,29 @@ export function ManagerStartStep({
       >
         <ProductBrushHeadline product="Live" />
 
-        <h2 className="mt-8 font-display text-xl tracking-wide text-white sm:text-2xl">
-          Lancer mon tournoi Live
-        </h2>
+        <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-white/50 sm:text-base">
+          Importez le pack ZIP téléchargé depuis Engine (PDF + fichier
+          .live.json). Le tableau et les convocations restent identiques à la
+          génération Engine.
+        </p>
 
-        <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-5">
-          <div className="relative w-full">
+        <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-8">
+          <div className="w-full text-left">
+            <label className="field-label">Pack Manager Live</label>
             <FileDrop
               accept=".zip"
               file={packFile}
               onFile={handlePackFile}
-              title="Importer un pack"
+              title="Glissez votre pack ZIP ici"
               hint={
                 packLoading
                   ? "Import du pack en cours…"
-                  : "Glissez votre pack ZIP ici"
+                  : "ZIP téléchargé depuis Engine"
               }
               icon={<IconUpload className="h-7 w-7" />}
               variant="lime"
+              disabled={packLoading}
             />
-            {packLoading ? (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl bg-black/45">
-                <PadelBall size={36} spinning realistic />
-              </div>
-            ) : null}
-            {!packFile ? (
-              <p className="mt-3 text-center text-[11px] leading-snug text-white/45 sm:text-xs">
-                {PACK_DESCRIPTION}
-              </p>
-            ) : null}
           </div>
 
           <ProductEntryDropZone

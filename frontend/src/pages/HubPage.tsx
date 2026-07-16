@@ -1,8 +1,35 @@
 import { Link } from "react-router-dom";
 import { CourtBackground } from "../components/CourtBackground";
-import { IconLogo, IconTrophy, IconGrid } from "../components/Icons";
+import { IconCheck, IconLogo, IconTrophy, IconGrid } from "../components/Icons";
+import { FORMATS_SUPPORTES } from "../types";
 
-const HUB_BUILD = "manager-preview-132";
+const HUB_BUILD = "manager-preview-133";
+
+const LIVE_FEATURES = [
+  "Tableaux pré-remplis",
+  `${FORMATS_SUPPORTES.join("/")} équipes`,
+  "Gestion live des matchs",
+  "Matchs en cours",
+  "Saisie des scores en direct",
+  "File d'attente des matchs",
+  "Suivi du tableau principal",
+  "Planning dynamique",
+  "Tableaux de classement",
+  "Classement final",
+  "Barèmes de points FFT intégrés",
+  "Interface sans distraction",
+];
+
+function LiveFeature({ children }: { children: string }) {
+  return (
+    <li className="flex items-start gap-2 text-xs leading-snug text-white/55 sm:text-sm">
+      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime">
+        <IconCheck className="h-2.5 w-2.5" />
+      </span>
+      <span>{children}</span>
+    </li>
+  );
+}
 
 export default function HubPage() {
   return (
@@ -40,13 +67,18 @@ export default function HubPage() {
             className="group rounded-2xl border border-white/10 bg-arena-900/70 p-8 transition hover:border-lime/40 hover:bg-arena-900"
           >
             <IconGrid className="h-10 w-10 text-lime" />
-            <h2 className="mt-5 font-display text-2xl tracking-wide text-white">
-              Manager
+            <h2 className="mt-5 font-display text-2xl tracking-wide text-lime">
+              Live
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-white/60">
-              Gérer un tournoi en live : scores, tableaux, planning et
+              Gérer un tournoi en direct : scores, tableaux, planning et
               classements du jour J.
             </p>
+            <ul className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-4">
+              {LIVE_FEATURES.map((item) => (
+                <LiveFeature key={item}>{item}</LiveFeature>
+              ))}
+            </ul>
             <span className="mt-6 inline-block text-sm font-semibold text-lime/80 group-hover:text-lime">
               Ouvrir →
             </span>

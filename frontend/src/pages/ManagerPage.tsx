@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { previewExcel, generateLiveTournament } from "../api";
 import { CourtBackground } from "../components/CourtBackground";
@@ -33,23 +34,24 @@ import {
   ClubStep,
   FormatStep,
   IdentityStep,
-  ManagerWelcomeStep,
   ParticipantsStep,
   PlanningStep,
   SummaryStep,
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-132";
+const MANAGER_BUILD = "manager-preview-133";
 
-/** 0 accueil · 1 mode · 2 excel wizard… · 9 génération · 11 formats pack */
+/** 1 import pack/excel · 2 excel wizard… · 9 génération · 11 formats pack */
+const STEP_ENTRY = 1;
 const STEP_PARTICIPANTS = 2;
 const STEP_GENERATE = 9;
 const STEP_PACK_FORMAT = 11;
 
 export default function ManagerPage() {
+  const navigate = useNavigate();
   const [phase, setPhase] = useState<"setup" | "live">("setup");
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(STEP_ENTRY);
   const [form, setForm] = useState<TournamentForm>(defaultForm);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -148,8 +150,7 @@ export default function ManagerPage() {
 
   const stepValid = useMemo(() => {
     switch (step) {
-      case 0:
-      case 1:
+      case STEP_ENTRY:
         return true;
       case 2:
         if (!form.excelFile || previewLoading) return false;
@@ -183,10 +184,14 @@ export default function ManagerPage() {
     if (step === STEP_PACK_FORMAT) {
       setPendingPackLiveData(null);
       setPackHasPoulesFormat(false);
-      setStep(1);
+      setStep(STEP_ENTRY);
       return;
     }
-    setStep((s) => Math.max(s - 1, 0));
+    if (step === STEP_ENTRY) {
+      navigate("/");
+      return;
+    }
+    setStep((s) => Math.max(s - 1, STEP_ENTRY));
   };
 
   const handlePackFormatContinue = () => {
@@ -196,7 +201,7 @@ export default function ManagerPage() {
     setPackHasPoulesFormat(false);
     enterLivePhase(data, form, data.meta.nb_equipes);
   };
-  const goHome = () => setStep(0);
+  const goHome = () => setStep(STEP_ENTRY);
 
   const handleValidateSummary = () => {
     setGenError(null);
@@ -266,18 +271,7 @@ export default function ManagerPage() {
     );
   }
 
-  if (step === 0) {
-    return (
-      <div className="relative flex h-dvh w-full flex-col overflow-hidden">
-        <CourtBackground />
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-          <ManagerWelcomeStep onStart={() => setStep(1)} />
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 1) {
+  if (step === STEP_ENTRY) {
     return (
       <div className="relative flex h-dvh w-full flex-col overflow-hidden">
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">

@@ -10,6 +10,7 @@ export function FileDrop({
   hint,
   icon,
   variant = "neon",
+  disabled = false,
 }: {
   accept: string;
   file: File | null;
@@ -18,14 +19,17 @@ export function FileDrop({
   hint?: string;
   icon?: React.ReactNode;
   variant?: "neon" | "lime";
+  disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const isLime = variant === "lime";
+  const accentue = over && !disabled;
 
   return (
     <div
       onDragOver={(e) => {
+        if (disabled) return;
         e.preventDefault();
         setOver(true);
       }}
@@ -33,16 +37,23 @@ export function FileDrop({
       onDrop={(e) => {
         e.preventDefault();
         setOver(false);
+        if (disabled) return;
         const f = e.dataTransfer.files?.[0];
         if (f) onFile(f);
       }}
-      onClick={() => inputRef.current?.click()}
+      onClick={() => {
+        if (disabled) return;
+        inputRef.current?.click();
+      }}
       className={[
-        "group relative flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition",
-        over
+        "group relative flex flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition",
+        disabled
+          ? "cursor-wait border-white/10 bg-white/[0.02] opacity-70"
+          : "cursor-pointer",
+        accentue
           ? isLime
-            ? "border-lime/60 bg-lime/5 shadow-lime"
-            : "border-neon/60 bg-neon/5 shadow-neon"
+            ? "border-lime/70 bg-lime/10 shadow-lime ring-2 ring-lime/25"
+            : "border-neon/70 bg-neon/10 shadow-neon ring-2 ring-neon/25"
           : file
             ? isLime
               ? "border-lime/40 bg-lime/5"
@@ -57,15 +68,21 @@ export function FileDrop({
         type="file"
         accept={accept}
         className="hidden"
+        disabled={disabled}
         onChange={(e) => onFile(e.target.files?.[0] ?? null)}
       />
 
-      {/* Halo au survol */}
-      <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
+      {/* Halo au survol ou glisser-déposer */}
+      <div
+        className={[
+          "pointer-events-none absolute inset-0 transition",
+          accentue ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+        ].join(" ")}
+      >
         <div
           className={[
             "absolute inset-0 bg-gradient-to-b to-transparent",
-            isLime ? "from-lime/5" : "from-neon/5",
+            isLime ? "from-lime/10" : "from-neon/10",
           ].join(" ")}
         />
       </div>
