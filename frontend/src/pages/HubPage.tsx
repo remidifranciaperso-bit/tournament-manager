@@ -10,7 +10,7 @@ import {
   HUB_LIVE_ITEMS,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-142";
+const HUB_BUILD = "manager-preview-143";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
@@ -72,17 +72,11 @@ function HubHighlight({
           : "min-h-[1.125rem] text-xs sm:min-h-[1.25rem] sm:text-sm",
       ].join(" ")}
     >
-      <span
-        className={[
-          "flex shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime",
-          product ? "h-4 w-4" : "h-3.5 w-3.5 sm:h-4 sm:w-4",
-          centered ? "" : "mt-px",
-        ].join(" ")}
-      >
-        <IconCheck
-          className={product ? "h-2.5 w-2.5" : "h-2 w-2 sm:h-2.5 sm:w-2.5"}
-        />
-      </span>
+      {!product && (
+        <span className="mt-px flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime sm:h-4 sm:w-4">
+          <IconCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+        </span>
+      )}
       <span className={["min-w-0", nowrap ? "whitespace-nowrap" : ""].join(" ")}>
         {item}
       </span>
