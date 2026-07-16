@@ -46,17 +46,13 @@ export const HUB_COMMON_RIGHT = [
   "Choix du format",
   "Paramètres personnalisables",
   "Planning des matchs optimisé",
-  "Moteur intuitif",
   "Barèmes des points FFT intégrés",
 ];
 
-export const HUB_ENGINE_LEFT = [
+export const HUB_ENGINE_ITEMS = [
   "Import simple d'un fichier Excel",
   "Dossier tournoi complet",
   "PDF prêt à imprimer",
-];
-
-export const HUB_ENGINE_RIGHT = [
   "Convocations des équipes",
   "Tableaux pré-remplis",
   "Planning des matchs",

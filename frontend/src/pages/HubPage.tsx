@@ -6,12 +6,11 @@ import { ProductEntryLayout } from "../components/ProductEntry";
 import {
   HUB_COMMON_LEFT,
   HUB_COMMON_RIGHT,
-  HUB_ENGINE_LEFT,
-  HUB_ENGINE_RIGHT,
+  HUB_ENGINE_ITEMS,
   HUB_LIVE_ITEMS,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-139";
+const HUB_BUILD = "manager-preview-140";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
@@ -21,7 +20,7 @@ const CHOICE_TITLE =
 
 /** Encarts Engine / Live : largeur et hauteur strictement identiques. */
 const PRODUCT_HIGHLIGHT_PANEL_CLASS =
-  "lime-panel box-border h-[12.25rem] w-full p-5 sm:h-[13rem] sm:p-6";
+  "lime-panel box-border flex h-[12.25rem] w-full items-center justify-center p-5 sm:h-[13rem] sm:p-6";
 
 function HubEntryCta({
   children,
@@ -47,10 +46,12 @@ function HubHighlight({
   item,
   product = false,
   nowrap = false,
+  centered = false,
 }: {
   item: string;
   product?: boolean;
   nowrap?: boolean;
+  centered?: boolean;
 }) {
   if (!item) {
     return (
@@ -64,7 +65,8 @@ function HubHighlight({
   return (
     <li
       className={[
-        "flex items-start justify-start gap-1.5 text-left leading-snug text-white/55 sm:gap-2",
+        "flex gap-1.5 leading-snug text-white/55 sm:gap-2",
+        centered ? "items-center justify-center" : "items-start justify-start",
         product
           ? "min-h-0 text-sm sm:text-[15px]"
           : "min-h-[1.125rem] text-xs sm:min-h-[1.25rem] sm:text-sm",
@@ -72,8 +74,9 @@ function HubHighlight({
     >
       <span
         className={[
-          "mt-px flex shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime",
+          "flex shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime",
           product ? "h-4 w-4" : "h-3.5 w-3.5 sm:h-4 sm:w-4",
+          centered ? "" : "mt-px",
         ].join(" ")}
       >
         <IconCheck
@@ -97,12 +100,12 @@ function HighlightPanel({
   const rowCount = Math.max(left.length, right.length);
 
   return (
-    <div className="lime-panel mx-auto w-full p-5 sm:p-6">
-      <ul className="m-0 grid list-none grid-cols-2 gap-x-6 gap-y-2 sm:gap-x-8 sm:gap-y-2.5">
+    <div className="lime-panel mx-auto w-fit max-w-full p-5 sm:p-6">
+      <ul className="m-0 grid list-none grid-cols-2 gap-x-8 gap-y-2 sm:gap-x-10 sm:gap-y-2.5">
         {Array.from({ length: rowCount }, (_, index) => (
           <Fragment key={`${left[index] ?? ""}-${right[index] ?? ""}-${index}`}>
-            <HubHighlight item={left[index] ?? ""} />
-            <HubHighlight item={right[index] ?? ""} />
+            <HubHighlight item={left[index] ?? ""} nowrap />
+            <HubHighlight item={right[index] ?? ""} nowrap />
           </Fragment>
         ))}
       </ul>
@@ -110,42 +113,12 @@ function HighlightPanel({
   );
 }
 
-function ProductHighlightPanel({
-  layout,
-  left,
-  right,
-  items,
-}: {
-  layout: "paired" | "single";
-  left?: string[];
-  right?: string[];
-  items?: string[];
-}) {
-  if (layout === "single" && items) {
-    return (
-      <div className={PRODUCT_HIGHLIGHT_PANEL_CLASS}>
-        <ul className="m-0 grid h-full list-none grid-cols-1 grid-rows-6 items-center">
-          {items.map((item) => (
-            <HubHighlight key={item} item={item} product />
-          ))}
-        </ul>
-      </div>
-    );
-  }
-
-  const rowCount = Math.max(left?.length ?? 0, right?.length ?? 0);
-
+function ProductHighlightPanel({ items }: { items: string[] }) {
   return (
     <div className={PRODUCT_HIGHLIGHT_PANEL_CLASS}>
-      <ul
-        className="m-0 grid h-full list-none grid-cols-2 items-center gap-x-6 sm:gap-x-8"
-        style={{ gridTemplateRows: `repeat(${rowCount}, minmax(0, 1fr))` }}
-      >
-        {Array.from({ length: rowCount }, (_, index) => (
-          <Fragment key={`${left?.[index] ?? ""}-${right?.[index] ?? ""}-${index}`}>
-            <HubHighlight item={left?.[index] ?? ""} product nowrap />
-            <HubHighlight item={right?.[index] ?? ""} product nowrap />
-          </Fragment>
+      <ul className="m-0 flex h-full w-fit max-w-full list-none flex-col justify-between">
+        {items.map((item) => (
+          <HubHighlight key={item} item={item} product centered nowrap />
         ))}
       </ul>
     </div>
@@ -169,18 +142,12 @@ function ProductChoice({
   title,
   ctaLabel,
   onCta,
-  highlightLayout,
-  highlightsLeft,
-  highlightsRight,
   highlightItems,
 }: {
   title: string;
   ctaLabel: string;
   onCta: () => void;
-  highlightLayout: "paired" | "single";
-  highlightsLeft?: string[];
-  highlightsRight?: string[];
-  highlightItems?: string[];
+  highlightItems: string[];
 }) {
   return (
     <motion.div
@@ -197,12 +164,7 @@ function ProductChoice({
         <HubEntryCta onClick={onCta}>{ctaLabel}</HubEntryCta>
       </div>
       <div className="mt-6 w-full sm:mt-7">
-        <ProductHighlightPanel
-          layout={highlightLayout}
-          left={highlightsLeft}
-          right={highlightsRight}
-          items={highlightItems}
-        />
+        <ProductHighlightPanel items={highlightItems} />
       </div>
     </motion.div>
   );
@@ -278,15 +240,12 @@ export default function HubPage() {
                     title="Engine"
                     ctaLabel="Faire mon dossier tournoi"
                     onCta={() => navigate("/engine")}
-                    highlightLayout="paired"
-                    highlightsLeft={HUB_ENGINE_LEFT}
-                    highlightsRight={HUB_ENGINE_RIGHT}
+                    highlightItems={HUB_ENGINE_ITEMS}
                   />
                   <ProductChoice
                     title="Live"
                     ctaLabel="Lancer mon tournoi live"
                     onCta={() => navigate("/manager")}
-                    highlightLayout="single"
                     highlightItems={HUB_LIVE_ITEMS}
                   />
                 </motion.div>
