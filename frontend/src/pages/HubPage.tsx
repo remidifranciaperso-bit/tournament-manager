@@ -168,12 +168,12 @@ function ProductChoice({
       <h2 className={CHOICE_TITLE} style={{ textShadow: BRUSH_GLOW }}>
         {title}
       </h2>
-      <div className={`mt-5 sm:mt-6 ${PRODUCT_CHOICE_ACTION_WIDTH}`}>
+      <div className={`mt-4 sm:mt-5 ${PRODUCT_CHOICE_ACTION_WIDTH}`}>
         <HubEntryCta fullWidth onClick={onCta}>
           {ctaLabel}
         </HubEntryCta>
       </div>
-      <div className={`mt-4 w-full sm:mt-5 ${PRODUCT_CHOICE_ACTION_WIDTH}`}>
+      <div className={`mt-3 w-full sm:mt-4 ${PRODUCT_CHOICE_ACTION_WIDTH}`}>
         <ProductHighlightPanel items={highlightItems} />
       </div>
     </div>
@@ -219,7 +219,7 @@ export default function HubPage() {
             className={[
               "flex min-h-0 w-full flex-col overflow-hidden",
               choosing
-                ? "mt-[clamp(1.5rem,6vh,3.5rem)] flex-none items-center justify-start"
+                ? "mt-[clamp(0.5rem,2vh,1rem)] flex-none items-center justify-start"
                 : "mt-2 flex-1 items-center justify-center sm:mt-3",
             ].join(" ")}
           >
