@@ -9,13 +9,13 @@ export function ProductBrushHeadline({ product }: { product: string }) {
   return (
     <h1 className="flex flex-col items-center gap-0.5 sm:gap-1">
       <span
-        className="font-brush text-[clamp(1.75rem,5vw,2.75rem)] leading-[1.05] text-lime"
+        className="font-brush text-[clamp(2.25rem,6.5vw,3.75rem)] leading-[1.05] text-lime"
         style={{ textShadow: BRUSH_GLOW }}
       >
         Padel Tournament
       </span>
       <span
-        className="font-brush text-[clamp(2.75rem,9vw,5.25rem)] leading-[0.95] text-lime"
+        className="font-brush text-[clamp(3.5rem,11vw,6.5rem)] leading-[0.95] text-lime"
         style={{ textShadow: BRUSH_GLOW }}
       >
         {product}

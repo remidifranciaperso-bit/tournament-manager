@@ -23,7 +23,7 @@ export function ManagerStartStep({
         <ProductBrushHeadline product="Live" />
 
         <h2 className="mt-8 font-display text-xl tracking-wide text-white sm:text-2xl">
-          Comment souhaitez-vous démarrer ?
+          Lancer mon tournoi Live
         </h2>
 
         <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-5">
@@ -57,7 +57,6 @@ export function ManagerStartStep({
             <IconTrophy className="h-5 w-5 shrink-0 text-lime/55 group-hover:text-lime/80" />
             <span className="text-sm font-medium text-white/60 group-hover:text-white/80">
               Depuis un Excel
-              <span className="text-white/35"> — plan de secours</span>
             </span>
           </motion.button>
         </div>
