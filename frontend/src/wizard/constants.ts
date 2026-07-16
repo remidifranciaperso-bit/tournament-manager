@@ -34,15 +34,45 @@ export const MANAGER_WELCOME_RIGHT = [
 
 /** Highlights communs Hub (écran d'accueil plateforme). */
 export const HUB_COMMON_LEFT = [
-  "Tableaux pré-remplis",
-  `${FORMATS_SUPPORTES.join("/")} équipes`,
-  "Barèmes de points FFT intégrés",
+  "Liste des participants et TS",
+  "8/12/16/20/24 équipes",
+  "TMC ou Poules",
+  "Tirages au sort automatisés",
+  "Placement des équipes",
+  "Composition automatique des poules",
 ];
 
 export const HUB_COMMON_RIGHT = [
-  "Tableau & planning figés",
+  "Choix du format",
+  "Paramètres personnalisables",
+  "Planning des matchs optimisé",
+  "Moteur intuitif",
+  "Barèmes des points FFT intégrés",
+];
+
+export const HUB_ENGINE_LEFT = [
+  "Import simple d'un fichier Excel",
+  "Dossier tournoi complet",
   "PDF prêt à imprimer",
-  "Gestion du jour J",
+];
+
+export const HUB_ENGINE_RIGHT = [
+  "Convocations des équipes",
+  "Tableaux pré-remplis",
+  "Planning des matchs",
+];
+
+export const HUB_LIVE_LEFT = [
+  "Visualisation des matchs en cours et à suivre",
+  "Saisie des scores (tous formats de score)",
+  "Remplissage automatique des tableaux",
+  "Planning dynamique",
+];
+
+export const HUB_LIVE_RIGHT = [
+  "Remplissage automatique du classement",
+  "Mode projection possible",
+  "PDF téléchargeable en fin de tournoi",
 ];
 
 export const MANAGER_WIZARD_STEPS = [
