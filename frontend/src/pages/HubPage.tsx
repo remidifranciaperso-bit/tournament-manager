@@ -10,7 +10,6 @@ import {
   HUB_LIVE_ITEMS,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-146";
 export const HUB_CHOOSE_SEARCH = "hub=choose";
 
 /** Largeur commune des CTA et encarts Engine / Live. */
@@ -248,10 +247,6 @@ export default function HubPage() {
               </div>
             )}
           </div>
-
-          <p className="mt-auto shrink-0 text-[10px] uppercase tracking-widest text-white/25">
-            preview {HUB_BUILD}
-          </p>
         </div>
       </ProductEntryLayout>
     </div>

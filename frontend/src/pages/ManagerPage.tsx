@@ -41,9 +41,6 @@ import {
   TerrainsStep,
 } from "../wizard/steps";
 
-const MANAGER_BUILD = "manager-preview-134";
-
-/** 1 import pack/excel · 2 excel wizard… · 9 génération · 11 formats pack */
 const STEP_ENTRY = 1;
 const STEP_PARTICIPANTS = 2;
 const STEP_GENERATE = 9;
@@ -353,9 +350,6 @@ export default function ManagerPage() {
             <PadelBall size={40} realistic />
           </button>
           <p className="text-sm font-medium text-white/55">Tournoi live</p>
-          <p className="mt-2 text-[10px] uppercase tracking-widest text-white/25">
-            build {MANAGER_BUILD}
-          </p>
         </div>
         <Stepper
           steps={MANAGER_WIZARD_STEPS}
