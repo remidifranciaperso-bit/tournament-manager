@@ -10,6 +10,7 @@ from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -778,10 +779,25 @@ async def generate(
 
 # Sert le front compile (Vite -> frontend/dist). Monte en dernier pour ne pas
 # masquer les routes /api. Absent en developpement : on ignore alors.
+class SpaStaticFiles(StaticFiles):
+    """Fallback index.html pour les routes front (HashRouter : /manager, /engine…)."""
+
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code != 404:
+                raise
+            # Fichier statique manquant (assets, images…) : vrai 404.
+            if path and "." in path.rsplit("/", 1)[-1]:
+                raise
+            return await super().get_response("index.html", scope)
+
+
 _FRONT_DIST = BASE_DIR / "frontend" / "dist"
 if _FRONT_DIST.exists():
     app.mount(
         "/",
-        StaticFiles(directory=str(_FRONT_DIST), html=True),
+        SpaStaticFiles(directory=str(_FRONT_DIST), html=True),
         name="frontend",
     )
