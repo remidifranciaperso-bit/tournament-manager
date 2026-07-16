@@ -37,10 +37,10 @@ export const HUB_COMMON_LEFT = [
   "TMC ou Poules",
   "Tirages au sort automatisés",
   "Placement des équipes",
-  "Composition automatique des poules",
 ];
 
 export const HUB_COMMON_RIGHT = [
+  "Composition automatique des poules",
   "Choix du format",
   "Paramètres personnalisables",
   "Planning des matchs optimisé",

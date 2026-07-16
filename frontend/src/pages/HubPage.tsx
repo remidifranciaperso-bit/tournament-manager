@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { IconCheck } from "../components/Icons";
@@ -10,7 +10,7 @@ import {
   HUB_LIVE_ITEMS,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-141";
+const HUB_BUILD = "manager-preview-142";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
@@ -97,18 +97,20 @@ function HighlightPanel({
   left: string[];
   right: string[];
 }) {
-  const rowCount = Math.max(left.length, right.length);
-
   return (
     <div className="lime-panel mx-auto w-fit max-w-full p-5 sm:p-6">
-      <ul className="m-0 grid list-none grid-cols-2 gap-x-8 gap-y-2 sm:gap-x-10 sm:gap-y-2.5">
-        {Array.from({ length: rowCount }, (_, index) => (
-          <Fragment key={`${left[index] ?? ""}-${right[index] ?? ""}-${index}`}>
-            <HubHighlight item={left[index] ?? ""} nowrap />
-            <HubHighlight item={right[index] ?? ""} nowrap />
-          </Fragment>
-        ))}
-      </ul>
+      <div className="grid grid-cols-2 gap-x-8 sm:gap-x-10">
+        <ul className="m-0 flex list-none flex-col gap-y-2 sm:gap-y-2.5">
+          {left.map((item) => (
+            <HubHighlight key={item} item={item} nowrap />
+          ))}
+        </ul>
+        <ul className="m-0 flex list-none flex-col gap-y-2 sm:gap-y-2.5">
+          {right.map((item) => (
+            <HubHighlight key={item} item={item} nowrap />
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
