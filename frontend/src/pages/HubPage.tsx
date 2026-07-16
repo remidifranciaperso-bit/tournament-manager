@@ -3,7 +3,7 @@ import { CourtBackground } from "../components/CourtBackground";
 import { IconCheck, IconLogo, IconTrophy, IconGrid } from "../components/Icons";
 import { FORMATS_SUPPORTES } from "../types";
 
-const HUB_BUILD = "manager-preview-133";
+const HUB_BUILD = "manager-preview-134";
 
 const LIVE_FEATURES = [
   "Tableaux pré-remplis",
