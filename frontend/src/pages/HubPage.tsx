@@ -1,9 +1,8 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { IconCheck } from "../components/Icons";
 import { ProductEntryLayout } from "../components/ProductEntry";
-import { PrimaryButton } from "../components/ui";
 import {
   HUB_COMMON_LEFT,
   HUB_COMMON_RIGHT,
@@ -13,7 +12,7 @@ import {
   HUB_LIVE_RIGHT,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-136";
+const HUB_BUILD = "manager-preview-137";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
@@ -21,44 +20,37 @@ const BRUSH_GLOW =
 const CHOICE_TITLE =
   "font-brush text-[clamp(1.35rem,3.8vw,2.35rem)] leading-[1.02] text-lime";
 
-function HubHighlight({
-  item,
-  size = "default",
+const HIGHLIGHT_PANEL_MIN_H = "min-h-[10.75rem] sm:min-h-[11.75rem]";
+
+function HubEntryCta({
+  children,
+  onClick,
 }: {
-  item: string;
-  size?: "default" | "compact" | "tiny";
+  children: ReactNode;
+  onClick: () => void;
 }) {
-  if (!item) return <li className="min-h-0" aria-hidden />;
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={{ scale: 1.02, y: -1 }}
+      whileTap={{ scale: 0.98 }}
+      className="inline-flex items-center justify-center gap-2 rounded-xl bg-lime px-10 py-4 text-base font-bold tracking-wide text-arena-950 shadow-lime transition hover:brightness-110"
+    >
+      {children}
+    </motion.button>
+  );
+}
 
-  const textClass =
-    size === "tiny"
-      ? "min-h-[0.85rem] text-[8px] leading-tight sm:text-[9px]"
-      : size === "compact"
-        ? "min-h-[1rem] text-[10px] sm:text-[11px]"
-        : "min-h-[1.125rem] text-xs sm:min-h-[1.25rem] sm:text-sm";
-
-  const iconClass =
-    size === "tiny"
-      ? "h-2.5 w-2.5"
-      : "h-3.5 w-3.5 sm:h-4 sm:w-4";
-
-  const checkClass =
-    size === "tiny" ? "h-1.5 w-1.5" : "h-2 w-2 sm:h-2.5 sm:w-2.5";
+function HubHighlight({ item }: { item: string }) {
+  if (!item) {
+    return <li className="min-h-[1.125rem] sm:min-h-[1.25rem]" aria-hidden />;
+  }
 
   return (
-    <li
-      className={[
-        "flex items-start justify-start gap-1 text-left leading-none text-white/55",
-        textClass,
-      ].join(" ")}
-    >
-      <span
-        className={[
-          "mt-px flex shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime",
-          iconClass,
-        ].join(" ")}
-      >
-        <IconCheck className={checkClass} />
+    <li className="flex min-h-[1.125rem] items-start justify-start gap-1.5 text-left text-xs leading-snug text-white/55 sm:min-h-[1.25rem] sm:gap-2 sm:text-sm">
+      <span className="mt-px flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-lime/15 text-lime sm:h-4 sm:w-4">
+        <IconCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
       </span>
       <span>{item}</span>
     </li>
@@ -68,32 +60,44 @@ function HubHighlight({
 function HighlightPanel({
   left,
   right,
-  size = "default",
+  minRows,
+  equalHeight = false,
 }: {
   left: string[];
   right: string[];
-  size?: "default" | "compact" | "tiny";
+  minRows?: number;
+  equalHeight?: boolean;
 }) {
-  const rowCount = Math.max(left.length, right.length);
-  const padding =
-    size === "tiny" ? "p-2 sm:p-2.5" : size === "compact" ? "p-3.5 sm:p-4" : "p-6 sm:p-7";
-  const gap =
-    size === "tiny"
-      ? "gap-x-2 gap-y-0.5 sm:gap-x-3"
-      : size === "compact"
-        ? "gap-x-4 gap-y-1.5 sm:gap-x-5"
-        : "gap-x-8 gap-y-2.5 sm:gap-x-10 sm:gap-y-3";
+  const rowCount = Math.max(left.length, right.length, minRows ?? 0);
 
   return (
-    <div className={["lime-panel mx-auto w-full", padding].join(" ")}>
-      <ul className={["m-0 grid list-none grid-cols-2", gap].join(" ")}>
+    <div
+      className={[
+        "lime-panel mx-auto w-full p-5 sm:p-6",
+        equalHeight ? HIGHLIGHT_PANEL_MIN_H : "",
+      ].join(" ")}
+    >
+      <ul className="m-0 grid list-none grid-cols-2 gap-x-6 gap-y-2 sm:gap-x-8 sm:gap-y-2.5">
         {Array.from({ length: rowCount }, (_, index) => (
           <Fragment key={`${left[index] ?? ""}-${right[index] ?? ""}-${index}`}>
-            <HubHighlight item={left[index] ?? ""} size={size} />
-            <HubHighlight item={right[index] ?? ""} size={size} />
+            <HubHighlight item={left[index] ?? ""} />
+            <HubHighlight item={right[index] ?? ""} />
           </Fragment>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function HubTaglines() {
+  return (
+    <div className="flex shrink-0 flex-col items-center text-center">
+      <p className="text-sm font-medium text-white/70 sm:text-base">
+        Générateur professionnel de tournois Padel
+      </p>
+      <p className="mt-2 max-w-xl text-[clamp(0.75rem,2.8vw,1rem)] leading-snug text-white/45">
+        De votre fichier Excel à votre tournoi, en quelques clics.
+      </p>
     </div>
   );
 }
@@ -117,19 +121,22 @@ function ProductChoice({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="flex min-h-0 flex-col items-center gap-2 sm:gap-2.5"
+      className="flex min-h-0 flex-col items-center"
     >
       <h2 className={CHOICE_TITLE} style={{ textShadow: BRUSH_GLOW }}>
         {title}
       </h2>
-      <PrimaryButton onClick={onCta} size="lg">
-        {ctaLabel}
-      </PrimaryButton>
-      <HighlightPanel
-        left={highlightsLeft}
-        right={highlightsRight}
-        size="tiny"
-      />
+      <div className="mt-5 sm:mt-6">
+        <HubEntryCta onClick={onCta}>{ctaLabel}</HubEntryCta>
+      </div>
+      <div className="mt-6 w-full sm:mt-7">
+        <HighlightPanel
+          left={highlightsLeft}
+          right={highlightsRight}
+          minRows={4}
+          equalHeight
+        />
+      </div>
     </motion.div>
   );
 }
@@ -145,8 +152,8 @@ export default function HubPage() {
           className={[
             "mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden px-2",
             choosing
-              ? "items-center justify-start gap-3 pt-[clamp(0.5rem,2vh,1rem)] sm:gap-4"
-              : "items-center justify-center gap-4 sm:gap-5",
+              ? "items-center justify-start gap-3 pt-[clamp(0.25rem,1.5vh,0.75rem)] sm:gap-4"
+              : "items-center justify-center gap-3 sm:gap-4",
           ].join(" ")}
         >
           <h1
@@ -161,12 +168,14 @@ export default function HubPage() {
             </span>
           </h1>
 
+          <HubTaglines />
+
           <div
             className={[
               "flex min-h-0 w-full flex-col overflow-hidden",
               choosing
-                ? "mt-[clamp(2.5rem,10vh,5.5rem)] flex-none items-center justify-start"
-                : "flex-1 items-center justify-center",
+                ? "mt-[clamp(1.5rem,6vh,3.5rem)] flex-none items-center justify-start"
+                : "mt-2 flex-1 items-center justify-center sm:mt-3",
             ].join(" ")}
           >
             <AnimatePresence mode="wait">
@@ -177,16 +186,17 @@ export default function HubPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex w-full max-w-2xl flex-col items-center gap-5 sm:gap-6"
+                  className="flex w-full max-w-2xl flex-col items-center"
                 >
                   <HighlightPanel
                     left={HUB_COMMON_LEFT}
                     right={HUB_COMMON_RIGHT}
-                    size="compact"
                   />
-                  <PrimaryButton onClick={() => setChoosing(true)} size="lg">
-                    Commencer
-                  </PrimaryButton>
+                  <div className="mt-6 sm:mt-7">
+                    <HubEntryCta onClick={() => setChoosing(true)}>
+                      Commencer
+                    </HubEntryCta>
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
@@ -195,7 +205,7 @@ export default function HubPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="grid w-full max-w-4xl grid-cols-1 items-start gap-4 sm:grid-cols-2 sm:gap-5"
+                  className="grid w-full max-w-4xl grid-cols-1 items-start gap-6 sm:grid-cols-2 sm:gap-8"
                 >
                   <ProductChoice
                     title="Engine"
