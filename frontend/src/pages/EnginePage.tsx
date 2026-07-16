@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { generateTournament, previewExcel, notifyOwnerAfterDownload, buildTournamentResume, downloadManagerLiveBundle } from "../api";
 import { CourtBackground } from "../components/CourtBackground";
@@ -10,7 +11,6 @@ import { defaultForm, type PreviewResult, type TournamentForm } from "../types";
 import { poulesDisponibleFrom, syncHeures } from "../wizard/helpers";
 import {
   ClubStep,
-  EngineWelcomeStep,
   FormatStep,
   GenerationStep,
   IdentityStep,
@@ -34,8 +34,12 @@ const STEPS = [
 
 const WIZARD_STEPS = STEPS.slice(1);
 
+/** 1 = Participants (accueil Engine supprimé, entrée directe depuis le Hub). */
+const STEP_ENTRY = 1;
+
 export default function EnginePage() {
-  const [step, setStep] = useState(0);
+  const navigate = useNavigate();
+  const [step, setStep] = useState(STEP_ENTRY);
   const [form, setForm] = useState<TournamentForm>(defaultForm);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -100,8 +104,6 @@ export default function EnginePage() {
 
   const stepValid = useMemo(() => {
     switch (step) {
-      case 0:
-        return true;
       case 1:
         if (!form.excelFile || previewLoading) return false;
         return !previewError && !!preview?.supporte;
@@ -131,8 +133,8 @@ export default function EnginePage() {
   }, [step, form, preview, previewLoading, previewError]);
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const goBack = () => setStep((s) => Math.max(s - 1, 0));
-  const goHome = () => setStep(0);
+  const goBack = () => setStep((s) => Math.max(s - 1, STEP_ENTRY));
+  const goHome = () => navigate("/");
 
   const handleValidateSummary = () => {
     if (pdfUrl) {
@@ -214,15 +216,6 @@ export default function EnginePage() {
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -12 },
   };
-
-  if (step === 0) {
-    return (
-      <div className="relative flex min-h-full w-full flex-col overflow-x-hidden">
-        <CourtBackground />
-        <EngineWelcomeStep onStart={() => setStep(1)} />
-      </div>
-    );
-  }
 
   return (
     <div className="relative flex h-dvh overflow-hidden">
