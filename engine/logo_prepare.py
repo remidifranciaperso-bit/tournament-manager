@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 
 from PIL import Image, ImageOps
 
-from engine.logo_trim import rogner_image
+from engine.logo_trim import rogner_image, rogner_image_contenu
 
 MAX_LOGO_BYTES = 2 * 1024 * 1024
 # Résolution conservée assez haute pour que le grand logo de la page de garde
@@ -52,3 +53,35 @@ def preparer_logo_fichier(chemin: Path, *, max_px: int = MAX_LOGO_PX) -> Path:
             rogne.save(chemin, format="PNG", optimize=True)
 
     return chemin
+
+
+def preparer_logo_png_export(
+    logo_path: Path | str,
+    *,
+    max_px: int = MAX_LOGO_PX,
+) -> bytes | None:
+    """PNG rogné pour snapshot pack — même qualité que le live Excel."""
+    chemin = Path(logo_path)
+    if not chemin.is_file():
+        return None
+
+    taille = chemin.stat().st_size
+    if taille > MAX_LOGO_BYTES:
+        return None
+
+    with Image.open(chemin) as source:
+        source = ImageOps.exif_transpose(source)
+        largeur, hauteur = source.size
+        cote_max = max(largeur, hauteur)
+        if cote_max > max_px:
+            ratio = max_px / cote_max
+            source = source.resize(
+                (max(1, int(largeur * ratio)), max(1, int(hauteur * ratio))),
+                Image.Resampling.LANCZOS,
+            )
+
+        rogne = rogner_image_contenu(source, marge_px=2)
+        buffer = io.BytesIO()
+        rogne.save(buffer, format="PNG", optimize=True)
+        payload = buffer.getvalue()
+        return payload if len(payload) >= 64 else None

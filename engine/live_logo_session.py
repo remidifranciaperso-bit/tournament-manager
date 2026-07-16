@@ -4,32 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image
-
 from engine.live_snapshot import materialiser_logo_snapshot
-from engine.logo_prepare import preparer_logo_fichier
-from engine.logo_trim import retirer_fond_blanc_bord
-
-
-def _nettoyer_logo_pack(chemin: Path) -> Path:
-    """Retire le fond blanc carré des logos pack avant rognage / session live."""
-    chemin = Path(chemin)
-    if not chemin.is_file() or chemin.stat().st_size <= 64:
-        return chemin
-
-    with Image.open(chemin) as source:
-        nettoye = retirer_fond_blanc_bord(source)
-        suffixe = chemin.suffix.lower()
-        if suffixe in {".jpg", ".jpeg"}:
-            fond = Image.new("RGB", nettoye.size, (255, 255, 255))
-            fond.paste(nettoye, mask=nettoye.split()[3])
-            fond.save(chemin, format="JPEG", quality=88, optimize=True)
-        elif suffixe == ".webp":
-            nettoye.save(chemin, format="WEBP", quality=88)
-        else:
-            nettoye.save(chemin, format="PNG", optimize=True)
-
-    return preparer_logo_fichier(chemin)
 
 
 def preparer_logo_import(
@@ -37,15 +12,15 @@ def preparer_logo_import(
     snapshot: dict,
     logo_path: Path | str | None = None,
 ) -> Path | None:
-    """Logo uploadé ou snapshot pack — pas d'extraction PDF automatique."""
+    """Logo snapshot pack (prioritaire) ou fichier ZIP — copie directe comme live Excel."""
+    decoded = materialiser_logo_snapshot(snapshot, pdf_path.parent)
+    if decoded is not None and decoded.is_file():
+        return decoded
+
     if logo_path is not None:
         source = Path(logo_path)
         if source.is_file() and source.stat().st_size > 64:
-            return _nettoyer_logo_pack(source)
-
-    decoded = materialiser_logo_snapshot(snapshot, pdf_path.parent)
-    if decoded is not None and decoded.is_file():
-        return _nettoyer_logo_pack(decoded)
+            return source
 
     return None
 

@@ -46,12 +46,13 @@ def enregistrer_snapshot(token: str, snapshot: dict) -> None:
 
 
 def enregistrer_logo(token: str, logo_path: Path) -> None:
-    logo_path = Path(logo_path)
-    if not logo_path.is_file():
+    from engine.logo_prepare import preparer_logo_png_export
+
+    payload = preparer_logo_png_export(logo_path)
+    if not payload:
         return
-    ext = logo_path.suffix.lower() or ".png"
-    destination = _notify_dir() / f"{token}.logo{ext}"
-    shutil.copy2(logo_path, destination)
+    destination = _notify_dir() / f"{token}.logo.png"
+    destination.write_bytes(payload)
 
 
 def chemin_logo_notify(token: str) -> Path | None:
@@ -107,18 +108,34 @@ def creer_archive_manager_live(token: str) -> Path | None:
         zf.write(snapshot_path, arcname=f"{base}.live.json")
         logo_path = chemin_logo_notify(token)
         if logo_path is not None:
-            zf.write(logo_path, arcname=f"logo{logo_path.suffix.lower()}")
+            zf.write(logo_path, arcname="logo.png")
         else:
-            from engine.live_logo_extract import extraire_logo_embarque_pdf
-            import tempfile
+            import base64
 
-            fd, temp_name = tempfile.mkstemp(suffix=".png")
-            os.close(fd)
-            temp_logo = Path(temp_name)
+            logo_ajoute = False
             try:
-                if extraire_logo_embarque_pdf(pdf_path, temp_logo):
-                    zf.write(temp_logo, arcname="logo.png")
-            finally:
-                temp_logo.unlink(missing_ok=True)
+                snapshot = json.loads(
+                    snapshot_path.read_text(encoding="utf-8")
+                )
+                logo_b64 = snapshot.get("logo_png")
+                if logo_b64:
+                    logo_bytes = base64.b64decode(logo_b64)
+                    if len(logo_bytes) >= 64:
+                        zf.writestr("logo.png", logo_bytes)
+                        logo_ajoute = True
+            except (OSError, json.JSONDecodeError, ValueError, TypeError):
+                pass
+
+            if not logo_ajoute:
+                from engine.live_logo_extract import extraire_logo_embarque_pdf
+
+                fd, temp_name = tempfile.mkstemp(suffix=".png")
+                os.close(fd)
+                temp_logo = Path(temp_name)
+                try:
+                    if extraire_logo_embarque_pdf(pdf_path, temp_logo):
+                        zf.write(temp_logo, arcname="logo.png")
+                finally:
+                    temp_logo.unlink(missing_ok=True)
 
     return archive

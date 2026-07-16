@@ -32,7 +32,7 @@ def init_live_from_snapshot(
         page_map,
         logo_path=resolved_logo,
         move_pdf=True,
-        trim_logo=resolved_logo is None,
+        trim_logo=False,
         page_sizes=page_sizes,
     )
 
@@ -58,18 +58,9 @@ def init_live_from_snapshot(
         "pdf_filename": pdf_filename,
         "live_version": "engine-pdf",
     }
-    from api.live_store import chemin_logo
-    import base64
-
-    logo_session = chemin_logo(live_token)
-    if logo_session is not None:
-        payload["logo_png"] = base64.b64encode(logo_session.read_bytes()).decode(
-            "ascii"
-        )
-    else:
-        logo_png = snapshot.get("logo_png")
-        if logo_png:
-            payload["logo_png"] = logo_png
+    logo_png = snapshot.get("logo_png")
+    if logo_png:
+        payload["logo_png"] = logo_png
     return payload
 
 

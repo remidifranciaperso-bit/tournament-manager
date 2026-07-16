@@ -19,10 +19,12 @@ SNAPSHOT_VERSION = "engine-live-snapshot-1"
 def _encoder_logo_snapshot(logo_path: Path | str | None) -> str | None:
     if logo_path is None:
         return None
-    source = Path(logo_path)
-    if not source.is_file():
+    from engine.logo_prepare import preparer_logo_png_export
+
+    payload = preparer_logo_png_export(logo_path)
+    if payload is None:
         return None
-    return base64.b64encode(source.read_bytes()).decode("ascii")
+    return base64.b64encode(payload).decode("ascii")
 
 
 def materialiser_logo_snapshot(snapshot: dict, dest_dir: Path) -> Path | None:
