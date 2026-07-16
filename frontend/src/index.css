@@ -22,10 +22,20 @@
   font-display: swap;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 html,
 body,
 #root {
   height: 100%;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
 }
 
 body {

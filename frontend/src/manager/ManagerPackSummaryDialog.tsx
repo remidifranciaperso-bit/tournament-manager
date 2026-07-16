@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { PrimaryButton, GhostButton } from "../components/ui";
 import type { LiveTournamentMeta } from "./liveTypes";
 import { formatDateFr } from "../wizard/helpers";
@@ -31,8 +32,8 @@ export function ManagerPackSummaryDialog({
 }: ManagerPackSummaryDialogProps) {
   const rows = summaryRows(meta);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 px-4 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/65 px-4 backdrop-blur-sm">
       <div
         role="dialog"
         aria-modal="true"
@@ -73,6 +74,7 @@ export function ManagerPackSummaryDialog({
           <GhostButton onClick={onCancel}>Annuler</GhostButton>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
