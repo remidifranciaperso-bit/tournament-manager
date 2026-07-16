@@ -3,7 +3,7 @@ export function LiveNightCourtBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-black">
       <img
-        src="/images/live-court-night.png?v=2"
+        src="/images/padel-court-night-v6.png"
         alt=""
         decoding="async"
         draggable={false}
