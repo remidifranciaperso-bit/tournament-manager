@@ -4,18 +4,18 @@ import { LiveNightCourtBackground } from "../manager/LiveNightCourtBackground";
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
 
-/** Titre brush partagé Live / Engine : « Padel Tournament » + produit en dessous. */
+/** Titre brush partagé Live / Engine : aligné sur la hauteur Hub. */
 export function ProductBrushHeadline({ product }: { product: string }) {
   return (
-    <h1 className="flex flex-col items-center gap-0.5 sm:gap-1">
+    <h1 className="flex shrink-0 flex-col items-center gap-0.5 font-brush leading-none text-lime sm:gap-1">
       <span
-        className="font-brush text-[clamp(2.25rem,6.5vw,3.75rem)] leading-[1.05] text-lime"
+        className="text-[clamp(2.25rem,6.5vw,4rem)] leading-[1.05]"
         style={{ textShadow: BRUSH_GLOW }}
       >
         Padel Tournament
       </span>
       <span
-        className="font-brush text-[clamp(3.5rem,11vw,6.5rem)] leading-[0.95] text-lime"
+        className="text-[clamp(3.25rem,10vw,5.75rem)] leading-[0.95]"
         style={{ textShadow: BRUSH_GLOW }}
       >
         {product}
@@ -39,9 +39,11 @@ export function ProductEntryLogoStrip() {
 export function ProductEntryLayout({
   children,
   compact = false,
+  alignTop = false,
 }: {
   children: ReactNode;
   compact?: boolean;
+  alignTop?: boolean;
 }) {
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
@@ -49,7 +51,8 @@ export function ProductEntryLayout({
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         <main
           className={[
-            "flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-4 sm:px-6",
+            "flex min-h-0 flex-1 flex-col items-center overflow-hidden px-4 sm:px-6",
+            alignTop ? "justify-start" : "justify-center",
             compact ? "py-3 sm:py-4" : "py-8 sm:py-10",
           ].join(" ")}
         >

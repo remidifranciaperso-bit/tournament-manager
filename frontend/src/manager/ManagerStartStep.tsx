@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { initLiveFromPack } from "../api";
 import { FileDrop } from "../components/FileDrop";
-import { IconTrophy, IconUpload } from "../components/Icons";
+import { IconTable, IconUpload } from "../components/Icons";
 import { ProductEntryDropZone } from "../components/ProductEntryDropZone";
 import {
   ProductBrushHeadline,
@@ -58,7 +58,7 @@ export function ManagerStartStep({
   };
 
   return (
-    <ProductEntryLayout>
+    <ProductEntryLayout compact alignTop>
       {pendingPack ? (
         <ManagerPackSummaryDialog
           meta={pendingPack.meta}
@@ -74,17 +74,17 @@ export function ManagerStartStep({
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="mx-auto flex w-full max-w-3xl flex-col items-center text-center"
+        className="mx-auto flex w-full max-w-3xl flex-col items-center overflow-hidden px-2 pt-[clamp(2.75rem,7vh,5rem)] text-center"
       >
         <ProductBrushHeadline product="Live" />
 
-        <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-white/50 sm:text-base">
-          Importez le pack ZIP téléchargé depuis Engine (PDF + fichier
-          .live.json). Le tableau et les convocations restent identiques à la
-          génération Engine.
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-snug text-white/50 sm:mt-5 sm:text-base">
+          Importez le pack ZIP téléchargé depuis Engine (PDF + fichier .live.json).
+          <br />
+          Le tableau et les convocations restent identiques à la génération Engine.
         </p>
 
-        <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-8">
+        <div className="mt-9 flex w-full max-w-md flex-col items-stretch gap-6 sm:mt-10">
           <div className="w-full text-left">
             <label className="field-label">Pack Manager Live</label>
             <FileDrop
@@ -109,7 +109,8 @@ export function ManagerStartStep({
             onFile={handleExcelFile}
             title="Depuis un fichier Excel"
             dropHint="Glissez votre fichier Excel ici"
-            icon={<IconTrophy className="h-7 w-7" />}
+            icon={<IconTable className="h-6 w-6" />}
+            compact
           />
         </div>
 

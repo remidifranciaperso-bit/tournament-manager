@@ -16,6 +16,7 @@ interface ProductEntryDropZoneProps {
   engineDropStyle?: boolean;
   loading?: boolean;
   disabled?: boolean;
+  compact?: boolean;
 }
 
 /** Zone glisser-déposer pour la page d'entrée Live / Engine. */
@@ -31,6 +32,7 @@ export function ProductEntryDropZone({
   engineDropStyle = false,
   loading = false,
   disabled = false,
+  compact = false,
 }: ProductEntryDropZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -64,7 +66,9 @@ export function ProductEntryDropZone({
         engineDropStyle ? "overflow-hidden border-2 border-dashed" : "",
         prominent
           ? "min-h-[12.5rem] gap-4 rounded-2xl px-6 py-8 backdrop-blur-[2px] sm:px-8 sm:py-10"
-          : "min-h-[7.5rem] gap-3 rounded-xl border px-5 py-5 backdrop-blur-[2px]",
+          : compact
+            ? "min-h-[5.75rem] gap-2 rounded-xl border px-4 py-3.5 backdrop-blur-[2px]"
+            : "min-h-[7.5rem] gap-3 rounded-xl border px-5 py-5 backdrop-blur-[2px]",
         !engineDropStyle && prominent ? "border shadow-lime" : "",
         disabled || loading
           ? "cursor-wait border-white/10 bg-black/25 opacity-80"
@@ -111,13 +115,13 @@ export function ProductEntryDropZone({
           <div
             className={[
               "flex items-center justify-center rounded-xl transition",
-              prominent ? "h-14 w-14 bg-lime/15 text-lime" : "h-10 w-10 text-lime/70",
+              prominent ? "h-14 w-14 bg-lime/15 text-lime" : compact ? "h-8 w-8 text-lime/70" : "h-10 w-10 text-lime/70",
             ].join(" ")}
           >
             {file ? (
               <IconCheck className={prominent ? "h-8 w-8" : "h-6 w-6"} />
             ) : (
-              icon ?? <IconUpload className={prominent ? "h-9 w-9" : "h-7 w-7"} />
+              icon ?? <IconUpload className={prominent ? "h-9 w-9" : compact ? "h-6 w-6" : "h-7 w-7"} />
             )}
           </div>
 
