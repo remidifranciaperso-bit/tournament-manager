@@ -199,12 +199,7 @@ export default function HubPage() {
     <div className="min-h-screen h-dvh overflow-hidden">
       <ProductEntryLayout compact>
         <div
-          className={[
-            "mx-auto flex min-h-0 h-full w-full max-w-5xl flex-col overflow-hidden px-2",
-            choosing
-              ? "items-center justify-start gap-3 pt-[clamp(0.25rem,1.5vh,0.75rem)] sm:gap-4"
-              : "items-center justify-start gap-4 pt-[clamp(2.75rem,7vh,5rem)] sm:gap-5",
-          ].join(" ")}
+          className="mx-auto flex min-h-0 h-full w-full max-w-5xl flex-col items-center justify-start gap-4 overflow-hidden px-2 pt-[clamp(2.75rem,7vh,5rem)] sm:gap-5"
         >
           <h1
             className="flex shrink-0 flex-col items-center gap-0.5 font-brush leading-none text-lime sm:gap-1"
