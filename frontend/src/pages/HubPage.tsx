@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { IconCheck } from "../components/Icons";
@@ -12,7 +12,7 @@ import {
   HUB_LIVE_RIGHT,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-137";
+const HUB_BUILD = "manager-preview-138";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
@@ -20,22 +20,24 @@ const BRUSH_GLOW =
 const CHOICE_TITLE =
   "font-brush text-[clamp(1.35rem,3.8vw,2.35rem)] leading-[1.02] text-lime";
 
-const HIGHLIGHT_PANEL_MIN_H = "min-h-[10.75rem] sm:min-h-[11.75rem]";
+/** Encarts Engine / Live : largeur et hauteur strictement identiques. */
+const PRODUCT_HIGHLIGHT_PANEL_CLASS =
+  "lime-panel box-border h-[12.25rem] w-full p-5 sm:h-[13rem] sm:p-6";
 
 function HubEntryCta({
   children,
   onClick,
 }: {
-  children: ReactNode;
+  children: string;
   onClick: () => void;
 }) {
   return (
     <motion.button
       type="button"
       onClick={onClick}
-      whileHover={{ scale: 1.02, y: -1 }}
-      whileTap={{ scale: 0.98 }}
-      className="inline-flex items-center justify-center gap-2 rounded-xl bg-lime px-10 py-4 text-base font-bold tracking-wide text-arena-950 shadow-lime transition hover:brightness-110"
+      whileHover={{ scale: 1.005 }}
+      whileTap={{ scale: 0.995 }}
+      className="inline-flex items-center justify-center rounded-xl border border-lime/40 bg-lime/5 px-10 py-4 text-base font-semibold tracking-wide text-lime ring-1 ring-lime/30 transition hover:border-lime/50 hover:bg-lime/[0.08]"
     >
       {children}
     </motion.button>
@@ -61,23 +63,24 @@ function HighlightPanel({
   left,
   right,
   minRows,
-  equalHeight = false,
+  fixedSize = false,
 }: {
   left: string[];
   right: string[];
   minRows?: number;
-  equalHeight?: boolean;
+  fixedSize?: boolean;
 }) {
   const rowCount = Math.max(left.length, right.length, minRows ?? 0);
 
   return (
     <div
-      className={[
-        "lime-panel mx-auto w-full p-5 sm:p-6",
-        equalHeight ? HIGHLIGHT_PANEL_MIN_H : "",
-      ].join(" ")}
+      className={
+        fixedSize
+          ? PRODUCT_HIGHLIGHT_PANEL_CLASS
+          : "lime-panel mx-auto w-full p-5 sm:p-6"
+      }
     >
-      <ul className="m-0 grid list-none grid-cols-2 gap-x-6 gap-y-2 sm:gap-x-8 sm:gap-y-2.5">
+      <ul className="m-0 grid h-full list-none grid-cols-2 content-start gap-x-6 gap-y-2 sm:gap-x-8 sm:gap-y-2.5">
         {Array.from({ length: rowCount }, (_, index) => (
           <Fragment key={`${left[index] ?? ""}-${right[index] ?? ""}-${index}`}>
             <HubHighlight item={left[index] ?? ""} />
@@ -121,7 +124,7 @@ function ProductChoice({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="flex min-h-0 flex-col items-center"
+      className="flex w-full min-w-0 flex-col items-center"
     >
       <h2 className={CHOICE_TITLE} style={{ textShadow: BRUSH_GLOW }}>
         {title}
@@ -134,7 +137,7 @@ function ProductChoice({
           left={highlightsLeft}
           right={highlightsRight}
           minRows={4}
-          equalHeight
+          fixedSize
         />
       </div>
     </motion.div>
@@ -205,7 +208,7 @@ export default function HubPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="grid w-full max-w-4xl grid-cols-1 items-start gap-6 sm:grid-cols-2 sm:gap-8"
+                  className="grid w-full max-w-4xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-8"
                 >
                   <ProductChoice
                     title="Engine"
