@@ -1,9 +1,9 @@
-/** Arrière-plan photo terrain de nuit (page d'entrée Live uniquement). */
+/** Arrière-plan photo terrain de nuit (Hub + entrées Engine/Live). */
 export function LiveNightCourtBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-black">
       <img
-        src="/images/live-court-night.png"
+        src="/images/live-court-night.png?v=2"
         alt=""
         decoding="async"
         draggable={false}
