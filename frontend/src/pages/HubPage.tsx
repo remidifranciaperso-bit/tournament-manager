@@ -18,9 +18,9 @@ const BRUSH_GLOW =
 const CHOICE_TITLE =
   "font-brush text-[clamp(1.5rem,4.5vw,2.65rem)] leading-[1.02] text-lime";
 
-/** Encarts Hub : fond semi-opaque + flou pour lisibilité sur la photo. */
+/** Encarts Hub : verre dépoli transparent pour lisibilité sans masquer le fond. */
 const HUB_HIGHLIGHT_PANEL_SURFACE =
-  "rounded-2xl border-2 border-lime/40 bg-black/60 shadow-[0_10px_36px_rgba(0,0,0,0.42)] ring-1 ring-white/10 backdrop-blur-lg";
+  "rounded-2xl border-2 border-lime/40 bg-white/[0.04] shadow-lime ring-1 ring-white/10 backdrop-blur-2xl";
 
 /** Encarts Engine / Live : largeur et hauteur strictement identiques. */
 const PRODUCT_HIGHLIGHT_PANEL_CLASS =
