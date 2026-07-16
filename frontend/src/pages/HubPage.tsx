@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { IconCheck } from "../components/Icons";
 import { ProductEntryLayout } from "../components/ProductEntry";
 import {
@@ -10,7 +10,7 @@ import {
   HUB_LIVE_ITEMS,
 } from "../wizard/constants";
 
-const HUB_BUILD = "manager-preview-140";
+const HUB_BUILD = "manager-preview-141";
 
 const BRUSH_GLOW =
   "0 0 40px rgba(212,255,74,0.15), 0 0 80px rgba(212,255,74,0.06)";
@@ -150,13 +150,7 @@ function ProductChoice({
   highlightItems: string[];
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="flex w-full min-w-0 flex-col items-center"
-    >
+    <div className="flex w-full min-w-0 flex-col items-center">
       <h2 className={CHOICE_TITLE} style={{ textShadow: BRUSH_GLOW }}>
         {title}
       </h2>
@@ -166,7 +160,7 @@ function ProductChoice({
       <div className="mt-6 w-full sm:mt-7">
         <ProductHighlightPanel items={highlightItems} />
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -175,11 +169,11 @@ export default function HubPage() {
   const [choosing, setChoosing] = useState(false);
 
   return (
-    <div className="h-dvh overflow-hidden">
+    <div className="min-h-screen h-dvh overflow-hidden">
       <ProductEntryLayout compact>
         <div
           className={[
-            "mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden px-2",
+            "mx-auto flex min-h-0 h-full w-full max-w-5xl flex-col overflow-hidden px-2",
             choosing
               ? "items-center justify-start gap-3 pt-[clamp(0.25rem,1.5vh,0.75rem)] sm:gap-4"
               : "items-center justify-center gap-3 sm:gap-4",
@@ -207,50 +201,34 @@ export default function HubPage() {
                 : "mt-2 flex-1 items-center justify-center sm:mt-3",
             ].join(" ")}
           >
-            <AnimatePresence mode="wait">
-              {!choosing ? (
-                <motion.div
-                  key="intro"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex w-full max-w-2xl flex-col items-center"
-                >
-                  <HighlightPanel
-                    left={HUB_COMMON_LEFT}
-                    right={HUB_COMMON_RIGHT}
-                  />
-                  <div className="mt-6 sm:mt-7">
-                    <HubEntryCta onClick={() => setChoosing(true)}>
-                      Commencer
-                    </HubEntryCta>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="choices"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="grid w-full max-w-4xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-8"
-                >
-                  <ProductChoice
-                    title="Engine"
-                    ctaLabel="Faire mon dossier tournoi"
-                    onCta={() => navigate("/engine")}
-                    highlightItems={HUB_ENGINE_ITEMS}
-                  />
-                  <ProductChoice
-                    title="Live"
-                    ctaLabel="Lancer mon tournoi live"
-                    onCta={() => navigate("/manager")}
-                    highlightItems={HUB_LIVE_ITEMS}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {!choosing ? (
+              <div className="flex w-full max-w-2xl flex-col items-center">
+                <HighlightPanel
+                  left={HUB_COMMON_LEFT}
+                  right={HUB_COMMON_RIGHT}
+                />
+                <div className="mt-6 sm:mt-7">
+                  <HubEntryCta onClick={() => setChoosing(true)}>
+                    Commencer
+                  </HubEntryCta>
+                </div>
+              </div>
+            ) : (
+              <div className="grid w-full max-w-4xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-8">
+                <ProductChoice
+                  title="Engine"
+                  ctaLabel="Faire mon dossier tournoi"
+                  onCta={() => navigate("/engine")}
+                  highlightItems={HUB_ENGINE_ITEMS}
+                />
+                <ProductChoice
+                  title="Live"
+                  ctaLabel="Lancer mon tournoi live"
+                  onCta={() => navigate("/manager")}
+                  highlightItems={HUB_LIVE_ITEMS}
+                />
+              </div>
+            )}
           </div>
 
           <p className="mt-auto shrink-0 text-[10px] uppercase tracking-widest text-white/25">

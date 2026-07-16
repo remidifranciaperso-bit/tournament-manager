@@ -1,5 +1,3 @@
-import { FORMATS_SUPPORTES } from "../types";
-
 export const ENGINE_WELCOME_LEFT = [
   "Dossier tournoi complet",
   "Tableau de convocations",
