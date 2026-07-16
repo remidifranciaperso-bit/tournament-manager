@@ -82,7 +82,7 @@ export function ManagerStartStep({
         </div>
 
         <div className="mt-9 flex w-full max-w-md flex-col items-stretch gap-6 sm:mt-10">
-          <div className="w-full text-left">
+          <div className="w-full text-center">
             <label className="field-label">Pack Manager Live</label>
             <FileDrop
               accept=".zip"
