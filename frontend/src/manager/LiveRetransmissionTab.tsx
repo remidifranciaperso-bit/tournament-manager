@@ -627,10 +627,7 @@ export function LiveRetransmissionTab({
 
   const displayCount = visibleDisplays.length;
   const activeUrlCount = urlTargets.filter((entry) => entry.outputToken).length;
-  const screenStatusLabel =
-    displayCount > 0
-      ? `Écran/rétro actifs : ${displayCount}`
-      : "Aucun écran / rétro détecté";
+  const screenStatusLabel = `Écran/rétro détectés : ${displayCount}`;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -733,76 +730,61 @@ export function LiveRetransmissionTab({
               {activeConfig.mode ? (
                 <section>
                   <SectionTitle step={3} title="Onglets à afficher" />
-                  {activeConfig.mode === "fixed" ? (
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {tabOptions.map((tab) => (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {tabOptions.map((tab) => {
+                      const isFixed = activeConfig.mode === "fixed";
+                      const checked = isFixed
+                        ? activeConfig.fixedTab === tab.id
+                        : activeConfig.selectedTabs.includes(tab.id);
+
+                      return (
                         <label
                           key={tab.id}
                           className={[
                             "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition",
-                            activeConfig.fixedTab === tab.id
+                            checked
                               ? "border-template-blue/30 bg-template-blue/[0.05]"
                               : "border-arena-600/15 bg-white hover:border-arena-600/25",
                           ].join(" ")}
                         >
                           <input
-                            type="radio"
-                            name={`fixed-tab-${activeTargetId}`}
-                            checked={activeConfig.fixedTab === tab.id}
-                            onChange={() =>
-                              setConfig(activeTargetId, {
-                                fixedTab: tab.id,
-                                selectedTabs: [tab.id],
-                              })
-                            }
-                            className="accent-template-blue"
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              if (isFixed) {
+                                if (checked) return;
+                                setConfig(activeTargetId, {
+                                  fixedTab: tab.id,
+                                  selectedTabs: [tab.id],
+                                });
+                                return;
+                              }
+                              const next = checked
+                                ? activeConfig.selectedTabs.filter(
+                                    (id) => id !== tab.id
+                                  )
+                                : [...activeConfig.selectedTabs, tab.id];
+                              setConfig(activeTargetId, { selectedTabs: next });
+                            }}
+                            className="h-4 w-4 rounded border-arena-600/25 accent-template-blue"
                           />
                           <span className="text-sm font-medium text-arena-700">
                             {tab.label}
                           </span>
                         </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {tabOptions.map((tab) => {
-                        const checked = activeConfig.selectedTabs.includes(tab.id);
-                        return (
-                          <label
-                            key={tab.id}
-                            className={[
-                              "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition",
-                              checked
-                                ? "border-template-blue/30 bg-template-blue/[0.05]"
-                                : "border-arena-600/15 bg-white hover:border-arena-600/25",
-                            ].join(" ")}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                const next = checked
-                                  ? activeConfig.selectedTabs.filter(
-                                      (id) => id !== tab.id
-                                    )
-                                  : [...activeConfig.selectedTabs, tab.id];
-                                setConfig(activeTargetId, { selectedTabs: next });
-                              }}
-                              className="h-4 w-4 rounded border-arena-600/25 accent-template-blue"
-                            />
-                            <span className="text-sm font-medium text-arena-700">
-                              {tab.label}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
 
                   {activeUrlTarget && canLaunchTarget(activeConfig) ? (
                     <div className="mt-4 flex justify-center">
-                      <PrimaryButton onClick={handleCreateUrl}>
-                        Générer l&apos;URL
+                      <PrimaryButton
+                        onClick={handleCreateUrl}
+                        disabled={Boolean(activeUrlTarget.outputToken)}
+                      >
+                        {activeUrlTarget.outputToken
+                          ? "URL générée"
+                          : "Générer l'URL"}
                       </PrimaryButton>
                     </div>
                   ) : null}
