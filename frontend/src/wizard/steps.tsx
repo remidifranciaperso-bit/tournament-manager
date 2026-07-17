@@ -1025,7 +1025,7 @@ export function GenerationStep({
             </div>
           </div>
           <div
-            className="mx-auto mt-14 flex w-full flex-col items-center font-brush text-[clamp(2rem,6.5vw,3.75rem)] leading-none text-lime sm:mt-20"
+            className="mx-auto mt-14 flex w-full max-w-full flex-col items-center px-2 font-brush text-[clamp(1.85rem,5.5vw,3.25rem)] leading-none text-lime sm:mt-20"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
             aria-label={`${taglineLine1} GAGNENT`}
           >
