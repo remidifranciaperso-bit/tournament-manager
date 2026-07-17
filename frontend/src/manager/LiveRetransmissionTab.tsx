@@ -173,83 +173,26 @@ function LinkIcon() {
   );
 }
 
-function TargetCard({
+function ProjectionTargetCard({
   active,
   icon,
-  title,
-  meta,
-  onClick,
-}: {
-  active: boolean;
-  icon: ReactNode;
-  title: string;
-  meta?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "flex w-full flex-col gap-2 rounded-2xl border p-4 text-left transition",
-        active
-          ? "border-template-blue/40 bg-template-blue/[0.06] ring-1 ring-template-blue/20"
-          : "border-arena-600/15 bg-white hover:border-arena-600/30 hover:shadow-sm",
-      ].join(" ")}
-    >
-      <div
-        className={[
-          "flex h-10 w-10 items-center justify-center rounded-xl",
-          active
-            ? "bg-template-blue/15 text-template-blue"
-            : "bg-arena-600/8 text-arena-600/55",
-        ].join(" ")}
-      >
-        {icon}
-      </div>
-      <div>
-        <p className="font-semibold text-arena-700">{title}</p>
-        {meta ? <p className="mt-1 text-xs text-arena-600/45">{meta}</p> : null}
-      </div>
-    </button>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden
-    >
-      <path d="M4 7h16" strokeLinecap="round" />
-      <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" strokeLinecap="round" />
-      <path d="M7 7l1 12a1 1 0 001 1h6a1 1 0 001-1l1-12" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function UrlTargetCard({
-  active,
   label,
-  outputToken,
+  meta,
   onSelect,
   onLabelChange,
   onDelete,
-  onCopyUrl,
-  onTestUrl,
+  deleteAriaLabel,
+  footer,
 }: {
   active: boolean;
+  icon: ReactNode;
   label: string;
-  outputToken: string | null;
+  meta?: string;
   onSelect: () => void;
   onLabelChange: (label: string) => void;
   onDelete: () => void;
-  onCopyUrl: () => void;
-  onTestUrl: () => void;
+  deleteAriaLabel: string;
+  footer?: ReactNode;
 }) {
   return (
     <div
@@ -276,7 +219,7 @@ function UrlTargetCard({
           onDelete();
         }}
         className="absolute right-3 top-3 rounded-lg p-1.5 text-arena-600/35 transition hover:bg-red-500/10 hover:text-red-600"
-        aria-label="Supprimer l'URL"
+        aria-label={deleteAriaLabel}
       >
         <TrashIcon />
       </button>
@@ -289,7 +232,7 @@ function UrlTargetCard({
             : "bg-arena-600/8 text-arena-600/55",
         ].join(" ")}
       >
-        <LinkIcon />
+        {icon}
       </div>
 
       <div className="pr-8">
@@ -301,7 +244,44 @@ function UrlTargetCard({
           className="w-full border-0 bg-transparent p-0 text-sm font-semibold text-arena-700 outline-none ring-0 placeholder:text-arena-600/40 focus:ring-0"
           placeholder="Nom de l'écran"
         />
-        {outputToken ? (
+        {meta ? <p className="mt-1 text-xs text-arena-600/45">{meta}</p> : null}
+        {footer}
+      </div>
+    </div>
+  );
+}
+
+function UrlTargetCard({
+  active,
+  label,
+  outputToken,
+  onSelect,
+  onLabelChange,
+  onDelete,
+  onCopyUrl,
+  onTestUrl,
+}: {
+  active: boolean;
+  label: string;
+  outputToken: string | null;
+  onSelect: () => void;
+  onLabelChange: (label: string) => void;
+  onDelete: () => void;
+  onCopyUrl: () => void;
+  onTestUrl: () => void;
+}) {
+  return (
+    <ProjectionTargetCard
+      active={active}
+      icon={<LinkIcon />}
+      label={label}
+      meta={outputToken ? undefined : "URL à générer"}
+      onSelect={onSelect}
+      onLabelChange={onLabelChange}
+      onDelete={onDelete}
+      deleteAriaLabel="Supprimer l'URL"
+      footer={
+        outputToken ? (
           <>
             <p className="mt-2 break-all font-mono text-[10px] leading-snug text-arena-600/45">
               {buildAffichageUrl(outputToken)}
@@ -329,11 +309,55 @@ function UrlTargetCard({
               </button>
             </div>
           </>
-        ) : (
-          <p className="mt-1 text-xs text-arena-600/45">URL à générer</p>
-        )}
-      </div>
-    </div>
+        ) : null
+      }
+    />
+  );
+}
+
+function DisplayTargetCard({
+  active,
+  label,
+  meta,
+  onSelect,
+  onLabelChange,
+  onDelete,
+}: {
+  active: boolean;
+  label: string;
+  meta: string;
+  onSelect: () => void;
+  onLabelChange: (label: string) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <ProjectionTargetCard
+      active={active}
+      icon={<DisplayIcon />}
+      label={label}
+      meta={meta}
+      onSelect={onSelect}
+      onLabelChange={onLabelChange}
+      onDelete={onDelete}
+      deleteAriaLabel="Retirer l'écran"
+    />
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden
+    >
+      <path d="M4 7h16" strokeLinecap="round" />
+      <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" strokeLinecap="round" />
+      <path d="M7 7l1 12a1 1 0 001 1h6a1 1 0 001-1l1-12" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -388,7 +412,22 @@ export function LiveRetransmissionTab({
   const [urlTargets, setUrlTargets] = useState<UrlTarget[]>(() =>
     loadUrlTargets(listBroadcastOutputs(liveToken))
   );
+  const [displayLabels, setDisplayLabels] = useState<Record<string, string>>({});
+  const [dismissedDisplayIds, setDismissedDisplayIds] = useState<Set<string>>(
+    () => new Set()
+  );
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  const visibleDisplays = useMemo(
+    () =>
+      displays
+        .filter((display) => !dismissedDisplayIds.has(display.id))
+        .map((display) => ({
+          ...display,
+          label: displayLabels[display.id]?.trim() || display.label,
+        })),
+    [displays, dismissedDisplayIds, displayLabels]
+  );
 
   const getConfig = useCallback(
     (targetId: string): TargetConfig =>
@@ -442,16 +481,17 @@ export function LiveRetransmissionTab({
 
   useEffect(() => {
     if (!activeTargetId) return;
-    const displayExists = displays.some((d) => d.id === activeTargetId);
+    const displayExists = visibleDisplays.some((d) => d.id === activeTargetId);
     const urlExists = urlTargets.some((u) => u.id === activeTargetId);
     if (!displayExists && !urlExists) {
       setActiveTargetId(null);
       setActiveTargetIsUrl(false);
     }
-  }, [activeTargetId, displays, urlTargets]);
+  }, [activeTargetId, visibleDisplays, urlTargets]);
 
   const activeConfig = activeTargetId ? getConfig(activeTargetId) : null;
-  const activeDisplay = displays.find((d) => d.id === activeTargetId) ?? null;
+  const activeDisplay =
+    visibleDisplays.find((d) => d.id === activeTargetId) ?? null;
   const activeUrlTarget = urlTargets.find((u) => u.id === activeTargetId) ?? null;
 
   const tabListForLaunch = useCallback((config: TargetConfig): BroadcastableTab[] => {
@@ -568,11 +608,29 @@ export function LiveRetransmissionTab({
     }
   };
 
-  const hasDisplays = displays.length > 0;
+  const updateDisplayLabel = (id: string, label: string) => {
+    setDisplayLabels((prev) => ({ ...prev, [id]: label }));
+  };
+
+  const removeDisplayTarget = (id: string) => {
+    setDismissedDisplayIds((prev) => new Set([...prev, id]));
+    setTargetConfigs((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    if (activeTargetId === id && !activeTargetIsUrl) {
+      setActiveTargetId(null);
+      setActiveTargetIsUrl(false);
+    }
+  };
+
+  const displayCount = visibleDisplays.length;
   const activeUrlCount = urlTargets.filter((entry) => entry.outputToken).length;
-  const statusLabel = hasDisplays
-    ? `${displays.length} écran${displays.length > 1 ? "s" : ""} / rétro détecté${displays.length > 1 ? "s" : ""}`
-    : "Aucun écran / rétro branché";
+  const screenStatusLabel =
+    displayCount > 0
+      ? `Écran/rétro actifs : ${displayCount}`
+      : "Aucun écran / rétro détecté";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -591,11 +649,10 @@ export function LiveRetransmissionTab({
               </button>
             </div>
 
-            <p className="mb-3 text-sm text-arena-600/60">
-              {statusLabel}
-              <span className="text-arena-600/40"> · </span>
-              URLs actives : {activeUrlCount}
-            </p>
+            <div className="mb-3 space-y-1 text-sm text-arena-600/60">
+              <p>{screenStatusLabel}</p>
+              <p>URLs actives : {activeUrlCount}</p>
+            </div>
 
             {error ? (
               <p className="mb-3 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm text-red-600">
@@ -610,14 +667,15 @@ export function LiveRetransmissionTab({
             ) : null}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {displays.map((display) => (
-                <TargetCard
+              {visibleDisplays.map((display) => (
+                <DisplayTargetCard
                   key={display.id}
                   active={activeTargetId === display.id && !activeTargetIsUrl}
-                  icon={<DisplayIcon />}
-                  title={display.label}
+                  label={display.label}
                   meta={`${display.width} × ${display.height}`}
-                  onClick={() => selectTarget(display.id, false)}
+                  onSelect={() => selectTarget(display.id, false)}
+                  onLabelChange={(label) => updateDisplayLabel(display.id, label)}
+                  onDelete={() => removeDisplayTarget(display.id)}
                 />
               ))}
 
