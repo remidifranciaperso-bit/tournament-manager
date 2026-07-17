@@ -26,10 +26,15 @@ export function ManagerMatchFormatsStep({
       <WizardPageTitle
         title="Formats de match"
         subtitle={subtitle}
+        compact
       />
 
-      <div className="mt-4 flex min-h-0 flex-1 flex-col border-t border-white/10 pt-4">
-        <div className="flex shrink-0 flex-col items-center gap-1.5">
+      <div className="relative mt-4 flex min-h-0 flex-1 flex-col pt-4">
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 z-0 h-2 w-screen max-w-none -translate-x-1/2 bg-arena-950"
+          aria-hidden
+        />
+        <div className="relative z-10 flex shrink-0 flex-col items-center gap-1.5">
           <label className="field-label-section">Formats de match</label>
           <p className="max-w-xl text-xs text-white/40">
             Le tableau, le planning et les convocations viennent du pack Engine.
@@ -39,7 +44,7 @@ export function ManagerMatchFormatsStep({
 
         <div
           className={[
-            "mt-2 grid min-h-0 flex-1 gap-3 sm:gap-4",
+            "relative z-10 mt-2 grid min-h-0 flex-1 gap-3 sm:gap-4",
             showPoules ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-3",
           ].join(" ")}
         >
@@ -89,7 +94,7 @@ export function ManagerMatchFormatsStep({
         </div>
 
         {!matchFormatsStepValid(form) && (
-          <p className="mt-2 shrink-0 text-center text-xs text-amber-300/80">
+          <p className="relative z-10 mt-2 shrink-0 text-center text-xs text-amber-300/80">
             Sélectionnez le format du tableau principal pour continuer.
           </p>
         )}
