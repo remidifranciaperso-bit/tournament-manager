@@ -124,6 +124,7 @@ def health():
     live_ready = soffice_disponible() or bool(remote_engine)
 
     from engine.notify_engine import mode_notification
+    from api.live_store import BASE_LIVE_DIR
 
     return {
         "status": "ok",
@@ -135,6 +136,7 @@ def health():
         "deploy": os.environ.get("DEPLOY_TARGET", "engine"),
         "engine_generate_url": remote_engine,
         "preview_mode": preview_mode(),
+        "live_data_dir": str(BASE_LIVE_DIR),
         "notify": mode_notification(),
     }
 

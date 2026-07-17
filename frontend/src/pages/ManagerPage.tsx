@@ -82,8 +82,23 @@ export default function ManagerPage() {
     []
   );
 
-  const handleResumeSession = useCallback(() => {
+  const handleResumeSession = useCallback(async () => {
     if (!resumeSession) return;
+    const token = resumeSession.liveData.live_token;
+    try {
+      const res = await fetch(`/api/live/${token}/pdf`, { method: "HEAD" });
+      if (!res.ok) {
+        clearLiveSession(token);
+        setResumeSession(null);
+        setGenError(
+          "Session live expirée ou introuvable sur le serveur. Relancez un tournoi."
+        );
+        return;
+      }
+    } catch {
+      setGenError("Impossible de joindre le serveur live.");
+      return;
+    }
     setForm(snapshotToForm(resumeSession.form));
     setLiveData(resumeSession.liveData);
     setResumeSession(null);

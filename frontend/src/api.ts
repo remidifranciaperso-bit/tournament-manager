@@ -145,6 +145,17 @@ function appendTournamentFormFields(body: FormData, form: TournamentForm): void 
   body.append("format_match_poule", form.formatMatchPoule);
 }
 
+async function assertLivePdfAvailable(liveToken: string): Promise<void> {
+  const res = await fetch(`/api/live/${liveToken}/pdf`, { method: "HEAD" });
+  if (res.ok) return;
+  if (res.status === 404) {
+    throw new Error(
+      "PDF live introuvable sur le serveur. Relancez la génération Manager live."
+    );
+  }
+  throw new Error(await readError(res));
+}
+
 export async function generateLiveTournament(
   form: TournamentForm
 ): Promise<LiveTournamentData> {
@@ -178,6 +189,8 @@ export async function generateLiveTournament(
       "Réponse live incomplète. Vérifiez l'API et relancez la génération."
     );
   }
+
+  await assertLivePdfAvailable(data.live_token);
 
   return data;
 }
@@ -232,6 +245,8 @@ export async function initLiveFromPack(packFile: File): Promise<LiveTournamentDa
       "Réponse live incomplète. Vérifiez le pack ZIP et réessayez."
     );
   }
+
+  await assertLivePdfAvailable(data.live_token);
 
   return data;
 }

@@ -5,14 +5,23 @@ from pathlib import Path
 import httpx
 
 
+def _own_service_url() -> str | None:
+    """URL publique Render (RENDER_EXTERNAL_URL) ou vide en local."""
+    own = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+    return own or None
+
+
 def engine_generate_url() -> str | None:
     """URL Engine distante — uniquement pour la preview Manager."""
     if os.environ.get("DEPLOY_TARGET") != "manager-preview":
         return None
     explicit = os.environ.get("ENGINE_GENERATE_URL", "").strip()
-    if explicit:
-        return explicit.rstrip("/")
-    return "https://tournament-manager-9ytu.onrender.com"
+    url = (explicit or "https://tournament-manager-9ytu.onrender.com").rstrip("/")
+    own = _own_service_url()
+    if own and url == own:
+        # Preview configurée en boucle sur elle-même → forcer génération locale.
+        return None
+    return url
 
 
 def preview_mode() -> bool:
