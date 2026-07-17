@@ -1079,6 +1079,7 @@ def remplir_template(
     tournoi,
     matchs,
     logo_path=None,
+    logo_pdf_differe=False,
 ):
     prs = Presentation(template_path)
 
@@ -1086,6 +1087,7 @@ def remplir_template(
         prs=prs,
         logo_path=logo_path,
         club=tournoi.club,
+        pdf_differe=logo_pdf_differe,
     )
 
     valeurs = {}
@@ -1162,7 +1164,15 @@ def remplir_template_8(
         matchs=matchs,
     )
 
-def remplacer_logo(prs, logo_path=None, club=""):
+def remplacer_logo(prs, logo_path=None, club="", pdf_differe=False):
+    if pdf_differe:
+        logo_path = None
+
+    if logo_path:
+        from engine.logo_prepare import preparer_logo_fichier
+
+        logo_path = preparer_logo_fichier(Path(logo_path))
+
     for slide in prs.slides:
         for shape in list(parcourir_shapes(slide.shapes)):
 
