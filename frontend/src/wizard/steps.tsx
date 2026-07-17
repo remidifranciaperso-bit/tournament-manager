@@ -882,6 +882,18 @@ export function SummaryStep({
   );
 }
 
+function downloadOptionClass(downloaded: boolean) {
+  return downloaded
+    ? "inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-lime px-5 py-3 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
+    : "inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15";
+}
+
+function downloadSubtitleClass(downloaded: boolean) {
+  return downloaded
+    ? "text-[11px] font-normal text-arena-950/70"
+    : "text-[11px] font-normal text-lime/70";
+}
+
 export function GenerationStep({
   generating,
   genError,
@@ -889,8 +901,12 @@ export function GenerationStep({
   pdfFilename,
   genreTournoi,
   liveSnapshotAvailable = false,
+  pdfDownloaded = false,
+  managerPackDownloaded = false,
+  hasTelecharge = false,
   onDownloadPdf,
   onDownloadManagerLive,
+  onRegenerateSame,
 }: {
   generating: boolean;
   genError: string | null;
@@ -898,43 +914,62 @@ export function GenerationStep({
   pdfFilename: string;
   genreTournoi: Genre;
   liveSnapshotAvailable?: boolean;
+  pdfDownloaded?: boolean;
+  managerPackDownloaded?: boolean;
+  hasTelecharge?: boolean;
   onDownloadPdf: () => void;
   onDownloadManagerLive?: () => void;
+  onRegenerateSame?: () => void;
 }) {
   const done = !!pdfUrl && !generating;
+  const afficherRegenerer = hasTelecharge && !generating;
+
+  const sousTitre = generating
+    ? "Production du PDF en cours…"
+    : done && !afficherRegenerer
+      ? "Votre dossier tournoi est prêt."
+      : "\u00a0";
 
   return (
     <div className="mx-auto w-full max-w-2xl text-center">
-      <WizardPageTitle
-        title="Génération"
-        subtitle={
-          done
-            ? "Votre dossier tournoi est prêt."
-            : "Production du PDF en cours…"
-        }
-      />
+      <WizardPageTitle title="Génération" subtitle={sousTitre} />
 
-      <div className="mx-auto mt-6 w-full max-w-md">
-        <div className="h-2 overflow-hidden rounded-full bg-white/10">
-          {done ? (
+      <div className="mx-auto mt-6 flex min-h-[3.75rem] w-full max-w-md items-center justify-center">
+        {generating ? (
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+            <motion.div
+              className="h-full rounded-full bg-lime shadow-lime"
+              initial={{ width: "12%" }}
+              animate={{ width: "88%" }}
+              transition={{
+                duration: 8,
+                ease: "easeInOut",
+              }}
+            />
+          </div>
+        ) : afficherRegenerer && onRegenerateSame ? (
+          <button
+            type="button"
+            onClick={onRegenerateSame}
+            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white/85 transition hover:border-lime/30 hover:bg-white/[0.06] hover:text-lime"
+          >
+            <span>Regénérer le même tournoi</span>
+            <span className="text-[11px] font-normal text-white/45">
+              nouveau tirage au sort - paramètres identiques
+            </span>
+          </button>
+        ) : done ? (
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
             <motion.div
               initial={{ width: "0%" }}
               animate={{ width: "100%" }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="h-full rounded-full bg-lime shadow-lime"
             />
-          ) : (
-            <motion.div
-              className="h-full rounded-full bg-lime shadow-lime"
-              initial={{ width: "12%" }}
-              animate={{ width: generating ? "88%" : "12%" }}
-              transition={{
-                duration: generating ? 8 : 0.3,
-                ease: "easeInOut",
-              }}
-            />
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="h-2 w-full" aria-hidden />
+        )}
       </div>
 
       {generating && (
@@ -958,7 +993,7 @@ export function GenerationStep({
         >
           <div className="flex flex-col items-center gap-4">
             <span className="font-display text-lg tracking-wide text-lime sm:text-xl">
-              DOSSIER PRÊT
+              Dossier prêt à être téléchargé
             </span>
 
             <div className="flex w-full max-w-md flex-col gap-3">
@@ -966,19 +1001,22 @@ export function GenerationStep({
                 href={pdfUrl}
                 download={pdfFilename}
                 onClick={onDownloadPdf}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime px-5 py-3 text-sm font-bold text-arena-950 shadow-lime transition hover:brightness-110"
+                className={downloadOptionClass(pdfDownloaded)}
               >
-                Télécharger le PDF
+                <span>PDF seul</span>
+                <span className={downloadSubtitleClass(pdfDownloaded)}>
+                  participants-convocations-tableaux-planning-classement final
+                </span>
               </a>
 
               {liveSnapshotAvailable && onDownloadManagerLive && (
                 <button
                   type="button"
                   onClick={onDownloadManagerLive}
-                  className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-lime/35 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/15"
+                  className={downloadOptionClass(managerPackDownloaded)}
                 >
                   <span>PDF + pack Manager Live</span>
-                  <span className="text-[11px] font-normal text-lime/70">
+                  <span className={downloadSubtitleClass(managerPackDownloaded)}>
                     Conserve le tableau et les convocations pour un live ultérieur
                   </span>
                 </button>

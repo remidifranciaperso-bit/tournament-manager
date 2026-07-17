@@ -184,6 +184,9 @@ async def telecharger_pack_manager_live(
     background_tasks: BackgroundTasks,
 ):
     """Archive ZIP : PDF Engine + snapshot .live.json pour Manager live."""
+    from api.notify_store import nettoyer_expires
+
+    nettoyer_expires()
     archive = creer_archive_manager_live(token)
     if archive is None:
         raise HTTPException(

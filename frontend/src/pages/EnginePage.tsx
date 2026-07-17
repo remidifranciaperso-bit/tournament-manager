@@ -51,7 +51,11 @@ export default function EnginePage() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState("tournoi.pdf");
   const [liveSnapshotAvailable, setLiveSnapshotAvailable] = useState(false);
+  const [pdfDownloaded, setPdfDownloaded] = useState(false);
+  const [managerPackDownloaded, setManagerPackDownloaded] = useState(false);
+  const [hasTelecharge, setHasTelecharge] = useState(false);
   const notifyTokenRef = useRef<string | null>(null);
+  const notifySentRef = useRef(false);
   const genStartedRef = useRef(false);
 
   const resetWizard = useCallback(() => {
@@ -68,7 +72,11 @@ export default function EnginePage() {
     });
     setPdfFilename("tournoi.pdf");
     setLiveSnapshotAvailable(false);
+    setPdfDownloaded(false);
+    setManagerPackDownloaded(false);
+    setHasTelecharge(false);
     notifyTokenRef.current = null;
+    notifySentRef.current = false;
     genStartedRef.current = false;
   }, []);
 
@@ -176,6 +184,10 @@ export default function EnginePage() {
       setPdfUrl(null);
     }
     setGenError(null);
+    setPdfDownloaded(false);
+    setManagerPackDownloaded(false);
+    setHasTelecharge(false);
+    notifySentRef.current = false;
     genStartedRef.current = false;
     setStep(8);
   };
@@ -183,6 +195,9 @@ export default function EnginePage() {
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
     setGenError(null);
+    setPdfDownloaded(false);
+    setManagerPackDownloaded(false);
+    notifySentRef.current = false;
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl);
       setPdfUrl(null);
@@ -196,6 +211,7 @@ export default function EnginePage() {
       setPdfFilename(filename);
       notifyTokenRef.current = notifyToken;
       setLiveSnapshotAvailable(snapshot);
+      notifySentRef.current = false;
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -206,6 +222,7 @@ export default function EnginePage() {
   useEffect(() => {
     if (step !== 8) {
       genStartedRef.current = false;
+      setHasTelecharge(false);
       return;
     }
     if (genStartedRef.current || generating) return;
@@ -213,16 +230,22 @@ export default function EnginePage() {
     handleGenerate();
   }, [step, generating, handleGenerate]);
 
-  const handleDownloadNotify = useCallback(() => {
+  const envoyerNotificationUneFois = useCallback(() => {
     const token = notifyTokenRef.current;
-    if (!token) return;
+    if (!token || notifySentRef.current) return;
+    notifySentRef.current = true;
     notifyOwnerAfterDownload(
       token,
       buildTournamentResume(form, preview, pdfFilename)
     );
-    notifyTokenRef.current = null;
-    setLiveSnapshotAvailable(false);
   }, [form, preview, pdfFilename]);
+
+  const handleDownloadNotify = useCallback(() => {
+    if (!notifyTokenRef.current) return;
+    setPdfDownloaded(true);
+    setHasTelecharge(true);
+    envoyerNotificationUneFois();
+  }, [envoyerNotificationUneFois]);
 
   const handleDownloadManagerLive = useCallback(async () => {
     const token = notifyTokenRef.current;
@@ -230,12 +253,9 @@ export default function EnginePage() {
     const base = pdfFilename.replace(/\.pdf$/i, "");
     try {
       await downloadManagerLiveBundle(token, `${base}-manager-live.zip`);
-      notifyOwnerAfterDownload(
-        token,
-        buildTournamentResume(form, preview, pdfFilename)
-      );
-      notifyTokenRef.current = null;
-      setLiveSnapshotAvailable(false);
+      setManagerPackDownloaded(true);
+      setHasTelecharge(true);
+      envoyerNotificationUneFois();
     } catch (err) {
       setGenError(
         err instanceof Error
@@ -243,7 +263,11 @@ export default function EnginePage() {
           : "Impossible de télécharger le pack Manager Live."
       );
     }
-  }, [form, preview, pdfFilename]);
+  }, [pdfFilename, envoyerNotificationUneFois]);
+
+  const handleRegenerateSame = useCallback(() => {
+    void handleGenerate();
+  }, [handleGenerate]);
 
   const slideVariants = {
     initial: { opacity: 0, y: 20 },
@@ -357,8 +381,12 @@ export default function EnginePage() {
                   pdfFilename={pdfFilename}
                   genreTournoi={form.genreTournoi}
                   liveSnapshotAvailable={liveSnapshotAvailable}
+                  pdfDownloaded={pdfDownloaded}
+                  managerPackDownloaded={managerPackDownloaded}
+                  hasTelecharge={hasTelecharge}
                   onDownloadPdf={handleDownloadNotify}
                   onDownloadManagerLive={handleDownloadManagerLive}
+                  onRegenerateSame={handleRegenerateSame}
                 />
               )}
             </motion.div>

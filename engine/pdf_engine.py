@@ -40,6 +40,7 @@ def trouver_soffice():
 def _environnement_libreoffice_silencieux():
     env = os.environ.copy()
     env["SAL_USE_VCLPLUGIN"] = "svp"
+    env["SAL_DISABLE_OPENCL"] = "1"
     env.setdefault("LANG", "C.UTF-8")
     return env
 
@@ -74,19 +75,6 @@ def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess
         )
 
 
-def _pdf_export_filter() -> str:
-    max_dpi = int(os.environ.get("PDF_IMAGE_MAX_DPI", "96"))
-    reduire = "true" if max_dpi <= 300 else "false"
-    return (
-        "pdf:impress_pdf_Export:{"
-        f'"SelectPdfVersion":{{"type":"long","value":"1"}},'
-        f'"Quality":{{"type":"long","value":"85"}},'
-        f'"ReduceImageResolution":{{"type":"boolean","value":"{reduire}"}},'
-        f'"MaxImageResolution":{{"type":"long","value":"{max_dpi}"}}'
-        "}"
-    )
-
-
 def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie="pdf"):
     """
     Conversion PPTX -> PDF (ou autre) via LibreOffice en mode headless/invisible.
@@ -111,7 +99,7 @@ def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie
             "--norestore",
             f"-env:UserInstallation={user_installation}",
             "--convert-to",
-            _pdf_export_filter(),
+            "pdf",
             "--outdir",
             str(output_dir),
             str(pptx_path),

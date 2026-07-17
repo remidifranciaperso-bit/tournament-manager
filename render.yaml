@@ -1,18 +1,9 @@
 # Deux services Render sur le MEME repo GitHub :
 #
-# 1) tournament-manager        → branche main            → ENGINE prod
-#    URL : https://tournament-manager.onrender.com
-#    Chat "Engine" : push sur main, manual deploy ce service
+# 1) tournament-manager (prod) → branche main → Hub + Engine + Manager Live
+#    URL : https://tournament-manager-9ytu.onrender.com
 #
-# 2) tournament-manager-preview → branche feature/manager → HUB + Manager preview
-#    URL : https://tournament-manager-preview.onrender.com
-#    Génère le PDF en local (LibreOffice dans l'image Docker) si l'Engine prod
-#    est indisponible ; ENGINE_GENERATE_URL sert uniquement de relais optionnel.
-#    Chat "Manager" : push sur feature/manager, manual deploy ce service
-#
-# Creer le service preview : Render Dashboard → New → Web Service → meme repo,
-# branche feature/manager, runtime Docker, copier les env vars du service Engine
-# (RESEND_API_KEY, OWNER_EMAIL, EMAIL_FROM, PDF_CONVERTER).
+# 2) tournament-manager-preview → staging (optionnel, branche feature/*)
 #
 services:
   - type: web
@@ -24,11 +15,17 @@ services:
     dockerContext: .
     healthCheckPath: /api/health
     autoDeploy: true
+    disk:
+      name: live-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: DEPLOY_TARGET
         value: engine
       - key: PDF_CONVERTER
         value: libreoffice
+      - key: LIVE_DATA_DIR
+        value: /data/_live
       - key: OWNER_EMAIL
         value: remi.difrancia.perso@gmail.com
       - key: EMAIL_FROM
@@ -42,23 +39,16 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/health
-    autoDeploy: true
-    # Disque persistant : les sessions live (full.pdf + page_map) survivent aux
-    # redéploiements et redémarrages. Indispensable pour les tournois sur
-    # plusieurs jours (sinon « PDF live introuvable » à l'export le lendemain).
+    autoDeploy: false
     disk:
       name: live-data
       mountPath: /data
       sizeGB: 1
     envVars:
       - key: DEPLOY_TARGET
-        value: manager-preview
-      - key: ENGINE_GENERATE_URL
-        value: https://tournament-manager.onrender.com
+        value: engine
       - key: PDF_CONVERTER
         value: libreoffice
-      - key: PDF_IMAGE_MAX_DPI
-        value: "96"
       - key: LIVE_DATA_DIR
         value: /data/_live
       - key: OWNER_EMAIL
