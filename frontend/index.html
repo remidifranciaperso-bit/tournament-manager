@@ -5,6 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/ball.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Padel Tournament Platform</title>
+    <link
+      rel="preload"
+      href="/fonts/GrindyBrush.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
     <script>
       (function () {
         var path = window.location.pathname;
@@ -14,6 +21,14 @@
       })();
     </script>
     <style>
+      @font-face {
+        font-family: "Grindy Brush";
+        src: url("/fonts/GrindyBrush.otf") format("opentype");
+        font-weight: normal;
+        font-style: normal;
+        font-display: block;
+      }
+
       html,
       body,
       #root {
