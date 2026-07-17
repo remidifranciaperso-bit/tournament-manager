@@ -932,18 +932,10 @@ export function GenerationStep({
       : "\u00a0";
 
   return (
-    <div
-      className={`mx-auto w-full max-w-2xl text-center ${
-        done ? "overflow-hidden" : ""
-      }`}
-    >
-      <WizardPageTitle title="Génération" subtitle={sousTitre} compact={done} />
+    <div className="mx-auto w-full max-w-2xl text-center">
+      <WizardPageTitle title="Génération" subtitle={sousTitre} />
 
-      <div
-        className={`mx-auto flex w-full max-w-md items-center justify-center ${
-          done ? "mt-4 min-h-0" : "mt-6 min-h-[3.75rem]"
-        }`}
-      >
+      <div className="mx-auto mt-6 flex min-h-[3.75rem] w-full max-w-md items-center justify-center">
         {generating ? (
           <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
             <motion.div
@@ -998,14 +990,14 @@ export function GenerationStep({
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 overflow-hidden"
+          className="mt-8"
         >
-          <div className="flex flex-col items-center gap-3">
-            <span className="font-display text-base tracking-wide text-lime sm:text-lg">
+          <div className="flex flex-col items-center gap-4">
+            <span className="font-display text-lg tracking-wide text-lime sm:text-xl">
               Dossier prêt à être téléchargé
             </span>
 
-            <div className="flex w-full max-w-md flex-col gap-2.5">
+            <div className="flex w-full max-w-md flex-col gap-3">
               <a
                 href={pdfUrl}
                 download={pdfFilename}
@@ -1033,7 +1025,7 @@ export function GenerationStep({
             </div>
           </div>
           <div
-            className="mx-auto mt-5 flex w-full flex-col items-center gap-0 font-brush text-[clamp(1.75rem,5vw,2.75rem)] leading-[0.95] text-lime"
+            className="mx-auto mt-14 flex w-full flex-col items-center font-brush text-[clamp(2rem,6.5vw,3.75rem)] leading-none text-lime sm:mt-20"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
             aria-label={`${taglineLine1} GAGNENT`}
           >

@@ -347,9 +347,11 @@ export default function EnginePage() {
 
         <main
           className={`mx-auto w-full max-w-2xl min-h-0 flex-1 px-4 sm:px-8 ${
-            step === 7 || step === 8
-              ? "flex flex-col justify-center overflow-hidden py-2 sm:py-4"
-              : "overflow-y-auto py-8 sm:py-10"
+            step === 7
+              ? "flex flex-col justify-center overflow-hidden py-4 sm:py-6"
+              : step === 8
+                ? "overflow-hidden py-8 sm:py-10"
+                : "overflow-y-auto py-8 sm:py-10"
           }`}
         >
           <AnimatePresence mode="wait">
