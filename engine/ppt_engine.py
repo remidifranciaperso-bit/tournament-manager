@@ -11,12 +11,12 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 from PIL import Image
 
-# Libellés texte TSL Sans (zéro image, rendu PDF fiable sans fond carré).
-ICONE_VAINQUEUR = "Gagnants "
-ICONE_PERDANT = "Perdants "
-ICONE_PREMIER = "1er "
-ICONE_DEUXIEME = "2e "
-ICONE_TROISIEME = "3 "
+# Emojis Noto Color (Dockerfile installe fonts-noto-color-emoji).
+ICONE_VAINQUEUR = "🏆 "
+ICONE_PERDANT = "❌ "
+ICONE_PREMIER = "🏆 "
+ICONE_DEUXIEME = "🥈 "
+ICONE_TROISIEME = "🥉 "
 
 # Tailles template bleus : équipes Noto 10 pt, placeholders emoji Noto 8 pt.
 TEMPLATE_PT_TEAM = 10
@@ -398,11 +398,21 @@ def remplacer_dans_paragraphe(paragraphe, valeurs):
     )
 
     if nouveau != texte_original:
-        if paragraphe.runs:
-            paragraphe.runs[0].text = nouveau
+        taille_template_max = _taille_max_runs(paragraphe)
 
-            for run in paragraphe.runs[1:]:
-                run.text = ""
+        if paragraphe.runs:
+            if _est_cellule_equipe(texte_original, nouveau):
+                _desactiver_autofit_text_frame(paragraphe._parent)
+                _appliquer_police_equipe(
+                    paragraphe,
+                    nouveau,
+                    taille_template_max,
+                )
+            else:
+                paragraphe.runs[0].text = nouveau
+
+                for run in paragraphe.runs[1:]:
+                    run.text = ""
         else:
             paragraphe.text = nouveau
 
