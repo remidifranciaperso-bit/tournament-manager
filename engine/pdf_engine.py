@@ -58,6 +58,13 @@ def _pdf_export_filter() -> str:
     )
 
 
+def _convert_to_pdf_arg() -> str:
+    """Export standard sur Engine prod ; filtre DPI uniquement si env explicite (preview)."""
+    if os.environ.get("PDF_IMAGE_MAX_DPI", "").strip():
+        return _pdf_export_filter()
+    return "pdf"
+
+
 def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess.CompletedProcess:
     """
     Lance LibreOffice sans fenêtre ni bruit terminal si possible.
@@ -112,7 +119,7 @@ def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie
             "--norestore",
             f"-env:UserInstallation={user_installation}",
             "--convert-to",
-            _pdf_export_filter(),
+            _convert_to_pdf_arg(),
             "--outdir",
             str(output_dir),
             str(pptx_path),
