@@ -119,7 +119,7 @@ def convertir_avec_libreoffice(pptx_path, output_dir, soffice_bin, format_sortie
             "--norestore",
             f"-env:UserInstallation={user_installation}",
             "--convert-to",
-            _convert_to_pdf_arg(),
+            "pdf",
             "--outdir",
             str(output_dir),
             str(pptx_path),

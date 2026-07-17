@@ -51,8 +51,6 @@ services:
         value: https://tournament-manager-9ytu.onrender.com
       - key: PDF_CONVERTER
         value: libreoffice
-      - key: PDF_IMAGE_MAX_DPI
-        value: "96"
       - key: LIVE_DATA_DIR
         value: /data/_live
       - key: OWNER_EMAIL
