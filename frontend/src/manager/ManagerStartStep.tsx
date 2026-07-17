@@ -60,7 +60,7 @@ export function ManagerStartStep({
     <ProductEntryLayout compact alignTop dimContent={!!pendingPack}>
       {pendingPack ? (
         <ManagerPackSummaryDialog
-          meta={pendingPack.meta}
+          data={pendingPack}
           onConfirm={() => {
             onPackConfirmed(pendingPack);
             setPendingPack(null);

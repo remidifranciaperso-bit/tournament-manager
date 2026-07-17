@@ -1,17 +1,41 @@
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { PrimaryButton, GhostButton } from "../components/ui";
-import type { LiveTournamentMeta } from "./liveTypes";
+import { LIVE_LOGO_HEIGHT_CLASS } from "./LiveTabTitle";
+import type { LiveTournamentData } from "./liveTypes";
 import { formatDateFr } from "../wizard/helpers";
 
 interface ManagerPackSummaryDialogProps {
-  meta: LiveTournamentMeta;
+  data: LiveTournamentData;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-function summaryRows(meta: LiveTournamentMeta): { label: string; value: string }[] {
+function resolveLogoUrl(data: LiveTournamentData): string | null {
+  if (data.meta.logo_url) return data.meta.logo_url;
+  if (data.logo_data_url) return data.logo_data_url;
+  if (data.logo_png) return `data:image/png;base64,${data.logo_png}`;
+  return null;
+}
+
+function summaryRows(data: LiveTournamentData): { label: string; value: ReactNode }[] {
+  const meta = data.meta;
+  const logoUrl = resolveLogoUrl(data);
+
   return [
     { label: "Club", value: meta.club },
+    {
+      label: "Logo",
+      value: logoUrl ? (
+        <img
+          src={logoUrl}
+          alt="Logo du club"
+          className={`${LIVE_LOGO_HEIGHT_CLASS} ml-auto max-w-[88px] object-contain`}
+        />
+      ) : (
+        <span>Pas de logo</span>
+      ),
+    },
     { label: "Date", value: formatDateFr(meta.date_tournoi) },
     {
       label: "Type",
@@ -20,17 +44,17 @@ function summaryRows(meta: LiveTournamentMeta): { label: string; value: string }
     { label: "Équipes", value: String(meta.nb_equipes) },
     { label: "Déroulement", value: meta.mode_tournoi },
     { label: "Jours", value: String(meta.nb_jours) },
-    { label: "Terrains", value: meta.terrains.join(", ") },
+    { label: "Terrains", value: String(meta.terrains.length) },
     { label: "Durée des matchs", value: `${meta.duree_match} min` },
   ];
 }
 
 export function ManagerPackSummaryDialog({
-  meta,
+  data,
   onConfirm,
   onCancel,
 }: ManagerPackSummaryDialogProps) {
-  const rows = summaryRows(meta);
+  const rows = summaryRows(data);
 
   return createPortal(
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 px-4">
@@ -64,7 +88,7 @@ export function ManagerPackSummaryDialog({
               <span className="text-[10px] font-medium uppercase tracking-widest text-white/35">
                 {label}
               </span>
-              <span className="text-right text-sm font-medium text-lime">{value}</span>
+              <div className="text-right text-sm font-medium text-lime">{value}</div>
             </div>
           ))}
         </div>
