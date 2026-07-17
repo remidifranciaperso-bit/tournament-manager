@@ -79,7 +79,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Notify-Token"],
+    expose_headers=["X-Notify-Token", "X-Live-Snapshot-Available"],
 )
 
 
@@ -150,8 +150,8 @@ def _envoyer_notification_arriere_plan(token: str, resume: dict) -> None:
         envoyer_notification_proprietaire(pdf_path, resume)
     except Exception as exc:
         print(f"Notify: échec envoi email ({exc})")
-    finally:
-        supprimer_pdf(token)
+    # Ne pas supprimer le PDF/snapshot ici : l'utilisateur peut encore
+    # télécharger le pack Manager Live. Nettoyage via TTL (6 h).
 
 
 @app.post("/api/notify-owner")

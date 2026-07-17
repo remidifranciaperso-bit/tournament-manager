@@ -1219,9 +1219,10 @@ def remplacer_logo(prs, logo_path=None, club="", pdf_differe=False):
                 )
 
             else:
+                libelle = "" if pdf_differe else club
                 remplacer_texte_preserve_style(
                     shape.text_frame,
-                    club,
+                    libelle,
                 )
 
                 # Sans logo, la zone de texte du club ne doit pas afficher

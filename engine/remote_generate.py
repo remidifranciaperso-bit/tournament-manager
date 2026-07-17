@@ -12,7 +12,7 @@ def engine_generate_url() -> str | None:
     explicit = os.environ.get("ENGINE_GENERATE_URL", "").strip()
     if explicit:
         return explicit.rstrip("/")
-    return "https://tournament-manager.onrender.com"
+    return "https://tournament-manager-9ytu.onrender.com"
 
 
 def preview_mode() -> bool:
