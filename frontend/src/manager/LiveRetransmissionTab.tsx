@@ -15,6 +15,7 @@ import {
 import {
   buildAffichageUrl,
   createOutputToken,
+  deleteBroadcastOutput,
   listBroadcastOutputs,
   saveBroadcastOutput,
   type BroadcastOutput,
@@ -211,6 +212,128 @@ function TargetCard({
         {meta ? <p className="mt-1 text-xs text-arena-600/45">{meta}</p> : null}
       </div>
     </button>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden
+    >
+      <path d="M4 7h16" strokeLinecap="round" />
+      <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" strokeLinecap="round" />
+      <path d="M7 7l1 12a1 1 0 001 1h6a1 1 0 001-1l1-12" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UrlTargetCard({
+  active,
+  label,
+  outputToken,
+  onSelect,
+  onLabelChange,
+  onDelete,
+  onCopyUrl,
+  onTestUrl,
+}: {
+  active: boolean;
+  label: string;
+  outputToken: string | null;
+  onSelect: () => void;
+  onLabelChange: (label: string) => void;
+  onDelete: () => void;
+  onCopyUrl: () => void;
+  onTestUrl: () => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      className={[
+        "relative flex w-full flex-col gap-2 rounded-2xl border p-4 text-left transition",
+        active
+          ? "border-template-blue/40 bg-template-blue/[0.06] ring-1 ring-template-blue/20"
+          : "border-arena-600/15 bg-white hover:border-arena-600/30 hover:shadow-sm",
+      ].join(" ")}
+    >
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete();
+        }}
+        className="absolute right-3 top-3 rounded-lg p-1.5 text-arena-600/35 transition hover:bg-red-500/10 hover:text-red-600"
+        aria-label="Supprimer l'URL"
+      >
+        <TrashIcon />
+      </button>
+
+      <div
+        className={[
+          "flex h-10 w-10 items-center justify-center rounded-xl",
+          active
+            ? "bg-template-blue/15 text-template-blue"
+            : "bg-arena-600/8 text-arena-600/55",
+        ].join(" ")}
+      >
+        <LinkIcon />
+      </div>
+
+      <div className="pr-8">
+        <input
+          type="text"
+          value={label}
+          onClick={(event) => event.stopPropagation()}
+          onChange={(event) => onLabelChange(event.target.value)}
+          className="w-full border-0 bg-transparent p-0 text-sm font-semibold text-arena-700 outline-none ring-0 placeholder:text-arena-600/40 focus:ring-0"
+          placeholder="Nom de l'écran"
+        />
+        {outputToken ? (
+          <>
+            <p className="mt-2 break-all font-mono text-[10px] leading-snug text-arena-600/45">
+              {buildAffichageUrl(outputToken)}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCopyUrl();
+                }}
+                className="text-[10px] font-semibold uppercase tracking-wide text-template-blue hover:underline"
+              >
+                Copier l&apos;URL
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onTestUrl();
+                }}
+                className="text-[10px] font-semibold uppercase tracking-wide text-arena-600/55 hover:text-arena-700 hover:underline"
+              >
+                Tester l&apos;URL
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="mt-1 text-xs text-arena-600/45">URL à générer</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -428,7 +551,25 @@ export function LiveRetransmissionTab({
     }
   };
 
+  const removeUrlTarget = (id: string) => {
+    const target = urlTargets.find((entry) => entry.id === id);
+    if (target?.outputToken) {
+      deleteBroadcastOutput(target.outputToken, liveToken);
+    }
+    setUrlTargets((prev) => prev.filter((entry) => entry.id !== id));
+    setTargetConfigs((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    if (activeTargetId === id && activeTargetIsUrl) {
+      setActiveTargetId(null);
+      setActiveTargetIsUrl(false);
+    }
+  };
+
   const hasDisplays = displays.length > 0;
+  const activeUrlCount = urlTargets.filter((entry) => entry.outputToken).length;
   const statusLabel = hasDisplays
     ? `${displays.length} écran${displays.length > 1 ? "s" : ""} / rétro détecté${displays.length > 1 ? "s" : ""}`
     : "Aucun écran / rétro branché";
@@ -450,7 +591,11 @@ export function LiveRetransmissionTab({
               </button>
             </div>
 
-            <p className="mb-3 text-sm text-arena-600/60">{statusLabel}</p>
+            <p className="mb-3 text-sm text-arena-600/60">
+              {statusLabel}
+              <span className="text-arena-600/40"> · </span>
+              URLs actives : {activeUrlCount}
+            </p>
 
             {error ? (
               <p className="mb-3 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm text-red-600">
@@ -477,15 +622,27 @@ export function LiveRetransmissionTab({
               ))}
 
               {urlTargets.map((urlTarget) => (
-                <TargetCard
+                <UrlTargetCard
                   key={urlTarget.id}
                   active={activeTargetId === urlTarget.id && activeTargetIsUrl}
-                  icon={<LinkIcon />}
-                  title={urlTarget.label}
-                  meta={
-                    urlTarget.outputToken ? "URL générée" : "URL à générer"
+                  label={urlTarget.label}
+                  outputToken={urlTarget.outputToken}
+                  onSelect={() => selectTarget(urlTarget.id, true)}
+                  onLabelChange={(label) => updateUrlLabel(urlTarget.id, label)}
+                  onDelete={() => removeUrlTarget(urlTarget.id)}
+                  onCopyUrl={() =>
+                    void handleCopyUrl(
+                      buildAffichageUrl(urlTarget.outputToken!),
+                      urlTarget.label
+                    )
                   }
-                  onClick={() => selectTarget(urlTarget.id, true)}
+                  onTestUrl={() =>
+                    window.open(
+                      buildAffichageUrl(urlTarget.outputToken!),
+                      `broadcast-${urlTarget.outputToken}`,
+                      "noopener"
+                    )
+                  }
                 />
               ))}
             </div>
@@ -583,6 +740,20 @@ export function LiveRetransmissionTab({
                       })}
                     </div>
                   )}
+
+                  {activeUrlTarget && canLaunchTarget(activeConfig) ? (
+                    <div className="mt-4 flex justify-center">
+                      <PrimaryButton onClick={handleCreateUrl}>
+                        Générer l&apos;URL
+                      </PrimaryButton>
+                    </div>
+                  ) : null}
+
+                  {copyFeedback && activeUrlTarget?.outputToken ? (
+                    <p className="mt-3 text-center text-xs text-template-blue">
+                      URL copiée — {copyFeedback}
+                    </p>
+                  ) : null}
                 </section>
               ) : null}
 
@@ -591,71 +762,6 @@ export function LiveRetransmissionTab({
                   <PrimaryButton onClick={handleLaunchDisplay}>
                     Lancer la projection
                   </PrimaryButton>
-                </div>
-              ) : null}
-
-              {activeUrlTarget ? (
-                <div className="rounded-2xl border border-arena-600/15 bg-arena-600/[0.03] px-5 py-5">
-                  <label className="field-label-tight">Nom de l&apos;écran</label>
-                  <input
-                    type="text"
-                    value={activeUrlTarget.label}
-                    onChange={(event) =>
-                      updateUrlLabel(activeUrlTarget.id, event.target.value)
-                    }
-                    className="text-input mt-2"
-                  />
-
-                  {activeUrlTarget.outputToken ? (
-                    <>
-                      <p className="mt-4 break-all font-mono text-xs text-arena-600/55">
-                        {buildAffichageUrl(activeUrlTarget.outputToken)}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void handleCopyUrl(
-                            buildAffichageUrl(activeUrlTarget.outputToken!),
-                            activeUrlTarget.label
-                          )
-                        }
-                        className="mt-2 text-xs font-semibold uppercase tracking-wide text-template-blue hover:underline"
-                      >
-                        Copier l&apos;URL
-                      </button>
-                    </>
-                  ) : null}
-
-                  {activeConfig.mode && canLaunchTarget(activeConfig) ? (
-                    <div className="mt-4 flex flex-wrap justify-center gap-3">
-                      <PrimaryButton onClick={handleCreateUrl}>
-                        {activeUrlTarget.outputToken
-                          ? "Mettre à jour l'URL"
-                          : "Générer l'URL"}
-                      </PrimaryButton>
-                      {activeUrlTarget.outputToken ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            window.open(
-                              buildAffichageUrl(activeUrlTarget.outputToken!),
-                              `broadcast-${activeUrlTarget.outputToken}`,
-                              "noopener"
-                            )
-                          }
-                          className="rounded-xl border border-arena-600/20 px-5 py-3 text-sm font-semibold text-arena-700 transition hover:border-arena-600/35"
-                        >
-                          Tester l&apos;URL
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  {copyFeedback && activeUrlTarget.outputToken ? (
-                    <p className="mt-3 text-center text-xs text-template-blue">
-                      URL copiée — {copyFeedback}
-                    </p>
-                  ) : null}
                 </div>
               ) : null}
             </>

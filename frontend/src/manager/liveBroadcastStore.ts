@@ -70,6 +70,27 @@ export function listBroadcastOutputs(liveToken: string): BroadcastOutput[] {
   }
 }
 
+export function deleteBroadcastOutput(
+  outputToken: string,
+  liveToken: string
+): void {
+  localStorage.removeItem(outputKey(outputToken));
+  try {
+    const raw = localStorage.getItem(indexKey(liveToken));
+    if (!raw) return;
+    const tokens = (JSON.parse(raw) as string[]).filter(
+      (token) => token !== outputToken
+    );
+    if (tokens.length === 0) {
+      localStorage.removeItem(indexKey(liveToken));
+    } else {
+      localStorage.setItem(indexKey(liveToken), JSON.stringify(tokens));
+    }
+  } catch {
+    localStorage.removeItem(indexKey(liveToken));
+  }
+}
+
 export function clearBroadcastSession(liveToken: string): void {
   const outputs = listBroadcastOutputs(liveToken);
   for (const output of outputs) {
