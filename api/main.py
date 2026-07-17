@@ -507,6 +507,15 @@ def live_logo(token: str):
     )
 
 
+@app.get("/api/live/{token}/status")
+def live_session_status(token: str):
+    """Vérifie qu'une session live existe et que full.pdf est présent."""
+    chemin = chemin_pdf_complet(token)
+    if chemin is None:
+        raise HTTPException(status_code=404, detail="PDF live introuvable.")
+    return {"ok": True, "live_token": token}
+
+
 @app.get("/api/live/{token}/pdf")
 def live_pdf_complet(token: str):
     chemin = chemin_pdf_complet(token)

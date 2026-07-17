@@ -146,7 +146,7 @@ function appendTournamentFormFields(body: FormData, form: TournamentForm): void 
 }
 
 async function assertLivePdfAvailable(liveToken: string): Promise<void> {
-  const res = await fetch(`/api/live/${liveToken}/pdf`, { method: "HEAD" });
+  const res = await fetch(`/api/live/${liveToken}/status`);
   if (res.ok) return;
   if (res.status === 404) {
     throw new Error(
@@ -245,8 +245,6 @@ export async function initLiveFromPack(packFile: File): Promise<LiveTournamentDa
       "Réponse live incomplète. Vérifiez le pack ZIP et réessayez."
     );
   }
-
-  await assertLivePdfAvailable(data.live_token);
 
   return data;
 }

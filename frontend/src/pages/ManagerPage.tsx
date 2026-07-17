@@ -86,7 +86,7 @@ export default function ManagerPage() {
     if (!resumeSession) return;
     const token = resumeSession.liveData.live_token;
     try {
-      const res = await fetch(`/api/live/${token}/pdf`, { method: "HEAD" });
+      const res = await fetch(`/api/live/${token}/status`);
       if (!res.ok) {
         clearLiveSession(token);
         setResumeSession(null);
