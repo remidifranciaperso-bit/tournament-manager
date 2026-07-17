@@ -44,7 +44,6 @@ import {
   formatDateFr,
   formatHeuresDebut,
   formatModeTournoi,
-  generationTagline,
   syncHeures,
   syncTerrains,
 } from "./helpers";
@@ -1024,10 +1023,15 @@ export function GenerationStep({
             </div>
           </div>
           <p
-            className="mt-14 font-brush text-[clamp(2rem,6.5vw,3.75rem)] leading-none text-lime sm:mt-20"
+            className="mt-10 font-brush text-[clamp(2rem,6.5vw,3.75rem)] leading-none text-lime sm:mt-12"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
           >
-            {generationTagline(genreTournoi)}
+            <span className="block">
+              {genreTournoi === "Femmes"
+                ? "QUE LES MEILLEURES"
+                : "QUE LES MEILLEURS"}
+            </span>
+            <span className="block">GAGNENT</span>
           </p>
         </motion.div>
       )}
