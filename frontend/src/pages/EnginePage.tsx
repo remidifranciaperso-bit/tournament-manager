@@ -269,6 +269,20 @@ export default function EnginePage() {
     void handleGenerate();
   }, [handleGenerate]);
 
+  useEffect(() => {
+    if (step !== 8) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+    };
+  }, [step]);
+
   const slideVariants = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -332,15 +346,16 @@ export default function EnginePage() {
         </header>
 
         <main
-          className={`mx-auto w-full max-w-2xl flex-1 px-4 sm:px-8 ${
+          className={`mx-auto w-full max-w-2xl min-h-0 flex-1 px-4 sm:px-8 ${
             step === 7 || step === 8
-              ? "flex flex-col justify-center overflow-hidden py-4 sm:py-6"
+              ? "flex flex-col justify-center overflow-hidden py-2 sm:py-4"
               : "overflow-y-auto py-8 sm:py-10"
           }`}
         >
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
+              className={step === 8 ? "min-h-0 w-full overflow-hidden" : undefined}
               variants={slideVariants}
               initial="initial"
               animate="animate"
@@ -393,7 +408,11 @@ export default function EnginePage() {
           </AnimatePresence>
         </main>
 
-        <footer className="sticky bottom-0 px-4 py-4 sm:px-8">
+        <footer
+          className={`shrink-0 px-4 sm:px-8 ${
+            step === 8 ? "py-2" : "py-4"
+          }`}
+        >
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
             {step > 1 ? (
               <GhostButton onClick={goBack}>← Retour</GhostButton>
