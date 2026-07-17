@@ -1,12 +1,5 @@
-# Stage 1 : build frontend Vite (source -> frontend/dist)
-FROM node:20-alpine AS frontend-build
-WORKDIR /frontend
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
-
-# Stage 2 : runtime Python + LibreOffice
+# Runtime Python + LibreOffice.
+# Le frontend est servi depuis frontend/dist (build Vite commité).
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -37,7 +30,6 @@ COPY requirements-docker.txt .
 RUN pip install --no-cache-dir -r requirements-docker.txt
 
 COPY . .
-COPY --from=frontend-build /frontend/dist ./frontend/dist
 
 RUN test -f frontend/dist/index.html
 

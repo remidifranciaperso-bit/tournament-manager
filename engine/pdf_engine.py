@@ -45,26 +45,6 @@ def _environnement_libreoffice_silencieux():
     return env
 
 
-def _pdf_export_filter() -> str:
-    max_dpi = int(os.environ.get("PDF_IMAGE_MAX_DPI", "96"))
-    reduire = "true" if max_dpi <= 300 else "false"
-    return (
-        "pdf:impress_pdf_Export:{"
-        f'"SelectPdfVersion":{{"type":"long","value":"1"}},'
-        f'"Quality":{{"type":"long","value":"85"}},'
-        f'"ReduceImageResolution":{{"type":"boolean","value":"{reduire}"}},'
-        f'"MaxImageResolution":{{"type":"long","value":"{max_dpi}"}}'
-        "}"
-    )
-
-
-def _convert_to_pdf_arg() -> str:
-    """Export standard sur Engine prod ; filtre DPI uniquement si env explicite (preview)."""
-    if os.environ.get("PDF_IMAGE_MAX_DPI", "").strip():
-        return _pdf_export_filter()
-    return "pdf"
-
-
 def _executer_libreoffice(commande: list[str], timeout: int = 180) -> subprocess.CompletedProcess:
     """
     Lance LibreOffice sans fenêtre ni bruit terminal si possible.

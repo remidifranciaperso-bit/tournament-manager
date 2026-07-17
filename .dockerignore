@@ -24,8 +24,19 @@ _*.py
 venv/
 env/
 
-# Frontend : node_modules locaux uniquement (src compile au deploy Docker)
+# Frontend : dist pre-build commité (public = dev uniquement, copié dans dist au build)
 frontend/node_modules/
+frontend/public/
+frontend/src/
+frontend/package.json
+frontend/package-lock.json
+frontend/tsconfig.json
+frontend/tsconfig.node.json
+frontend/tsconfig.tsbuildinfo
+frontend/vite.config.ts
+frontend/postcss.config.js
+frontend/tailwind.config.js
+frontend/index.html
 
 # Streamlit (non utilisé en production Docker)
 app/
