@@ -57,7 +57,7 @@ export function ManagerStartStep({
   };
 
   return (
-    <ProductEntryLayout compact alignTop>
+    <ProductEntryLayout compact alignTop dimContent={!!pendingPack}>
       {pendingPack ? (
         <ManagerPackSummaryDialog
           meta={pendingPack.meta}

@@ -40,15 +40,23 @@ export function ProductEntryLayout({
   children,
   compact = false,
   alignTop = false,
+  dimContent = false,
 }: {
   children: ReactNode;
   compact?: boolean;
   alignTop?: boolean;
+  /** Assombrit/floute le contenu et le fond photo quand une modale est ouverte. */
+  dimContent?: boolean;
 }) {
   return (
-    <div className="relative z-10 flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <LiveNightCourtBackground />
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+    <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
+      <LiveNightCourtBackground blurred={dimContent} />
+      <div
+        className={[
+          "relative z-10 flex min-h-0 flex-1 flex-col transition-[filter,opacity] duration-200",
+          dimContent ? "blur-[3px] brightness-[0.88]" : "",
+        ].join(" ")}
+      >
         <main
           className={[
             "flex min-h-0 flex-1 flex-col items-center overflow-hidden px-4 sm:px-6",

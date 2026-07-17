@@ -33,7 +33,7 @@ export function ManagerPackSummaryDialog({
   const rows = summaryRows(meta);
 
   return createPortal(
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/65 px-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 px-4">
       <div
         role="dialog"
         aria-modal="true"
