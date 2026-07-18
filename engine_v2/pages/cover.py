@@ -6,22 +6,17 @@ from pathlib import Path
 
 import fitz
 
-from engine_v2.pages._theme import (
-    ARENA_950,
-    BRUSH_BLUE,
-    LIME,
-    WHITE,
-    font_paths,
+from engine.ppt_engine import construire_valeurs_globales
+from engine_v2.pages._layout import (
+    COVER_CREDIT_PT,
+    COVER_DATE_HEURE_PT,
+    COVER_NB_PT,
+    COVER_TYPE_PT,
+    draw_brush_line,
+    draw_cover_background,
+    draw_cover_logo,
 )
-
-
-def _format_date_fr(date_tournoi: str) -> str:
-    try:
-        from datetime import datetime
-
-        return datetime.strptime(str(date_tournoi), "%Y-%m-%d").strftime("%d/%m/%Y")
-    except Exception:
-        return str(date_tournoi)
+from engine_v2.pages._theme import LIME, WHITE, YELLOW, font_paths
 
 
 def render_cover_page(
@@ -32,95 +27,48 @@ def render_cover_page(
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
 ) -> None:
-    rect = page.rect
-    page.draw_rect(rect, color=None, fill=ARENA_950, overlay=False)
+    draw_cover_background(page, base_dir)
+    draw_cover_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
 
     fonts = font_paths(base_dir)
     brush = fonts.get("brush")
+    rect = page.rect
+    globales = construire_valeurs_globales(tournoi)
 
-    # Bande décorative haute
-    page.draw_rect(
-        fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + 8),
-        color=None,
-        fill=BRUSH_BLUE,
-        overlay=False,
+    type_line = globales["{{TYPE}}"]
+    y_type = rect.y0 + rect.height * 0.38
+    draw_brush_line(
+        page,
+        type_line,
+        y=y_type,
+        fontsize=COVER_TYPE_PT,
+        color=YELLOW,
+        brush_font=brush,
     )
 
-    if logo_bytes and logo_wh:
-        zone = fitz.Rect(rect.x0 + rect.width * 0.32, rect.y0 + 36, rect.x1 - rect.width * 0.32, rect.y0 + 120)
-        iw, ih = logo_wh
-        scale = min(zone.width / iw, zone.height / ih)
-        draw_w = iw * scale
-        draw_h = ih * scale
-        dest = fitz.Rect(
-            zone.x0 + (zone.width - draw_w) / 2,
-            zone.y0 + (zone.height - draw_h) / 2,
-            zone.x0 + (zone.width - draw_w) / 2 + draw_w,
-            zone.y0 + (zone.height - draw_h) / 2 + draw_h,
-        )
-        page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
-    else:
-        if brush and brush.is_file():
-            font = fitz.Font(fontfile=str(brush))
-            club = tournoi.club.upper()
-            fontsize = max(28.0, min(42.0, rect.width * 0.045))
-            tw = font.text_length(club, fontsize=fontsize)
-            x = rect.x0 + (rect.width - tw) / 2
-            y = rect.y0 + 90
-            writer = fitz.TextWriter(rect)
-            writer.append((x, y), club, font=font, fontsize=fontsize)
-            writer.write_text(page, color=WHITE)
-        else:
-            page.insert_text(
-                (rect.x0 + 40, rect.y0 + 90),
-                tournoi.club.upper(),
-                fontsize=32,
-                color=WHITE,
-            )
-
-    type_line = tournoi.type_tournoi
-    genre = getattr(tournoi, "genre_tournoi", None)
-    if genre:
-        type_line = f"{type_line} — {genre}"
-
-    if brush and brush.is_file():
-        font = fitz.Font(fontfile=str(brush))
-        fontsize = max(36.0, min(56.0, rect.width * 0.06))
-        tw = font.text_length(type_line, fontsize=fontsize)
-        x = rect.x0 + (rect.width - tw) / 2
-        y = rect.y0 + rect.height * 0.42
-        writer = fitz.TextWriter(rect)
-        writer.append((x, y), type_line, font=font, fontsize=fontsize)
-        writer.write_text(page, color=LIME)
-    else:
-        page.insert_text(
-            (rect.x0 + 40, rect.y0 + rect.height * 0.42),
-            type_line,
-            fontsize=40,
-            color=LIME,
-        )
-
-    meta_y = rect.y0 + rect.height * 0.58
     meta_lines = [
-        _format_date_fr(tournoi.date_tournoi),
-        f"Début : {tournoi.heure_debut}",
-        f"{tournoi.nb_equipes} équipes · {tournoi.nb_terrains} terrains",
-        tournoi.mode_tournoi,
+        (globales["{{DATE}}"], COVER_DATE_HEURE_PT),
+        (globales["{{HEURE}}"], COVER_DATE_HEURE_PT),
+        (globales["{{NB_EQUIPES}}"], COVER_NB_PT),
+        (globales["{{NB_TERRAINS}}"], COVER_NB_PT),
     ]
-    for index, line in enumerate(meta_lines):
-        page.insert_textbox(
-            fitz.Rect(rect.x0 + 80, meta_y + index * 28, rect.x1 - 80, meta_y + index * 28 + 24),
+    y_meta = rect.y0 + rect.height * 0.52
+    line_gap = 34.0
+    for index, (line, size) in enumerate(meta_lines):
+        draw_brush_line(
+            page,
             line,
-            fontsize=16,
+            y=y_meta + index * line_gap,
+            fontsize=size,
             color=WHITE,
-            align=fitz.TEXT_ALIGN_CENTER,
-            fontname="helv",
+            brush_font=brush,
         )
 
-    page.insert_text(
-        (rect.x0 + 24, rect.y1 - 20),
-        "Engine V2 · Render PDF",
-        fontsize=8,
-        color=(0.35, 0.4, 0.48),
-        fontname="helv",
+    draw_brush_line(
+        page,
+        "Padel Tournament Engine",
+        y=rect.y1 - 28,
+        fontsize=COVER_CREDIT_PT,
+        color=LIME,
+        brush_font=brush,
     )

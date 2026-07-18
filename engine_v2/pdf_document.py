@@ -97,7 +97,13 @@ def build_tournament_pdf(
         )
 
         participants = doc.new_page(width=page_size.width, height=page_size.height)
-        render_participants_page(participants, tournoi, base_dir=base_dir)
+        render_participants_page(
+            participants,
+            tournoi,
+            base_dir=base_dir,
+            logo_bytes=logo_bytes,
+            logo_wh=logo_wh,
+        )
 
         convocations = doc.new_page(width=page_size.width, height=page_size.height)
         render_convocations_page(
@@ -105,6 +111,8 @@ def build_tournament_pdf(
             tournoi,
             matchs,
             base_dir=base_dir,
+            logo_bytes=logo_bytes,
+            logo_wh=logo_wh,
         )
 
         for entry in page_map.get("main", []):

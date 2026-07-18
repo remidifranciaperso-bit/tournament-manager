@@ -7,15 +7,15 @@ from pathlib import Path
 import fitz
 
 from engine.ppt_engine import format_nombre
-from engine_v2.pages._theme import content_rect, draw_footer_bar, draw_table, font_paths
-from engine_v2.pages._theme import draw_brush_title
-
-
-def _participants_title(tournoi) -> str:
-    genre = getattr(tournoi, "genre_tournoi", "") or ""
-    if "F" in genre.upper() and "M" not in genre.upper().replace("F", "", 1):
-        return "PARTICIPANTES"
-    return "PARTICIPANTS"
+from engine_v2.pages._layout import (
+    content_area,
+    draw_page_footer_logo,
+    draw_page_header,
+    participants_headers,
+    participants_tagline,
+    participants_title,
+)
+from engine_v2.pages._theme import draw_table
 
 
 def render_participants_page(
@@ -23,10 +23,19 @@ def render_participants_page(
     tournoi,
     *,
     base_dir: Path,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
 ) -> None:
     page.draw_rect(page.rect, color=None, fill=(1, 1, 1), overlay=False)
-    fonts = font_paths(base_dir)
-    draw_brush_title(page, _participants_title(tournoi), brush_font=fonts.get("brush"))
+
+    tagline = participants_tagline(tournoi)
+    draw_page_header(
+        page,
+        tournoi,
+        participants_title(tournoi),
+        base_dir=base_dir,
+        tagline=tagline,
+    )
 
     equipes = sorted(tournoi.equipes, key=lambda t: (t.ts, t.numero))
     rows: list[list[str]] = []
@@ -44,14 +53,11 @@ def render_participants_page(
 
     draw_table(
         page,
-        content_rect(page.rect),
-        headers=["Joueur 1", "Cl. J1", "Joueur 2", "Cl. J2", "Poids", "TS"],
+        content_area(page.rect, tagline=True),
+        headers=participants_headers(tournoi),
         rows=rows,
-        col_widths=[0.26, 0.1, 0.26, 0.1, 0.12, 0.08],
+        col_widths=[0.24, 0.12, 0.24, 0.12, 0.14, 0.08],
+        base_dir=base_dir,
     )
 
-    draw_footer_bar(
-        page,
-        tournoi.club,
-        tournoi.type_tournoi,
-    )
+    draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
