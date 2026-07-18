@@ -903,6 +903,7 @@ export function GenerationStep({
   pdfDownloaded = false,
   managerPackDownloaded = false,
   hasTelecharge = false,
+  generatingMessage,
   onDownloadPdf,
   onDownloadManagerLive,
   onRegenerateSame,
@@ -916,6 +917,7 @@ export function GenerationStep({
   pdfDownloaded?: boolean;
   managerPackDownloaded?: boolean;
   hasTelecharge?: boolean;
+  generatingMessage?: string;
   onDownloadPdf: () => void;
   onDownloadManagerLive?: () => void;
   onRegenerateSame?: () => void;
@@ -926,7 +928,7 @@ export function GenerationStep({
     genreTournoi === "Femmes" ? "QUE LES MEILLEURES" : "QUE LES MEILLEURS";
 
   const sousTitre = generating
-    ? "Production du PDF en cours…"
+    ? generatingMessage ?? "Production du PDF en cours…"
     : done && !afficherRegenerer
       ? "Votre dossier tournoi est prêt."
       : "\u00a0";

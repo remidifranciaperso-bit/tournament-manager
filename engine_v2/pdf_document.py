@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import fitz
 
 from engine.bracket_crosspage_stub import draw_crosspage_margin_stub
 from engine.live_export_render import render_bracket_into_area
-from engine.live_render_pdf import render_final_page, render_planning_page
+from engine.live_export_render_support import draw_final_ranking, draw_planning_table
 from engine.live_render_pdf import charger_layout_slide
-from engine_v2.config import PAGE_HEIGHT_PT, PAGE_WIDTH_PT
+from engine_v2.config import PAGE_HEIGHT_PT, PAGE_WIDTH_PT, SLIDE_ASPECT
 from engine_v2.pages._layout import (
     content_area,
     draw_blank_header_band,
     draw_page_footer_logo,
     draw_page_header,
-    overlay_page_chrome,
     prepare_content_page,
 )
 from engine_v2.pages.convocations import render_convocations_page
@@ -26,6 +26,16 @@ from engine_v2.pages.participants import render_participants_page
 
 def _a4_rect() -> fitz.Rect:
     return fitz.Rect(0, 0, PAGE_WIDTH_PT, PAGE_HEIGHT_PT)
+
+
+def _live_bracket_area(content: fitz.Rect) -> fitz.Rect:
+    """Zone slide Live (ratio template) — comme capture export puis scale dans le contenu."""
+    draw_h = content.width / SLIDE_ASPECT
+    if draw_h > content.height:
+        draw_w = content.height * SLIDE_ASPECT
+        x0 = content.x0 + (content.width - draw_w) / 2
+        return fitz.Rect(x0, content.y0, x0 + draw_w, content.y1)
+    return fitz.Rect(content.x0, content.y0, content.x1, content.y0 + draw_h)
 
 
 def _render_bracket_page(
@@ -63,10 +73,11 @@ def _render_bracket_page(
     else:
         draw_page_header(page, tournoi, title, base_dir=base_dir)
 
-    area = content_area(page.rect)
+    content = content_area(page.rect)
+    bracket_area = _live_bracket_area(content)
     render_bracket_into_area(
         page,
-        area,
+        bracket_area,
         base_dir=base_dir,
         template_id=template_id,
         slide_index=slide_index,
@@ -76,13 +87,32 @@ def _render_bracket_page(
         layout_fields=layout_fields,
     )
 
+    if bracket_area.y1 < content.y1 - 0.5:
+        page.draw_rect(
+            fitz.Rect(content.x0, bracket_area.y1, content.x1, content.y1),
+            color=None,
+            fill=(1, 1, 1),
+            overlay=False,
+        )
+
     draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
-    draw_crosspage_margin_stub(page, page.rect, area, stub)
+    draw_crosspage_margin_stub(page, page.rect, bracket_area, stub)
 
 
 def _section_title(entry: dict, default: str) -> str:
     label = (entry.get("label") or default).strip()
     return label.upper()
+
+
+def _final_place_range(
+    nb_equipes: int,
+    page_index: int,
+    page_count: int,
+) -> tuple[int, int]:
+    chunk = max(1, math.ceil(nb_equipes / max(page_count, 1)))
+    start = page_index * chunk + 1
+    end = min(nb_equipes, (page_index + 1) * chunk)
+    return start, end
 
 
 def build_tournament_pdf(
@@ -185,44 +215,53 @@ def build_tournament_pdf(
             layout_fields = planning_layout.get(layout_key)
             if not layout_fields:
                 layout_fields = charger_layout_slide(template_id, slide_index, base_dir)
+
             page = doc.new_page(width=page_size.width, height=page_size.height)
-            render_planning_page(
-                page,
-                layout_fields,
-                match_dicts,
-                completed=[],
-                match_results=match_results,
-                title=entry.get("label") or "Planning",
-                base_dir=base_dir,
-            )
-            overlay_page_chrome(
+            prepare_content_page(page)
+            draw_page_header(
                 page,
                 tournoi,
                 _section_title(entry, "Planning"),
                 base_dir=base_dir,
-                logo_bytes=logo_bytes,
-                logo_wh=logo_wh,
             )
-
-        for entry in page_map.get("final", []):
-            page = doc.new_page(width=page_size.width, height=page_size.height)
-            render_final_page(
+            draw_planning_table(
                 page,
+                content_area(page.rect),
+                layout_fields,
                 match_dicts,
                 match_results,
-                fields,
-                tournoi.nb_equipes,
-                title=entry.get("label") or "Classement final",
                 base_dir=base_dir,
+                export_mode=True,
             )
-            overlay_page_chrome(
+            draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+
+        final_entries = page_map.get("final", [])
+        final_page_count = max(1, len(final_entries))
+        for page_index, entry in enumerate(final_entries):
+            page = doc.new_page(width=page_size.width, height=page_size.height)
+            prepare_content_page(page)
+            draw_page_header(
                 page,
                 tournoi,
                 _section_title(entry, "Classement final"),
                 base_dir=base_dir,
-                logo_bytes=logo_bytes,
-                logo_wh=logo_wh,
             )
+            place_range = (
+                _final_place_range(tournoi.nb_equipes, page_index, final_page_count)
+                if final_page_count > 1
+                else None
+            )
+            draw_final_ranking(
+                page,
+                content_area(page.rect),
+                match_dicts,
+                match_results,
+                fields,
+                tournoi.nb_equipes,
+                base_dir=base_dir,
+                place_range=place_range,
+            )
+            draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
 
         if doc.page_count == 0:
             raise RuntimeError("PDF Engine V2 vide.")

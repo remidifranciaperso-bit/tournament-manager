@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from collections import defaultdict
 from pathlib import Path
 
 import fitz
@@ -32,6 +34,10 @@ FEED_PT = 8.0
 PLACEMENT_PT = 11.0
 TABLE_HEAD_PT = 9.0
 TABLE_BODY_PT = 10.0
+PLANNING_BASE_PT = 1024.0
+FINAL_BASE_PT = 820.0
+
+_PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 
 
 def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
@@ -394,6 +400,210 @@ def draw_bracket_slide(
         )
 
 
+def _planning_slots(layout_fields: list[dict]) -> list[tuple[int | None, int]]:
+    slots: list[tuple[int | None, int]] = []
+    seen: set[str] = set()
+    for field in layout_fields:
+        match = _PLANNING_SLOT_RE.match(field["key"])
+        if not match or field["key"] in seen:
+            continue
+        seen.add(field["key"])
+        day = int(match.group("day")) if match.group("day") else None
+        slots.append((day, int(match.group("index"))))
+    slots.sort(key=lambda item: ((item[0] or 0), item[1]))
+    return slots
+
+
+def _build_planning_rows(
+    layout_fields: list[dict],
+    matches: list[dict],
+    match_results: dict[str, dict],
+) -> list[dict]:
+    matches_by_code = {match["code"]: match for match in matches}
+    ordered = sorted(
+        matches,
+        key=lambda item: (
+            item.get("ordre_planning", item.get("ordre", 0)),
+            item.get("ordre", 0),
+        ),
+    )
+    by_day: dict[int, list[dict]] = defaultdict(list)
+    for match in ordered:
+        by_day[int(match.get("jour", 1))].append(match)
+
+    rows: list[dict] = []
+    for day, index in _planning_slots(layout_fields):
+        source = by_day.get(day, []) if day is not None else ordered
+        if index - 1 >= len(source):
+            continue
+        match = source[index - 1]
+        rows.append(
+            {
+                "code": match["code"],
+                "heure": match.get("heure") or "",
+                "terrain": match.get("terrain") or "",
+                "equipe1": format_team_display(
+                    match.get("equipe1", ""),
+                    matches_by_code,
+                    match_results,
+                ),
+                "equipe2": format_team_display(
+                    match.get("equipe2", ""),
+                    matches_by_code,
+                    match_results,
+                ),
+                "duration": "—",
+            }
+        )
+    return rows
+
+
+def _fit_live_table_area(
+    area: fitz.Rect,
+    *,
+    base_width_pt: float,
+    row_count: int,
+    row_h_pt: float = 26.0,
+) -> fitz.Rect:
+    """Zone tableau Live (carte centrée, largeur pleine comme capture export)."""
+    pad_x = max(8.0, area.width * 0.012)
+    table_w = min(area.width - 2 * pad_x, base_width_pt)
+    table_h = row_h_pt * max(row_count + 1, 2)
+    scale = min(1.0, area.width / table_w, area.height / table_h)
+    draw_w = table_w * scale
+    draw_h = table_h * scale
+    x0 = area.x0 + (area.width - draw_w) / 2
+    y0 = area.y0 + max(4.0, (area.height - draw_h) * 0.08)
+    return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
+
+
+def _draw_live_table_card(
+    page: fitz.Page,
+    table_area: fitz.Rect,
+    headers: list[str],
+    body_rows: list[list[str]],
+    *,
+    col_widths: list[float],
+    base_dir: Path | None,
+    alignments: list[int] | None = None,
+    body_fonts: list[str | None] | None = None,
+    body_bold: list[bool] | None = None,
+    body_colors: list[tuple[float, float, float] | None] | None = None,
+) -> None:
+    fonts = _font_paths(base_dir)
+    row_count = len(body_rows) + 1
+    row_h = table_area.height / max(row_count, 2)
+
+    page.draw_rect(
+        table_area,
+        color=TEMPLATE_BLUE,
+        fill=WHITE,
+        width=0.8,
+        overlay=True,
+    )
+
+    x = table_area.x0
+    y = table_area.y0
+    for index, header in enumerate(headers):
+        width = table_area.width * col_widths[index]
+        cell = fitz.Rect(x, y, x + width, y + row_h)
+        page.draw_rect(cell, color=TEMPLATE_BLUE, fill=TEMPLATE_BLUE, width=0, overlay=True)
+        align = (alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers))[index]
+        _insert_textbox(
+            page,
+            cell,
+            header,
+            fontsize=TABLE_HEAD_PT,
+            color=WHITE,
+            align=align,
+            fontfile=fonts.get("tsl"),
+            bold=True,
+        )
+        x += width
+
+    y += row_h
+    color_list = body_colors or []
+    color_index = 0
+    for row_index, values in enumerate(body_rows):
+        x = table_area.x0
+        fill = WHITE if row_index % 2 == 0 else (0.97, 0.99, 1.0)
+        for index, value in enumerate(values):
+            width = table_area.width * col_widths[index]
+            cell = fitz.Rect(x, y, x + width, y + row_h)
+            page.draw_rect(cell, color=TEMPLATE_BLUE, fill=fill, width=0.35, overlay=True)
+            font_key = (body_fonts or ["tsl"] * len(values))[index]
+            fontfile = fonts.get(font_key) if font_key else None
+            bold = (body_bold or [False] * len(values))[index]
+            if color_list and color_index < len(color_list):
+                color = color_list[color_index]
+            else:
+                color = ARENA_800
+            color_index += 1
+            align = (alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers))[index]
+            _insert_textbox(
+                page,
+                cell,
+                value or "—",
+                fontsize=TABLE_BODY_PT,
+                color=color,
+                align=align,
+                fontfile=fontfile,
+                bold=bold,
+            )
+            x += width
+        y += row_h
+
+
+def draw_planning_table(
+    page: fitz.Page,
+    area: fitz.Rect,
+    layout_fields: list[dict],
+    matches: list[dict],
+    match_results: dict[str, dict],
+    *,
+    base_dir: Path | None = None,
+    export_mode: bool = True,
+) -> None:
+    """Tableau planning calqué sur LivePlanningTab (capture export)."""
+    rows = _build_planning_rows(layout_fields, matches, match_results)
+    headers = ["Code", "Heure", "Terrain", "Équipe 1", "Équipe 2", "Temps" if export_mode else "Fait"]
+    col_widths = [0.07, 0.07, 0.17, 0.27, 0.27, 0.07]
+    table_area = _fit_live_table_area(
+        area,
+        base_width_pt=PLANNING_BASE_PT,
+        row_count=len(rows),
+    )
+    body_rows = [
+        [
+            row["code"],
+            row["heure"] or "—",
+            row["terrain"] or "—",
+            row["equipe1"],
+            row["equipe2"],
+            row["duration"] if export_mode else "☐",
+        ]
+        for row in rows
+    ]
+    _draw_live_table_card(
+        page,
+        table_area,
+        headers,
+        body_rows,
+        col_widths=col_widths,
+        base_dir=base_dir,
+        alignments=[
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_CENTER,
+        ],
+        body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
+        body_bold=[True, False, True, False, False, False],
+    )
+
+
 def draw_final_ranking(
     page: fitz.Page,
     area: fitz.Rect,
@@ -401,42 +611,49 @@ def draw_final_ranking(
     match_results: dict[str, dict],
     fields: dict[str, str],
     nb_equipes: int,
+    *,
+    base_dir: Path | None = None,
+    place_range: tuple[int, int] | None = None,
 ) -> None:
     rows = build_final_ranking(matches, match_results, fields, nb_equipes)
+    if place_range:
+        start, end = place_range
+        rows = [row for row in rows if start <= row["place"] <= end]
+
     headers = ["Place", "Équipe", "Points"]
     col_widths = [0.18, 0.58, 0.24]
-    row_h = max(20.0, min(28.0, area.height / max(len(rows) + 2, 10)))
-
-    x = area.x0
-    y = area.y0 + 8
-    for index, header in enumerate(headers):
-        width = area.width * col_widths[index]
-        cell = fitz.Rect(x, y, x + width, y + row_h)
-        page.draw_rect(cell, color=TEMPLATE_BLUE, fill=TEMPLATE_BLUE, width=0, overlay=True)
-        _insert_textbox(page, cell, header, fontsize=TABLE_HEAD_PT, color=WHITE, bold=True)
-        x += width
-
-    y += row_h
-    for row_index, row in enumerate(rows):
-        x = area.x0
-        values = [
+    table_area = _fit_live_table_area(
+        area,
+        base_width_pt=FINAL_BASE_PT,
+        row_count=len(rows),
+    )
+    body_rows = [
+        [
             format_place_label(row["place"]),
             row["team"] or "—",
             row["points"] or "—",
         ]
-        fill = WHITE if row_index % 2 == 0 else (0.97, 0.99, 1.0)
-        for index, value in enumerate(values):
-            width = area.width * col_widths[index]
-            cell = fitz.Rect(x, y, x + width, y + row_h)
-            page.draw_rect(cell, color=TEMPLATE_BLUE, fill=fill, width=0.4, overlay=True)
-            color = BRUSH_BLUE if index == 2 and value != "—" else ARENA_800
-            _insert_textbox(
-                page,
-                cell,
-                value,
-                fontsize=TABLE_BODY_PT,
-                color=color,
-                bold=index in (0, 2),
-            )
-            x += width
-        y += row_h
+        for row in rows
+    ]
+    body_colors: list[tuple[float, float, float]] = []
+    for row in body_rows:
+        body_colors.extend(
+            [
+                ARENA_800,
+                ARENA_800,
+                BRUSH_BLUE if row[2] != "—" else ARENA_800,
+            ]
+        )
+
+    _draw_live_table_card(
+        page,
+        table_area,
+        headers,
+        body_rows,
+        col_widths=col_widths,
+        base_dir=base_dir,
+        alignments=[fitz.TEXT_ALIGN_LEFT, fitz.TEXT_ALIGN_LEFT, fitz.TEXT_ALIGN_RIGHT],
+        body_fonts=["tsl", "noto", "tsl"],
+        body_bold=[True, False, True],
+        body_colors=body_colors,
+    )

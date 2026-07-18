@@ -71,6 +71,13 @@ def chemin_pdf(token: str) -> Path | None:
     return chemin if chemin.exists() else None
 
 
+def chemin_export_pdf(token: str) -> Path | None:
+    if not token or not token.isalnum():
+        return None
+    chemin = _notify_dir() / f"{token}.export.pdf"
+    return chemin if chemin.is_file() else None
+
+
 def chemin_snapshot(token: str) -> Path | None:
     if not token or not token.isalnum():
         return None
@@ -86,6 +93,9 @@ def supprimer_pdf(token: str) -> None:
     chemin = chemin_pdf(token)
     if chemin is not None:
         chemin.unlink(missing_ok=True)
+    export_pdf = chemin_export_pdf(token)
+    if export_pdf is not None:
+        export_pdf.unlink(missing_ok=True)
     snapshot = chemin_snapshot(token)
     if snapshot is not None:
         snapshot.unlink(missing_ok=True)

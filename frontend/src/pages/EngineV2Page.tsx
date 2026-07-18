@@ -1,8 +1,20 @@
+import { flushSync } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { generateTournamentV2, previewExcel, notifyOwnerAfterDownload, buildTournamentResume, downloadManagerLiveBundle } from "../api";
+import {
+  generateTournamentV2,
+  previewExcel,
+  notifyOwnerAfterDownload,
+  buildTournamentResume,
+  downloadManagerLiveBundle,
+  type EngineV2GeneratePhase,
+  type EngineV2PrepareResult,
+} from "../api";
+import { captureManagerExportPages } from "../manager/captureExportPages";
+import type { ExportCaptureTarget } from "../manager/exportCapture";
 import { LiveNightCourtBackground } from "../manager/LiveNightCourtBackground";
+import { EngineV2ExportCapture } from "./EngineV2ExportCapture";
 import { PadelBall } from "../components/PadelBall";
 import { RacketProgress } from "../components/RacketProgress";
 import { Stepper, StepperMobile } from "../components/Stepper";
@@ -38,6 +50,12 @@ const WIZARD_STEPS = STEPS.slice(1);
 const STEP_ENTRY = 1;
 const ENGINE_V2_PARTICIPANTS_PATH = "/engine-v2/participants";
 
+const GENERATE_PHASE_LABELS: Record<EngineV2GeneratePhase, string> = {
+  prepare: "Préparation du tournoi…",
+  capture: "Capture visuelle Live (tableaux, connecteurs)…",
+  export: "Assemblage du PDF final…",
+};
+
 export default function EngineV2Page() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,6 +65,7 @@ export default function EngineV2Page() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [genPhase, setGenPhase] = useState<EngineV2GeneratePhase | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState("tournoi.pdf");
@@ -57,6 +76,29 @@ export default function EngineV2Page() {
   const notifyTokenRef = useRef<string | null>(null);
   const notifySentRef = useRef(false);
   const genStartedRef = useRef(false);
+  const [exportCaptureTarget, setExportCaptureTarget] =
+    useState<ExportCaptureTarget | null>(null);
+  const [prepareData, setPrepareData] = useState<EngineV2PrepareResult | null>(
+    null
+  );
+
+  const captureExportPages = useCallback(
+    (prepared: EngineV2PrepareResult) =>
+      captureManagerExportPages(prepared.page_map, {
+        showPage: (nextTarget) => {
+          flushSync(() => {
+            setPrepareData(prepared);
+            setExportCaptureTarget(nextTarget);
+          });
+        },
+        restore: () => {
+          flushSync(() => {
+            setExportCaptureTarget(null);
+          });
+        },
+      }),
+    []
+  );
 
   const resetWizard = useCallback(() => {
     setStep(STEP_ENTRY);
@@ -65,6 +107,7 @@ export default function EngineV2Page() {
     setPreviewError(null);
     setPreviewLoading(false);
     setGenerating(false);
+    setGenPhase(null);
     setGenError(null);
     setPdfUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -75,6 +118,8 @@ export default function EngineV2Page() {
     setPdfDownloaded(false);
     setManagerPackDownloaded(false);
     setHasTelecharge(false);
+    setPrepareData(null);
+    setExportCaptureTarget(null);
     notifyTokenRef.current = null;
     notifySentRef.current = false;
     genStartedRef.current = false;
@@ -195,6 +240,7 @@ export default function EngineV2Page() {
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
     setGenError(null);
+    setGenPhase("prepare");
     setPdfDownloaded(false);
     setManagerPackDownloaded(false);
     notifySentRef.current = false;
@@ -203,9 +249,14 @@ export default function EngineV2Page() {
       setPdfUrl(null);
     }
     setLiveSnapshotAvailable(false);
+    setPrepareData(null);
+    setExportCaptureTarget(null);
     try {
-      const { blob, filename, notifyToken, liveSnapshotAvailable: snapshot } =
-        await generateTournamentV2(form);
+      const { blob, filename, notifyToken, liveSnapshotAvailable: snapshot, prepared } =
+        await generateTournamentV2(form, captureExportPages, setGenPhase);
+      flushSync(() => {
+        setPrepareData(prepared);
+      });
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
       setPdfFilename(filename);
@@ -216,8 +267,10 @@ export default function EngineV2Page() {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
       setGenerating(false);
+      setGenPhase(null);
+      setExportCaptureTarget(null);
     }
-  }, [form, pdfUrl]);
+  }, [form, pdfUrl, captureExportPages]);
 
   useEffect(() => {
     if (step !== 8) {
@@ -396,6 +449,9 @@ export default function EngineV2Page() {
               {step === 8 && (
                 <GenerationStep
                   generating={generating}
+                  generatingMessage={
+                    genPhase ? GENERATE_PHASE_LABELS[genPhase] : undefined
+                  }
                   genError={genError}
                   pdfUrl={pdfUrl}
                   pdfFilename={pdfFilename}
@@ -412,6 +468,18 @@ export default function EngineV2Page() {
             </motion.div>
           </AnimatePresence>
         </main>
+
+        {prepareData ? (
+          <EngineV2ExportCapture
+            target={exportCaptureTarget}
+            templateId={prepareData.template_id}
+            pageMap={prepareData.page_map}
+            matches={prepareData.matches}
+            planningLayout={prepareData.planning_layout}
+            meta={prepareData.meta}
+            fields={prepareData.fields}
+          />
+        ) : null}
 
         <footer
           className={`shrink-0 px-4 sm:px-8 ${

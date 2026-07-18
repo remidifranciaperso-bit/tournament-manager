@@ -1,6 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { fetchDeployTarget, isEngineV2Deploy } from "../api";
 import { IconCheck } from "../components/Icons";
 import { ProductEntryLayout } from "../components/ProductEntry";
 import {
@@ -183,10 +184,29 @@ export default function HubPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const choosing = searchParams.get("hub") === "choose";
+  const [engineV2, setEngineV2] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchDeployTarget().then((target) => {
+      if (!cancelled) setEngineV2(isEngineV2Deploy(target));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const enterChoosing = useCallback(() => {
     setSearchParams({ hub: "choose" });
   }, [setSearchParams]);
+
+  const startEngine = useCallback(() => {
+    if (engineV2) {
+      navigate("/engine-v2/participants", { state: { fromHub: true } });
+      return;
+    }
+    navigate("/engine/participants", { state: { fromHub: true } });
+  }, [engineV2, navigate]);
 
   return (
     <div className="min-h-screen h-dvh overflow-hidden">
@@ -233,9 +253,7 @@ export default function HubPage() {
                 <ProductChoice
                   title="Engine"
                   ctaLabel="Commencer mon dossier tournoi"
-                  onCta={() =>
-                    navigate("/engine/participants", { state: { fromHub: true } })
-                  }
+                  onCta={startEngine}
                   highlightItems={HUB_ENGINE_ITEMS}
                 />
                 <ProductChoice

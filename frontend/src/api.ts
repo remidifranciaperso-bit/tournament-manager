@@ -1,5 +1,13 @@
 import type { PreviewResult, TournamentForm } from "./types";
-import type { LiveTournamentData } from "./manager/liveTypes";
+import type {
+  LiveLayoutField,
+  LiveMatch,
+  LivePageMap,
+  LiveTournamentData,
+  LiveTournamentMeta,
+} from "./manager/liveTypes";
+import type { CrossPageStub, ManagerExportCapture } from "./manager/captureExportPages";
+import { buildExportFormData } from "./manager/captureExportPages";
 
 function normalizeLiveTournamentData(data: LiveTournamentData): LiveTournamentData {
   const meta = { ...data.meta };
@@ -26,6 +34,140 @@ export interface TournamentResume {
   terrains: number;
   duree_match: string;
   pdf_filename: string;
+}
+
+let deployTargetCache: string | null | undefined;
+
+/** Détecte le service déployé (engine vs engine-v2) via l'API health. */
+export async function fetchDeployTarget(): Promise<string | null> {
+  if (deployTargetCache !== undefined) {
+    return deployTargetCache;
+  }
+
+  for (const path of ["/api/health", "/api/v2/health"]) {
+    try {
+      const res = await fetch(path);
+      if (!res.ok) continue;
+      const data = (await res.json()) as { deploy?: string };
+      if (data.deploy) {
+        deployTargetCache = data.deploy;
+        return deployTargetCache;
+      }
+    } catch {
+      /* service indisponible */
+    }
+  }
+
+  deployTargetCache = null;
+  return null;
+}
+
+export function isEngineV2Deploy(target: string | null): boolean {
+  return target === "engine-v2";
+}
+
+export interface EngineV2PrepareResult {
+  token: string;
+  pdf_filename: string;
+  template_id: string;
+  page_map: LivePageMap;
+  matches: LiveMatch[];
+  fields: Record<string, string>;
+  planning_layout: Record<string, LiveLayoutField[]>;
+  meta: LiveTournamentMeta;
+  nb_equipes: number;
+}
+
+export type EngineV2GeneratePhase = "prepare" | "capture" | "export";
+
+export async function prepareTournamentV2(
+  form: TournamentForm
+): Promise<EngineV2PrepareResult> {
+  if (!form.excelFile) throw new Error("Fichier Excel manquant.");
+
+  const body = new FormData();
+  appendTournamentFormFields(body, form);
+
+  const res = await fetch("/api/v2/prepare", { method: "POST", body });
+  if (!res.ok) throw new Error(await readError(res));
+
+  const data = (await res.json()) as EngineV2PrepareResult;
+  if (!data.token || !data.page_map || !data.template_id) {
+    throw new Error("Réponse prepare V2 incomplète.");
+  }
+  return data;
+}
+
+async function exportTournamentV2WithCaptures(
+  token: string,
+  payload: {
+    page_map: LivePageMap;
+    template_id: string;
+    matches: LiveMatch[];
+    fields: Record<string, string>;
+    planning_layout: Record<string, LiveLayoutField[]>;
+    nb_equipes: number;
+    crosspage_stubs?: Record<string, CrossPageStub>;
+  },
+  captures: Record<string, string>
+): Promise<Blob> {
+  const form = buildExportFormData(
+    {
+      ...payload,
+      match_results: {},
+      completed: [],
+      crosspage_stubs: payload.crosspage_stubs ?? {},
+    },
+    captures
+  );
+
+  const res = await fetch(`/api/v2/export/${token}`, { method: "POST", body: form });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.blob();
+}
+
+export async function generateTournamentV2(
+  form: TournamentForm,
+  capturePages: (prepared: EngineV2PrepareResult) => Promise<ManagerExportCapture>,
+  onPhase?: (phase: EngineV2GeneratePhase) => void
+): Promise<{
+  blob: Blob;
+  filename: string;
+  notifyToken: string | null;
+  liveSnapshotAvailable: boolean;
+  prepared: EngineV2PrepareResult;
+}> {
+  onPhase?.("prepare");
+  const prepared = await prepareTournamentV2(form);
+
+  onPhase?.("capture");
+  const { captures, crosspageStubs } = await capturePages(prepared);
+  if (Object.keys(captures).length === 0) {
+    throw new Error("Aucune capture Live n'a pu être générée.");
+  }
+
+  onPhase?.("export");
+  const blob = await exportTournamentV2WithCaptures(
+    prepared.token,
+    {
+      page_map: prepared.page_map,
+      template_id: prepared.template_id,
+      matches: prepared.matches,
+      fields: prepared.fields,
+      planning_layout: prepared.planning_layout,
+      nb_equipes: prepared.nb_equipes,
+      crosspage_stubs: crosspageStubs,
+    },
+    captures
+  );
+
+  return {
+    blob,
+    filename: prepared.pdf_filename,
+    notifyToken: prepared.token,
+    liveSnapshotAvailable: true,
+    prepared,
+  };
 }
 
 export function buildTournamentResume(
@@ -193,32 +335,6 @@ export async function generateLiveTournament(
   await assertLivePdfAvailable(data.live_token);
 
   return data;
-}
-
-export async function generateTournamentV2(
-  form: TournamentForm
-): Promise<{
-  blob: Blob;
-  filename: string;
-  notifyToken: string | null;
-  liveSnapshotAvailable: boolean;
-}> {
-  if (!form.excelFile) throw new Error("Fichier Excel manquant.");
-
-  const body = new FormData();
-  appendTournamentFormFields(body, form);
-
-  const res = await fetch("/api/v2/generate", { method: "POST", body });
-  if (!res.ok) throw new Error(await readError(res));
-
-  const blob = await res.blob();
-  const disposition = res.headers.get("content-disposition") ?? "";
-  const match = disposition.match(/filename="?([^"]+)"?/);
-  const filename = match ? match[1] : "tournoi.pdf";
-  const notifyToken = res.headers.get("X-Notify-Token");
-  const liveSnapshotAvailable =
-    res.headers.get("X-Live-Snapshot-Available") === "1";
-  return { blob, filename, notifyToken, liveSnapshotAvailable };
 }
 
 export async function generateTournament(
