@@ -1,4 +1,5 @@
 import { flushSync } from "react-dom";
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -81,12 +82,14 @@ export default function EngineV2Page() {
   const [prepareData, setPrepareData] = useState<EngineV2PrepareResult | null>(
     null
   );
+  const prepareDataRef = useRef<EngineV2PrepareResult | null>(null);
 
   const captureExportPages = useCallback(
     (prepared: EngineV2PrepareResult) =>
       captureManagerExportPages(prepared.page_map, {
         showPage: (nextTarget) => {
           flushSync(() => {
+            prepareDataRef.current = prepared;
             setPrepareData(prepared);
             setExportCaptureTarget(nextTarget);
           });
@@ -119,6 +122,7 @@ export default function EngineV2Page() {
     setManagerPackDownloaded(false);
     setHasTelecharge(false);
     setPrepareData(null);
+    prepareDataRef.current = null;
     setExportCaptureTarget(null);
     notifyTokenRef.current = null;
     notifySentRef.current = false;
@@ -250,13 +254,21 @@ export default function EngineV2Page() {
     }
     setLiveSnapshotAvailable(false);
     setPrepareData(null);
+    prepareDataRef.current = null;
     setExportCaptureTarget(null);
     try {
       const { blob, filename, notifyToken, liveSnapshotAvailable: snapshot, prepared } =
-        await generateTournamentV2(form, captureExportPages, setGenPhase);
-      flushSync(() => {
-        setPrepareData(prepared);
-      });
+        await generateTournamentV2(
+          form,
+          captureExportPages,
+          setGenPhase,
+          (ready) => {
+            prepareDataRef.current = ready;
+            flushSync(() => setPrepareData(ready));
+          }
+        );
+      prepareDataRef.current = prepared;
+      flushSync(() => setPrepareData(prepared));
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
       setPdfFilename(filename);
@@ -469,17 +481,20 @@ export default function EngineV2Page() {
           </AnimatePresence>
         </main>
 
-        {prepareData ? (
-          <EngineV2ExportCapture
-            target={exportCaptureTarget}
-            templateId={prepareData.template_id}
-            pageMap={prepareData.page_map}
-            matches={prepareData.matches}
-            planningLayout={prepareData.planning_layout}
-            meta={prepareData.meta}
-            fields={prepareData.fields}
-          />
-        ) : null}
+        {prepareData
+          ? createPortal(
+              <EngineV2ExportCapture
+                target={exportCaptureTarget}
+                templateId={prepareData.template_id}
+                pageMap={prepareData.page_map}
+                matches={prepareData.matches}
+                planningLayout={prepareData.planning_layout}
+                meta={prepareData.meta}
+                fields={prepareData.fields}
+              />,
+              document.body
+            )
+          : null}
 
         <footer
           className={`shrink-0 px-4 sm:px-8 ${

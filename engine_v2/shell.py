@@ -1,88 +1,162 @@
-"""PDF coquille Engine (slides template) pour composite Live — identique export Manager."""
+"""Coquille PDF Engine V2 (PyMuPDF) — indices slides template, bandeau Live V2."""
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
+import fitz
+from pptx import Presentation
 
-def _form_fields_pour_shell(
-    *,
-    club: str,
-    date_tournoi: str,
-    type_tournoi: str,
-    genre_tournoi: str | None,
-    mode_tournoi: str,
-    methode_poules: str,
-    nb_jours: int,
-    heures_debut_jours: list[str],
-    duree_match: int,
-    terrains: list[str],
-    terrain_principal: str,
-    format_match_tableau_principal: str | None,
-    format_match_classement: str,
-    format_match_finale: str,
-    format_match_poule: str,
-) -> dict[str, str]:
-    fields = {
-        "club": club,
-        "date_tournoi": date_tournoi,
-        "type_tournoi": type_tournoi,
-        "genre_tournoi": genre_tournoi or "",
-        "mode_tournoi": mode_tournoi,
-        "methode_poules": methode_poules,
-        "nb_jours": str(nb_jours),
-        "heures_debut_jours": __import__("json").dumps(heures_debut_jours),
-        "duree_match": str(duree_match),
-        "terrains": __import__("json").dumps(terrains),
-        "terrain_principal": terrain_principal,
-        "format_match_classement": format_match_classement,
-        "format_match_finale": format_match_finale,
-        "format_match_poule": format_match_poule,
+from engine.live_page_map import _slide_text
+from engine_v2.pages.convocations import render_convocations_page
+from engine_v2.pages.cover import render_cover_page
+from engine_v2.pages.participants import render_participants_page
+from engine_v2.pages._layout import (
+    draw_page_footer_logo,
+    draw_page_header,
+    prepare_content_page,
+)
+from engine_v2.template_registry import export_basename, resolve_template_bundle
+
+
+def _slide_page_size(cache: dict) -> tuple[float, float]:
+    sizes = cache.get("page_sizes") or {}
+    if sizes:
+        first = next(iter(sizes.values()))
+        return float(first["width"]), float(first["height"])
+    from engine_v2.config import PAGE_HEIGHT_PT, PAGE_WIDTH_PT
+
+    return PAGE_WIDTH_PT, PAGE_HEIGHT_PT
+
+
+def _indices_par_role(template_path: Path) -> tuple[set[int], set[int]]:
+    prs = Presentation(str(template_path))
+    participants: set[int] = set()
+    convocations: set[int] = set()
+    for index, slide in enumerate(prs.slides):
+        upper = _slide_text(slide).upper()
+        if "CONVOCATION" in upper:
+            convocations.add(index)
+        elif "PARTICIPANT" in upper:
+            participants.add(index)
+    return participants, convocations
+
+
+def _titles_by_index(page_map: dict) -> dict[int, str]:
+    titles: dict[int, str] = {}
+    defaults = {
+        "main": "TABLEAU PRINCIPAL",
+        "classement": "MATCHS CLASSEMENT",
+        "planning": "PLANNING",
+        "final": "CLASSEMENT FINAL",
     }
-    if format_match_tableau_principal:
-        fields["format_match_tableau_principal"] = format_match_tableau_principal
-    return fields
+    for section, default in defaults.items():
+        for entry in page_map.get(section, []):
+            label = (entry.get("label") or default).strip().upper()
+            titles[int(entry["index"])] = label
+    return titles
 
 
-def generate_shell_pdf(
+def _render_chrome_shell(
+    page: fitz.Page,
+    tournoi,
+    title: str,
     *,
-    excel_path: Path,
-    logo_path: Path | None,
     base_dir: Path,
-    output_dir: Path,
-    **form_kwargs,
-) -> Path:
+    logo_bytes: bytes | None,
+    logo_wh: tuple[int, int] | None,
+) -> None:
+    """Page coquille : bandeau V2 + zone blanche (contenu = capture Live)."""
+    prepare_content_page(page)
+    draw_page_header(page, tournoi, title, base_dir=base_dir)
+    draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+
+
+def build_v2_composite_shell_pdf(
+    *,
+    tournoi,
+    matchs,
+    base_dir: Path,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+) -> tuple[Path, str]:
     """
-    Génère le PDF coquille (toutes les slides template) comme Engine V1.
+    PDF coquille aligné sur le template PPTX (1 page / slide).
 
-    Requis pour ``exporter_pdf_tournoi_manager`` : indices de slides alignés
-    sur le template PPTX + bandeaux Engine pour le composite.
+    - Garde, participants, convocations : rendu V2 natif (PyMuPDF)
+    - Slides tableau/planning/final : bandeau V2 + fond blanc (captures Live)
     """
-    from engine.remote_generate import generer_pdf_via_engine, soffice_disponible
-    from engine.tournament_engine import generate_tournament
+    base_dir = Path(base_dir)
+    template_path, _template_id, cache = resolve_template_bundle(tournoi, base_dir)
+    page_map = cache["page_map"]
+    width, height = _slide_page_size(cache)
+    participants, convocations = _indices_par_role(template_path)
+    titles = _titles_by_index(page_map)
+    slide_count = len(Presentation(str(template_path)).slides)
 
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    exports_dir = base_dir / "exports"
+    exports_dir.mkdir(parents=True, exist_ok=True)
+    pdf_filename = f"{export_basename(tournoi)}-shell.pdf"
+    shell_path = exports_dir / pdf_filename
 
-    if soffice_disponible():
-        pdf_path, _snapshot = generate_tournament(
-            excel_path=excel_path,
-            logo_path=logo_path,
-            base_dir=base_dir,
-            **form_kwargs,
-        )
-        return Path(pdf_path)
+    doc = fitz.open()
+    try:
+        for slide_index in range(slide_count):
+            page = doc.new_page(width=width, height=height)
+            if slide_index == 0:
+                render_cover_page(
+                    page,
+                    tournoi,
+                    base_dir=base_dir,
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                )
+            elif slide_index in convocations:
+                render_convocations_page(
+                    page,
+                    tournoi,
+                    matchs,
+                    base_dir=base_dir,
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                )
+            elif slide_index in participants:
+                render_participants_page(
+                    page,
+                    tournoi,
+                    base_dir=base_dir,
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                )
+            elif slide_index in titles:
+                _render_chrome_shell(
+                    page,
+                    tournoi,
+                    titles[slide_index],
+                    base_dir=base_dir,
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                )
+            else:
+                prepare_content_page(page)
 
-    engine_url = os.environ.get("ENGINE_SHELL_URL", "").strip()
-    if not engine_url:
-        engine_url = "https://tournament-manager-9ytu.onrender.com"
+        if doc.page_count != slide_count:
+            raise RuntimeError("Coquille V2 : nombre de pages incorrect.")
+        doc.save(str(shell_path), garbage=4, deflate=True)
+    finally:
+        doc.close()
 
-    form_fields = _form_fields_pour_shell(**form_kwargs)
-    return generer_pdf_via_engine(
-        engine_url,
-        excel_path=Path(excel_path),
-        logo_path=Path(logo_path) if logo_path else None,
-        form_fields=form_fields,
-        output_dir=output_dir,
-    )
+    return shell_path, pdf_filename.replace("-shell.pdf", ".pdf")
+
+
+def _load_logo(logo_path: Path | None) -> tuple[bytes | None, tuple[int, int] | None]:
+    if logo_path is None or not logo_path.is_file():
+        return None, None
+    try:
+        from PIL import Image
+
+        raw = logo_path.read_bytes()
+        with Image.open(logo_path) as img:
+            return raw, (int(img.width), int(img.height))
+    except Exception:
+        return None, None

@@ -129,7 +129,8 @@ async function exportTournamentV2WithCaptures(
 export async function generateTournamentV2(
   form: TournamentForm,
   capturePages: (prepared: EngineV2PrepareResult) => Promise<ManagerExportCapture>,
-  onPhase?: (phase: EngineV2GeneratePhase) => void
+  onPhase?: (phase: EngineV2GeneratePhase) => void,
+  onPrepared?: (prepared: EngineV2PrepareResult) => void
 ): Promise<{
   blob: Blob;
   filename: string;
@@ -139,6 +140,11 @@ export async function generateTournamentV2(
 }> {
   onPhase?.("prepare");
   const prepared = await prepareTournamentV2(form);
+  onPrepared?.(prepared);
+  await document.fonts.ready;
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
 
   onPhase?.("capture");
   const { captures, crosspageStubs } = await capturePages(prepared);

@@ -114,7 +114,6 @@ def _parse_tournament_form(
 @router.get("/health")
 def health_v2():
     pymupdf_ok = warm_pymupdf()
-    from engine.remote_generate import soffice_disponible
 
     return {
         "status": "ok",
@@ -122,7 +121,7 @@ def health_v2():
         "version": ENGINE_V2_VERSION,
         "pymupdf": pymupdf_ok,
         "libreoffice_required": False,
-        "shell_via_remote_engine": not soffice_disponible(),
+        "shell": "v2-pymupdf",
         "deploy": os.environ.get("DEPLOY_TARGET", "engine"),
     }
 
@@ -284,6 +283,10 @@ async def export_v2(token: str, request: Request):
             logo_path=logo_path,
             crosspage_stubs=crosspage_stubs,
         )
+        # Pack Manager Live : conserver le PDF exporté (pas la coquille seule).
+        import shutil
+
+        shutil.copy2(export_path, shell_path)
     except (RuntimeError, FileNotFoundError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

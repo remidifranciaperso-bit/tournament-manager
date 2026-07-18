@@ -1,4 +1,4 @@
-"""Point d'entrée génération Engine V2 — pipeline Live (coquille + captures + composite)."""
+"""Point d'entrée génération Engine V2 — coquille V2 PyMuPDF + captures Live + composite."""
 
 from __future__ import annotations
 
@@ -7,7 +7,8 @@ from pathlib import Path
 from engine.live_snapshot import construire_snapshot_engine
 from engine.tournament_build import construire_tournoi_et_matchs
 from engine_v2.config import SNAPSHOT_VERSION
-from engine_v2.shell import generate_shell_pdf
+from engine_v2.pdf_export import exporter_pdf_engine_v2
+from engine_v2.shell import _load_logo, build_v2_composite_shell_pdf
 from engine_v2.template_registry import export_basename, resolve_template_bundle
 
 
@@ -83,13 +84,14 @@ def prepare_tournament_v2(
     format_match_poule="identique",
 ) -> tuple[Path, dict, str]:
     """
-    Prépare la coquille PDF (slides template Engine V1) + snapshot Live.
+    Coquille PDF V2 (PyMuPDF, sans LibreOffice) + snapshot Live.
 
-    Le PDF final est assemblé côté client via captures DOM + composite Live.
+    Le PDF final = captures DOM Live + composite (identique export Manager).
     """
     base_dir = Path(base_dir)
     heures_debut_jours = heures_debut_jours or [heure_debut]
     logo_file = Path(logo_path) if logo_path else None
+    logo_bytes, logo_wh = _load_logo(logo_file)
 
     tournoi, matchs = _construire_tournoi(
         excel_path=excel_path,
@@ -113,31 +115,14 @@ def prepare_tournament_v2(
     )
 
     _template_path, template_id, cache = resolve_template_bundle(tournoi, base_dir)
-    exports_dir = base_dir / "exports"
-    exports_dir.mkdir(parents=True, exist_ok=True)
     pdf_filename = f"{export_basename(tournoi)}.pdf"
 
-    shell_path = generate_shell_pdf(
-        excel_path=Path(excel_path),
-        logo_path=logo_file,
+    shell_path, _ = build_v2_composite_shell_pdf(
+        tournoi=tournoi,
+        matchs=matchs,
         base_dir=base_dir,
-        output_dir=exports_dir,
-        club=club,
-        date_tournoi=date_tournoi,
-        type_tournoi=type_tournoi,
-        genre_tournoi=genre_tournoi,
-        mode_tournoi=mode_tournoi,
-        methode_poules=methode_poules,
-        nb_jours=nb_jours,
-        heures_debut_jours=heures_debut_jours,
-        duree_match=duree_match,
-        terrains=terrains,
-        terrain_principal=terrain_principal,
-        format_match_tableau_principal=format_match_tableau_principal,
-        format_match_classement=format_match_classement,
-        format_match_finale=format_match_finale,
-        format_match_poule=format_match_poule,
-        heure_debut=heure_debut,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
     )
 
     snapshot = construire_snapshot_engine(
@@ -162,11 +147,9 @@ def composite_tournament_v2_pdf(
     logo_path: Path | None = None,
     crosspage_stubs: dict | None = None,
 ) -> Path:
-    """Assemble le PDF final — même pipeline que l'export Manager Live."""
-    from engine.live_pdf_export import exporter_pdf_tournoi_manager
-
+    """Assemble le PDF final (captures Live + bandeaux V2)."""
     output_pdf = Path(output_pdf)
-    exporter_pdf_tournoi_manager(
+    exporter_pdf_engine_v2(
         Path(shell_pdf),
         output_pdf,
         page_map=snapshot["page_map"],
