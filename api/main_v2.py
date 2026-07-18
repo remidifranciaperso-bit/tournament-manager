@@ -34,6 +34,20 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Padel Tournament Engine V2", lifespan=lifespan)
 app.include_router(v2_router)
 
+
+@app.post("/api/generate")
+async def block_engine_v1_generate():
+    """Le service Engine V2 ne génère pas via LibreOffice /api/generate."""
+    from fastapi import HTTPException
+
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "Engine V1 désactivé sur ce service. Ouvrez /#/engine-v2/participants "
+            "et utilisez /api/v2/prepare + captures Live + /api/v2/export."
+        ),
+    )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,9 +62,26 @@ def health_compat():
     """Compatibilité si le health check pointe sur /api/health."""
     return {
         "status": "ok",
-        "engine": "v2-render",
+        "engine": "v2-live-capture",
         "deploy": os.environ.get("DEPLOY_TARGET", "engine-v2"),
         "hint": "use /api/v2/health",
+        "frontend_must_include": "v2/prepare",
+    }
+
+
+@app.get("/api/v2/frontend-check")
+def frontend_check():
+    """Vérifie que le bundle servi contient bien le wizard Engine V2."""
+    dist = BASE_DIR / "frontend" / "dist" / "assets"
+    if not dist.is_dir():
+        return {"ok": False, "error": "frontend/dist/assets absent"}
+    for js in dist.glob("*.js"):
+        text = js.read_text(encoding="utf-8", errors="ignore")
+        if "v2/prepare" in text and "engine-v2" in text:
+            return {"ok": True, "bundle": js.name}
+    return {
+        "ok": False,
+        "error": "Bundle sans Engine V2 (v1/prepare absent) — rebuild frontend requis",
     }
 
 

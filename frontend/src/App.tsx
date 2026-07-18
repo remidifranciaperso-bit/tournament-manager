@@ -7,12 +7,24 @@ import LiveAffichagePage from "./pages/LiveAffichagePage";
 import ManagerPage from "./pages/ManagerPage";
 import Bracket16MainPreviewPage from "./pages/Bracket16MainPreviewPage";
 
+const IS_ENGINE_V2 =
+  import.meta.env.VITE_DEPLOY_TARGET === "engine-v2";
+
 export default function App() {
   return (
     <HashRouter>
       <DocumentTitle />
       <Routes>
-        <Route path="/" element={<HubPage />} />
+        <Route
+          path="/"
+          element={
+            IS_ENGINE_V2 ? (
+              <Navigate to="/engine-v2/participants" replace />
+            ) : (
+              <HubPage />
+            )
+          }
+        />
         <Route path="/engine-v2" element={<EngineV2Page />} />
         <Route path="/engine-v2/*" element={<EngineV2Page />} />
         <Route path="/engine" element={<EnginePage />} />
