@@ -14,7 +14,7 @@ import {
 } from "../api";
 import { captureManagerExportPages } from "../manager/captureExportPages";
 import type { ExportCaptureTarget } from "../manager/exportCapture";
-import { LiveNightCourtBackground } from "../manager/LiveNightCourtBackground";
+import { CourtBackground } from "../components/CourtBackground";
 import { EngineV2ExportCapture } from "./EngineV2ExportCapture";
 import { PadelBall } from "../components/PadelBall";
 import { RacketProgress } from "../components/RacketProgress";
@@ -356,7 +356,7 @@ export default function EngineV2Page() {
 
   return (
     <div className="relative flex h-dvh overflow-hidden">
-      <LiveNightCourtBackground />
+      <CourtBackground />
 
       {/* Sidebar desktop */}
       <aside className="hidden h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-white/[0.06] bg-arena-900/50 p-6 backdrop-blur-xl lg:flex">
@@ -365,11 +365,8 @@ export default function EngineV2Page() {
             className="font-brush text-[clamp(1.35rem,4.5vw,2rem)] leading-[1.05] text-lime"
             style={{ textShadow: "0 0 24px rgba(212,255,74,0.12)" }}
           >
-            Padel Tournament Engine V2
+            Padel Tournament Engine
           </h2>
-          <p className="mt-1 text-[10px] uppercase tracking-widest text-lime/50">
-            Render PDF · sans LibreOffice
-          </p>
           <button
             type="button"
             onClick={goHome}

@@ -16,6 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from api.v2_router import router as v2_router, warm_pymupdf
+from api.wizard_routes import router as wizard_router
 
 
 @asynccontextmanager
@@ -33,6 +34,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Padel Tournament Engine V2", lifespan=lifespan)
 app.include_router(v2_router)
+app.include_router(wizard_router)
 
 
 @app.post("/api/generate")
