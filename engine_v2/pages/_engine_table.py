@@ -6,6 +6,7 @@ from pathlib import Path
 
 import fitz
 
+from engine_v2.pages._layout import draw_font_text
 from engine_v2.pages._theme import ARENA_800, TEMPLATE_BLUE, WHITE, font_paths
 
 # Géométrie relevée sur ``templates bleus/Template_24_1J.pptx``.
@@ -36,17 +37,14 @@ def _insert_cell_text(
     fontfile: Path | None,
     bold: bool = False,
 ) -> None:
-    kwargs: dict = {
-        "fontsize": fontsize,
-        "color": color,
-        "align": fitz.TEXT_ALIGN_CENTER,
-    }
-    if fontfile and fontfile.is_file():
-        kwargs["fontfile"] = str(fontfile)
-        kwargs["fontname"] = "noto" if "noto" in fontfile.name.lower() else "helv"
-    else:
-        kwargs["fontname"] = "hebo" if bold else "helv"
-    page.insert_textbox(cell, text or "—", **kwargs)
+    draw_font_text(
+        page,
+        cell,
+        text or "—",
+        fontsize=fontsize,
+        color=color,
+        fontfile=fontfile,
+    )
 
 
 def draw_engine_table(
@@ -66,6 +64,7 @@ def draw_engine_table(
     fonts = font_paths(base_dir)
     noto = fonts.get("noto")
     tsl = fonts.get("tsl")
+    head_font = noto or tsl
     area = _pct_rect(page.rect, table_box)
     n_cols = len(headers)
     if col_widths is None:
@@ -86,7 +85,7 @@ def draw_engine_table(
             header,
             fontsize=HEAD_PT,
             color=WHITE,
-            fontfile=noto,
+            fontfile=head_font,
             bold=True,
         )
         x0 += width
@@ -100,13 +99,14 @@ def draw_engine_table(
             cell = fitz.Rect(x0, y, x0 + width, y + row_h)
             page.draw_rect(cell, color=TEMPLATE_BLUE, fill=fill, width=0.4, overlay=True)
             use_tsl = body_tsl_all or col_index in (1, 3, 4, 5)
+            body_font = tsl if use_tsl else (noto or tsl)
             _insert_cell_text(
                 page,
                 cell,
                 value,
                 fontsize=BODY_PT,
                 color=ARENA_800,
-                fontfile=tsl if use_tsl else noto,
+                fontfile=body_font,
             )
             x0 += width
         y += row_h
