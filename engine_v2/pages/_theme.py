@@ -37,6 +37,8 @@ def font_paths(base_dir: Path) -> dict[str, Path | None]:
             base_dir / "fonts" / "NotoSans-Regular.ttf",
             base_dir / "frontend" / "public" / "fonts" / "NotoSans-Regular.ttf",
             base_dir / "frontend" / "dist" / "fonts" / "NotoSans-Regular.ttf",
+            Path("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf"),
+            Path("/usr/share/fonts/opentype/noto/NotoSans-Regular.ttf"),
         ],
     }
     out: dict[str, Path | None] = {}

@@ -31,6 +31,8 @@ HEADER_META_PT = 18.0
 HEADER_SIDE_MARGIN_MM = 5.0
 MM_TO_PT = 72.0 / 25.4
 HEADER_SIDE_MARGIN_PT = HEADER_SIDE_MARGIN_MM * MM_TO_PT
+FOOTER_BOTTOM_MARGIN_MM = 3.0
+FOOTER_BOTTOM_MARGIN_PT = FOOTER_BOTTOM_MARGIN_MM * MM_TO_PT
 
 # Bloc date / heure / effectifs — remonté (~18 pt sur slide 540 pt).
 COVER_META_SHIFT = 0.033
@@ -109,8 +111,15 @@ def header_bottom(page_rect: fitz.Rect) -> float:
     return pct_rect(page_rect, HEADER_BAND).y1
 
 
+def footer_logo_zone(page_rect: fitz.Rect) -> fitz.Rect:
+    """Zone logo pied de page — ``FOOTER_BOTTOM_MARGIN_MM`` sous le logo."""
+    template = pct_rect(page_rect, FOOTER_LOGO_BOX)
+    y1 = page_rect.y1 - FOOTER_BOTTOM_MARGIN_PT
+    return fitz.Rect(template.x0, y1 - template.height, template.x1, y1)
+
+
 def footer_top(page_rect: fitz.Rect) -> float:
-    return pct_rect(page_rect, FOOTER_LOGO_BOX).y0
+    return footer_logo_zone(page_rect).y0
 
 
 def content_area(page_rect: fitz.Rect) -> fitz.Rect:
@@ -143,9 +152,9 @@ def _load_font(fontfile: Path | None) -> fitz.Font | None:
 
 def _baseline_y(box: fitz.Rect, font: fitz.Font, fontsize: float) -> float:
     text_h = (font.ascender - font.descender) * fontsize
-    if text_h > box.height * 0.92:
-        return box.y0 + box.height * 0.5 + fontsize * 0.18
-    return box.y0 + (box.height + text_h) / 2 - font.descender * fontsize
+    if text_h > box.height:
+        return box.y0 + font.ascender * fontsize
+    return box.y0 + (box.height - text_h) / 2 + font.ascender * fontsize
 
 
 def draw_font_text(
@@ -266,7 +275,7 @@ def draw_page_footer_logo(
     logo_bytes: bytes | None,
     logo_wh: tuple[int, int] | None,
 ) -> None:
-    zone = pct_rect(page.rect, FOOTER_LOGO_BOX)
+    zone = footer_logo_zone(page.rect)
     fill_rect(page, zone, WHITE)
     if not logo_bytes or not logo_wh:
         return

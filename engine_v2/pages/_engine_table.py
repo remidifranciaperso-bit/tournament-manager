@@ -16,7 +16,6 @@ from engine.live_export_render_support import (
 from engine_v2.pages._layout import content_area, draw_font_text
 from engine_v2.pages._theme import ARENA_800, TEMPLATE_BLUE, WHITE, font_paths
 
-# Conservés pour compatibilité appelants (positionnement = zone contenu Live).
 PARTICIPANTS_TABLE = {"left": 0.0178, "top": 0.121, "width": 0.9644}
 CONVOCATIONS_TABLE = {"left": 0.1215, "top": 0.1306, "width": 0.7569}
 
@@ -24,9 +23,11 @@ CELL_PAD_PT = 6.0
 
 
 def _resolve_font(fonts: dict[str, Path | None], key: str | None) -> Path | None:
-    if not key:
-        return None
-    return fonts.get(key)
+    if key:
+        path = fonts.get(key)
+        if path and path.is_file():
+            return path
+    return fonts.get("tsl")
 
 
 def _draw_live_table_card(
@@ -39,7 +40,6 @@ def _draw_live_table_card(
     col_widths: list[float],
     alignments: list[int] | None = None,
     body_fonts: list[str | None] | None = None,
-    body_bold: list[bool] | None = None,
 ) -> None:
     """Calqué sur ``live_export_render_support._draw_live_table_card`` + TextWriter."""
     fonts = font_paths(base_dir)
@@ -108,7 +108,7 @@ def draw_engine_table(
     body_tsl_all: bool = True,
 ) -> None:
     """Tableau carte Live (planning / classement final) dans la zone contenu."""
-    del table_box, body_tsl_all  # position = content_area + fit live
+    del table_box, body_tsl_all
     if not headers:
         return
 
@@ -134,7 +134,6 @@ def draw_engine_table(
             col_widths=col_widths,
             alignments=[fitz.TEXT_ALIGN_LEFT, fitz.TEXT_ALIGN_LEFT],
             body_fonts=["noto", "tsl"],
-            body_bold=[False, False],
         )
         return
 
@@ -147,5 +146,4 @@ def draw_engine_table(
         col_widths=col_widths,
         alignments=[fitz.TEXT_ALIGN_LEFT] * n_cols,
         body_fonts=["noto", "tsl", "noto", "tsl", "tsl", "tsl"],
-        body_bold=[False, False, False, False, False, True],
     )
