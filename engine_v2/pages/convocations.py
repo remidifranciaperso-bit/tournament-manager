@@ -7,8 +7,12 @@ from pathlib import Path
 import fitz
 
 from engine.ppt_engine import construire_convocations
-from engine_v2.pages._layout import content_area, draw_page_footer_logo, draw_page_header
-from engine_v2.pages._theme import draw_table
+from engine_v2.pages._engine_table import CONVOCATIONS_TABLE, draw_engine_table
+from engine_v2.pages._layout import (
+    draw_page_footer_logo,
+    draw_page_header,
+    prepare_content_page,
+)
 
 
 def _equipe_par_nom(tournoi) -> dict[str, object]:
@@ -24,7 +28,7 @@ def render_convocations_page(
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
 ) -> None:
-    page.draw_rect(page.rect, color=None, fill=(1, 1, 1), overlay=False)
+    prepare_content_page(page)
     draw_page_header(page, tournoi, "CONVOCATIONS", base_dir=base_dir)
 
     convocations = construire_convocations(
@@ -40,13 +44,13 @@ def render_convocations_page(
         label = equipe.nom_complet_court() if equipe else nom
         rows.append([label, heure])
 
-    draw_table(
+    draw_engine_table(
         page,
-        content_area(page.rect),
-        headers=["Équipe", "Heure"],
-        rows=rows,
-        col_widths=[0.68, 0.32],
+        CONVOCATIONS_TABLE,
+        ["ÉQUIPE", "HEURE"],
+        rows,
         base_dir=base_dir,
+        col_widths=[0.72, 0.28],
     )
 
     draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)

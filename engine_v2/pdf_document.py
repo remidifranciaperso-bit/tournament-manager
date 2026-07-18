@@ -11,24 +11,39 @@ from engine.live_export_render import render_bracket_slide_png
 from engine.live_render_pdf import render_final_page, render_planning_page
 from engine.live_render_pdf import charger_layout_slide
 from engine_v2.config import PAGE_HEIGHT_PT, PAGE_WIDTH_PT
+from engine_v2.pages._layout import overlay_page_chrome
 from engine_v2.pages.convocations import render_convocations_page
 from engine_v2.pages.cover import render_cover_page
 from engine_v2.pages.participants import render_participants_page
 
 
-def _page_size_from_cache(cache: dict) -> fitz.Rect:
-    sizes = cache.get("page_sizes") or {}
-    if sizes:
-        first = next(iter(sizes.values()))
-        return fitz.Rect(0, 0, float(first["width"]), float(first["height"]))
+def _a4_rect() -> fitz.Rect:
     return fitz.Rect(0, 0, PAGE_WIDTH_PT, PAGE_HEIGHT_PT)
 
 
-def _insert_png_page(doc: fitz.Document, png_data: str, page_size: fitz.Rect) -> None:
+def _insert_png_page(
+    doc: fitz.Document,
+    png_data: str,
+    page_size: fitz.Rect,
+    *,
+    tournoi,
+    title: str,
+    base_dir: Path,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+) -> None:
     payload = png_data.split(",", 1)[-1] if png_data.startswith("data:") else png_data
     raw = base64.b64decode(payload)
     page = doc.new_page(width=page_size.width, height=page_size.height)
     page.insert_image(page.rect, stream=raw, keep_proportion=False)
+    overlay_page_chrome(
+        page,
+        tournoi,
+        title,
+        base_dir=base_dir,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+    )
 
 
 def _render_bracket_page_direct(
@@ -41,6 +56,10 @@ def _render_bracket_page_direct(
     match_results: dict,
     show_placement_labels: bool,
     page_size: fitz.Rect,
+    tournoi,
+    title: str,
+    logo_bytes: bytes | None,
+    logo_wh: tuple[int, int] | None,
 ) -> None:
     png = render_bracket_slide_png(
         base_dir=base_dir,
@@ -51,7 +70,21 @@ def _render_bracket_page_direct(
         show_placement_labels=show_placement_labels,
         page_size=page_size,
     )
-    _insert_png_page(doc, png, page_size)
+    _insert_png_page(
+        doc,
+        png,
+        page_size,
+        tournoi=tournoi,
+        title=title,
+        base_dir=base_dir,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+    )
+
+
+def _section_title(entry: dict, default: str) -> str:
+    label = (entry.get("label") or default).strip()
+    return label.upper()
 
 
 def build_tournament_pdf(
@@ -66,7 +99,7 @@ def build_tournament_pdf(
     logo_wh: tuple[int, int] | None = None,
 ) -> fitz.Document:
     """Construit le document PDF complet (rendu Live, sans LibreOffice)."""
-    page_size = _page_size_from_cache(cache)
+    page_size = _a4_rect()
     page_map = cache["page_map"]
     match_dicts = [
         {
@@ -126,6 +159,10 @@ def build_tournament_pdf(
                 match_results=match_results,
                 show_placement_labels=True,
                 page_size=page_size,
+                tournoi=tournoi,
+                title=_section_title(entry, "Tableau principal"),
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
             )
 
         for entry in page_map.get("classement", []):
@@ -139,6 +176,10 @@ def build_tournament_pdf(
                 match_results=match_results,
                 show_placement_labels=True,
                 page_size=page_size,
+                tournoi=tournoi,
+                title=_section_title(entry, "Matchs classement"),
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
             )
 
         planning_layout = cache.get("planning_layout") or {}
@@ -158,6 +199,14 @@ def build_tournament_pdf(
                 title=entry.get("label") or "Planning",
                 base_dir=base_dir,
             )
+            overlay_page_chrome(
+                page,
+                tournoi,
+                _section_title(entry, "Planning"),
+                base_dir=base_dir,
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
+            )
 
         for entry in page_map.get("final", []):
             page = doc.new_page(width=page_size.width, height=page_size.height)
@@ -169,6 +218,14 @@ def build_tournament_pdf(
                 tournoi.nb_equipes,
                 title=entry.get("label") or "Classement final",
                 base_dir=base_dir,
+            )
+            overlay_page_chrome(
+                page,
+                tournoi,
+                _section_title(entry, "Classement final"),
+                base_dir=base_dir,
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
             )
 
         if doc.page_count == 0:
