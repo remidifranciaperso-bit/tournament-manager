@@ -38,4 +38,4 @@ RUN mkdir -p /app/exports \
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 120"]
+CMD ["sh", "-c", "if [ \"$DEPLOY_TARGET\" = engine-v2 ]; then exec uvicorn api.main_v2:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 120; else exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 120; fi"]

@@ -660,6 +660,14 @@ async def generate(
     Genere le dossier tournoi (PPTX -> PDF) et renvoie le PDF.
     Reutilise exactement generate_tournament du moteur existant.
     """
+    if os.environ.get("DEPLOY_TARGET") == "engine-v2":
+        raise HTTPException(
+            status_code=410,
+            detail=(
+                "Engine V1 désactivé sur ce service. Utilisez /#/engine-v2/participants "
+                "→ /api/v2/prepare + captures Live + /api/v2/export."
+            ),
+        )
     try:
         heures = json.loads(heures_debut_jours)
         liste_terrains = json.loads(terrains)
