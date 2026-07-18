@@ -32,6 +32,10 @@ Excel → moteur tournoi → rendu PyMuPDF (pages Live) → PDF
 
 Créer le service dans Render Dashboard → New Web Service → branche `feature/engine-v2`.
 
+**Docker** : `Dockerfile.engine-v2` (sans LibreOffice, démarrage plus rapide). Si le service
+existait déjà avec le Dockerfile principal, mettre à jour **Settings → Docker → Dockerfile Path**
+vers `Dockerfile.engine-v2`.
+
 L'Engine prod (`main`) et le preview Hub (`feature/manager`) **ne sont pas impactés**.
 
 ## Routes

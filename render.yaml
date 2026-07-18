@@ -40,7 +40,7 @@ services:
     runtime: docker
     plan: starter
     branch: feature/engine-v2
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./Dockerfile.engine-v2
     dockerContext: .
     healthCheckPath: /api/v2/health
     autoDeploy: true

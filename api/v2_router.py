@@ -17,6 +17,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 router = APIRouter(prefix="/api/v2", tags=["engine-v2"])
 
+_PYMUPDF_OK: bool | None = None
+
+
+def warm_pymupdf() -> bool:
+    """Pré-charge PyMuPDF (appelé au démarrage du service V2)."""
+    global _PYMUPDF_OK
+    if _PYMUPDF_OK is not None:
+        return _PYMUPDF_OK
+    try:
+        import fitz  # noqa: F401
+
+        _PYMUPDF_OK = True
+    except ImportError:
+        _PYMUPDF_OK = False
+    return _PYMUPDF_OK
+
 
 def _ecrire_fichier_temporaire(upload: UploadFile, suffix: str) -> Path:
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -41,13 +57,7 @@ def engine_v2_mode() -> bool:
 
 @router.get("/health")
 def health_v2():
-    pymupdf_ok = False
-    try:
-        import fitz  # noqa: F401
-
-        pymupdf_ok = True
-    except ImportError:
-        pass
+    pymupdf_ok = warm_pymupdf()
 
     return {
         "status": "ok",
