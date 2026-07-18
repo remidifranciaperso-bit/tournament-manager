@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
-import base64
 from pathlib import Path
 
 import fitz
 
-from engine.live_export_render import render_bracket_slide_png
+from engine.bracket_crosspage_stub import draw_crosspage_margin_stub
+from engine.live_export_render import render_bracket_into_area
 from engine.live_render_pdf import render_final_page, render_planning_page
 from engine.live_render_pdf import charger_layout_slide
 from engine_v2.config import PAGE_HEIGHT_PT, PAGE_WIDTH_PT
-from engine_v2.pages._layout import overlay_page_chrome
+from engine_v2.pages._layout import (
+    content_area,
+    draw_blank_header_band,
+    draw_page_footer_logo,
+    draw_page_header,
+    overlay_page_chrome,
+    prepare_content_page,
+)
 from engine_v2.pages.convocations import render_convocations_page
 from engine_v2.pages.cover import render_cover_page
 from engine_v2.pages.participants import render_participants_page
@@ -21,32 +28,7 @@ def _a4_rect() -> fitz.Rect:
     return fitz.Rect(0, 0, PAGE_WIDTH_PT, PAGE_HEIGHT_PT)
 
 
-def _insert_png_page(
-    doc: fitz.Document,
-    png_data: str,
-    page_size: fitz.Rect,
-    *,
-    tournoi,
-    title: str,
-    base_dir: Path,
-    logo_bytes: bytes | None = None,
-    logo_wh: tuple[int, int] | None = None,
-) -> None:
-    payload = png_data.split(",", 1)[-1] if png_data.startswith("data:") else png_data
-    raw = base64.b64decode(payload)
-    page = doc.new_page(width=page_size.width, height=page_size.height)
-    page.insert_image(page.rect, stream=raw, keep_proportion=False)
-    overlay_page_chrome(
-        page,
-        tournoi,
-        title,
-        base_dir=base_dir,
-        logo_bytes=logo_bytes,
-        logo_wh=logo_wh,
-    )
-
-
-def _render_bracket_page_direct(
+def _render_bracket_page(
     doc: fitz.Document,
     *,
     base_dir: Path,
@@ -54,32 +36,48 @@ def _render_bracket_page_direct(
     slide_index: int,
     matches: list[dict],
     match_results: dict,
-    show_placement_labels: bool,
     page_size: fitz.Rect,
     tournoi,
     title: str,
     logo_bytes: bytes | None,
     logo_wh: tuple[int, int] | None,
 ) -> None:
-    png = render_bracket_slide_png(
+    from engine.bracket_crosspage_stub import compute_viewport_cross_page_stub
+    from engine.live_bracket_box_layout import resolve_match_box_layouts
+    from engine.live_bracket_layout import parse_bracket_slide
+
+    layout_fields = charger_layout_slide(template_id, slide_index, base_dir)
+    parsed = parse_bracket_slide(layout_fields)
+    slots = parsed["matches"]
+    box_layouts = resolve_match_box_layouts(
+        slots,
+        match_codes={match["code"] for match in matches},
+    )
+    stub = compute_viewport_cross_page_stub(slots, box_layouts)
+
+    page = doc.new_page(width=page_size.width, height=page_size.height)
+    prepare_content_page(page)
+
+    if stub and stub.get("dir") == "up":
+        draw_blank_header_band(page)
+    else:
+        draw_page_header(page, tournoi, title, base_dir=base_dir)
+
+    area = content_area(page.rect)
+    render_bracket_into_area(
+        page,
+        area,
         base_dir=base_dir,
         template_id=template_id,
         slide_index=slide_index,
         matches=matches,
         match_results=match_results,
-        show_placement_labels=show_placement_labels,
-        page_size=page_size,
+        show_placement_labels=True,
+        layout_fields=layout_fields,
     )
-    _insert_png_page(
-        doc,
-        png,
-        page_size,
-        tournoi=tournoi,
-        title=title,
-        base_dir=base_dir,
-        logo_bytes=logo_bytes,
-        logo_wh=logo_wh,
-    )
+
+    draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+    draw_crosspage_margin_stub(page, page.rect, area, stub)
 
 
 def _section_title(entry: dict, default: str) -> str:
@@ -150,14 +148,13 @@ def build_tournament_pdf(
 
         for entry in page_map.get("main", []):
             slide_index = int(entry["index"])
-            _render_bracket_page_direct(
+            _render_bracket_page(
                 doc,
                 base_dir=base_dir,
                 template_id=template_id,
                 slide_index=slide_index,
                 matches=match_dicts,
                 match_results=match_results,
-                show_placement_labels=True,
                 page_size=page_size,
                 tournoi=tournoi,
                 title=_section_title(entry, "Tableau principal"),
@@ -167,14 +164,13 @@ def build_tournament_pdf(
 
         for entry in page_map.get("classement", []):
             slide_index = int(entry["index"])
-            _render_bracket_page_direct(
+            _render_bracket_page(
                 doc,
                 base_dir=base_dir,
                 template_id=template_id,
                 slide_index=slide_index,
                 matches=match_dicts,
                 match_results=match_results,
-                show_placement_labels=True,
                 page_size=page_size,
                 tournoi=tournoi,
                 title=_section_title(entry, "Matchs classement"),

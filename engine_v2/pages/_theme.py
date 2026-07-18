@@ -25,14 +25,18 @@ def font_paths(base_dir: Path) -> dict[str, Path | None]:
         "brush": [
             base_dir / "fonts" / "Grindy Brush.otf",
             base_dir / "fonts" / "GrindyBrush.otf",
+            base_dir / "frontend" / "public" / "fonts" / "GrindyBrush.otf",
+            base_dir / "frontend" / "dist" / "fonts" / "GrindyBrush.otf",
         ],
         "tsl": [
             base_dir / "fonts" / "TSLSans.ttf",
             base_dir / "frontend" / "public" / "fonts" / "TSLSans.ttf",
+            base_dir / "frontend" / "dist" / "fonts" / "TSLSans.ttf",
         ],
         "noto": [
             base_dir / "fonts" / "NotoSans-Regular.ttf",
             base_dir / "frontend" / "public" / "fonts" / "NotoSans-Regular.ttf",
+            base_dir / "frontend" / "dist" / "fonts" / "NotoSans-Regular.ttf",
         ],
     }
     out: dict[str, Path | None] = {}

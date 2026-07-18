@@ -8,7 +8,11 @@ from pathlib import Path
 
 import fitz
 
-from engine.live_bracket_box_layout import resolve_match_box_layouts
+from engine.bracket_crosspage_stub import (
+    compute_viewport_cross_page_stub,
+    draw_crosspage_margin_stub,
+)
+from engine.live_bracket_box_layout import infer_split_main_bracket_half, resolve_match_box_layouts
 from engine.live_bracket_connectors import build_bracket_connector_paths
 from engine.live_bracket_layout import parse_bracket_slide
 from engine.live_export_render_support import (
@@ -18,7 +22,7 @@ from engine.live_export_render_support import (
 from engine.live_render_pdf import charger_layout_slide
 
 TEMPLATE_BLUE = (0, 176 / 255, 240 / 255)
-SLIDE_ASPECT = 9906000 / 6858000
+WHITE = (1, 1, 1)
 RENDER_DPI = 144
 
 
@@ -34,7 +38,7 @@ def _draw_connector_paths(
     paths: list[list[tuple[float, float]]],
     area: fitz.Rect,
 ) -> None:
-    stroke = max(1.2, area.width * 0.0048 / 10)
+    stroke = max(0.4, area.width * 0.0008)
     for path in paths:
         if len(path) < 2:
             continue
@@ -45,7 +49,58 @@ def _draw_connector_paths(
                 points[index + 1],
                 color=TEMPLATE_BLUE,
                 width=stroke,
+                overlay=True,
             )
+
+
+def render_bracket_into_area(
+    page: fitz.Page,
+    area: fitz.Rect,
+    *,
+    base_dir: Path,
+    template_id: str,
+    slide_index: int,
+    matches: list[dict],
+    match_results: dict[str, dict],
+    show_placement_labels: bool,
+    layout_fields: list[dict] | None = None,
+) -> dict[str, float | str] | None:
+    """Dessine connecteurs + encarts dans ``area`` (comme la capture Live)."""
+    if layout_fields is None:
+        layout_fields = charger_layout_slide(template_id, slide_index, base_dir)
+    parsed = parse_bracket_slide(layout_fields)
+    slots = parsed["matches"]
+    include_feed_connectors = not (
+        slots and all(re.match(r"^C[\d_]+$", slot["code"]) for slot in slots)
+    )
+    connector_paths = build_bracket_connector_paths(
+        layout_fields,
+        matches,
+        include_feed_connectors=include_feed_connectors,
+    )
+    _draw_connector_paths(page, connector_paths, area)
+
+    box_layouts = resolve_match_box_layouts(
+        slots,
+        match_codes={match["code"] for match in matches},
+    )
+    slide_codes = {slot["code"] for slot in slots}
+    split_main_bracket = (
+        infer_split_main_bracket_half(slide_codes, slide_codes) is not None
+    )
+    draw_bracket_slide(
+        page,
+        area,
+        slots,
+        parsed["feeds"],
+        box_layouts,
+        matches,
+        match_results,
+        show_placement_labels=show_placement_labels,
+        base_dir=base_dir,
+        split_main_bracket=split_main_bracket,
+    )
+    return compute_viewport_cross_page_stub(slots, box_layouts)
 
 
 def render_bracket_slide_png(
@@ -65,34 +120,21 @@ def render_bracket_slide_png(
     doc = fitz.open()
     try:
         page = doc.new_page(width=width, height=height)
-        page.draw_rect(page.rect, color=None, fill=(1, 1, 1), overlay=False)
-        area = page.rect
-
-        parsed = parse_bracket_slide(layout_fields)
-        slots = parsed["matches"]
-        include_feed_connectors = not (
-            slots
-            and all(re.match(r"^C[\d_]+$", slot["code"]) for slot in slots)
+        page.draw_rect(
+            page.rect,
+            color=WHITE,
+            fill=WHITE,
+            width=0,
+            overlay=False,
         )
-        connector_paths = build_bracket_connector_paths(
-            layout_fields,
-            matches,
-            include_feed_connectors=include_feed_connectors,
-        )
-        _draw_connector_paths(page, connector_paths, area)
-
-        box_layouts = resolve_match_box_layouts(
-            slots,
-            match_codes={match["code"] for match in matches},
-        )
-        draw_bracket_slide(
+        render_bracket_into_area(
             page,
-            area,
-            slots,
-            parsed["feeds"],
-            box_layouts,
-            matches,
-            match_results,
+            page.rect,
+            base_dir=base_dir,
+            template_id=template_id,
+            slide_index=slide_index,
+            matches=matches,
+            match_results=match_results,
             show_placement_labels=show_placement_labels,
         )
 
@@ -119,7 +161,7 @@ def render_final_slide_png(
     doc = fitz.open()
     try:
         page = doc.new_page(width=width, height=height)
-        page.draw_rect(page.rect, color=None, fill=(1, 1, 1), overlay=False)
+        page.draw_rect(page.rect, color=WHITE, fill=WHITE, width=0, overlay=False)
         draw_final_ranking(
             page,
             page.rect,
@@ -188,3 +230,12 @@ def generer_captures_export(
         )
 
     return captures
+
+
+__all__ = [
+    "draw_crosspage_margin_stub",
+    "render_bracket_into_area",
+    "render_bracket_slide_png",
+    "render_final_slide_png",
+    "generer_captures_export",
+]

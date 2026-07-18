@@ -285,6 +285,11 @@ def prepare_content_page(page: fitz.Page) -> None:
     fill_rect(page, page.rect, WHITE, overlay=False)
 
 
+def draw_blank_header_band(page: fitz.Page) -> None:
+    """Bande haute blanche (partie basse d'un tableau sur deux pages)."""
+    fill_rect(page, pct_rect(page.rect, HEADER_BAND), WHITE)
+
+
 def overlay_page_chrome(
     page: fitz.Page,
     tournoi,

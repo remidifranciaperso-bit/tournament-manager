@@ -112,6 +112,45 @@ def format_feed_key(key: str) -> str:
     return key
 
 
+def _short_player_name(name: str) -> str:
+    trimmed = name.strip()
+    if not trimmed:
+        return trimmed
+    space_idx = trimmed.find(" ")
+    if space_idx == -1:
+        return trimmed
+    prenom = trimmed[:space_idx]
+    nom = trimmed[space_idx + 1 :].strip()
+    initial = prenom[0].upper() if prenom else ""
+    return f"{initial}. {nom}" if initial else nom
+
+
+_PLACEHOLDER_PREFIX = re.compile(
+    r"^(Vainqueur|Perdant|Deuxième|Second|Troisième|🏆|❌|🥇|🥈|🥉|1er|2e|3 )",
+    re.IGNORECASE,
+)
+
+
+def format_team_with_initials(label: str) -> str:
+    text = label.strip()
+    if not text:
+        return "—"
+    if _PLACEHOLDER_PREFIX.match(text):
+        return format_team_slot(text)
+
+    seed = ""
+    body = text
+    seed_match = re.search(r"(\(TS\d*\))\s*$", text, re.IGNORECASE)
+    if seed_match:
+        seed = f" {seed_match.group(1)}"
+        body = text[: seed_match.start()].strip()
+
+    parts = [part.strip() for part in body.split("/") if part.strip()]
+    if len(parts) >= 2:
+        return f"{' / '.join(_short_player_name(part) for part in parts)}{seed}"
+    return f"{_short_player_name(body)}{seed}"
+
+
 def format_team_display(
     label: str,
     matches_by_code: dict[str, dict],
@@ -119,7 +158,7 @@ def format_team_display(
 ) -> str:
     resolved = resolve_team_label_deep(label, matches_by_code, match_results)
     text = resolved if resolved != label.strip() else format_team_slot(label)
-    return text.replace("\n", " / ")
+    return format_team_with_initials(text.replace("\n", " / "))
 
 
 def is_placeholder(text: str) -> bool:
