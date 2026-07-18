@@ -150,10 +150,16 @@ def _load_font(fontfile: Path | None) -> fitz.Font | None:
     return None
 
 
+def _fit_fontsize(font: fitz.Font, box: fitz.Rect, max_pt: float) -> float:
+    for fs in range(int(max_pt), 8, -1):
+        text_h = (font.ascender - font.descender) * fs
+        if text_h <= box.height * 0.96:
+            return float(fs)
+    return 8.0
+
+
 def _baseline_y(box: fitz.Rect, font: fitz.Font, fontsize: float) -> float:
     text_h = (font.ascender - font.descender) * fontsize
-    if text_h > box.height:
-        return box.y0 + font.ascender * fontsize
     return box.y0 + (box.height - text_h) / 2 + font.ascender * fontsize
 
 
@@ -259,13 +265,20 @@ def draw_page_header(
         fontfile=fonts.get("tsl"),
         align=fitz.TEXT_ALIGN_RIGHT,
     )
+    brush = fonts.get("brush")
+    brush_font = _load_font(brush)
+    title_fs = (
+        _fit_fontsize(brush_font, band, HEADER_TITLE_PT)
+        if brush_font
+        else HEADER_TITLE_PT
+    )
     _insert_textbox(
         page,
         band,
         title,
-        fontsize=HEADER_TITLE_PT,
+        fontsize=title_fs,
         color=WHITE,
-        fontfile=fonts.get("brush"),
+        fontfile=brush,
     )
 
 
@@ -275,11 +288,38 @@ def draw_page_footer_logo(
     logo_bytes: bytes | None,
     logo_wh: tuple[int, int] | None,
 ) -> None:
-    zone = footer_logo_zone(page.rect)
-    fill_rect(page, zone, WHITE)
+    page_rect = page.rect
+    bottom_limit = page_rect.y1 - FOOTER_BOTTOM_MARGIN_PT
+    template = pct_rect(page_rect, FOOTER_LOGO_BOX)
+    zone = fitz.Rect(
+        template.x0,
+        bottom_limit - template.height,
+        template.x1,
+        bottom_limit,
+    )
+    fill_rect(
+        page,
+        fitz.Rect(0, zone.y0, page_rect.width, page_rect.y1),
+        WHITE,
+        overlay=True,
+    )
     if not logo_bytes or not logo_wh:
         return
     dest = contain_rect(zone, float(logo_wh[0]), float(logo_wh[1]))
+    dest = fitz.Rect(
+        dest.x0,
+        bottom_limit - dest.height,
+        dest.x1,
+        bottom_limit,
+    )
+    if dest.width < zone.width:
+        shift = (zone.width - dest.width) / 2
+        dest = fitz.Rect(
+            zone.x0 + shift,
+            dest.y0,
+            zone.x0 + shift + dest.width,
+            dest.y1,
+        )
     page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
 
 

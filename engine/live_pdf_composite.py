@@ -9,6 +9,7 @@ import fitz
 ENGINE_HEADER_RATIO = 0.083
 ENGINE_FOOTER_RATIO = 0.042
 ENGINE_FOOTER_LOGO_WIDTH_RATIO = 1 / 3
+FOOTER_BOTTOM_MARGIN_PT = 3.0 * 72.0 / 25.4
 FINAL_TOP_GAP_RATIO = 0.028
 FINAL_IMAGE_MAX_WIDTH_RATIO = 0.72
 
@@ -104,17 +105,30 @@ def composer_page_export(
     rect = page.rect
     header_h = rect.height * ENGINE_HEADER_RATIO
     footer_h = rect.height * ENGINE_FOOTER_RATIO
+    margin = FOOTER_BOTTOM_MARGIN_PT
     top_gap = rect.height * FINAL_TOP_GAP_RATIO if section == "final" else 0
+    footer_dest = fitz.Rect(
+        rect.x0,
+        rect.y1 - margin - footer_h,
+        rect.x1,
+        rect.y1 - margin,
+    )
     content_rect = fitz.Rect(
         rect.x0,
         rect.y0 + header_h + top_gap,
         rect.x1,
-        rect.y1 - footer_h,
+        footer_dest.y0,
     )
 
     stub_dir, stub_midx = _parse_crosspage_stub(crosspage_stub)
 
     page.draw_rect(rect, color=None, fill=(1, 1, 1), overlay=False)
+    page.draw_rect(
+        fitz.Rect(rect.x0, rect.y1 - margin, rect.x1, rect.y1),
+        color=None,
+        fill=(1, 1, 1),
+        overlay=False,
+    )
 
     if slide_index < 0 or slide_index >= source.page_count:
         raise RuntimeError(f"Page Engine introuvable pour l'index {slide_index}.")
@@ -137,12 +151,26 @@ def composer_page_export(
     else:
         _fit_pdf_clip(page, source, slide_index, header_clip, header_dest)
 
-    footer_dest = fitz.Rect(rect.x0, rect.y1 - footer_h, rect.x1, rect.y1)
+    footer_dest = fitz.Rect(rect.x0, rect.y1 - margin - footer_h, rect.x1, rect.y1 - margin)
     if logo_bytes and logo_wh:
         # Logo de session (bon ratio, identique au live) : couvre le pied Engine
         # (ex. calque « score: » des tours préliminaires) et reste homogène.
         page.draw_rect(footer_dest, color=None, fill=(1, 1, 1), overlay=False)
         dest = _contain_rect(footer_dest, logo_wh[0], logo_wh[1])
+        dest = fitz.Rect(
+            dest.x0,
+            footer_dest.y1 - dest.height,
+            dest.x1,
+            footer_dest.y1,
+        )
+        if dest.width < footer_dest.width:
+            shift = (footer_dest.width - dest.width) / 2
+            dest = fitz.Rect(
+                footer_dest.x0 + shift,
+                dest.y0,
+                footer_dest.x0 + shift + dest.width,
+                dest.y1,
+            )
         page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
     else:
         footer_engine_page = source[footer_index]

@@ -1,4 +1,4 @@
-"""Tableaux participants / convocations — style identique planning / classement final Live."""
+"""Tableaux participants / convocations — style capture Live (planning / classement final)."""
 
 from __future__ import annotations
 
@@ -20,6 +20,8 @@ PARTICIPANTS_TABLE = {"left": 0.0178, "top": 0.121, "width": 0.9644}
 CONVOCATIONS_TABLE = {"left": 0.1215, "top": 0.1306, "width": 0.7569}
 
 CELL_PAD_PT = 6.0
+ROW_LINE = (0.82, 0.92, 0.98)
+ROW_ALT_FILL = (0.97, 0.99, 1.0)
 
 
 def _resolve_font(fonts: dict[str, Path | None], key: str | None) -> Path | None:
@@ -28,6 +30,38 @@ def _resolve_font(fonts: dict[str, Path | None], key: str | None) -> Path | None
         if path and path.is_file():
             return path
     return fonts.get("tsl")
+
+
+def _draw_row_cells(
+    page: fitz.Page,
+    row_rect: fitz.Rect,
+    values: list[str],
+    *,
+    col_widths: list[float],
+    table_x0: float,
+    table_width: float,
+    fonts: dict[str, Path | None],
+    font_keys: list[str | None],
+    aligns: list[int],
+    fontsize: float,
+    color: tuple[float, float, float],
+) -> None:
+    x = table_x0
+    for col_index, value in enumerate(values):
+        width = table_width * col_widths[col_index]
+        cell = fitz.Rect(x, row_rect.y0, x + width, row_rect.y1)
+        key = font_keys[col_index] if col_index < len(font_keys) else "tsl"
+        draw_font_text(
+            page,
+            cell,
+            value or "—",
+            fontsize=fontsize,
+            color=color,
+            fontfile=_resolve_font(fonts, key),
+            align=aligns[col_index] if col_index < len(aligns) else fitz.TEXT_ALIGN_LEFT,
+            pad=CELL_PAD_PT,
+        )
+        x += width
 
 
 def _draw_live_table_card(
@@ -41,10 +75,12 @@ def _draw_live_table_card(
     alignments: list[int] | None = None,
     body_fonts: list[str | None] | None = None,
 ) -> None:
-    """Calqué sur ``live_export_render_support._draw_live_table_card`` + TextWriter."""
+    """Comme LivePlanningTab capture : carte, en-tête bleu, lignes horizontales seules."""
     fonts = font_paths(base_dir)
     row_count = len(body_rows) + 1
     row_h = table_area.height / max(row_count, 2)
+    aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
+    font_keys = body_fonts or ["tsl"] * len(headers)
 
     page.draw_rect(
         table_area,
@@ -54,47 +90,53 @@ def _draw_live_table_card(
         overlay=True,
     )
 
-    aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
-    x = table_area.x0
-    y = table_area.y0
-    for index, header in enumerate(headers):
-        width = table_area.width * col_widths[index]
-        cell = fitz.Rect(x, y, x + width, y + row_h)
-        page.draw_rect(cell, color=TEMPLATE_BLUE, fill=TEMPLATE_BLUE, width=0, overlay=True)
-        draw_font_text(
-            page,
-            cell,
-            header,
-            fontsize=TABLE_HEAD_PT,
-            color=WHITE,
-            fontfile=fonts.get("tsl"),
-            align=aligns[index],
-            pad=CELL_PAD_PT,
-        )
-        x += width
+    header_bottom = table_area.y0 + row_h
+    page.draw_rect(
+        fitz.Rect(table_area.x0, table_area.y0, table_area.x1, header_bottom),
+        color=TEMPLATE_BLUE,
+        fill=TEMPLATE_BLUE,
+        width=0,
+        overlay=True,
+    )
+    _draw_row_cells(
+        page,
+        fitz.Rect(table_area.x0, table_area.y0, table_area.x1, header_bottom),
+        headers,
+        col_widths=col_widths,
+        table_x0=table_area.x0,
+        table_width=table_area.width,
+        fonts=fonts,
+        font_keys=["tsl"] * len(headers),
+        aligns=aligns,
+        fontsize=TABLE_HEAD_PT,
+        color=WHITE,
+    )
 
-    y += row_h
-    font_keys = body_fonts or ["tsl"] * len(headers)
     for row_index, values in enumerate(body_rows):
-        x = table_area.x0
-        fill = WHITE if row_index % 2 == 0 else (0.97, 0.99, 1.0)
-        for col_index, value in enumerate(values):
-            width = table_area.width * col_widths[col_index]
-            cell = fitz.Rect(x, y, x + width, y + row_h)
-            page.draw_rect(cell, color=TEMPLATE_BLUE, fill=fill, width=0.35, overlay=True)
-            key = font_keys[col_index] if col_index < len(font_keys) else "tsl"
-            draw_font_text(
-                page,
-                cell,
-                value or "—",
-                fontsize=TABLE_BODY_PT,
-                color=ARENA_800,
-                fontfile=_resolve_font(fonts, key),
-                align=aligns[col_index] if col_index < len(aligns) else fitz.TEXT_ALIGN_LEFT,
-                pad=CELL_PAD_PT,
-            )
-            x += width
-        y += row_h
+        y0 = table_area.y0 + row_h * (row_index + 1)
+        row_rect = fitz.Rect(table_area.x0, y0, table_area.x1, y0 + row_h)
+        fill = WHITE if row_index % 2 == 0 else ROW_ALT_FILL
+        page.draw_line(
+            fitz.Point(table_area.x0, y0),
+            fitz.Point(table_area.x1, y0),
+            color=ROW_LINE,
+            width=0.5,
+            overlay=True,
+        )
+        page.draw_rect(row_rect, color=fill, fill=fill, width=0, overlay=True)
+        _draw_row_cells(
+            page,
+            row_rect,
+            values,
+            col_widths=col_widths,
+            table_x0=table_area.x0,
+            table_width=table_area.width,
+            fonts=fonts,
+            font_keys=font_keys,
+            aligns=aligns,
+            fontsize=TABLE_BODY_PT,
+            color=ARENA_800,
+        )
 
 
 def draw_engine_table(
@@ -107,7 +149,6 @@ def draw_engine_table(
     col_widths: list[float] | None = None,
     body_tsl_all: bool = True,
 ) -> None:
-    """Tableau carte Live (planning / classement final) dans la zone contenu."""
     del table_box, body_tsl_all
     if not headers:
         return
