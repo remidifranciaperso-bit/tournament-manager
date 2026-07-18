@@ -195,6 +195,32 @@ export async function generateLiveTournament(
   return data;
 }
 
+export async function generateTournamentV2(
+  form: TournamentForm
+): Promise<{
+  blob: Blob;
+  filename: string;
+  notifyToken: string | null;
+  liveSnapshotAvailable: boolean;
+}> {
+  if (!form.excelFile) throw new Error("Fichier Excel manquant.");
+
+  const body = new FormData();
+  appendTournamentFormFields(body, form);
+
+  const res = await fetch("/api/v2/generate", { method: "POST", body });
+  if (!res.ok) throw new Error(await readError(res));
+
+  const blob = await res.blob();
+  const disposition = res.headers.get("content-disposition") ?? "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : "tournoi.pdf";
+  const notifyToken = res.headers.get("X-Notify-Token");
+  const liveSnapshotAvailable =
+    res.headers.get("X-Live-Snapshot-Available") === "1";
+  return { blob, filename, notifyToken, liveSnapshotAvailable };
+}
+
 export async function generateTournament(
   form: TournamentForm
 ): Promise<{

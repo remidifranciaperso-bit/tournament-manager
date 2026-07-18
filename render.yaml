@@ -5,6 +5,10 @@
 #
 # 2) tournament-manager-preview → staging (optionnel, branche feature/*)
 #
+# 3) tournament-manager-engine-v2 → branche feature/engine-v2 → Engine V2 (render PDF)
+#    URL : https://tournament-manager-engine-v2.onrender.com
+#    PDF via PyMuPDF + rendu Live — pas de LibreOffice. N'affecte pas Engine prod ni preview Hub.
+#
 services:
   - type: web
     name: tournament-manager
@@ -26,6 +30,25 @@ services:
         value: libreoffice
       - key: LIVE_DATA_DIR
         value: /data/_live
+      - key: OWNER_EMAIL
+        value: remi.difrancia.perso@gmail.com
+      - key: EMAIL_FROM
+        value: Padel Tournament Engine <onboarding@resend.dev>
+
+  - type: web
+    name: tournament-manager-engine-v2
+    runtime: docker
+    plan: starter
+    branch: feature/engine-v2
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v2/health
+    autoDeploy: true
+    envVars:
+      - key: DEPLOY_TARGET
+        value: engine-v2
+      - key: PDF_CONVERTER
+        value: libreoffice
       - key: OWNER_EMAIL
         value: remi.difrancia.perso@gmail.com
       - key: EMAIL_FROM

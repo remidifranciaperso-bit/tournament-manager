@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { DocumentTitle } from "./components/DocumentTitle";
 import EnginePage from "./pages/EnginePage";
+import EngineV2Page from "./pages/EngineV2Page";
 import HubPage from "./pages/HubPage";
 import LiveAffichagePage from "./pages/LiveAffichagePage";
 import ManagerPage from "./pages/ManagerPage";
@@ -12,6 +13,8 @@ export default function App() {
       <DocumentTitle />
       <Routes>
         <Route path="/" element={<HubPage />} />
+        <Route path="/engine-v2" element={<EngineV2Page />} />
+        <Route path="/engine-v2/*" element={<EngineV2Page />} />
         <Route path="/engine" element={<EnginePage />} />
         <Route path="/engine/*" element={<EnginePage />} />
         <Route path="/manager/affichage/:token" element={<LiveAffichagePage />} />

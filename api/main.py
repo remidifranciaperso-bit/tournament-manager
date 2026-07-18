@@ -43,6 +43,8 @@ from engine.remote_generate import (
     soffice_disponible,
 )
 
+from api.v2_router import router as v2_router
+
 FORMATS_SUPPORTES = [8, 12, 16, 20, 24]
 _PYMUPDF_OK: bool | None = None
 
@@ -61,6 +63,7 @@ class LivePdfExportBody(BaseModel):
 
 
 app = FastAPI(title="Tournament Manager")
+app.include_router(v2_router)
 
 class NoCacheHtmlMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
