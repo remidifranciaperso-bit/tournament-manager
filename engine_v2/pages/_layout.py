@@ -20,10 +20,6 @@ FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
 
 COVER_LOGO_BOX = {"left": 0.274, "top": 0.056, "width": 0.443, "height": 0.108}
 COVER_TYPE_BOX = {"left": -0.043, "top": 0.228, "width": 1.063, "height": 0.229}
-COVER_DATE_BOX = {"left": 0.201, "top": 0.622, "width": 0.597, "height": 0.081}
-COVER_HEURE_BOX = {"left": 0.201, "top": 0.703, "width": 0.597, "height": 0.081}
-COVER_EQUIPES_BOX = {"left": 0.201, "top": 0.785, "width": 0.597, "height": 0.076}
-COVER_TERRAINS_BOX = {"left": 0.201, "top": 0.866, "width": 0.597, "height": 0.076}
 COVER_CREDIT_BOX = {"left": 0.19, "top": 0.948, "width": 0.597, "height": 0.038}
 
 COVER_TYPE_PT = 96.0
@@ -32,9 +28,18 @@ COVER_NB_PT = 28.0
 COVER_CREDIT_PT = 10.0
 HEADER_TITLE_PT = 32.0
 HEADER_META_PT = 18.0
+HEADER_SIDE_MARGIN_MM = 5.0
+MM_TO_PT = 72.0 / 25.4
+HEADER_SIDE_MARGIN_PT = HEADER_SIDE_MARGIN_MM * MM_TO_PT
+
+# Bloc date / heure / effectifs — remonté (~18 pt sur slide 540 pt).
+COVER_META_SHIFT = 0.033
+COVER_DATE_BOX = {"left": 0.201, "top": 0.622 - COVER_META_SHIFT, "width": 0.597, "height": 0.081}
+COVER_HEURE_BOX = {"left": 0.201, "top": 0.703 - COVER_META_SHIFT, "width": 0.597, "height": 0.081}
+COVER_EQUIPES_BOX = {"left": 0.201, "top": 0.785 - COVER_META_SHIFT, "width": 0.597, "height": 0.076}
+COVER_TERRAINS_BOX = {"left": 0.201, "top": 0.866 - COVER_META_SHIFT, "width": 0.597, "height": 0.076}
 
 _MOTIF_JOUEUR = re.compile(r"joueur", re.IGNORECASE)
-
 
 def cover_background_path(base_dir: Path) -> Path | None:
     candidates = [
@@ -136,6 +141,13 @@ def _load_font(fontfile: Path | None) -> fitz.Font | None:
     return None
 
 
+def _baseline_y(box: fitz.Rect, font: fitz.Font, fontsize: float) -> float:
+    text_h = (font.ascender - font.descender) * fontsize
+    if text_h > box.height * 0.92:
+        return box.y0 + box.height * 0.5 + fontsize * 0.18
+    return box.y0 + (box.height + text_h) / 2 - font.descender * fontsize
+
+
 def draw_font_text(
     page: fitz.Page,
     box: fitz.Rect,
@@ -145,6 +157,7 @@ def draw_font_text(
     color: tuple[float, float, float],
     fontfile: Path | None,
     align: int = fitz.TEXT_ALIGN_CENTER,
+    pad: float | None = None,
 ) -> None:
     """Texte custom (brush / TSL) — insert_textbox échoue souvent avec ces OTF/TTF."""
     value = (text or "").strip()
@@ -164,19 +177,15 @@ def draw_font_text(
         return
 
     text_width = font.text_length(value, fontsize=fontsize)
-    pad = max(2.0, box.width * 0.02)
+    inset = pad if pad is not None else max(2.0, box.width * 0.02)
     if align == fitz.TEXT_ALIGN_LEFT:
-        x = box.x0 + pad
+        x = box.x0 + inset
     elif align == fitz.TEXT_ALIGN_RIGHT:
-        x = box.x1 - text_width - pad
+        x = box.x1 - text_width - inset
     else:
         x = box.x0 + (box.width - text_width) / 2
 
-    line_height = (font.ascender - font.descender) * fontsize
-    if box.height < fontsize * 1.35:
-        y = box.y0 + box.height * 0.84
-    else:
-        y = box.y0 + (box.height + line_height) / 2 - font.descender * fontsize
+    y = _baseline_y(box, font, fontsize)
 
     writer = fitz.TextWriter(page.rect)
     writer.append((x, y), value, font=font, fontsize=fontsize)
@@ -214,12 +223,18 @@ def draw_page_header(
 ) -> None:
     rect = page.rect
     fonts = font_paths(base_dir)
-    fill_rect(page, pct_rect(rect, HEADER_BAND), BRUSH_BLUE)
+    band = pct_rect(rect, HEADER_BAND)
+    fill_rect(page, band, BRUSH_BLUE)
+
+    side = HEADER_SIDE_MARGIN_PT
+    meta_w = band.width * 0.30
+    type_box = fitz.Rect(band.x0 + side, band.y0, band.x0 + side + meta_w, band.y1)
+    date_box = fitz.Rect(band.x1 - side - meta_w, band.y0, band.x1 - side, band.y1)
 
     type_line, date_line = header_meta(tournoi)
     _insert_textbox(
         page,
-        pct_rect(rect, TYPE_BOX),
+        type_box,
         type_line,
         fontsize=HEADER_META_PT,
         color=WHITE,
@@ -228,7 +243,7 @@ def draw_page_header(
     )
     _insert_textbox(
         page,
-        pct_rect(rect, DATE_BOX),
+        date_box,
         date_line,
         fontsize=HEADER_META_PT,
         color=WHITE,
@@ -237,7 +252,7 @@ def draw_page_header(
     )
     _insert_textbox(
         page,
-        pct_rect(rect, TITLE_BOX),
+        band,
         title,
         fontsize=HEADER_TITLE_PT,
         color=WHITE,
