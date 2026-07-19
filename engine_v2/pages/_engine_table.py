@@ -7,8 +7,7 @@ from pathlib import Path
 import fitz
 
 from engine.live_export_render_support import (
-    NARROW_TABLE_WIDTH_RATIO,
-    PLANNING_BASE_PT,
+    FINAL_TABLE_WIDTH_PT,
     TABLE_SIDE_MARGIN_PT,
     _draw_live_table_card,
     _fit_live_table_area,
@@ -45,7 +44,7 @@ def draw_engine_table(
             width_mode="narrow",
             row_count=len(rows),
         )
-        ref_width_pt = area.width * NARROW_TABLE_WIDTH_RATIO
+        ref_width_pt = min(area.width, FINAL_TABLE_WIDTH_PT)
     else:
         table_area = _fit_live_table_area(
             area,

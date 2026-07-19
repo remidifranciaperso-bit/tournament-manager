@@ -6,14 +6,13 @@ import base64
 
 import fitz
 
+from engine.live_export_render_support import FINAL_TABLE_WIDTH_PT, TABLE_SIDE_MARGIN_PT
+
 ENGINE_HEADER_RATIO = 0.083
 ENGINE_FOOTER_RATIO = 0.042
 ENGINE_FOOTER_LOGO_WIDTH_RATIO = 1 / 3
 FOOTER_BOTTOM_MARGIN_PT = 3.0 * 72.0 / 25.4
 FINAL_TOP_GAP_RATIO = 0.028
-FINAL_IMAGE_MAX_WIDTH_RATIO = 0.72
-TABLE_SIDE_MARGIN_MM = 4.0
-TABLE_SIDE_MARGIN_PT = TABLE_SIDE_MARGIN_MM * 72.0 / 25.4
 
 
 def _decode_capture(data: str) -> bytes:
@@ -195,17 +194,15 @@ def composer_page_export(
         if image_w <= 0 or image_h <= 0:
             raise RuntimeError("Capture Manager invalide.")
 
-        side_margin = 0.0
-        max_width_ratio = 1.0
-        if section == "final":
-            max_width_ratio = FINAL_IMAGE_MAX_WIDTH_RATIO
-        elif section in ("planning", "main", "classement", "pools"):
-            side_margin = TABLE_SIDE_MARGIN_PT
-
+        side_margin = (
+            TABLE_SIDE_MARGIN_PT
+            if section in ("planning", "main", "classement", "pools")
+            else 0.0
+        )
         avail_w = max(40.0, content_rect.width - 2 * side_margin)
         scale = avail_w / image_w
         if section == "final":
-            max_draw_w = content_rect.width * max_width_ratio
+            max_draw_w = min(FINAL_TABLE_WIDTH_PT, content_rect.width)
             scale = min(scale, max_draw_w / image_w)
 
         draw_h = image_h * scale

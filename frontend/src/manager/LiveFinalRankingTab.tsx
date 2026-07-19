@@ -8,16 +8,18 @@ import type { LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
 import {
   LIVE_TABLE,
+  LIVE_TABLE_CAPTURE,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_NOTO,
   LIVE_TABLE_CELL_POINTS,
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
+  LIVE_TABLE_HEAD_CELL_EXPORT,
   LIVE_TABLE_HEAD_EXPORT,
   LIVE_TABLE_ROW,
   liveTeamTextClass,
 } from "./liveDataTable";
-import { NARROW_TABLE_WIDTH_RATIO, EXPORT_CAPTURE_WIDTH } from "./exportCapture";
+import { EXPORT_CAPTURE_WIDTH } from "./exportCapture";
 
 interface LiveFinalRankingTabProps {
   meta: LiveTournamentMeta;
@@ -30,9 +32,8 @@ interface LiveFinalRankingTabProps {
   placeRange?: [number, number];
 }
 
-/** Largeur tableau classement final = 72 % (identique convocations / composite PDF). */
-const FINAL_TABLE_WIDTH_RATIO = NARROW_TABLE_WIDTH_RATIO;
-const FINAL_BASE_WIDTH = Math.round(EXPORT_CAPTURE_WIDTH * FINAL_TABLE_WIDTH_RATIO);
+/** Largeur live classement final (820 pt − 1 cm, calé sur convocations). */
+const FINAL_BASE_WIDTH = Math.round(EXPORT_CAPTURE_WIDTH * (791.65 / 1024));
 
 export function LiveFinalRankingTab({
   meta,
@@ -84,14 +85,15 @@ export function LiveFinalRankingTab({
   }, [capture, rows.length]);
 
   const headClass = capture ? LIVE_TABLE_HEAD_EXPORT : LIVE_TABLE_HEAD;
+  const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
 
   const table = (
-    <table className={LIVE_TABLE}>
+    <table className={tableClass}>
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={`w-[18%] ${headClass}`}>Place</th>
-          <th className={headClass}>Équipe</th>
-          <th className={`w-[22%] text-right ${headClass}`}>Points</th>
+          <th className={`w-[18%] ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Place</th>
+          <th className={`${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Équipe</th>
+          <th className={`w-[22%] text-right ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Points</th>
         </tr>
       </thead>
       <tbody>
@@ -116,12 +118,9 @@ export function LiveFinalRankingTab({
 
   if (capture) {
     return (
-      <div className="bg-white py-4">
-        <div
-          className="mx-auto"
-          style={{ width: `${FINAL_TABLE_WIDTH_RATIO * 100}%` }}
-        >
-          <div className={LIVE_TABLE_CARD}>{table}</div>
+      <div className="w-full bg-white py-4">
+        <div className="mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm">
+          {table}
         </div>
       </div>
     );

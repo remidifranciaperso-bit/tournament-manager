@@ -2,8 +2,8 @@
 export const EXPORT_CAPTURE_WIDTH = 1100;
 /** Planning export : tableau plus large pour une ligne par match. */
 export const PLANNING_EXPORT_CAPTURE_WIDTH = 1400;
-/** Largeur relative classement final / convocations (calée sur composite PDF 72 %). */
-export const NARROW_TABLE_WIDTH_RATIO = 0.72;
+/** Largeur tableau final/convocations = 820 pt − 1 cm (``FINAL_TABLE_WIDTH_PT`` Python). */
+export const FINAL_TABLE_WIDTH_PT = 820 - 10 * (72 / 25.4);
 
 export type ExportPhase = "idle" | "capture" | "upload" | "download";
 

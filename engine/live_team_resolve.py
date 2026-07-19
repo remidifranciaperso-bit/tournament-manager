@@ -170,6 +170,8 @@ def format_team_display(
     raw = label.strip() if isinstance(label, str) else ""
     if not raw:
         return "—"
+    if _is_unresolved_placeholder(raw):
+        return format_team_slot(raw)
 
     resolved = resolve_team_label_deep(label, matches_by_code, match_results)
     if (

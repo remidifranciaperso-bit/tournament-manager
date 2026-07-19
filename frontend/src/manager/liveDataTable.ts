@@ -11,12 +11,20 @@ export const LIVE_TABLE_CARD =
 
 export const LIVE_TABLE = "w-full border-collapse text-sm sm:text-base";
 
+/** Capture PDF — border-separate évite la diagonale bleu/blanc aux coins arrondis. */
+export const LIVE_TABLE_CAPTURE =
+  "w-full border-separate border-spacing-0 text-sm";
+
 export const LIVE_TABLE_HEAD =
   "px-2 py-2.5 text-left font-tsl text-xs font-semibold uppercase tracking-wide sm:px-3 sm:text-sm";
 
-/** En-têtes capture export PDF (aligné PyMuPDF TABLE_HEAD_TSL_PT = 11). */
+/** En-têtes capture export PDF (aligné PyMuPDF TABLE_HEAD_TSL_PT = 11 gras). */
 export const LIVE_TABLE_HEAD_EXPORT =
-  "px-2 py-2.5 text-left font-tsl text-[11px] font-semibold uppercase tracking-wide sm:px-3";
+  "px-2 py-2.5 text-left font-tsl text-[11px] font-bold uppercase tracking-wide sm:px-3";
+
+/** Coins supérieurs arrondis sur la ligne de titre (capture html2canvas). */
+export const LIVE_TABLE_HEAD_CELL_EXPORT =
+  "first:rounded-tl-xl last:rounded-tr-xl";
 
 export const LIVE_TABLE_ROW = "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]";
 

@@ -129,6 +129,10 @@ function isUnresolvedPlaceholder(text: string): boolean {
   );
 }
 
+export function isUnresolvedTeamLabel(text: string): boolean {
+  return isUnresolvedPlaceholder(text);
+}
+
 /** Affichage boîte match / planning — initiales ou placeholder V1 (🏆 H3:). */
 export function formatBracketTeamDisplay(label: string, resolved: string): string {
   const raw = label.trim();

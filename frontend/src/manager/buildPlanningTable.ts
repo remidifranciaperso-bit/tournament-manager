@@ -4,7 +4,7 @@ import {
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
 import { buildPoolQualifierMap } from "./buildPoolStandings";
-import { formatBracketTeamDisplay } from "./formatBracketLabel";
+import { formatBracketTeamDisplay, formatTeamSlot, isUnresolvedTeamLabel } from "./formatBracketLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { formatMatchDurationMinutes } from "./useLiveProgress";
 
@@ -56,6 +56,11 @@ function resolvePlanningTeam(
   matchResults: Record<string, StoredMatchResult>,
   poolQualifiers: Map<string, string>
 ): string {
+  const raw = label.trim();
+  if (!raw) return "—";
+  if (isUnresolvedTeamLabel(raw)) {
+    return formatTeamSlot(raw);
+  }
   const resolved = resolveTeamLabelDeep(
     label,
     matchesByCode,

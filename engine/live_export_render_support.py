@@ -40,7 +40,6 @@ FINAL_BASE_PT = 820.0
 MM_TO_PT = 72.0 / 25.4
 TABLE_SIDE_MARGIN_MM = 4.0
 TABLE_SIDE_MARGIN_PT = TABLE_SIDE_MARGIN_MM * MM_TO_PT
-NARROW_TABLE_WIDTH_RATIO = 0.72
 FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT - 10.0 * MM_TO_PT
 LIVE_CARD_RADIUS_PX = 12.0
 PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.285, 0.285, 0.07]
@@ -283,7 +282,7 @@ def _draw_match_box(
         equipe1,
         fontsize=team1_px,
         color=ARENA_800,
-        fontfile=fonts.get("noto"),
+        fontfile=fonts.get("tsl") if is_placeholder(equipe1) else fonts.get("noto"),
         bold=winner in (None, 1),
         align=fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe1) else fitz.TEXT_ALIGN_CENTER,
     )
@@ -293,7 +292,7 @@ def _draw_match_box(
         equipe2,
         fontsize=team2_px,
         color=ARENA_800,
-        fontfile=fonts.get("noto"),
+        fontfile=fonts.get("tsl") if is_placeholder(equipe2) else fonts.get("noto"),
         bold=winner in (None, 2),
         align=fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe2) else fitz.TEXT_ALIGN_CENTER,
     )
@@ -504,7 +503,7 @@ def _fit_live_table_area(
 ) -> fitz.Rect:
     """Zone tableau — pleine largeur (4 mm de marge) ou 72 % (classement / convocations)."""
     if width_mode == "narrow":
-        table_w = base_width_pt or (area.width * NARROW_TABLE_WIDTH_RATIO)
+        table_w = min(base_width_pt or FINAL_TABLE_WIDTH_PT, area.width)
     else:
         table_w = max(40.0, area.width - 2 * TABLE_SIDE_MARGIN_PT)
     table_h = row_h_pt * max(row_count + 1, 2)
@@ -810,5 +809,5 @@ def draw_final_ranking(
         body_fonts=["tsl", "noto", "tsl"],
         body_bold=[True, False, True],
         body_colors=body_colors,
-        ref_width_pt=area.width * NARROW_TABLE_WIDTH_RATIO,
+        ref_width_pt=FINAL_TABLE_WIDTH_PT,
     )

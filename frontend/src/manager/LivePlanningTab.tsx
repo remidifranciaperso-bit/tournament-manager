@@ -4,12 +4,14 @@ import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
 import {
   LIVE_TABLE,
+  LIVE_TABLE_CAPTURE,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_NOTO,
   LIVE_TABLE_CELL_NOTO_BOLD,
   LIVE_TABLE_CELL_TSL,
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
+  LIVE_TABLE_HEAD_CELL_EXPORT,
   LIVE_TABLE_HEAD_EXPORT,
   LIVE_TABLE_ROW,
   LIVE_TABLE_ROW_EXPORT,
@@ -92,23 +94,24 @@ export function LivePlanningTab({
   }, [capture, rows.length]);
 
   const headClass = exportMode || capture ? LIVE_TABLE_HEAD_EXPORT : LIVE_TABLE_HEAD;
+  const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
 
   const table = (
     <table
       className={[
-        LIVE_TABLE,
+        tableClass,
         "table-fixed w-full",
-        exportMode ? "text-sm" : "",
+        exportMode && !capture ? "text-sm" : "",
       ].join(" ")}
     >
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={`w-[7%] whitespace-nowrap ${headClass}`}>Code</th>
-          <th className={`w-[7%] whitespace-nowrap ${headClass}`}>Heure</th>
-          <th className={`w-[13%] whitespace-nowrap ${headClass}`}>Terrain</th>
-          <th className={`w-[28.5%] whitespace-nowrap ${headClass}`}>Équipe 1</th>
-          <th className={`w-[28.5%] whitespace-nowrap ${headClass}`}>Équipe 2</th>
-          <th className={`w-[7%] whitespace-nowrap text-center ${headClass}`}>
+          <th className={`w-[7%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Code</th>
+          <th className={`w-[7%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Heure</th>
+          <th className={`w-[13%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Terrain</th>
+          <th className={`w-[28.5%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Équipe 1</th>
+          <th className={`w-[28.5%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Équipe 2</th>
+          <th className={`w-[7%] whitespace-nowrap text-center ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>
             {exportMode ? "Terminé" : "Fait"}
           </th>
         </tr>
