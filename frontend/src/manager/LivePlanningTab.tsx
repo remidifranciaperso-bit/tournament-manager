@@ -5,13 +5,14 @@ import type { StoredMatchResult } from "./useLiveProgress";
 import {
   LIVE_TABLE,
   LIVE_TABLE_CAPTURE,
+  LIVE_TABLE_CAPTURE_HEAD_ROW,
+  LIVE_TABLE_CAPTURE_SHELL,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_NOTO,
   LIVE_TABLE_CELL_NOTO_BOLD,
   LIVE_TABLE_CELL_TSL,
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
-  LIVE_TABLE_HEAD_CELL_EXPORT,
   LIVE_TABLE_HEAD_EXPORT,
   LIVE_TABLE_ROW,
   LIVE_TABLE_ROW_EXPORT,
@@ -32,6 +33,9 @@ interface LivePlanningTabProps {
 
 /** Largeur de référence du tableau planning en live (avant mise à l'échelle). */
 const PLANNING_BASE_WIDTH = 1024;
+
+const PLANNING_HEAD_GRID =
+  "grid-cols-[7%_7%_13%_28.5%_28.5%_7%]";
 
 export function LivePlanningTab({
   layoutFields,
@@ -95,79 +99,96 @@ export function LivePlanningTab({
 
   const headClass = exportMode || capture ? LIVE_TABLE_HEAD_EXPORT : LIVE_TABLE_HEAD;
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
+  const doneLabel = exportMode ? "Terminé" : "Fait";
 
-  const table = (
+  const bodyRows = rows.map((row) => {
+    const match = matchByCode.get(row.code);
+    const code = match?.code ?? row.code;
+    const nowrap = "whitespace-nowrap";
+
+    return (
+      <tr
+        key={`${row.code}-${row.heure}`}
+        className={exportMode ? LIVE_TABLE_ROW_EXPORT : LIVE_TABLE_ROW}
+      >
+        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} ${nowrap}`}>{row.code}</td>
+        <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap}`}>
+          {row.heure || "—"}
+        </td>
+        <td className={`${LIVE_TABLE_CELL_NOTO_BOLD} ${nowrap}`}>
+          {row.terrain || "—"}
+        </td>
+        <td
+          className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} ${nowrap}`}
+        >
+          {row.equipe1}
+        </td>
+        <td
+          className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} ${nowrap}`}
+        >
+          {row.equipe2}
+        </td>
+        <td className={`${LIVE_TABLE_CELL_TSL} text-center ${nowrap}`}>
+          {exportMode ? (
+            row.duration
+          ) : (
+            <input
+              type="checkbox"
+              checked={row.done}
+              onChange={() => onToggleDone(code)}
+              className="h-4 w-4 accent-template-blue"
+              aria-label={`Match ${row.code} terminé`}
+            />
+          )}
+        </td>
+      </tr>
+    );
+  });
+
+  const captureHeader = (
+    <div className={`${LIVE_TABLE_CAPTURE_HEAD_ROW} ${PLANNING_HEAD_GRID}`}>
+      <div className={`whitespace-nowrap ${headClass}`}>Code</div>
+      <div className={`whitespace-nowrap ${headClass}`}>Heure</div>
+      <div className={`whitespace-nowrap ${headClass}`}>Terrain</div>
+      <div className={`whitespace-nowrap ${headClass}`}>Équipe 1</div>
+      <div className={`whitespace-nowrap ${headClass}`}>Équipe 2</div>
+      <div className={`whitespace-nowrap text-center ${headClass}`}>{doneLabel}</div>
+    </div>
+  );
+
+  const table = capture ? (
+    <table className={[tableClass, "table-fixed w-full"].join(" ")}>
+      <tbody>{bodyRows}</tbody>
+    </table>
+  ) : (
     <table
       className={[
         tableClass,
         "table-fixed w-full",
-        exportMode && !capture ? "text-sm" : "",
+        exportMode ? "text-sm" : "",
       ].join(" ")}
     >
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={`w-[7%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Code</th>
-          <th className={`w-[7%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Heure</th>
-          <th className={`w-[13%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Terrain</th>
-          <th className={`w-[28.5%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Équipe 1</th>
-          <th className={`w-[28.5%] whitespace-nowrap ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Équipe 2</th>
-          <th className={`w-[7%] whitespace-nowrap text-center ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>
-            {exportMode ? "Terminé" : "Fait"}
+          <th className={`w-[7%] whitespace-nowrap ${headClass}`}>Code</th>
+          <th className={`w-[7%] whitespace-nowrap ${headClass}`}>Heure</th>
+          <th className={`w-[13%] whitespace-nowrap ${headClass}`}>Terrain</th>
+          <th className={`w-[28.5%] whitespace-nowrap ${headClass}`}>Équipe 1</th>
+          <th className={`w-[28.5%] whitespace-nowrap ${headClass}`}>Équipe 2</th>
+          <th className={`w-[7%] whitespace-nowrap text-center ${headClass}`}>
+            {doneLabel}
           </th>
         </tr>
       </thead>
-      <tbody>
-        {rows.map((row) => {
-          const match = matchByCode.get(row.code);
-          const code = match?.code ?? row.code;
-          const nowrap = "whitespace-nowrap";
-
-          return (
-            <tr
-              key={`${row.code}-${row.heure}`}
-              className={exportMode ? LIVE_TABLE_ROW_EXPORT : LIVE_TABLE_ROW}
-            >
-              <td className={`${LIVE_TABLE_CELL_TSL_BOLD} ${nowrap}`}>{row.code}</td>
-              <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap}`}>
-                {row.heure || "—"}
-              </td>
-              <td className={`${LIVE_TABLE_CELL_NOTO_BOLD} ${nowrap}`}>
-                {row.terrain || "—"}
-              </td>
-              <td
-                className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} ${nowrap}`}
-              >
-                {row.equipe1}
-              </td>
-              <td
-                className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} ${nowrap}`}
-              >
-                {row.equipe2}
-              </td>
-              <td className={`${LIVE_TABLE_CELL_TSL} text-center ${nowrap}`}>
-                {exportMode ? (
-                  row.duration
-                ) : (
-                  <input
-                    type="checkbox"
-                    checked={row.done}
-                    onChange={() => onToggleDone(code)}
-                    className="h-4 w-4 accent-template-blue"
-                    aria-label={`Match ${row.code} terminé`}
-                  />
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
+      <tbody>{bodyRows}</tbody>
     </table>
   );
 
   if (capture) {
     return (
       <div className="w-full bg-white py-4">
-        <div className="mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm">
+        <div className={LIVE_TABLE_CAPTURE_SHELL}>
+          {captureHeader}
           {table}
         </div>
       </div>

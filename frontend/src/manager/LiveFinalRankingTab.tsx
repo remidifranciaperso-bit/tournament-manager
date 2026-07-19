@@ -9,12 +9,13 @@ import type { StoredMatchResult } from "./useLiveProgress";
 import {
   LIVE_TABLE,
   LIVE_TABLE_CAPTURE,
+  LIVE_TABLE_CAPTURE_HEAD_ROW,
+  LIVE_TABLE_CAPTURE_SHELL,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_NOTO,
   LIVE_TABLE_CELL_POINTS,
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
-  LIVE_TABLE_HEAD_CELL_EXPORT,
   LIVE_TABLE_HEAD_EXPORT,
   LIVE_TABLE_ROW,
   liveTeamTextClass,
@@ -34,6 +35,8 @@ interface LiveFinalRankingTabProps {
 
 /** Largeur live classement final (820 pt − 1 cm, calé sur convocations). */
 const FINAL_BASE_WIDTH = Math.round(EXPORT_CAPTURE_WIDTH * (791.65 / 1024));
+
+const FINAL_HEAD_GRID = "grid-cols-[18%_1fr_22%]";
 
 export function LiveFinalRankingTab({
   meta,
@@ -87,39 +90,50 @@ export function LiveFinalRankingTab({
   const headClass = capture ? LIVE_TABLE_HEAD_EXPORT : LIVE_TABLE_HEAD;
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
 
-  const table = (
+  const bodyRows = rows.map((row) => (
+    <tr key={row.place} className={LIVE_TABLE_ROW}>
+      <td className={LIVE_TABLE_CELL_TSL_BOLD}>
+        {formatPlaceLabel(row.place)}
+      </td>
+      <td className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.team)}`}>
+        {row.team || <span className="text-arena-600/35">—</span>}
+      </td>
+      <td className={LIVE_TABLE_CELL_POINTS}>
+        {row.points || <span className="text-arena-600/35">—</span>}
+      </td>
+    </tr>
+  ));
+
+  const captureHeader = (
+    <div className={`${LIVE_TABLE_CAPTURE_HEAD_ROW} ${FINAL_HEAD_GRID}`}>
+      <div className={headClass}>Place</div>
+      <div className={headClass}>Équipe</div>
+      <div className={`text-right ${headClass}`}>Points</div>
+    </div>
+  );
+
+  const table = capture ? (
+    <table className={[tableClass, "w-full"].join(" ")}>
+      <tbody>{bodyRows}</tbody>
+    </table>
+  ) : (
     <table className={tableClass}>
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={`w-[18%] ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Place</th>
-          <th className={`${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Équipe</th>
-          <th className={`w-[22%] text-right ${headClass} ${capture ? LIVE_TABLE_HEAD_CELL_EXPORT : ""}`}>Points</th>
+          <th className={`w-[18%] ${headClass}`}>Place</th>
+          <th className={headClass}>Équipe</th>
+          <th className={`w-[22%] text-right ${headClass}`}>Points</th>
         </tr>
       </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.place} className={LIVE_TABLE_ROW}>
-            <td className={LIVE_TABLE_CELL_TSL_BOLD}>
-              {formatPlaceLabel(row.place)}
-            </td>
-            <td
-              className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.team)}`}
-            >
-              {row.team || <span className="text-arena-600/35">—</span>}
-            </td>
-            <td className={LIVE_TABLE_CELL_POINTS}>
-              {row.points || <span className="text-arena-600/35">—</span>}
-            </td>
-          </tr>
-        ))}
-      </tbody>
+      <tbody>{bodyRows}</tbody>
     </table>
   );
 
   if (capture) {
     return (
       <div className="w-full bg-white py-4">
-        <div className="mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm">
+        <div className={LIVE_TABLE_CAPTURE_SHELL}>
+          {captureHeader}
           {table}
         </div>
       </div>

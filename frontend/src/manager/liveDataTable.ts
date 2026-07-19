@@ -22,9 +22,13 @@ export const LIVE_TABLE_HEAD =
 export const LIVE_TABLE_HEAD_EXPORT =
   "px-2 py-2.5 text-left font-tsl text-[11px] font-bold uppercase tracking-wide sm:px-3";
 
-/** Coins supérieurs arrondis sur la ligne de titre (capture html2canvas). */
-export const LIVE_TABLE_HEAD_CELL_EXPORT =
-  "first:rounded-tl-xl last:rounded-tr-xl";
+/** Conteneur capture PDF (coins arrondis + overflow clip). */
+export const LIVE_TABLE_CAPTURE_SHELL =
+  "mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm";
+
+/** Ligne titre hors `<table>` — évite la diagonale bleu/blanc html2canvas. */
+export const LIVE_TABLE_CAPTURE_HEAD_ROW =
+  "grid w-full bg-template-blue text-white";
 
 export const LIVE_TABLE_ROW = "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]";
 

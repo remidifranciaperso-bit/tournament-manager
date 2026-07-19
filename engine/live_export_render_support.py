@@ -120,7 +120,8 @@ def _insert_textbox(
             text_h = (font.ascender - font.descender) * fontsize
             y = rect.y0 + (rect.height - text_h) / 2 + font.ascender * fontsize
             writer = fitz.TextWriter(page.rect)
-            use_faux_bold = bold
+            # Pas de faux-gras sur texte clair (double tracé = fantôme / diagonale visuelle).
+            use_faux_bold = bold and sum(color) < 2.4
             if use_faux_bold:
                 writer.append((x + 0.35, y), value, font=font, fontsize=fontsize)
             writer.append((x, y), value, font=font, fontsize=fontsize)
@@ -520,8 +521,9 @@ def _draw_header_bar(
     table_area: fitz.Rect,
     header_bottom: float,
     radius_pt: float,
+    radius_frac: float,
 ) -> None:
-    """Bandeau en-tête bleu avec coins supérieurs arrondis (sans artefact diagonal)."""
+    """Bandeau en-tête bleu : calotte arrondie + rectangle (sans diagonale blanche)."""
     x0 = table_area.x0
     y0 = table_area.y0
     x1 = table_area.x1
@@ -536,22 +538,23 @@ def _draw_header_bar(
         )
         return
 
-    shape = page.new_shape()
-    shape.draw_line(fitz.Point(x0 + r, y0), fitz.Point(x1 - r, y0))
-    shape.draw_curve(
-        fitz.Point(x1 - r + r * _BEZIER_K, y0),
-        fitz.Point(x1, y0 + r - r * _BEZIER_K),
-        fitz.Point(x1, y0 + r),
+    cap_bottom = y0 + 2 * r
+    page.draw_rect(
+        fitz.Rect(x0, y0, x1, cap_bottom),
+        color=TEMPLATE_BLUE,
+        fill=TEMPLATE_BLUE,
+        width=0,
+        radius=radius_frac,
+        overlay=True,
     )
-    shape.draw_line(fitz.Point(x1, header_bottom), fitz.Point(x0, header_bottom))
-    shape.draw_line(fitz.Point(x0, header_bottom), fitz.Point(x0, y0 + r))
-    shape.draw_curve(
-        fitz.Point(x0, y0 + r - r * _BEZIER_K),
-        fitz.Point(x0 + r - r * _BEZIER_K, y0),
-        fitz.Point(x0 + r, y0),
-    )
-    shape.finish(fill=TEMPLATE_BLUE, color=TEMPLATE_BLUE, width=0, closePath=True)
-    shape.commit(overlay=True)
+    if header_bottom > cap_bottom - 0.1:
+        page.draw_rect(
+            fitz.Rect(x0, y0 + r, x1, header_bottom),
+            color=TEMPLATE_BLUE,
+            fill=TEMPLATE_BLUE,
+            width=0,
+            overlay=True,
+        )
 
 
 def _draw_body_fill(
@@ -559,8 +562,9 @@ def _draw_body_fill(
     table_area: fitz.Rect,
     header_bottom: float,
     radius_pt: float,
+    radius_frac: float,
 ) -> None:
-    """Corps blanc avec coins inférieurs arrondis."""
+    """Corps blanc : rectangle + calotte inférieure arrondie."""
     x0 = table_area.x0
     y0 = header_bottom
     x1 = table_area.x1
@@ -576,23 +580,23 @@ def _draw_body_fill(
         )
         return
 
-    shape = page.new_shape()
-    shape.draw_line(fitz.Point(x0, y0), fitz.Point(x1, y0))
-    shape.draw_line(fitz.Point(x1, y0), fitz.Point(x1, y1 - r))
-    shape.draw_curve(
-        fitz.Point(x1, y1 - r + r * _BEZIER_K),
-        fitz.Point(x1 - r + r * _BEZIER_K, y1),
-        fitz.Point(x1 - r, y1),
+    cap_top = y1 - 2 * r
+    if y0 < cap_top - 0.1:
+        page.draw_rect(
+            fitz.Rect(x0, y0, x1, cap_top),
+            color=WHITE,
+            fill=WHITE,
+            width=0,
+            overlay=True,
+        )
+    page.draw_rect(
+        fitz.Rect(x0, cap_top, x1, y1),
+        color=WHITE,
+        fill=WHITE,
+        width=0,
+        radius=radius_frac,
+        overlay=True,
     )
-    shape.draw_line(fitz.Point(x1 - r, y1), fitz.Point(x0 + r, y1))
-    shape.draw_curve(
-        fitz.Point(x0 + r - r * _BEZIER_K, y1),
-        fitz.Point(x0, y1 - r + r * _BEZIER_K),
-        fitz.Point(x0, y1 - r),
-    )
-    shape.draw_line(fitz.Point(x0, y1 - r), fitz.Point(x0, y0))
-    shape.finish(fill=WHITE, color=WHITE, width=0, closePath=True)
-    shape.commit(overlay=True)
 
 
 def _card_radius_frac(table_area: fitz.Rect, ref_width_pt: float) -> float:
@@ -637,8 +641,8 @@ def _draw_live_table_card(
     row_line = (0.82, 0.92, 0.98)
     row_alt = (0.97, 0.99, 1.0)
 
-    _draw_header_bar(page, table_area, header_bottom, radius_pt)
-    _draw_body_fill(page, table_area, header_bottom, radius_pt)
+    _draw_header_bar(page, table_area, header_bottom, radius_pt, radius_frac)
+    _draw_body_fill(page, table_area, header_bottom, radius_pt, radius_frac)
 
     x = table_area.x0
     for index, header in enumerate(headers):
@@ -653,7 +657,7 @@ def _draw_live_table_card(
             color=WHITE,
             align=align,
             fontfile=fonts.get("tsl"),
-            bold=True,
+            bold=False,
         )
         x += width
 
@@ -696,13 +700,26 @@ def _draw_live_table_card(
             )
             x += width
 
-    page.draw_rect(
-        table_area,
+    # Contour latéral/bas uniquement (pas de stroke arrondi sur l'en-tête → pas de diagonale).
+    page.draw_line(
+        fitz.Point(table_area.x0, table_area.y0),
+        fitz.Point(table_area.x0, table_area.y1),
         color=TEMPLATE_BLUE,
-        fill=None,
-        width=0.8,
-        radius=radius_frac,
-        stroke_opacity=0.35,
+        width=0.6,
+        overlay=True,
+    )
+    page.draw_line(
+        fitz.Point(table_area.x1, table_area.y0),
+        fitz.Point(table_area.x1, table_area.y1),
+        color=TEMPLATE_BLUE,
+        width=0.6,
+        overlay=True,
+    )
+    page.draw_line(
+        fitz.Point(table_area.x0, table_area.y1),
+        fitz.Point(table_area.x1, table_area.y1),
+        color=TEMPLATE_BLUE,
+        width=0.6,
         overlay=True,
     )
 
