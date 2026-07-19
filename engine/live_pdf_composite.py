@@ -12,8 +12,6 @@ ENGINE_HEADER_RATIO = 0.083
 ENGINE_FOOTER_RATIO = 0.042
 ENGINE_FOOTER_LOGO_WIDTH_RATIO = 1 / 3
 FOOTER_BOTTOM_MARGIN_PT = 3.0 * 72.0 / 25.4
-FINAL_TOP_GAP_RATIO = 0.028
-
 
 def _decode_capture(data: str) -> bytes:
     if data.startswith("data:"):
@@ -107,7 +105,6 @@ def composer_page_export(
     header_h = rect.height * ENGINE_HEADER_RATIO
     footer_h = rect.height * ENGINE_FOOTER_RATIO
     margin = FOOTER_BOTTOM_MARGIN_PT
-    top_gap = rect.height * FINAL_TOP_GAP_RATIO if section == "final" else 0
     footer_dest = fitz.Rect(
         rect.x0,
         rect.y1 - margin - footer_h,
@@ -116,7 +113,7 @@ def composer_page_export(
     )
     content_rect = fitz.Rect(
         rect.x0,
-        rect.y0 + header_h + top_gap,
+        rect.y0 + header_h,
         rect.x1,
         footer_dest.y0,
     )
@@ -211,12 +208,20 @@ def composer_page_export(
             draw_h = content_rect.height
         draw_w = image_w * scale
         x0 = content_rect.x0 + side_margin + (avail_w - draw_w) / 2
-        y0 = content_rect.y0
+        y0 = content_rect.y0 + (content_rect.height - draw_h) / 2
         page.insert_image(
             fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
             stream=image_bytes,
             keep_proportion=True,
         )
+
+        if y0 > content_rect.y0 + 0.5:
+            page.draw_rect(
+                fitz.Rect(content_rect.x0, content_rect.y0, content_rect.x1, y0),
+                color=None,
+                fill=(1, 1, 1),
+                overlay=False,
+            )
 
         gap_top = y0 + draw_h
         if gap_top < content_rect.y1 - 0.5:

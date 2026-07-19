@@ -183,8 +183,8 @@ export function LivePlanningTab({
 
   if (capture) {
     return (
-      <div className="w-full bg-white">
-        <div className={`${LIVE_TABLE_CAPTURE_SHELL} bg-template-blue`}>
+      <div className="flex w-full items-center justify-center bg-white">
+        <div className={`${LIVE_TABLE_CAPTURE_SHELL} w-full bg-template-blue`}>
           {table}
         </div>
       </div>

@@ -39,9 +39,10 @@ TABLE_BODY_PT = 10.0
 PLANNING_BASE_PT = 1024.0
 FINAL_BASE_PT = 820.0
 MM_TO_PT = 72.0 / 25.4
-TABLE_SIDE_MARGIN_MM = 4.0
+TABLE_SIDE_MARGIN_MM = 5.0
 TABLE_SIDE_MARGIN_PT = TABLE_SIDE_MARGIN_MM * MM_TO_PT
-FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT - 10.0 * MM_TO_PT
+# Largeur de référence classement final (Live) — convocations calées dessus.
+FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT
 LIVE_CARD_RADIUS_PX = 12.0
 PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.285, 0.285, 0.07]
 _BEZIER_K = 0.5522847498
@@ -501,7 +502,7 @@ def _fit_live_table_area(
     row_count: int,
     row_h_pt: float = 26.0,
 ) -> fitz.Rect:
-    """Zone tableau — pleine largeur (−4 mm) ou étroite (820 pt − 1 cm)."""
+    """Zone tableau — pleine largeur (−5 mm) ou étroite (820 pt, calée classement final)."""
     if width_mode == "narrow":
         table_w = min(base_width_pt or FINAL_TABLE_WIDTH_PT, area.width)
     else:
@@ -511,7 +512,7 @@ def _fit_live_table_area(
     draw_w = table_w
     draw_h = table_h * scale_h
     x0 = area.x0 + (area.width - draw_w) / 2
-    y0 = area.y0 + max(4.0, (area.height - draw_h) * 0.08)
+    y0 = area.y0 + (area.height - draw_h) / 2
     return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
 
 

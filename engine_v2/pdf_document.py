@@ -10,6 +10,7 @@ import fitz
 from engine.bracket_crosspage_stub import draw_crosspage_margin_stub
 from engine.pdf_titles import pdf_header_title
 from engine.live_export_render import render_bracket_into_area
+from engine.live_export_render_support import TABLE_SIDE_MARGIN_PT
 from engine.live_export_render_support import draw_final_ranking, draw_planning_table
 from engine.live_render_pdf import charger_layout_slide
 from engine_v2.config import PAGE_HEIGHT_PT, PAGE_WIDTH_PT, SLIDE_ASPECT
@@ -30,13 +31,17 @@ def _a4_rect() -> fitz.Rect:
 
 
 def _live_bracket_area(content: fitz.Rect) -> fitz.Rect:
-    """Zone slide Live (ratio template) — comme capture export puis scale dans le contenu."""
-    draw_h = content.width / SLIDE_ASPECT
+    """Zone slide Live (ratio template) — marges 5 mm, centrée verticalement."""
+    avail_w = max(40.0, content.width - 2 * TABLE_SIDE_MARGIN_PT)
+    draw_h = avail_w / SLIDE_ASPECT
     if draw_h > content.height:
-        draw_w = content.height * SLIDE_ASPECT
-        x0 = content.x0 + (content.width - draw_w) / 2
-        return fitz.Rect(x0, content.y0, x0 + draw_w, content.y1)
-    return fitz.Rect(content.x0, content.y0, content.x1, content.y0 + draw_h)
+        draw_h = content.height
+        draw_w = draw_h * SLIDE_ASPECT
+    else:
+        draw_w = avail_w
+    x0 = content.x0 + (content.width - draw_w) / 2
+    y0 = content.y0 + (content.height - draw_h) / 2
+    return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
 
 
 def _render_bracket_page(

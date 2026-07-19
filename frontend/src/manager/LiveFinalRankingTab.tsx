@@ -32,7 +32,7 @@ interface LiveFinalRankingTabProps {
   placeRange?: [number, number];
 }
 
-/** Largeur live classement final (820 pt − 1 cm, calé sur convocations). */
+/** Largeur live classement final (référence — convocations calées dessus). */
 const FINAL_BASE_WIDTH = FINAL_EXPORT_CAPTURE_WIDTH;
 
 const FINAL_COLGROUP = (
@@ -125,12 +125,14 @@ export function LiveFinalRankingTab({
 
   if (capture) {
     return (
-      <div
-        className="mx-auto w-full bg-white"
-        style={{ maxWidth: FINAL_EXPORT_CAPTURE_WIDTH }}
-      >
-        <div className={`${LIVE_TABLE_CAPTURE_SHELL} bg-template-blue`}>
-          {table}
+      <div className="flex w-full items-center justify-center bg-white">
+        <div
+          className="w-full"
+          style={{ maxWidth: FINAL_EXPORT_CAPTURE_WIDTH }}
+        >
+          <div className={`${LIVE_TABLE_CAPTURE_SHELL} bg-template-blue`}>
+            {table}
+          </div>
         </div>
       </div>
     );
