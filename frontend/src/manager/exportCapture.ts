@@ -1,9 +1,12 @@
 /** Largeur fixe du bac hors-écran pour les captures PDF. */
 export const EXPORT_CAPTURE_WIDTH = 1100;
-/** Planning export : tableau plus large pour une ligne par match. */
+/** Planning export : tableau pleine largeur (moins 4 mm au composite). */
 export const PLANNING_EXPORT_CAPTURE_WIDTH = 1400;
-/** Largeur tableau final/convocations = 820 pt − 1 cm (``FINAL_TABLE_WIDTH_PT`` Python). */
+/** Classement final / convocations : 820 pt − 1 cm (calé sur PyMuPDF). */
 export const FINAL_TABLE_WIDTH_PT = 820 - 10 * (72 / 25.4);
+export const FINAL_EXPORT_CAPTURE_WIDTH = Math.round(
+  EXPORT_CAPTURE_WIDTH * (FINAL_TABLE_WIDTH_PT / 1024)
+);
 
 export type ExportPhase = "idle" | "capture" | "upload" | "download";
 

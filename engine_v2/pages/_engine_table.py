@@ -66,7 +66,7 @@ def draw_engine_table(
             base_dir=base_dir,
             alignments=[fitz.TEXT_ALIGN_LEFT, fitz.TEXT_ALIGN_LEFT],
             body_fonts=["noto", "tsl"],
-            body_bold=[False, True],
+            body_bold=[False, False],
             body_colors=body_colors,
             ref_width_pt=ref_width_pt,
         )
@@ -93,7 +93,7 @@ def draw_engine_table(
         base_dir=base_dir,
         alignments=[fitz.TEXT_ALIGN_LEFT] * n_cols,
         body_fonts=["noto", "tsl", "noto", "tsl", "tsl", "tsl"],
-        body_bold=[False, True, False, True, True, True],
+        body_bold=[False, False, False, False, False, False],
         body_colors=body_colors,
         ref_width_pt=ref_width_pt,
     )

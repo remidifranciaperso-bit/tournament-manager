@@ -5,7 +5,6 @@ import type { StoredMatchResult } from "./useLiveProgress";
 import {
   LIVE_TABLE,
   LIVE_TABLE_CAPTURE,
-  LIVE_TABLE_CAPTURE_HEAD_ROW,
   LIVE_TABLE_CAPTURE_SHELL,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_NOTO,
@@ -34,8 +33,16 @@ interface LivePlanningTabProps {
 /** Largeur de référence du tableau planning en live (avant mise à l'échelle). */
 const PLANNING_BASE_WIDTH = 1024;
 
-const PLANNING_HEAD_GRID =
-  "grid-cols-[7%_7%_13%_28.5%_28.5%_7%]";
+const PLANNING_COLGROUP = (
+  <colgroup>
+    <col className="w-[7%]" />
+    <col className="w-[7%]" />
+    <col className="w-[13%]" />
+    <col className="w-[28.5%]" />
+    <col className="w-[28.5%]" />
+    <col className="w-[7%]" />
+  </colgroup>
+);
 
 export function LivePlanningTab({
   layoutFields,
@@ -145,50 +152,39 @@ export function LivePlanningTab({
     );
   });
 
-  const captureHeader = (
-    <div className={`${LIVE_TABLE_CAPTURE_HEAD_ROW} ${PLANNING_HEAD_GRID}`}>
-      <div className={`whitespace-nowrap ${headClass}`}>Code</div>
-      <div className={`whitespace-nowrap ${headClass}`}>Heure</div>
-      <div className={`whitespace-nowrap ${headClass}`}>Terrain</div>
-      <div className={`whitespace-nowrap ${headClass}`}>Équipe 1</div>
-      <div className={`whitespace-nowrap ${headClass}`}>Équipe 2</div>
-      <div className={`whitespace-nowrap text-center ${headClass}`}>{doneLabel}</div>
-    </div>
+  const tableHead = (
+    <thead>
+      <tr className="bg-template-blue text-white">
+        <th className={`whitespace-nowrap ${headClass}`}>Code</th>
+        <th className={`whitespace-nowrap ${headClass}`}>Heure</th>
+        <th className={`whitespace-nowrap ${headClass}`}>Terrain</th>
+        <th className={`whitespace-nowrap ${headClass}`}>Équipe 1</th>
+        <th className={`whitespace-nowrap ${headClass}`}>Équipe 2</th>
+        <th className={`whitespace-nowrap text-center ${headClass}`}>
+          {doneLabel}
+        </th>
+      </tr>
+    </thead>
   );
 
-  const table = capture ? (
-    <table className={[tableClass, "table-fixed w-full"].join(" ")}>
-      <tbody>{bodyRows}</tbody>
-    </table>
-  ) : (
+  const table = (
     <table
       className={[
         tableClass,
         "table-fixed w-full",
-        exportMode ? "text-sm" : "",
+        exportMode && !capture ? "text-sm" : "",
       ].join(" ")}
     >
-      <thead>
-        <tr className="bg-template-blue text-white">
-          <th className={`w-[7%] whitespace-nowrap ${headClass}`}>Code</th>
-          <th className={`w-[7%] whitespace-nowrap ${headClass}`}>Heure</th>
-          <th className={`w-[13%] whitespace-nowrap ${headClass}`}>Terrain</th>
-          <th className={`w-[28.5%] whitespace-nowrap ${headClass}`}>Équipe 1</th>
-          <th className={`w-[28.5%] whitespace-nowrap ${headClass}`}>Équipe 2</th>
-          <th className={`w-[7%] whitespace-nowrap text-center ${headClass}`}>
-            {doneLabel}
-          </th>
-        </tr>
-      </thead>
-      <tbody>{bodyRows}</tbody>
+      {PLANNING_COLGROUP}
+      {tableHead}
+      <tbody className={capture ? "bg-white" : undefined}>{bodyRows}</tbody>
     </table>
   );
 
   if (capture) {
     return (
-      <div className="w-full bg-white py-4">
-        <div className={LIVE_TABLE_CAPTURE_SHELL}>
-          {captureHeader}
+      <div className="w-full bg-white">
+        <div className={`${LIVE_TABLE_CAPTURE_SHELL} bg-template-blue`}>
           {table}
         </div>
       </div>

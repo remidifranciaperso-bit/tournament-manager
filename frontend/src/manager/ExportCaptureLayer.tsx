@@ -1,4 +1,4 @@
-import { EXPORT_CAPTURE_WIDTH, PLANNING_EXPORT_CAPTURE_WIDTH, type ExportCaptureTarget } from "./exportCapture";
+import { EXPORT_CAPTURE_WIDTH, FINAL_EXPORT_CAPTURE_WIDTH, PLANNING_EXPORT_CAPTURE_WIDTH, type ExportCaptureTarget } from "./exportCapture";
 import { LiveBracketViewer } from "./LiveBracketViewer";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
@@ -80,7 +80,7 @@ export function ExportCaptureLayer({
       <div
         id="export-capture-layer"
         className="pointer-events-none fixed -left-[120vw] top-0 z-0 inline-block bg-white"
-        style={{ width: EXPORT_CAPTURE_WIDTH }}
+        style={{ width: FINAL_EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
         <LiveManagerDocumentPage

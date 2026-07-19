@@ -34,6 +34,7 @@ FEED_PT = 8.0
 PLACEMENT_PT = 11.0
 TABLE_HEAD_PT = 9.0
 TABLE_HEAD_TSL_PT = 11.0
+TABLE_HEAD_DISPLAY_PT = 12.0
 TABLE_BODY_PT = 10.0
 PLANNING_BASE_PT = 1024.0
 FINAL_BASE_PT = 820.0
@@ -120,9 +121,7 @@ def _insert_textbox(
             text_h = (font.ascender - font.descender) * fontsize
             y = rect.y0 + (rect.height - text_h) / 2 + font.ascender * fontsize
             writer = fitz.TextWriter(page.rect)
-            # Pas de faux-gras sur texte clair (double tracé = fantôme / diagonale visuelle).
-            use_faux_bold = bold and sum(color) < 2.4
-            if use_faux_bold:
+            if bold:
                 writer.append((x + 0.35, y), value, font=font, fontsize=fontsize)
             writer.append((x, y), value, font=font, fontsize=fontsize)
             writer.write_text(page, color=color)
@@ -502,7 +501,7 @@ def _fit_live_table_area(
     row_count: int,
     row_h_pt: float = 26.0,
 ) -> fitz.Rect:
-    """Zone tableau — pleine largeur (4 mm de marge) ou 72 % (classement / convocations)."""
+    """Zone tableau — pleine largeur (−4 mm) ou étroite (820 pt − 1 cm)."""
     if width_mode == "narrow":
         table_w = min(base_width_pt or FINAL_TABLE_WIDTH_PT, area.width)
     else:
@@ -604,7 +603,7 @@ def _card_radius_frac(table_area: fitz.Rect, ref_width_pt: float) -> float:
     short = min(table_area.width, table_area.height)
     if short <= 0:
         return 0.05
-    return min(0.5, max(0.01, radius_pt / short))
+    return min(0.5, max(0.018, radius_pt / short))
 
 
 def _corner_radius_pt(table_area: fitz.Rect, ref_width_pt: float) -> float:
@@ -641,7 +640,15 @@ def _draw_live_table_card(
     row_line = (0.82, 0.92, 0.98)
     row_alt = (0.97, 0.99, 1.0)
 
-    _draw_header_bar(page, table_area, header_bottom, radius_pt, radius_frac)
+    # Carte bleue arrondie pleine zone → corps blanc : coins propres, pas de diagonale.
+    page.draw_rect(
+        table_area,
+        color=TEMPLATE_BLUE,
+        fill=TEMPLATE_BLUE,
+        width=0.8,
+        radius=radius_frac,
+        overlay=True,
+    )
     _draw_body_fill(page, table_area, header_bottom, radius_pt, radius_frac)
 
     x = table_area.x0
@@ -653,11 +660,11 @@ def _draw_live_table_card(
             page,
             cell,
             header,
-            fontsize=TABLE_HEAD_TSL_PT,
+            fontsize=TABLE_HEAD_DISPLAY_PT,
             color=WHITE,
             align=align,
             fontfile=fonts.get("tsl"),
-            bold=False,
+            bold=True,
         )
         x += width
 
@@ -681,7 +688,7 @@ def _draw_live_table_card(
             cell = fitz.Rect(x, y0, x + width, y0 + body_row_h)
             font_key = font_keys[index] if index < len(font_keys) else "tsl"
             fontfile = fonts.get(font_key) if font_key else None
-            bold = (body_bold or [font_key == "tsl"] * len(values))[index]
+            bold = (body_bold or [False] * len(values))[index]
             if color_list and color_index < len(color_list):
                 color = color_list[color_index]
             else:
@@ -699,29 +706,6 @@ def _draw_live_table_card(
                 bold=bold,
             )
             x += width
-
-    # Contour latéral/bas uniquement (pas de stroke arrondi sur l'en-tête → pas de diagonale).
-    page.draw_line(
-        fitz.Point(table_area.x0, table_area.y0),
-        fitz.Point(table_area.x0, table_area.y1),
-        color=TEMPLATE_BLUE,
-        width=0.6,
-        overlay=True,
-    )
-    page.draw_line(
-        fitz.Point(table_area.x1, table_area.y0),
-        fitz.Point(table_area.x1, table_area.y1),
-        color=TEMPLATE_BLUE,
-        width=0.6,
-        overlay=True,
-    )
-    page.draw_line(
-        fitz.Point(table_area.x0, table_area.y1),
-        fitz.Point(table_area.x1, table_area.y1),
-        color=TEMPLATE_BLUE,
-        width=0.6,
-        overlay=True,
-    )
 
 
 def draw_planning_table(
@@ -770,7 +754,7 @@ def draw_planning_table(
             fitz.TEXT_ALIGN_CENTER,
         ],
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
-        body_bold=[True, False, True, False, False, False],
+        body_bold=[False, False, False, False, False, False],
     )
 
 
@@ -824,7 +808,7 @@ def draw_final_ranking(
         base_dir=base_dir,
         alignments=[fitz.TEXT_ALIGN_LEFT, fitz.TEXT_ALIGN_LEFT, fitz.TEXT_ALIGN_RIGHT],
         body_fonts=["tsl", "noto", "tsl"],
-        body_bold=[True, False, True],
+        body_bold=[False, False, False],
         body_colors=body_colors,
         ref_width_pt=FINAL_TABLE_WIDTH_PT,
     )

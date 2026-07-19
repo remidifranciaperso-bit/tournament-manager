@@ -18,9 +18,9 @@ export const LIVE_TABLE_CAPTURE =
 export const LIVE_TABLE_HEAD =
   "px-2 py-2.5 text-left font-tsl text-xs font-semibold uppercase tracking-wide sm:px-3 sm:text-sm";
 
-/** En-têtes capture export PDF (aligné PyMuPDF TABLE_HEAD_TSL_PT = 11 gras). */
+/** En-têtes capture export PDF (aligné PyMuPDF TABLE_HEAD_DISPLAY_PT = 12). */
 export const LIVE_TABLE_HEAD_EXPORT =
-  "px-2 py-2.5 text-left font-tsl text-[11px] font-bold uppercase tracking-wide sm:px-3";
+  "px-2 py-2.5 text-left font-tsl text-xs font-bold uppercase tracking-wide sm:px-3 sm:text-[12px]";
 
 /** Conteneur capture PDF (coins arrondis + overflow clip). */
 export const LIVE_TABLE_CAPTURE_SHELL =

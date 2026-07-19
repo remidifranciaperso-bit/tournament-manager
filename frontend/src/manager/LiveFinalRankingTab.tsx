@@ -9,7 +9,6 @@ import type { StoredMatchResult } from "./useLiveProgress";
 import {
   LIVE_TABLE,
   LIVE_TABLE_CAPTURE,
-  LIVE_TABLE_CAPTURE_HEAD_ROW,
   LIVE_TABLE_CAPTURE_SHELL,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_NOTO,
@@ -20,7 +19,7 @@ import {
   LIVE_TABLE_ROW,
   liveTeamTextClass,
 } from "./liveDataTable";
-import { EXPORT_CAPTURE_WIDTH } from "./exportCapture";
+import { FINAL_EXPORT_CAPTURE_WIDTH } from "./exportCapture";
 
 interface LiveFinalRankingTabProps {
   meta: LiveTournamentMeta;
@@ -34,9 +33,15 @@ interface LiveFinalRankingTabProps {
 }
 
 /** Largeur live classement final (820 pt − 1 cm, calé sur convocations). */
-const FINAL_BASE_WIDTH = Math.round(EXPORT_CAPTURE_WIDTH * (791.65 / 1024));
+const FINAL_BASE_WIDTH = FINAL_EXPORT_CAPTURE_WIDTH;
 
-const FINAL_HEAD_GRID = "grid-cols-[18%_1fr_22%]";
+const FINAL_COLGROUP = (
+  <colgroup>
+    <col className="w-[18%]" />
+    <col />
+    <col className="w-[22%]" />
+  </colgroup>
+);
 
 export function LiveFinalRankingTab({
   meta,
@@ -104,36 +109,27 @@ export function LiveFinalRankingTab({
     </tr>
   ));
 
-  const captureHeader = (
-    <div className={`${LIVE_TABLE_CAPTURE_HEAD_ROW} ${FINAL_HEAD_GRID}`}>
-      <div className={headClass}>Place</div>
-      <div className={headClass}>Équipe</div>
-      <div className={`text-right ${headClass}`}>Points</div>
-    </div>
-  );
-
-  const table = capture ? (
-    <table className={[tableClass, "w-full"].join(" ")}>
-      <tbody>{bodyRows}</tbody>
-    </table>
-  ) : (
-    <table className={tableClass}>
+  const table = (
+    <table className={[tableClass, "table-fixed w-full"].join(" ")}>
+      {FINAL_COLGROUP}
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={`w-[18%] ${headClass}`}>Place</th>
+          <th className={headClass}>Place</th>
           <th className={headClass}>Équipe</th>
-          <th className={`w-[22%] text-right ${headClass}`}>Points</th>
+          <th className={`text-right ${headClass}`}>Points</th>
         </tr>
       </thead>
-      <tbody>{bodyRows}</tbody>
+      <tbody className={capture ? "bg-white" : undefined}>{bodyRows}</tbody>
     </table>
   );
 
   if (capture) {
     return (
-      <div className="w-full bg-white py-4">
-        <div className={LIVE_TABLE_CAPTURE_SHELL}>
-          {captureHeader}
+      <div
+        className="mx-auto w-full bg-white"
+        style={{ maxWidth: FINAL_EXPORT_CAPTURE_WIDTH }}
+      >
+        <div className={`${LIVE_TABLE_CAPTURE_SHELL} bg-template-blue`}>
           {table}
         </div>
       </div>
