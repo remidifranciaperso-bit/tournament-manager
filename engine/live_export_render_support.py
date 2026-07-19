@@ -41,7 +41,16 @@ FINAL_BASE_PT = 820.0
 MM_TO_PT = 72.0 / 25.4
 TABLE_SIDE_MARGIN_MM = 5.0
 TABLE_SIDE_MARGIN_PT = TABLE_SIDE_MARGIN_MM * MM_TO_PT
-# Largeur de référence classement final (Live) — convocations calées dessus.
+# Ratio classement final / planning live (820 px sur slide 1024 px).
+NARROW_TABLE_RATIO = FINAL_BASE_PT / PLANNING_BASE_PT
+
+
+def narrow_table_width_pt(content_width_pt: float) -> float:
+    """Largeur convocations = même ratio que le classement final capturé."""
+    return max(120.0, content_width_pt * NARROW_TABLE_RATIO)
+
+
+# Alias rétrocompat (valeur de référence slide 1024 pt, pas la page PDF).
 FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT
 LIVE_CARD_RADIUS_PX = 12.0
 PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.285, 0.285, 0.07]
@@ -502,9 +511,12 @@ def _fit_live_table_area(
     row_count: int,
     row_h_pt: float = 26.0,
 ) -> fitz.Rect:
-    """Zone tableau — pleine largeur (−5 mm) ou étroite (820 pt, calée classement final)."""
+    """Zone tableau — pleine largeur (−5 mm) ou étroite (ratio final/planning)."""
     if width_mode == "narrow":
-        table_w = min(base_width_pt or FINAL_TABLE_WIDTH_PT, area.width)
+        table_w = min(
+            base_width_pt or narrow_table_width_pt(area.width),
+            area.width,
+        )
     else:
         table_w = max(40.0, area.width - 2 * TABLE_SIDE_MARGIN_PT)
     table_h = row_h_pt * max(row_count + 1, 2)
@@ -665,7 +677,7 @@ def _draw_live_table_card(
             color=WHITE,
             align=align,
             fontfile=fonts.get("tsl"),
-            bold=True,
+            bold=False,
         )
         x += width
 
@@ -811,5 +823,5 @@ def draw_final_ranking(
         body_fonts=["tsl", "noto", "tsl"],
         body_bold=[False, False, False],
         body_colors=body_colors,
-        ref_width_pt=FINAL_TABLE_WIDTH_PT,
+        ref_width_pt=narrow_table_width_pt(table_area.width),
     )

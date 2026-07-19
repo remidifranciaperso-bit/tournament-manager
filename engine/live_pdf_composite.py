@@ -6,7 +6,11 @@ import base64
 
 import fitz
 
-from engine.live_export_render_support import FINAL_TABLE_WIDTH_PT, TABLE_SIDE_MARGIN_PT
+from engine.live_export_render_support import (
+    NARROW_TABLE_RATIO,
+    TABLE_SIDE_MARGIN_PT,
+    narrow_table_width_pt,
+)
 
 ENGINE_HEADER_RATIO = 0.083
 ENGINE_FOOTER_RATIO = 0.042
@@ -199,7 +203,7 @@ def composer_page_export(
         avail_w = max(40.0, content_rect.width - 2 * side_margin)
         scale = avail_w / image_w
         if section == "final":
-            max_draw_w = min(FINAL_TABLE_WIDTH_PT, content_rect.width)
+            max_draw_w = narrow_table_width_pt(avail_w)
             scale = min(scale, max_draw_w / image_w)
 
         draw_h = image_h * scale

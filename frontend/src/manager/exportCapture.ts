@@ -2,7 +2,8 @@
 export const EXPORT_CAPTURE_WIDTH = 1100;
 /** Planning export : tableau pleine largeur (moins 5 mm au composite). */
 export const PLANNING_EXPORT_CAPTURE_WIDTH = 1400;
-/** Classement final — largeur de référence Live (820 pt). Convocations calées dessus. */
+/** Classement final — ratio live 820/1024 (convocations calées dessus). */
+export const NARROW_TABLE_RATIO = 820 / 1024;
 export const FINAL_TABLE_WIDTH_PT = 820;
 export const FINAL_EXPORT_CAPTURE_WIDTH = FINAL_TABLE_WIDTH_PT;
 
