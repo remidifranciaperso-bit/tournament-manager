@@ -14,6 +14,10 @@ export const LIVE_TABLE = "w-full border-collapse text-sm sm:text-base";
 export const LIVE_TABLE_HEAD =
   "px-2 py-2.5 text-left font-tsl text-xs font-semibold uppercase tracking-wide sm:px-3 sm:text-sm";
 
+/** En-têtes capture export PDF (aligné PyMuPDF TABLE_HEAD_TSL_PT = 11). */
+export const LIVE_TABLE_HEAD_EXPORT =
+  "px-2 py-2.5 text-left font-tsl text-[11px] font-semibold uppercase tracking-wide sm:px-3";
+
 export const LIVE_TABLE_ROW = "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]";
 
 export const LIVE_TABLE_ROW_EXPORT =

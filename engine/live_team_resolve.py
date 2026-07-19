@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from engine.ppt_engine import equipe_label_court
+
 WIN_RE = re.compile(r"^Vainqueur\s+(.+)$", re.IGNORECASE)
 LOSE_RE = re.compile(r"^Perdant\s+(.+)$", re.IGNORECASE)
 
@@ -82,22 +84,22 @@ def feed_key_from_team_label(label: str) -> str | None:
 
 
 def format_team_slot(label: str) -> str:
+    """Comme ``equipe_label_court`` (Engine V1 / PPTX) — 🏆 H3: / ❌ D1:."""
+    if not isinstance(label, str):
+        return equipe_label_court(label)
+
     text = label.strip()
     if not text:
         return "—"
 
-    if text.startswith("Vainqueur Poule "):
-        return f"1er {text.replace('Vainqueur ', '')}:"
-    if text.startswith(("Deuxième Poule ", "Second Poule ")):
-        return f"2e {re.sub(r'^(Deuxième|Second) ', '', text)}:"
-    if text.startswith("Troisième Poule "):
-        return f"3 {text.replace('Troisième ', '')}:"
-    if text.startswith("Vainqueur "):
-        return f"{ICONE_VAINQUEUR}{text.replace('Vainqueur ', '')}:"
-    if text.startswith("Perdant "):
-        return f"{ICONE_PERDANT}{text.replace('Perdant ', '')}:"
+    if text.startswith(ICONE_VAINQUEUR):
+        body = text[len(ICONE_VAINQUEUR) :].strip().rstrip(":")
+        return f"{ICONE_VAINQUEUR}{body}:" if body else f"{ICONE_VAINQUEUR}:"
+    if text.startswith(ICONE_PERDANT):
+        body = text[len(ICONE_PERDANT) :].strip().rstrip(":")
+        return f"{ICONE_PERDANT}{body}:" if body else f"{ICONE_PERDANT}:"
 
-    return text
+    return equipe_label_court(text)
 
 
 def format_feed_key(key: str) -> str:
@@ -131,6 +133,15 @@ _PLACEHOLDER_PREFIX = re.compile(
 )
 
 
+def _is_unresolved_placeholder(label: str) -> bool:
+    text = label.strip()
+    return bool(
+        WIN_RE.match(text)
+        or LOSE_RE.match(text)
+        or _PLACEHOLDER_PREFIX.match(text)
+    )
+
+
 def format_team_with_initials(label: str) -> str:
     text = label.strip()
     if not text:
@@ -156,10 +167,20 @@ def format_team_display(
     matches_by_code: dict[str, dict],
     match_results: dict[str, dict],
 ) -> str:
+    raw = label.strip() if isinstance(label, str) else ""
+    if not raw:
+        return "—"
+
     resolved = resolve_team_label_deep(label, matches_by_code, match_results)
-    if resolved != label.strip() and resolved.strip():
+    if (
+        resolved != raw
+        and resolved.strip()
+        and not _is_unresolved_placeholder(resolved)
+    ):
         return format_team_with_initials(resolved.replace("\n", " / "))
-    return format_team_slot(label)
+    if _is_unresolved_placeholder(raw):
+        return format_team_slot(raw)
+    return format_team_with_initials(raw.replace("\n", " / "))
 
 
 def is_placeholder(text: str) -> bool:

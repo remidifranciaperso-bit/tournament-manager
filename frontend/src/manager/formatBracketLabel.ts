@@ -4,10 +4,31 @@ const ICONE_POULE_1 = "🥇 ";
 const ICONE_POULE_2 = "🥈 ";
 const ICONE_POULE_3 = "🥉 ";
 
+function ensurePlaceholderColon(text: string, icon: string): string {
+  const body = text.slice(icon.length).trim().replace(/:$/, "");
+  return body ? `${icon}${body}:` : `${icon}:`;
+}
+
 /** Formate un libellé d'équipe comme le moteur PPTX (``equipe_label_court``). */
 export function formatTeamSlot(label: string): string {
   const text = label.trim();
   if (!text) return "—";
+
+  if (text.startsWith(ICONE_VAINQUEUR)) {
+    return ensurePlaceholderColon(text, ICONE_VAINQUEUR);
+  }
+  if (text.startsWith(ICONE_PERDANT)) {
+    return ensurePlaceholderColon(text, ICONE_PERDANT);
+  }
+  if (text.startsWith(ICONE_POULE_1)) {
+    return ensurePlaceholderColon(text, ICONE_POULE_1);
+  }
+  if (text.startsWith(ICONE_POULE_2)) {
+    return ensurePlaceholderColon(text, ICONE_POULE_2);
+  }
+  if (text.startsWith(ICONE_POULE_3)) {
+    return ensurePlaceholderColon(text, ICONE_POULE_3);
+  }
 
   if (text.startsWith("Vainqueur Poule ")) {
     return `${ICONE_POULE_1}${text.replace("Vainqueur ", "")}:`;
@@ -97,6 +118,32 @@ const PLACEHOLDER_PREFIX =
 
 export function isBracketPlaceholder(text: string): boolean {
   return PLACEHOLDER_PREFIX.test(text.trim());
+}
+
+function isUnresolvedPlaceholder(text: string): boolean {
+  const trimmed = text.trim();
+  return (
+    isBracketPlaceholder(trimmed) ||
+    /^Vainqueur\s+/i.test(trimmed) ||
+    /^Perdant\s+/i.test(trimmed)
+  );
+}
+
+/** Affichage boîte match / planning — initiales ou placeholder V1 (🏆 H3:). */
+export function formatBracketTeamDisplay(label: string, resolved: string): string {
+  const raw = label.trim();
+  if (!raw) return "—";
+  if (
+    resolved !== raw &&
+    resolved.trim() &&
+    !isUnresolvedPlaceholder(resolved)
+  ) {
+    return formatTeamWithInitials(resolved);
+  }
+  if (isUnresolvedPlaceholder(raw)) {
+    return formatTeamSlot(raw);
+  }
+  return formatTeamWithInitials(resolved.trim() || raw);
 }
 
 /** « Jean DUPONT » → « J. DUPONT » (aligné sur ``Team._nom_court_joueur``). */

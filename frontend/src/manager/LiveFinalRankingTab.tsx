@@ -13,9 +13,11 @@ import {
   LIVE_TABLE_CELL_POINTS,
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
+  LIVE_TABLE_HEAD_EXPORT,
   LIVE_TABLE_ROW,
   liveTeamTextClass,
 } from "./liveDataTable";
+import { NARROW_TABLE_WIDTH_RATIO, EXPORT_CAPTURE_WIDTH } from "./exportCapture";
 
 interface LiveFinalRankingTabProps {
   meta: LiveTournamentMeta;
@@ -28,8 +30,9 @@ interface LiveFinalRankingTabProps {
   placeRange?: [number, number];
 }
 
-/** Largeur fixe classement final / convocations (−1 cm vs 820 px). */
-const FINAL_BASE_WIDTH = 820 - (10 / 25.4) * 96;
+/** Largeur tableau classement final = 72 % (identique convocations / composite PDF). */
+const FINAL_TABLE_WIDTH_RATIO = NARROW_TABLE_WIDTH_RATIO;
+const FINAL_BASE_WIDTH = Math.round(EXPORT_CAPTURE_WIDTH * FINAL_TABLE_WIDTH_RATIO);
 
 export function LiveFinalRankingTab({
   meta,
@@ -80,13 +83,15 @@ export function LiveFinalRankingTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
+  const headClass = capture ? LIVE_TABLE_HEAD_EXPORT : LIVE_TABLE_HEAD;
+
   const table = (
     <table className={LIVE_TABLE}>
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={`w-[18%] ${LIVE_TABLE_HEAD}`}>Place</th>
-          <th className={LIVE_TABLE_HEAD}>Équipe</th>
-          <th className={`w-[22%] text-right ${LIVE_TABLE_HEAD}`}>Points</th>
+          <th className={`w-[18%] ${headClass}`}>Place</th>
+          <th className={headClass}>Équipe</th>
+          <th className={`w-[22%] text-right ${headClass}`}>Points</th>
         </tr>
       </thead>
       <tbody>
@@ -111,10 +116,10 @@ export function LiveFinalRankingTab({
 
   if (capture) {
     return (
-      <div className="bg-white px-[4mm] py-4">
+      <div className="bg-white py-4">
         <div
           className="mx-auto"
-          style={{ width: FINAL_BASE_WIDTH, maxWidth: "100%" }}
+          style={{ width: `${FINAL_TABLE_WIDTH_RATIO * 100}%` }}
         >
           <div className={LIVE_TABLE_CARD}>{table}</div>
         </div>

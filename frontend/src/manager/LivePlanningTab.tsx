@@ -10,6 +10,7 @@ import {
   LIVE_TABLE_CELL_TSL,
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
+  LIVE_TABLE_HEAD_EXPORT,
   LIVE_TABLE_ROW,
   LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
@@ -90,6 +91,8 @@ export function LivePlanningTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
+  const headClass = exportMode || capture ? LIVE_TABLE_HEAD_EXPORT : LIVE_TABLE_HEAD;
+
   const table = (
     <table
       className={[
@@ -100,12 +103,12 @@ export function LivePlanningTab({
     >
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={`w-[7%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Code</th>
-          <th className={`w-[7%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Heure</th>
-          <th className={`w-[13%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Terrain</th>
-          <th className={`w-[28.5%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Équipe 1</th>
-          <th className={`w-[28.5%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Équipe 2</th>
-          <th className={`w-[7%] whitespace-nowrap text-center ${LIVE_TABLE_HEAD}`}>
+          <th className={`w-[7%] whitespace-nowrap ${headClass}`}>Code</th>
+          <th className={`w-[7%] whitespace-nowrap ${headClass}`}>Heure</th>
+          <th className={`w-[13%] whitespace-nowrap ${headClass}`}>Terrain</th>
+          <th className={`w-[28.5%] whitespace-nowrap ${headClass}`}>Équipe 1</th>
+          <th className={`w-[28.5%] whitespace-nowrap ${headClass}`}>Équipe 2</th>
+          <th className={`w-[7%] whitespace-nowrap text-center ${headClass}`}>
             {exportMode ? "Terminé" : "Fait"}
           </th>
         </tr>
@@ -160,11 +163,9 @@ export function LivePlanningTab({
 
   if (capture) {
     return (
-      <div className="bg-white px-[4mm] py-4">
-        <div className="w-full">
-          <div className="mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm">
-            {table}
-          </div>
+      <div className="w-full bg-white py-4">
+        <div className="mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm">
+          {table}
         </div>
       </div>
     );

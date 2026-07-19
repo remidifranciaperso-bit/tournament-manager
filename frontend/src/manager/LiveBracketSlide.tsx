@@ -16,6 +16,7 @@ import {
 } from "./bracketTemplateMetrics";
 import {
   feedKeyFromTeamLabel,
+  formatBracketTeamDisplay,
   formatFeedKey,
   formatTeamSlot,
   formatTeamWithInitials,
@@ -54,6 +55,9 @@ function resolveFeedContent(
     poolQualifiers
   );
   const text = resolved || formatFeedKey(key);
+  if (isBracketPlaceholder(text) || /^Vainqueur\s+/i.test(text) || /^Perdant\s+/i.test(text)) {
+    return formatTeamSlot(text);
+  }
   return formatTeamWithInitials(text);
 }
 
@@ -69,10 +73,7 @@ function resolveTeamDisplay(
     matchResults,
     poolQualifiers
   );
-  if (resolved !== label.trim() && resolved) {
-    return formatTeamWithInitials(resolved);
-  }
-  return formatTeamSlot(label);
+  return formatBracketTeamDisplay(label, resolved);
 }
 
 function teamFontSize(text: string, scaleH: number): number {
@@ -113,10 +114,10 @@ export function TemplateMatchBox({
   const team2Weight =
     winnerSide == null || winnerSide === 2 ? "font-semibold" : "font-normal";
   const team1Align = isBracketPlaceholder(team1)
-    ? "justify-start text-left"
+    ? "justify-start text-left overflow-visible"
     : "justify-center text-center";
   const team2Align = isBracketPlaceholder(team2)
-    ? "justify-start text-left"
+    ? "justify-start text-left overflow-visible"
     : "justify-center text-center";
 
   return (
@@ -167,10 +168,10 @@ export function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div
-          className={`flex flex-1 items-center overflow-hidden px-1.5 font-noto leading-tight text-arena-800 ${team1Weight} ${team1Align}`}
+          className={`flex flex-1 items-center px-1.5 font-noto leading-tight text-arena-800 ${team1Weight} ${team1Align} ${isBracketPlaceholder(team1) ? "whitespace-nowrap" : "overflow-hidden"}`}
           style={{ fontSize: team1Px }}
         >
-          <span className="line-clamp-2 break-words">{team1}</span>
+          <span className={isBracketPlaceholder(team1) ? "shrink-0" : "line-clamp-2 break-words"}>{team1}</span>
         </div>
         <div
           className="flex shrink-0 items-center justify-center font-noto font-semibold text-arena-600"
@@ -179,10 +180,10 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center overflow-hidden px-1.5 font-noto leading-tight text-arena-800 ${team2Weight} ${team2Align}`}
+          className={`flex flex-1 items-center px-1.5 font-noto leading-tight text-arena-800 ${team2Weight} ${team2Align} ${isBracketPlaceholder(team2) ? "whitespace-nowrap" : "overflow-hidden"}`}
           style={{ fontSize: team2Px }}
         >
-          <span className="line-clamp-2 break-words">{team2}</span>
+          <span className={isBracketPlaceholder(team2) ? "shrink-0" : "line-clamp-2 break-words"}>{team2}</span>
         </div>
       </div>
 
@@ -231,7 +232,7 @@ function FeedLabel({
         fontSize: fontPx,
       }}
     >
-      <span className="line-clamp-2 break-words">{text}</span>
+      <span className={isBracketPlaceholder(text) ? "whitespace-nowrap" : "line-clamp-2 break-words"}>{text}</span>
     </div>
   );
 }

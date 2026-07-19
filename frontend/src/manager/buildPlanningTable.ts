@@ -4,7 +4,7 @@ import {
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
 import { buildPoolQualifierMap } from "./buildPoolStandings";
-import { formatTeamWithInitials } from "./formatBracketLabel";
+import { formatBracketTeamDisplay } from "./formatBracketLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { formatMatchDurationMinutes } from "./useLiveProgress";
 
@@ -62,7 +62,7 @@ function resolvePlanningTeam(
     matchResults,
     poolQualifiers
   ).trim();
-  return resolved ? formatTeamWithInitials(resolved) : "—";
+  return formatBracketTeamDisplay(label, resolved);
 }
 
 export function buildPlanningRows(

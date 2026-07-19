@@ -40,10 +40,11 @@ FINAL_BASE_PT = 820.0
 MM_TO_PT = 72.0 / 25.4
 TABLE_SIDE_MARGIN_MM = 4.0
 TABLE_SIDE_MARGIN_PT = TABLE_SIDE_MARGIN_MM * MM_TO_PT
+NARROW_TABLE_WIDTH_RATIO = 0.72
 FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT - 10.0 * MM_TO_PT
 LIVE_CARD_RADIUS_PX = 12.0
-_BEZIER_K = 0.5522847498
 PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.285, 0.285, 0.07]
+_BEZIER_K = 0.5522847498
 
 _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 
@@ -120,7 +121,7 @@ def _insert_textbox(
             text_h = (font.ascender - font.descender) * fontsize
             y = rect.y0 + (rect.height - text_h) / 2 + font.ascender * fontsize
             writer = fitz.TextWriter(page.rect)
-            use_faux_bold = bold and sum(color) < 2.4
+            use_faux_bold = bold
             if use_faux_bold:
                 writer.append((x + 0.35, y), value, font=font, fontsize=fontsize)
             writer.append((x, y), value, font=font, fontsize=fontsize)
@@ -501,45 +502,27 @@ def _fit_live_table_area(
     row_count: int,
     row_h_pt: float = 26.0,
 ) -> fitz.Rect:
-    """Zone tableau Live — pleine largeur (4 mm marges) ou largeur fixe étroite."""
+    """Zone tableau — pleine largeur (4 mm de marge) ou 72 % (classement / convocations)."""
     if width_mode == "narrow":
-        table_w = base_width_pt or FINAL_TABLE_WIDTH_PT
+        table_w = base_width_pt or (area.width * NARROW_TABLE_WIDTH_RATIO)
     else:
         table_w = max(40.0, area.width - 2 * TABLE_SIDE_MARGIN_PT)
     table_h = row_h_pt * max(row_count + 1, 2)
-    if width_mode == "narrow":
-        scale = min(1.0, area.height / table_h)
-        draw_w = table_w
-        draw_h = table_h * scale
-    else:
-        scale = min(1.0, area.width / table_w, area.height / table_h)
-        draw_w = table_w * scale
-        draw_h = table_h * scale
+    scale_h = min(1.0, area.height / table_h)
+    draw_w = table_w
+    draw_h = table_h * scale_h
     x0 = area.x0 + (area.width - draw_w) / 2
     y0 = area.y0 + max(4.0, (area.height - draw_h) * 0.08)
     return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
 
 
-def _card_radius_frac(table_area: fitz.Rect, ref_width_pt: float) -> float:
-    radius_pt = LIVE_CARD_RADIUS_PX * (table_area.width / ref_width_pt)
-    short = min(table_area.width, table_area.height)
-    if short <= 0:
-        return 0.05
-    return min(0.5, max(0.01, radius_pt / short))
-
-
-def _corner_radius_pt(table_area: fitz.Rect, ref_width_pt: float) -> float:
-    return min(table_area.width, table_area.height) * _card_radius_frac(
-        table_area, ref_width_pt
-    )
-
-
-def _fill_header_rounded_top(
+def _draw_header_bar(
     page: fitz.Page,
     table_area: fitz.Rect,
     header_bottom: float,
     radius_pt: float,
 ) -> None:
+    """Bandeau en-tête bleu avec coins supérieurs arrondis (sans artefact diagonal)."""
     x0 = table_area.x0
     y0 = table_area.y0
     x1 = table_area.x1
@@ -572,6 +555,61 @@ def _fill_header_rounded_top(
     shape.commit(overlay=True)
 
 
+def _draw_body_fill(
+    page: fitz.Page,
+    table_area: fitz.Rect,
+    header_bottom: float,
+    radius_pt: float,
+) -> None:
+    """Corps blanc avec coins inférieurs arrondis."""
+    x0 = table_area.x0
+    y0 = header_bottom
+    x1 = table_area.x1
+    y1 = table_area.y1
+    r = min(radius_pt, table_area.width / 2, y1 - y0)
+    if r <= 0.5:
+        page.draw_rect(
+            fitz.Rect(x0, y0, x1, y1),
+            color=WHITE,
+            fill=WHITE,
+            width=0,
+            overlay=True,
+        )
+        return
+
+    shape = page.new_shape()
+    shape.draw_line(fitz.Point(x0, y0), fitz.Point(x1, y0))
+    shape.draw_line(fitz.Point(x1, y0), fitz.Point(x1, y1 - r))
+    shape.draw_curve(
+        fitz.Point(x1, y1 - r + r * _BEZIER_K),
+        fitz.Point(x1 - r + r * _BEZIER_K, y1),
+        fitz.Point(x1 - r, y1),
+    )
+    shape.draw_line(fitz.Point(x1 - r, y1), fitz.Point(x0 + r, y1))
+    shape.draw_curve(
+        fitz.Point(x0 + r - r * _BEZIER_K, y1),
+        fitz.Point(x0, y1 - r + r * _BEZIER_K),
+        fitz.Point(x0, y1 - r),
+    )
+    shape.draw_line(fitz.Point(x0, y1 - r), fitz.Point(x0, y0))
+    shape.finish(fill=WHITE, color=WHITE, width=0, closePath=True)
+    shape.commit(overlay=True)
+
+
+def _card_radius_frac(table_area: fitz.Rect, ref_width_pt: float) -> float:
+    radius_pt = LIVE_CARD_RADIUS_PX * (table_area.width / ref_width_pt)
+    short = min(table_area.width, table_area.height)
+    if short <= 0:
+        return 0.05
+    return min(0.5, max(0.01, radius_pt / short))
+
+
+def _corner_radius_pt(table_area: fitz.Rect, ref_width_pt: float) -> float:
+    return min(table_area.width, table_area.height) * _card_radius_frac(
+        table_area, ref_width_pt
+    )
+
+
 def _draw_live_table_card(
     page: fitz.Page,
     table_area: fitz.Rect,
@@ -600,16 +638,8 @@ def _draw_live_table_card(
     row_line = (0.82, 0.92, 0.98)
     row_alt = (0.97, 0.99, 1.0)
 
-    page.draw_rect(
-        table_area,
-        color=TEMPLATE_BLUE,
-        fill=WHITE,
-        width=0.8,
-        radius=radius_frac,
-        stroke_opacity=0.35,
-        overlay=True,
-    )
-    _fill_header_rounded_top(page, table_area, header_bottom, radius_pt)
+    _draw_header_bar(page, table_area, header_bottom, radius_pt)
+    _draw_body_fill(page, table_area, header_bottom, radius_pt)
 
     x = table_area.x0
     for index, header in enumerate(headers):
@@ -624,7 +654,7 @@ def _draw_live_table_card(
             color=WHITE,
             align=align,
             fontfile=fonts.get("tsl"),
-            bold=False,
+            bold=True,
         )
         x += width
 
@@ -749,7 +779,6 @@ def draw_final_ranking(
     table_area = _fit_live_table_area(
         area,
         width_mode="narrow",
-        base_width_pt=FINAL_TABLE_WIDTH_PT,
         row_count=len(rows),
     )
     body_rows = [
@@ -781,5 +810,5 @@ def draw_final_ranking(
         body_fonts=["tsl", "noto", "tsl"],
         body_bold=[True, False, True],
         body_colors=body_colors,
-        ref_width_pt=FINAL_TABLE_WIDTH_PT,
+        ref_width_pt=area.width * NARROW_TABLE_WIDTH_RATIO,
     )
