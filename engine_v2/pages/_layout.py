@@ -173,6 +173,7 @@ def draw_font_text(
     fontfile: Path | None,
     align: int = fitz.TEXT_ALIGN_CENTER,
     pad: float | None = None,
+    bold: bool = False,
 ) -> None:
     """Texte custom (brush / TSL) — insert_textbox échoue souvent avec ces OTF/TTF."""
     value = (text or "").strip()
@@ -187,7 +188,7 @@ def draw_font_text(
             fontsize=fontsize,
             color=color,
             align=align,
-            fontname="hebo" if align == fitz.TEXT_ALIGN_CENTER else "helv",
+            fontname="hebo" if bold or align == fitz.TEXT_ALIGN_CENTER else "helv",
         )
         return
 
@@ -203,6 +204,8 @@ def draw_font_text(
     y = _baseline_y(box, font, fontsize)
 
     writer = fitz.TextWriter(page.rect)
+    if bold:
+        writer.append((x + 0.35, y), value, font=font, fontsize=fontsize)
     writer.append((x, y), value, font=font, fontsize=fontsize)
     writer.write_text(page, color=color)
 
