@@ -7,7 +7,7 @@
       },
       {
         "index": 4,
-        "label": "Partie haute"
+        "label": "Tableau principal"
       },
       {
         "index": 5,
@@ -35,11 +35,11 @@
     "planning": [
       {
         "index": 10,
-        "label": "1/2"
+        "label": "PLANNING – 1/2"
       },
       {
         "index": 11,
-        "label": "2/2"
+        "label": "PLANNING – 2/2"
       }
     ],
     "planning_groups": [

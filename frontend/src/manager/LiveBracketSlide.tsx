@@ -69,8 +69,10 @@ function resolveTeamDisplay(
     matchResults,
     poolQualifiers
   );
-  const text = resolved !== label.trim() ? resolved : formatTeamSlot(label);
-  return formatTeamWithInitials(text);
+  if (resolved !== label.trim() && resolved) {
+    return formatTeamWithInitials(resolved);
+  }
+  return formatTeamSlot(label);
 }
 
 function teamFontSize(text: string, scaleH: number): number {
@@ -110,6 +112,12 @@ export function TemplateMatchBox({
     winnerSide == null || winnerSide === 1 ? "font-semibold" : "font-normal";
   const team2Weight =
     winnerSide == null || winnerSide === 2 ? "font-semibold" : "font-normal";
+  const team1Align = isBracketPlaceholder(team1)
+    ? "justify-start text-left"
+    : "justify-center text-center";
+  const team2Align = isBracketPlaceholder(team2)
+    ? "justify-start text-left"
+    : "justify-center text-center";
 
   return (
     <div
@@ -159,7 +167,7 @@ export function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div
-          className={`flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto leading-tight text-arena-800 ${team1Weight}`}
+          className={`flex flex-1 items-center overflow-hidden px-1.5 font-noto leading-tight text-arena-800 ${team1Weight} ${team1Align}`}
           style={{ fontSize: team1Px }}
         >
           <span className="line-clamp-2 break-words">{team1}</span>
@@ -171,7 +179,7 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center justify-center overflow-hidden px-1.5 text-center font-noto leading-tight text-arena-800 ${team2Weight}`}
+          className={`flex flex-1 items-center overflow-hidden px-1.5 font-noto leading-tight text-arena-800 ${team2Weight} ${team2Align}`}
           style={{ fontSize: team2Px }}
         >
           <span className="line-clamp-2 break-words">{team2}</span>

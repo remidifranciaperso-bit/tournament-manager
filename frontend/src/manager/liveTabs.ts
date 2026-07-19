@@ -52,7 +52,9 @@ export function formatPageBrushLabel(label: string | undefined): string | null {
   if (!label?.trim()) return null;
   const normalized = label.trim().replace(/\s+/g, " ");
   if (/^partie basse$/i.test(normalized)) return null;
-  if (/^partie haute$/i.test(normalized)) return "Tableau Principal";
+  if (/^partie haute$/i.test(normalized) || /^tableau principal$/i.test(normalized)) {
+    return "Tableau Principal";
+  }
   if (/^classement\b/i.test(normalized)) {
     const suffix = normalized.replace(/^classement\s*/i, "").trim();
     return suffix ? `Classement ${suffix}` : "Classement";

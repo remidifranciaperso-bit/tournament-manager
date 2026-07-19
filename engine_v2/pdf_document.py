@@ -8,6 +8,7 @@ from pathlib import Path
 import fitz
 
 from engine.bracket_crosspage_stub import draw_crosspage_margin_stub
+from engine.pdf_titles import pdf_header_title
 from engine.live_export_render import render_bracket_into_area
 from engine.live_export_render_support import draw_final_ranking, draw_planning_table
 from engine.live_render_pdf import charger_layout_slide
@@ -70,8 +71,10 @@ def _render_bracket_page(
 
     if stub and stub.get("dir") == "up":
         draw_blank_header_band(page)
-    else:
+    elif (title or "").strip():
         draw_page_header(page, tournoi, title, base_dir=base_dir)
+    else:
+        draw_page_header(page, tournoi, "", base_dir=base_dir)
 
     content = content_area(page.rect)
     bracket_area = _live_bracket_area(content)
@@ -100,8 +103,7 @@ def _render_bracket_page(
 
 
 def _section_title(entry: dict, default: str) -> str:
-    label = (entry.get("label") or default).strip()
-    return label.upper()
+    return pdf_header_title(entry.get("label"), default)
 
 
 def _final_place_range(

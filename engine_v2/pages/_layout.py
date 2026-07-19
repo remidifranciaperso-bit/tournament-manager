@@ -204,7 +204,8 @@ def draw_font_text(
     y = _baseline_y(box, font, fontsize)
 
     writer = fitz.TextWriter(page.rect)
-    if bold:
+    use_faux_bold = bold and sum(color) < 2.4
+    if use_faux_bold:
         writer.append((x + 0.35, y), value, font=font, fontsize=fontsize)
     writer.append((x, y), value, font=font, fontsize=fontsize)
     writer.write_text(page, color=color)
@@ -229,6 +230,7 @@ def _insert_textbox(
         color=color,
         fontfile=fontfile,
         align=align,
+        bold=bold,
     )
 
 
@@ -258,6 +260,7 @@ def draw_page_header(
         color=WHITE,
         fontfile=fonts.get("tsl"),
         align=fitz.TEXT_ALIGN_LEFT,
+        bold=True,
     )
     _insert_textbox(
         page,
@@ -267,7 +270,10 @@ def draw_page_header(
         color=WHITE,
         fontfile=fonts.get("tsl"),
         align=fitz.TEXT_ALIGN_RIGHT,
+        bold=True,
     )
+    if not (title or "").strip():
+        return
     brush = fonts.get("brush")
     brush_font = _load_font(brush)
     title_fs = (

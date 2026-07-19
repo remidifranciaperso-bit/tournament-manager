@@ -8,6 +8,7 @@ import fitz
 from pptx import Presentation
 
 from engine.live_page_map import _slide_text
+from engine.pdf_titles import pdf_header_title
 from engine_v2.pages.convocations import render_convocations_page
 from engine_v2.pages.cover import render_cover_page
 from engine_v2.pages.participants import render_participants_page
@@ -52,7 +53,7 @@ def _titles_by_index(page_map: dict) -> dict[int, str]:
     }
     for section, default in defaults.items():
         for entry in page_map.get(section, []):
-            label = (entry.get("label") or default).strip().upper()
+            label = pdf_header_title(entry.get("label"), default)
             titles[int(entry["index"])] = label
     return titles
 
@@ -129,14 +130,24 @@ def build_v2_composite_shell_pdf(
                     logo_wh=logo_wh,
                 )
             elif slide_index in titles:
-                _render_chrome_shell(
-                    page,
-                    tournoi,
-                    titles[slide_index],
-                    base_dir=base_dir,
-                    logo_bytes=logo_bytes,
-                    logo_wh=logo_wh,
-                )
+                title = titles[slide_index]
+                if title:
+                    _render_chrome_shell(
+                        page,
+                        tournoi,
+                        title,
+                        base_dir=base_dir,
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                    )
+                else:
+                    prepare_content_page(page)
+                    draw_page_header(page, tournoi, "", base_dir=base_dir)
+                    draw_page_footer_logo(
+                        page,
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                    )
             else:
                 prepare_content_page(page)
 

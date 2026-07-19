@@ -28,8 +28,8 @@ interface LiveFinalRankingTabProps {
   placeRange?: [number, number];
 }
 
-/** Largeur de référence du tableau classement final (avant mise à l'échelle). */
-const FINAL_BASE_WIDTH = 820;
+/** Largeur fixe classement final / convocations (−1 cm vs 820 px). */
+const FINAL_BASE_WIDTH = 820 - (10 / 25.4) * 96;
 
 export function LiveFinalRankingTab({
   meta,
@@ -111,8 +111,11 @@ export function LiveFinalRankingTab({
 
   if (capture) {
     return (
-      <div className="bg-white px-3 py-4">
-        <div className="w-full">
+      <div className="bg-white px-[4mm] py-4">
+        <div
+          className="mx-auto"
+          style={{ width: FINAL_BASE_WIDTH, maxWidth: "100%" }}
+        >
           <div className={LIVE_TABLE_CARD}>{table}</div>
         </div>
       </div>

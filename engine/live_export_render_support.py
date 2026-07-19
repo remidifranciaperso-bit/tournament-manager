@@ -33,9 +33,17 @@ SCORE_PT = 9.0
 FEED_PT = 8.0
 PLACEMENT_PT = 11.0
 TABLE_HEAD_PT = 9.0
+TABLE_HEAD_TSL_PT = 11.0
 TABLE_BODY_PT = 10.0
 PLANNING_BASE_PT = 1024.0
 FINAL_BASE_PT = 820.0
+MM_TO_PT = 72.0 / 25.4
+TABLE_SIDE_MARGIN_MM = 4.0
+TABLE_SIDE_MARGIN_PT = TABLE_SIDE_MARGIN_MM * MM_TO_PT
+FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT - 10.0 * MM_TO_PT
+LIVE_CARD_RADIUS_PX = 12.0
+_BEZIER_K = 0.5522847498
+PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.285, 0.285, 0.07]
 
 _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 
@@ -91,16 +99,41 @@ def _insert_textbox(
     fontfile: Path | None = None,
     bold: bool = False,
 ) -> None:
+    value = (text or "").strip()
+    if not value:
+        return
+
+    if fontfile and fontfile.is_file():
+        try:
+            font = fitz.Font(fontfile=str(fontfile))
+        except Exception:
+            font = None
+        if font is not None:
+            text_width = font.text_length(value, fontsize=fontsize)
+            inset = max(2.0, rect.width * 0.02)
+            if align == fitz.TEXT_ALIGN_LEFT:
+                x = rect.x0 + inset
+            elif align == fitz.TEXT_ALIGN_RIGHT:
+                x = rect.x1 - text_width - inset
+            else:
+                x = rect.x0 + (rect.width - text_width) / 2
+            text_h = (font.ascender - font.descender) * fontsize
+            y = rect.y0 + (rect.height - text_h) / 2 + font.ascender * fontsize
+            writer = fitz.TextWriter(page.rect)
+            use_faux_bold = bold and sum(color) < 2.4
+            if use_faux_bold:
+                writer.append((x + 0.35, y), value, font=font, fontsize=fontsize)
+            writer.append((x, y), value, font=font, fontsize=fontsize)
+            writer.write_text(page, color=color)
+            return
+
     kwargs: dict = {
         "fontsize": fontsize,
         "color": color,
         "align": align,
     }
-    if fontfile and fontfile.is_file():
-        kwargs["fontfile"] = str(fontfile)
-    else:
-        kwargs["fontname"] = "hebo" if bold else "helv"
-    page.insert_textbox(rect, text, **kwargs)
+    kwargs["fontname"] = "hebo" if bold else "helv"
+    page.insert_textbox(rect, value, **kwargs)
 
 
 def _draw_brush_label(
@@ -251,6 +284,7 @@ def _draw_match_box(
         color=ARENA_800,
         fontfile=fonts.get("noto"),
         bold=winner in (None, 1),
+        align=fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe1) else fitz.TEXT_ALIGN_CENTER,
     )
     _insert_textbox(
         page,
@@ -260,6 +294,7 @@ def _draw_match_box(
         color=ARENA_800,
         fontfile=fonts.get("noto"),
         bold=winner in (None, 2),
+        align=fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe2) else fitz.TEXT_ALIGN_CENTER,
     )
 
     vs_rect = fitz.Rect(body.x0, mid_y - body.height * 0.11, body.x1, mid_y + body.height * 0.11)
@@ -461,20 +496,80 @@ def _build_planning_rows(
 def _fit_live_table_area(
     area: fitz.Rect,
     *,
-    base_width_pt: float,
+    width_mode: str = "full",
+    base_width_pt: float | None = None,
     row_count: int,
     row_h_pt: float = 26.0,
 ) -> fitz.Rect:
-    """Zone tableau Live (carte centrée, largeur pleine comme capture export)."""
-    pad_x = max(8.0, area.width * 0.012)
-    table_w = min(area.width - 2 * pad_x, base_width_pt)
+    """Zone tableau Live — pleine largeur (4 mm marges) ou largeur fixe étroite."""
+    if width_mode == "narrow":
+        table_w = base_width_pt or FINAL_TABLE_WIDTH_PT
+    else:
+        table_w = max(40.0, area.width - 2 * TABLE_SIDE_MARGIN_PT)
     table_h = row_h_pt * max(row_count + 1, 2)
-    scale = min(1.0, area.width / table_w, area.height / table_h)
-    draw_w = table_w * scale
-    draw_h = table_h * scale
+    if width_mode == "narrow":
+        scale = min(1.0, area.height / table_h)
+        draw_w = table_w
+        draw_h = table_h * scale
+    else:
+        scale = min(1.0, area.width / table_w, area.height / table_h)
+        draw_w = table_w * scale
+        draw_h = table_h * scale
     x0 = area.x0 + (area.width - draw_w) / 2
     y0 = area.y0 + max(4.0, (area.height - draw_h) * 0.08)
     return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
+
+
+def _card_radius_frac(table_area: fitz.Rect, ref_width_pt: float) -> float:
+    radius_pt = LIVE_CARD_RADIUS_PX * (table_area.width / ref_width_pt)
+    short = min(table_area.width, table_area.height)
+    if short <= 0:
+        return 0.05
+    return min(0.5, max(0.01, radius_pt / short))
+
+
+def _corner_radius_pt(table_area: fitz.Rect, ref_width_pt: float) -> float:
+    return min(table_area.width, table_area.height) * _card_radius_frac(
+        table_area, ref_width_pt
+    )
+
+
+def _fill_header_rounded_top(
+    page: fitz.Page,
+    table_area: fitz.Rect,
+    header_bottom: float,
+    radius_pt: float,
+) -> None:
+    x0 = table_area.x0
+    y0 = table_area.y0
+    x1 = table_area.x1
+    r = min(radius_pt, table_area.width / 2, header_bottom - y0)
+    if r <= 0.5:
+        page.draw_rect(
+            fitz.Rect(x0, y0, x1, header_bottom),
+            color=TEMPLATE_BLUE,
+            fill=TEMPLATE_BLUE,
+            width=0,
+            overlay=True,
+        )
+        return
+
+    shape = page.new_shape()
+    shape.draw_line(fitz.Point(x0 + r, y0), fitz.Point(x1 - r, y0))
+    shape.draw_curve(
+        fitz.Point(x1 - r + r * _BEZIER_K, y0),
+        fitz.Point(x1, y0 + r - r * _BEZIER_K),
+        fitz.Point(x1, y0 + r),
+    )
+    shape.draw_line(fitz.Point(x1, header_bottom), fitz.Point(x0, header_bottom))
+    shape.draw_line(fitz.Point(x0, header_bottom), fitz.Point(x0, y0 + r))
+    shape.draw_curve(
+        fitz.Point(x0, y0 + r - r * _BEZIER_K),
+        fitz.Point(x0 + r - r * _BEZIER_K, y0),
+        fitz.Point(x0 + r, y0),
+    )
+    shape.finish(fill=TEMPLATE_BLUE, color=TEMPLATE_BLUE, width=0, closePath=True)
+    shape.commit(overlay=True)
 
 
 def _draw_live_table_card(
@@ -489,57 +584,77 @@ def _draw_live_table_card(
     body_fonts: list[str | None] | None = None,
     body_bold: list[bool] | None = None,
     body_colors: list[tuple[float, float, float] | None] | None = None,
+    ref_width_pt: float = PLANNING_BASE_PT,
 ) -> None:
     fonts = _font_paths(base_dir)
     row_count = len(body_rows) + 1
-    row_h = table_area.height / max(row_count, 2)
+    radius_pt = _corner_radius_pt(table_area, ref_width_pt)
+    radius_frac = _card_radius_frac(table_area, ref_width_pt)
+    aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
+    font_keys = body_fonts or ["tsl"] * len(headers)
+
+    base_row_h = table_area.height / max(row_count, 2)
+    header_bottom = table_area.y0 + base_row_h
+    body_bottom = table_area.y1 - radius_pt
+    body_row_h = (body_bottom - header_bottom) / max(len(body_rows), 1)
+    row_line = (0.82, 0.92, 0.98)
+    row_alt = (0.97, 0.99, 1.0)
 
     page.draw_rect(
         table_area,
         color=TEMPLATE_BLUE,
         fill=WHITE,
         width=0.8,
+        radius=radius_frac,
+        stroke_opacity=0.35,
         overlay=True,
     )
+    _fill_header_rounded_top(page, table_area, header_bottom, radius_pt)
 
     x = table_area.x0
-    y = table_area.y0
     for index, header in enumerate(headers):
         width = table_area.width * col_widths[index]
-        cell = fitz.Rect(x, y, x + width, y + row_h)
-        page.draw_rect(cell, color=TEMPLATE_BLUE, fill=TEMPLATE_BLUE, width=0, overlay=True)
-        align = (alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers))[index]
+        cell = fitz.Rect(x, table_area.y0, x + width, header_bottom)
+        align = aligns[index]
         _insert_textbox(
             page,
             cell,
             header,
-            fontsize=TABLE_HEAD_PT,
+            fontsize=TABLE_HEAD_TSL_PT,
             color=WHITE,
             align=align,
             fontfile=fonts.get("tsl"),
-            bold=True,
+            bold=False,
         )
         x += width
 
-    y += row_h
     color_list = body_colors or []
     color_index = 0
     for row_index, values in enumerate(body_rows):
+        y0 = header_bottom + body_row_h * row_index
+        row_rect = fitz.Rect(table_area.x0, y0, table_area.x1, y0 + body_row_h)
+        fill = WHITE if row_index % 2 == 0 else row_alt
+        page.draw_line(
+            fitz.Point(table_area.x0, y0),
+            fitz.Point(table_area.x1, y0),
+            color=row_line,
+            width=0.5,
+            overlay=True,
+        )
+        page.draw_rect(row_rect, color=fill, fill=fill, width=0, overlay=True)
         x = table_area.x0
-        fill = WHITE if row_index % 2 == 0 else (0.97, 0.99, 1.0)
         for index, value in enumerate(values):
             width = table_area.width * col_widths[index]
-            cell = fitz.Rect(x, y, x + width, y + row_h)
-            page.draw_rect(cell, color=TEMPLATE_BLUE, fill=fill, width=0.35, overlay=True)
-            font_key = (body_fonts or ["tsl"] * len(values))[index]
+            cell = fitz.Rect(x, y0, x + width, y0 + body_row_h)
+            font_key = font_keys[index] if index < len(font_keys) else "tsl"
             fontfile = fonts.get(font_key) if font_key else None
-            bold = (body_bold or [False] * len(values))[index]
+            bold = (body_bold or [font_key == "tsl"] * len(values))[index]
             if color_list and color_index < len(color_list):
                 color = color_list[color_index]
             else:
                 color = ARENA_800
             color_index += 1
-            align = (alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers))[index]
+            align = aligns[index]
             _insert_textbox(
                 page,
                 cell,
@@ -551,7 +666,16 @@ def _draw_live_table_card(
                 bold=bold,
             )
             x += width
-        y += row_h
+
+    page.draw_rect(
+        table_area,
+        color=TEMPLATE_BLUE,
+        fill=None,
+        width=0.8,
+        radius=radius_frac,
+        stroke_opacity=0.35,
+        overlay=True,
+    )
 
 
 def draw_planning_table(
@@ -566,11 +690,11 @@ def draw_planning_table(
 ) -> None:
     """Tableau planning calqué sur LivePlanningTab (capture export)."""
     rows = _build_planning_rows(layout_fields, matches, match_results)
-    headers = ["Code", "Heure", "Terrain", "Équipe 1", "Équipe 2", "Temps" if export_mode else "Fait"]
-    col_widths = [0.07, 0.07, 0.17, 0.27, 0.27, 0.07]
+    headers = ["Code", "Heure", "Terrain", "Équipe 1", "Équipe 2", "Terminé" if export_mode else "Fait"]
+    col_widths = PLANNING_COL_WIDTHS
     table_area = _fit_live_table_area(
         area,
-        base_width_pt=PLANNING_BASE_PT,
+        width_mode="full",
         row_count=len(rows),
     )
     body_rows = [
@@ -624,7 +748,8 @@ def draw_final_ranking(
     col_widths = [0.18, 0.58, 0.24]
     table_area = _fit_live_table_area(
         area,
-        base_width_pt=FINAL_BASE_PT,
+        width_mode="narrow",
+        base_width_pt=FINAL_TABLE_WIDTH_PT,
         row_count=len(rows),
     )
     body_rows = [
@@ -656,4 +781,5 @@ def draw_final_ranking(
         body_fonts=["tsl", "noto", "tsl"],
         body_bold=[True, False, True],
         body_colors=body_colors,
+        ref_width_pt=FINAL_TABLE_WIDTH_PT,
     )

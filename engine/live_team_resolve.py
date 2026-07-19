@@ -157,9 +157,10 @@ def format_team_display(
     match_results: dict[str, dict],
 ) -> str:
     resolved = resolve_team_label_deep(label, matches_by_code, match_results)
-    text = resolved if resolved != label.strip() else format_team_slot(label)
-    return format_team_with_initials(text.replace("\n", " / "))
+    if resolved != label.strip() and resolved.strip():
+        return format_team_with_initials(resolved.replace("\n", " / "))
+    return format_team_slot(label)
 
 
 def is_placeholder(text: str) -> bool:
-    return text.startswith(ICONE_VAINQUEUR) or text.startswith(ICONE_PERDANT)
+    return bool(_PLACEHOLDER_PREFIX.match((text or "").strip()))

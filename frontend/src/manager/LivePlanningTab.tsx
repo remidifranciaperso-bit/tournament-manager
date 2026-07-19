@@ -95,18 +95,18 @@ export function LivePlanningTab({
       className={[
         LIVE_TABLE,
         "table-fixed w-full",
-        exportMode ? "text-xs" : "",
+        exportMode ? "text-sm" : "",
       ].join(" ")}
     >
       <thead>
         <tr className="bg-template-blue text-white">
           <th className={`w-[7%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Code</th>
           <th className={`w-[7%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Heure</th>
-          <th className={`w-[17%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Terrain</th>
-          <th className={`w-[27%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Équipe 1</th>
-          <th className={`w-[27%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Équipe 2</th>
+          <th className={`w-[13%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Terrain</th>
+          <th className={`w-[28.5%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Équipe 1</th>
+          <th className={`w-[28.5%] whitespace-nowrap ${LIVE_TABLE_HEAD}`}>Équipe 2</th>
           <th className={`w-[7%] whitespace-nowrap text-center ${LIVE_TABLE_HEAD}`}>
-            {exportMode ? "Temps" : "Fait"}
+            {exportMode ? "Terminé" : "Fait"}
           </th>
         </tr>
       </thead>
@@ -160,7 +160,7 @@ export function LivePlanningTab({
 
   if (capture) {
     return (
-      <div className="bg-white px-3 py-4">
+      <div className="bg-white px-[4mm] py-4">
         <div className="w-full">
           <div className="mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm">
             {table}

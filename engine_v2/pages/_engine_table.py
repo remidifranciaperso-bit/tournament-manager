@@ -7,8 +7,12 @@ from pathlib import Path
 import fitz
 
 from engine.live_export_render_support import (
+    FINAL_TABLE_WIDTH_PT,
     PLANNING_BASE_PT,
     TABLE_BODY_PT,
+    TABLE_HEAD_TSL_PT,
+    _corner_radius_pt,
+    _fill_header_rounded_top,
     _fit_live_table_area,
 )
 from engine_v2.pages._layout import content_area, draw_font_text
@@ -20,9 +24,15 @@ CONVOCATIONS_TABLE = {"left": 0.1215, "top": 0.1306, "width": 0.7569}
 CELL_PAD_PT = 6.0
 ROW_LINE = (0.82, 0.92, 0.98)
 ROW_ALT_FILL = (0.97, 0.99, 1.0)
-LIVE_CARD_RADIUS_PX = 12.0  # Tailwind rounded-xl
-TABLE_HEAD_TSL_PT = 11.0  # légèrement plus grand que le corps (10 pt)
-_BEZIER_K = 0.5522847498
+LIVE_CARD_RADIUS_PX = 12.0
+
+
+def _card_radius_frac(table_area: fitz.Rect, ref_width_pt: float) -> float:
+    radius_pt = LIVE_CARD_RADIUS_PX * (table_area.width / ref_width_pt)
+    short = min(table_area.width, table_area.height)
+    if short <= 0:
+        return 0.05
+    return min(0.5, max(0.01, radius_pt / short))
 
 
 def _resolve_font(fonts: dict[str, Path | None], key: str | None) -> Path | None:
@@ -31,57 +41,6 @@ def _resolve_font(fonts: dict[str, Path | None], key: str | None) -> Path | None
         if path and path.is_file():
             return path
     return fonts.get("tsl")
-
-
-def _card_radius_frac(table_area: fitz.Rect) -> float:
-    """Rayon rounded-xl Live, proportion PyMuPDF (fraction du côté court)."""
-    radius_pt = LIVE_CARD_RADIUS_PX * (table_area.width / PLANNING_BASE_PT)
-    short = min(table_area.width, table_area.height)
-    if short <= 0:
-        return 0.05
-    return min(0.5, max(0.01, radius_pt / short))
-
-
-def _corner_radius_pt(table_area: fitz.Rect) -> float:
-    return min(table_area.width, table_area.height) * _card_radius_frac(table_area)
-
-
-def _fill_header_rounded_top(
-    page: fitz.Page,
-    table_area: fitz.Rect,
-    header_bottom: float,
-    radius_pt: float,
-) -> None:
-    x0 = table_area.x0
-    y0 = table_area.y0
-    x1 = table_area.x1
-    r = min(radius_pt, table_area.width / 2, header_bottom - y0)
-    if r <= 0.5:
-        page.draw_rect(
-            fitz.Rect(x0, y0, x1, header_bottom),
-            color=TEMPLATE_BLUE,
-            fill=TEMPLATE_BLUE,
-            width=0,
-            overlay=True,
-        )
-        return
-
-    shape = page.new_shape()
-    shape.draw_line(fitz.Point(x0 + r, y0), fitz.Point(x1 - r, y0))
-    shape.draw_curve(
-        fitz.Point(x1 - r + r * _BEZIER_K, y0),
-        fitz.Point(x1, y0 + r - r * _BEZIER_K),
-        fitz.Point(x1, y0 + r),
-    )
-    shape.draw_line(fitz.Point(x1, header_bottom), fitz.Point(x0, header_bottom))
-    shape.draw_line(fitz.Point(x0, header_bottom), fitz.Point(x0, y0 + r))
-    shape.draw_curve(
-        fitz.Point(x0, y0 + r - r * _BEZIER_K),
-        fitz.Point(x0 + r - r * _BEZIER_K, y0),
-        fitz.Point(x0 + r, y0),
-    )
-    shape.finish(fill=TEMPLATE_BLUE, color=TEMPLATE_BLUE, width=0, closePath=True)
-    shape.commit(overlay=True)
 
 
 def _draw_row_cells(
@@ -96,7 +55,7 @@ def _draw_row_cells(
     font_keys: list[str | None],
     aligns: list[int],
     fontsize: float,
-    color: tuple[float, float, float],
+    colors: list[tuple[float, float, float]] | None = None,
     font_bolds: list[bool] | None = None,
 ) -> None:
     x = table_x0
@@ -105,6 +64,7 @@ def _draw_row_cells(
         cell = fitz.Rect(x, row_rect.y0, x + width, row_rect.y1)
         key = font_keys[col_index] if col_index < len(font_keys) else "tsl"
         bold = (font_bolds or [key == "tsl"] * len(values))[col_index]
+        color = (colors or [ARENA_800] * len(values))[col_index]
         draw_font_text(
             page,
             cell,
@@ -127,14 +87,16 @@ def _draw_live_table_card(
     *,
     base_dir: Path,
     col_widths: list[float],
+    ref_width_pt: float,
     alignments: list[int] | None = None,
     body_fonts: list[str | None] | None = None,
+    body_colors: list[tuple[float, float, float]] | None = None,
+    body_bolds: list[bool] | None = None,
 ) -> None:
-    """Comme LivePlanningTab capture : carte arrondie, en-tête bleu, lignes horizontales seules."""
     fonts = font_paths(base_dir)
     row_count = len(body_rows) + 1
-    radius_pt = _corner_radius_pt(table_area)
-    radius_frac = _card_radius_frac(table_area)
+    radius_pt = _corner_radius_pt(table_area, ref_width_pt)
+    radius_frac = _card_radius_frac(table_area, ref_width_pt)
     aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
     font_keys = body_fonts or ["tsl"] * len(headers)
 
@@ -152,7 +114,6 @@ def _draw_live_table_card(
         stroke_opacity=0.35,
         overlay=True,
     )
-
     _fill_header_rounded_top(page, table_area, header_bottom, radius_pt)
     _draw_row_cells(
         page,
@@ -165,10 +126,12 @@ def _draw_live_table_card(
         font_keys=["tsl"] * len(headers),
         aligns=aligns,
         fontsize=TABLE_HEAD_TSL_PT,
-        color=WHITE,
-        font_bolds=[True] * len(headers),
+        colors=[WHITE] * len(headers),
+        font_bolds=[False] * len(headers),
     )
 
+    color_list = body_colors or []
+    color_index = 0
     for row_index, values in enumerate(body_rows):
         y0 = header_bottom + body_row_h * row_index
         row_rect = fitz.Rect(table_area.x0, y0, table_area.x1, y0 + body_row_h)
@@ -181,6 +144,18 @@ def _draw_live_table_card(
             overlay=True,
         )
         page.draw_rect(row_rect, color=fill, fill=fill, width=0, overlay=True)
+        row_colors: list[tuple[float, float, float]] = []
+        row_bolds: list[bool] = []
+        for index in range(len(values)):
+            if color_list and color_index < len(color_list):
+                row_colors.append(color_list[color_index])
+            else:
+                row_colors.append(ARENA_800)
+            color_index += 1
+            key = font_keys[index] if index < len(font_keys) else "tsl"
+            row_bolds.append(
+                (body_bolds or [key == "tsl"] * len(values))[index]
+            )
         _draw_row_cells(
             page,
             row_rect,
@@ -192,8 +167,8 @@ def _draw_live_table_card(
             font_keys=font_keys,
             aligns=aligns,
             fontsize=TABLE_BODY_PT,
-            color=ARENA_800,
-            font_bolds=[key == "tsl" for key in font_keys],
+            colors=row_colors,
+            font_bolds=row_bolds,
         )
 
     page.draw_rect(
@@ -215,9 +190,9 @@ def draw_engine_table(
     *,
     base_dir: Path,
     col_widths: list[float] | None = None,
-    body_tsl_all: bool = True,
+    narrow: bool = False,
 ) -> None:
-    del table_box, body_tsl_all
+    del table_box
     if not headers:
         return
 
@@ -226,13 +201,26 @@ def draw_engine_table(
         col_widths = [1 / n_cols] * n_cols
 
     area = content_area(page.rect)
-    table_area = _fit_live_table_area(
-        area,
-        base_width_pt=PLANNING_BASE_PT,
-        row_count=len(rows),
-    )
+    if narrow:
+        table_area = _fit_live_table_area(
+            area,
+            width_mode="narrow",
+            base_width_pt=FINAL_TABLE_WIDTH_PT,
+            row_count=len(rows),
+        )
+        ref_width_pt = FINAL_TABLE_WIDTH_PT
+    else:
+        table_area = _fit_live_table_area(
+            area,
+            width_mode="full",
+            row_count=len(rows),
+        )
+        ref_width_pt = PLANNING_BASE_PT
 
     if n_cols == 2:
+        body_colors: list[tuple[float, float, float]] = []
+        for row in rows:
+            body_colors.extend([ARENA_800, TEMPLATE_BLUE])
         _draw_live_table_card(
             page,
             table_area,
@@ -240,11 +228,26 @@ def draw_engine_table(
             rows,
             base_dir=base_dir,
             col_widths=col_widths,
+            ref_width_pt=ref_width_pt,
             alignments=[fitz.TEXT_ALIGN_LEFT, fitz.TEXT_ALIGN_LEFT],
             body_fonts=["noto", "tsl"],
+            body_colors=body_colors,
+            body_bolds=[False, True],
         )
         return
 
+    body_colors = []
+    for row in rows:
+        body_colors.extend(
+            [
+                ARENA_800,
+                ARENA_800,
+                ARENA_800,
+                ARENA_800,
+                ARENA_800,
+                TEMPLATE_BLUE,
+            ]
+        )
     _draw_live_table_card(
         page,
         table_area,
@@ -252,6 +255,9 @@ def draw_engine_table(
         rows,
         base_dir=base_dir,
         col_widths=col_widths,
+        ref_width_pt=ref_width_pt,
         alignments=[fitz.TEXT_ALIGN_LEFT] * n_cols,
         body_fonts=["noto", "tsl", "noto", "tsl", "tsl", "tsl"],
+        body_colors=body_colors,
+        body_bolds=[False, True, False, True, True, True],
     )

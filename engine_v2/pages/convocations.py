@@ -51,6 +51,7 @@ def render_convocations_page(
         rows,
         base_dir=base_dir,
         col_widths=[0.72, 0.28],
+        narrow=True,
     )
 
     draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)

@@ -112,13 +112,13 @@ def _planning_jour(text_upper: str) -> int | None:
 
 
 def _label_planning(slide) -> str:
+    for titre in _slide_titles(slide):
+        if "PLANNING" in titre.upper():
+            return titre.strip()
     text_upper = _slide_text(slide).upper().replace("–", "-").replace("—", "-")
     match = _PLANNING_FRACTION.search(text_upper)
     if match:
-        return match.group(1).replace(" ", "")
-    for titre in _slide_titles(slide):
-        if "PLANNING" in titre.upper():
-            return titre
+        return f"Planning {match.group(1).replace(' ', '')}"
     return "Planning"
 
 
@@ -173,7 +173,7 @@ def _label_main_entries(indices: list[int], prs: Presentation) -> list[dict]:
         if info["is_prelim"]:
             label = "Tour préliminaire"
         elif bracket_total == 2:
-            label = "Partie haute" if bracket_pos == 0 else "Partie basse"
+            label = "Tableau principal" if bracket_pos == 0 else "Partie basse"
             bracket_pos += 1
         elif bracket_total == 1:
             label = "Tableau principal"
