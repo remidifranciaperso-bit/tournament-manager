@@ -195,56 +195,129 @@ def _rasterize_placeholder_display(
     text: str,
     fontsize: float,
     fonts: dict[str, Path | None],
+    *,
+    base_dir: Path | None = None,
 ) -> tuple[bytes, float, float] | None:
-    """Placeholder complet : emoji couleur + libellé TSL (comme boîtes match)."""
+    """Placeholder complet : emoji couleur + libellé TSL (comme le live navigateur)."""
     value = (text or "").strip()
     emoji_char, body = _split_placeholder_emoji(value)
     if emoji_char is None:
         return None
-    emoji_path = fonts.get("emoji")
     tsl_path = fonts.get("tsl")
-    if not emoji_path or not tsl_path:
+    if not tsl_path:
         return None
-    try:
-        from io import BytesIO
 
-        from PIL import Image, ImageDraw
+    emoji_paths: list[Path] = []
+    if base_dir is not None:
+        emoji_paths = _emoji_font_candidates(base_dir)
+    elif fonts.get("emoji"):
+        emoji_paths = [fonts["emoji"]]
 
-        target_fs = max(32, int(round(fontsize * 4.5)))
-        emoji_font, fs = _load_emoji_font(emoji_path, target_fs)
-        tsl_font = _load_truetype_font(tsl_path, fs)
-        label = body or "—"
-        gap = max(2, int(fs * 0.12))
-        eb = emoji_font.getbbox(emoji_char)
-        tb = tsl_font.getbbox(label)
-        ew, eh = eb[2] - eb[0], eb[3] - eb[1]
-        tw, th = tb[2] - tb[0], tb[3] - tb[1]
-        iw = max(1, ew + gap + tw)
-        ih = max(1, max(eh, th))
-        img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-        draw.text((-eb[0], -eb[1]), emoji_char, font=emoji_font, embedded_color=True)
-        fill = (
-            int(ARENA_800[0] * 255),
-            int(ARENA_800[1] * 255),
-            int(ARENA_800[2] * 255),
-            255,
-        )
-        draw.text((ew + gap - tb[0], -tb[1]), label, font=tsl_font, fill=fill)
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        pt_scale = fontsize / fs
-        return buf.getvalue(), iw * pt_scale, ih * pt_scale
-    except Exception:
-        return None
+    from io import BytesIO
+
+    from PIL import Image, ImageDraw
+
+    target_fs = max(32, int(round(fontsize * 4.5)))
+    label = body or "—"
+    fill = (
+        int(ARENA_800[0] * 255),
+        int(ARENA_800[1] * 255),
+        int(ARENA_800[2] * 255),
+        255,
+    )
+
+    for emoji_path in emoji_paths:
+        try:
+            emoji_font, fs = _load_emoji_font(emoji_path, target_fs)
+            tsl_font = _load_truetype_font(tsl_path, fs)
+            gap = max(2, int(fs * 0.12))
+            eb = emoji_font.getbbox(emoji_char)
+            tb = tsl_font.getbbox(label)
+            ew, eh = eb[2] - eb[0], eb[3] - eb[1]
+            tw, th = tb[2] - tb[0], tb[3] - tb[1]
+            iw = max(1, ew + gap + tw)
+            ih = max(1, max(eh, th))
+            img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            draw.text(
+                (-eb[0], -eb[1]),
+                emoji_char,
+                font=emoji_font,
+                embedded_color=True,
+            )
+            draw.text((ew + gap - tb[0], -tb[1]), label, font=tsl_font, fill=fill)
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            pt_scale = fontsize / fs
+            return buf.getvalue(), iw * pt_scale, ih * pt_scale
+        except Exception:
+            continue
+    return None
 
 
 def _rasterize_placeholder_line(
     text: str,
     fontsize: float,
     fonts: dict[str, Path | None],
+    *,
+    base_dir: Path | None = None,
 ) -> tuple[bytes, float, float] | None:
-    return _rasterize_placeholder_display(text, fontsize, fonts)
+    return _rasterize_placeholder_display(
+        text, fontsize, fonts, base_dir=base_dir
+    )
+
+
+def _draw_live_placeholder(
+    page: fitz.Page,
+    rect: fitz.Rect,
+    text: str,
+    *,
+    fontsize: float,
+    color: tuple[float, float, float],
+    align: int = fitz.TEXT_ALIGN_LEFT,
+    pad_pt: float | None = None,
+    fonts: dict[str, Path | None] | None = None,
+    base_dir: Path | None = None,
+) -> bool:
+    """
+    Placeholder live → PDF natif : emoji couleur (Apple/Noto) + libellé TSL.
+    Même principe que le navigateur (font-tsl + repli emoji OS).
+    """
+    del color
+    value = (text or "").strip()
+    if not value or _split_placeholder_emoji(value)[0] is None:
+        return False
+    pad = pad_pt if pad_pt is not None else 2.0
+    font_paths = fonts or {}
+
+    raster = _rasterize_placeholder_display(
+        value, fontsize, font_paths, base_dir=base_dir
+    )
+    if raster is None:
+        return False
+    png_bytes, img_w_pt, img_h_pt = raster
+    if img_w_pt <= 0 or img_h_pt <= 0:
+        return False
+
+    draw_h = min(rect.height * 0.82, img_h_pt)
+    draw_w = img_w_pt * (draw_h / img_h_pt)
+    if draw_w > rect.width - 2 * pad:
+        draw_w = rect.width - 2 * pad
+        draw_h = img_h_pt * (draw_w / img_w_pt)
+
+    if align == fitz.TEXT_ALIGN_RIGHT:
+        x0 = rect.x1 - pad - draw_w
+    elif align == fitz.TEXT_ALIGN_CENTER:
+        x0 = rect.x0 + (rect.width - draw_w) / 2
+    else:
+        x0 = rect.x0 + pad
+    y0 = rect.y0 + (rect.height - draw_h) / 2
+    page.insert_image(
+        fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
+        stream=png_bytes,
+        keep_proportion=True,
+    )
+    return True
 
 
 def _insert_html_emoji_cell(
@@ -258,33 +331,17 @@ def _insert_html_emoji_cell(
     fonts: dict[str, Path | None] | None = None,
     base_dir: Path | None = None,
 ) -> bool:
-    """Placeholder planning natif : emoji couleur + libellé TSL (comme boîtes match)."""
-    value = (text or "").strip()
-    if not value:
-        return False
-    pad = pad_pt if pad_pt is not None else 2.0
-    font_paths = fonts or {}
-
-    raster = _rasterize_placeholder_display(value, fontsize, font_paths)
-    if raster is None:
-        return False
-    png_bytes, img_w_pt, img_h_pt = raster
-    if img_w_pt <= 0 or img_h_pt <= 0:
-        return False
-
-    draw_h = min(rect.height * 0.82, img_h_pt)
-    draw_w = img_w_pt * (draw_h / img_h_pt)
-    if draw_w > rect.width - 2 * pad:
-        draw_w = rect.width - 2 * pad
-        draw_h = img_h_pt * (draw_w / img_w_pt)
-    dest = fitz.Rect(
-        rect.x0 + pad,
-        rect.y0 + (rect.height - draw_h) / 2,
-        rect.x0 + pad + draw_w,
-        rect.y0 + (rect.height + draw_h) / 2,
+    return _draw_live_placeholder(
+        page,
+        rect,
+        text,
+        fontsize=fontsize,
+        color=color,
+        align=fitz.TEXT_ALIGN_LEFT,
+        pad_pt=pad_pt,
+        fonts=fonts,
+        base_dir=base_dir,
     )
-    page.insert_image(dest, stream=png_bytes, keep_proportion=True)
-    return True
 
 
 def _insert_textbox(
@@ -381,6 +438,7 @@ def _draw_match_box(
     area: fitz.Rect,
     fonts: dict[str, Path | None],
     split_main_bracket: bool,
+    base_dir: Path | None = None,
 ) -> None:
     has_score = bool(result and result.get("display"))
     header_frac = 0.20 if has_score else 0.22
@@ -478,26 +536,80 @@ def _draw_match_box(
         area,
     )
 
-    _insert_textbox(
-        page,
-        team1_rect,
-        equipe1,
-        fontsize=team1_px,
-        color=ARENA_800,
-        fontfile=fonts.get("tsl") if is_placeholder(equipe1) else fonts.get("noto"),
-        bold=False,
-        align=fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe1) else fitz.TEXT_ALIGN_CENTER,
+    team1_align = (
+        fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe1) else fitz.TEXT_ALIGN_CENTER
     )
-    _insert_textbox(
-        page,
-        team2_rect,
-        equipe2,
-        fontsize=team2_px,
-        color=ARENA_800,
-        fontfile=fonts.get("tsl") if is_placeholder(equipe2) else fonts.get("noto"),
-        bold=False,
-        align=fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe2) else fitz.TEXT_ALIGN_CENTER,
+    team2_align = (
+        fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe2) else fitz.TEXT_ALIGN_CENTER
     )
+
+    if is_placeholder(equipe1):
+        if not _draw_live_placeholder(
+            page,
+            team1_rect,
+            equipe1,
+            fontsize=team1_px,
+            color=ARENA_800,
+            align=team1_align,
+            pad_pt=2,
+            fonts=fonts,
+            base_dir=base_dir,
+        ):
+            _insert_textbox(
+                page,
+                team1_rect,
+                equipe1,
+                fontsize=team1_px,
+                color=ARENA_800,
+                fontfile=fonts.get("tsl"),
+                align=team1_align,
+                fonts=fonts,
+            )
+    else:
+        _insert_textbox(
+            page,
+            team1_rect,
+            equipe1,
+            fontsize=team1_px,
+            color=ARENA_800,
+            fontfile=fonts.get("noto"),
+            align=team1_align,
+            fonts=fonts,
+        )
+
+    if is_placeholder(equipe2):
+        if not _draw_live_placeholder(
+            page,
+            team2_rect,
+            equipe2,
+            fontsize=team2_px,
+            color=ARENA_800,
+            align=team2_align,
+            pad_pt=2,
+            fonts=fonts,
+            base_dir=base_dir,
+        ):
+            _insert_textbox(
+                page,
+                team2_rect,
+                equipe2,
+                fontsize=team2_px,
+                color=ARENA_800,
+                fontfile=fonts.get("tsl"),
+                align=team2_align,
+                fonts=fonts,
+            )
+    else:
+        _insert_textbox(
+            page,
+            team2_rect,
+            equipe2,
+            fontsize=team2_px,
+            color=ARENA_800,
+            fontfile=fonts.get("noto"),
+            align=team2_align,
+            fonts=fonts,
+        )
 
     vs_rect = fitz.Rect(body.x0, mid_y - body.height * 0.11, body.x1, mid_y + body.height * 0.11)
     _insert_textbox(
@@ -629,6 +741,7 @@ def draw_bracket_slide(
             area=area,
             fonts=fonts,
             split_main_bracket=split_main_bracket,
+            base_dir=base_dir,
         )
 
     for feed in feeds:
@@ -923,24 +1036,20 @@ def _draw_live_table_card(
                 x += width
                 continue
             body_pt = TEAM_PLACEHOLDER_PT if is_placeholder(value) else TABLE_BODY_PT
-            cell_font = fonts.get("tsl") if is_placeholder(value) else fontfile
-            if (
-                emoji_html_cols
-                and index in emoji_html_cols
-                and is_placeholder(value)
-                and _insert_html_emoji_cell(
-                    page,
-                    cell,
-                    value or "—",
-                    fontsize=body_pt,
-                    color=color,
-                    pad_pt=cell_pad,
-                    fonts=fonts,
-                    base_dir=base_dir,
-                )
+            if is_placeholder(value) and _draw_live_placeholder(
+                page,
+                cell,
+                value or "—",
+                fontsize=body_pt,
+                color=color,
+                align=align,
+                pad_pt=cell_pad,
+                fonts=fonts,
+                base_dir=base_dir,
             ):
                 x += width
                 continue
+            cell_font = fonts.get("tsl") if is_placeholder(value) else fontfile
             _insert_textbox(
                 page,
                 cell,
@@ -1077,7 +1186,6 @@ def draw_planning_table(
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
         body_bold=[True, False, True, False, False, False],
         checkbox_cols=[5] if export_mode else None,
-        emoji_html_cols=[3, 4],
     )
 
 
