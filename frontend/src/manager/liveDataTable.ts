@@ -34,6 +34,14 @@ export const LIVE_TABLE_CAPTURE_HEAD_ROW =
 export const LIVE_TABLE_HEAD_NATIVE =
   "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
 
+/**
+ * En-têtes planning capture PDF — taille compensée pour le scale composite
+ * (1400 px capture → ~752 pt page : ×1400/752 pour obtenir ~14 pt à l'impression).
+ */
+export const PLANNING_HEAD_CAPTURE_PX = Math.round(14 * (1400 / 752));
+export const LIVE_TABLE_HEAD_PLANNING_CAPTURE =
+  "px-3 py-3 text-left font-tsl font-normal uppercase tracking-wide leading-none";
+
 export const LIVE_TABLE_ROW = "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]";
 
 export const LIVE_TABLE_ROW_EXPORT =

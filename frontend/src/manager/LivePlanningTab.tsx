@@ -13,7 +13,8 @@ import {
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
   LIVE_TABLE_HEAD_EXPORT,
-  LIVE_TABLE_HEAD_NATIVE,
+  LIVE_TABLE_HEAD_PLANNING_CAPTURE,
+  PLANNING_HEAD_CAPTURE_PX,
   LIVE_TABLE_ROW,
   LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
@@ -115,10 +116,13 @@ export function LivePlanningTab({
   }, [capture, rows.length]);
 
   const headClass = capture
-    ? LIVE_TABLE_HEAD_NATIVE
+    ? LIVE_TABLE_HEAD_PLANNING_CAPTURE
     : exportMode
       ? LIVE_TABLE_HEAD_EXPORT
       : LIVE_TABLE_HEAD;
+  const headStyle = capture
+    ? ({ fontSize: PLANNING_HEAD_CAPTURE_PX, fontWeight: 400 } as const)
+    : undefined;
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
   const doneLabel = exportMode ? "Terminé" : "Fait";
 
@@ -171,37 +175,37 @@ export function LivePlanningTab({
       <tr className="bg-template-blue text-white">
         <th
           className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
-          style={capture ? { fontWeight: 400 } : undefined}
+          style={headStyle}
         >
           Code
         </th>
         <th
           className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
-          style={capture ? { fontWeight: 400 } : undefined}
+          style={headStyle}
         >
           Heure
         </th>
         <th
           className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
-          style={capture ? { fontWeight: 400 } : undefined}
+          style={headStyle}
         >
           Terrain
         </th>
         <th
           className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
-          style={capture ? { fontWeight: 400 } : undefined}
+          style={headStyle}
         >
           Équipe 1
         </th>
         <th
           className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
-          style={capture ? { fontWeight: 400 } : undefined}
+          style={headStyle}
         >
           Équipe 2
         </th>
         <th
           className={`whitespace-nowrap text-center ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
-          style={capture ? { fontWeight: 400 } : undefined}
+          style={headStyle}
         >
           {doneLabel}
         </th>
