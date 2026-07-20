@@ -625,10 +625,13 @@ def _draw_live_table_card(
     aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
     font_keys = body_fonts or ["tsl"] * len(headers)
 
-    base_row_h = table_area.height / max(row_count, 2)
-    header_bottom = table_area.y0 + base_row_h
+    base_row_h = inner.height / max(row_count, 2)
+    header_bottom = inner.y0 + base_row_h
     body_bottom = inner.y1 - inner_r_pt
-    body_row_h = (body_bottom - header_bottom) / max(len(body_rows), 1)
+    body_row_h = max(
+        0.0,
+        (body_bottom - header_bottom) / max(len(body_rows), 1),
+    )
     row_line = (0.82, 0.92, 0.98)
     row_alt = (0.97, 0.99, 1.0)
 

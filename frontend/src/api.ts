@@ -80,15 +80,39 @@ export interface EngineV2PrepareResult {
 
 export type EngineV2GeneratePhase = "prepare" | "capture" | "export";
 
+const RETRYABLE_HTTP = new Set([502, 503, 504]);
+
+async function fetchWithRetry(
+  url: string,
+  initFactory: () => RequestInit,
+  options: { retries?: number; delayMs?: number } = {}
+): Promise<Response> {
+  const retries = options.retries ?? 3;
+  const delayMs = options.delayMs ?? 2500;
+  let last: Response | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const res = await fetch(url, initFactory());
+    if (!RETRYABLE_HTTP.has(res.status) || attempt === retries) {
+      return res;
+    }
+    last = res;
+    await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+  }
+
+  return last!;
+}
+
 export async function prepareTournamentV2(
   form: TournamentForm
 ): Promise<EngineV2PrepareResult> {
   if (!form.excelFile) throw new Error("Fichier Excel manquant.");
 
-  const body = new FormData();
-  appendTournamentFormFields(body, form);
-
-  const res = await fetch("/api/v2/prepare", { method: "POST", body });
+  const res = await fetchWithRetry("/api/v2/prepare", () => {
+    const body = new FormData();
+    appendTournamentFormFields(body, form);
+    return { method: "POST", body };
+  });
   if (!res.ok) throw new Error(await readError(res));
 
   const data = (await res.json()) as EngineV2PrepareResult;
@@ -111,17 +135,18 @@ async function exportTournamentV2WithCaptures(
   },
   captures: Record<string, string>
 ): Promise<Blob> {
-  const form = buildExportFormData(
-    {
-      ...payload,
-      match_results: {},
-      completed: [],
-      crosspage_stubs: payload.crosspage_stubs ?? {},
-    },
-    captures
-  );
-
-  const res = await fetch(`/api/v2/export/${token}`, { method: "POST", body: form });
+  const res = await fetchWithRetry(`/api/v2/export/${token}`, () => {
+    const form = buildExportFormData(
+      {
+        ...payload,
+        match_results: {},
+        completed: [],
+        crosspage_stubs: payload.crosspage_stubs ?? {},
+      },
+      captures
+    );
+    return { method: "POST", body: form };
+  });
   if (!res.ok) throw new Error(await readError(res));
   return res.blob();
 }
@@ -218,6 +243,13 @@ async function readError(res: Response): Promise<string> {
     return (
       "L'API locale n'est pas à jour (route generate-live absente). " +
       "Fermez tous les terminaux du projet puis relancez ./scripts/run-local.sh."
+    );
+  }
+
+  if (RETRYABLE_HTTP.has(res.status)) {
+    return (
+      `Le serveur Render est indisponible ou redémarre (erreur ${res.status}). ` +
+      "Attendez 30 secondes puis relancez la génération."
     );
   }
 

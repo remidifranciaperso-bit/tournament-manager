@@ -242,6 +242,10 @@ async def prepare_v2(
         if notify_token:
             supprimer_pdf(notify_token)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        excel_path.unlink(missing_ok=True)
+        if logo_path is not None:
+            logo_path.unlink(missing_ok=True)
 
 
 @router.post("/export/{token}")
@@ -287,8 +291,13 @@ async def export_v2(token: str, request: Request):
         import shutil
 
         shutil.copy2(export_path, shell_path)
-    except (RuntimeError, FileNotFoundError) as exc:
+    except (RuntimeError, FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Export PDF échoué : {exc}",
+        ) from exc
 
     return FileResponse(
         export_path,

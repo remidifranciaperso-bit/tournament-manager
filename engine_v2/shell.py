@@ -30,8 +30,7 @@ def _slide_page_size(cache: dict) -> tuple[float, float]:
     return PAGE_WIDTH_PT, PAGE_HEIGHT_PT
 
 
-def _indices_par_role(template_path: Path) -> tuple[set[int], set[int]]:
-    prs = Presentation(str(template_path))
+def _indices_par_role_from_prs(prs: Presentation) -> tuple[set[int], set[int]]:
     participants: set[int] = set()
     convocations: set[int] = set()
     for index, slide in enumerate(prs.slides):
@@ -41,6 +40,11 @@ def _indices_par_role(template_path: Path) -> tuple[set[int], set[int]]:
         elif "PARTICIPANT" in upper:
             participants.add(index)
     return participants, convocations
+
+
+def _indices_par_role(template_path: Path) -> tuple[set[int], set[int]]:
+    prs = Presentation(str(template_path))
+    return _indices_par_role_from_prs(prs)
 
 
 def _titles_by_index(page_map: dict) -> dict[int, str]:
@@ -91,9 +95,11 @@ def build_v2_composite_shell_pdf(
     template_path, _template_id, cache = resolve_template_bundle(tournoi, base_dir)
     page_map = cache["page_map"]
     width, height = _slide_page_size(cache)
-    participants, convocations = _indices_par_role(template_path)
+    prs = Presentation(str(template_path))
+    participants, convocations = _indices_par_role_from_prs(prs)
+    slide_count = len(prs.slides)
+    del prs
     titles = _titles_by_index(page_map)
-    slide_count = len(Presentation(str(template_path)).slides)
 
     exports_dir = base_dir / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
