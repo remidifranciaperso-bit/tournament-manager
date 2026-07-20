@@ -87,20 +87,36 @@ async function fetchWithRetry(
   initFactory: () => RequestInit,
   options: { retries?: number; delayMs?: number } = {}
 ): Promise<Response> {
-  const retries = options.retries ?? 3;
-  const delayMs = options.delayMs ?? 2500;
-  let last: Response | null = null;
+  const retries = options.retries ?? 5;
+  const delayMs = options.delayMs ?? 3000;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
-    const res = await fetch(url, initFactory());
-    if (!RETRYABLE_HTTP.has(res.status) || attempt === retries) {
-      return res;
+    try {
+      const res = await fetch(url, initFactory());
+      if (!RETRYABLE_HTTP.has(res.status) || attempt === retries) {
+        return res;
+      }
+    } catch (err) {
+      if (attempt === retries) {
+        throw err instanceof Error ? err : new Error("Serveur injoignable.");
+      }
     }
-    last = res;
     await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
   }
 
-  return last!;
+  throw new Error("Serveur injoignable.");
+}
+
+async function ensureEngineV2Ready(): Promise<void> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const res = await fetch("/api/v2/health");
+      if (res.ok) return;
+    } catch {
+      /* cold start Render */
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2500 * (attempt + 1)));
+  }
 }
 
 export async function prepareTournamentV2(

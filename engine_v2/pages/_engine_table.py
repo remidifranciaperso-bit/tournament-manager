@@ -100,7 +100,6 @@ def draw_engine_table(
         alignments=[fitz.TEXT_ALIGN_LEFT] * n_cols,
         body_fonts=["noto", "tsl", "noto", "tsl", "tsl", "tsl"],
         body_bold=[False, False, False, False, False, True],
-        header_bold=[False, False, False, False, False, True],
         body_colors=body_colors,
         ref_width_pt=ref_width_pt,
     )
