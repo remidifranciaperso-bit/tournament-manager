@@ -9,7 +9,7 @@ import fitz
 
 from engine.pdf_footer import contain_rect
 from engine.ppt_engine import construire_valeurs_globales, detecter_genre, format_date
-from engine_v2.pages._theme import BRUSH_BLUE, LIME, WHITE, YELLOW, font_paths
+from engine_v2.pages._theme import ARENA_800, BRUSH_BLUE, LIME, WHITE, YELLOW, font_paths
 
 # Géométrie template bleu (``Template_24_1J.pptx``), fractions 0–1.
 HEADER_BAND = {"left": -0.0031, "top": -0.0015, "width": 1.0067, "height": 0.0858}
@@ -291,11 +291,42 @@ def draw_page_header(
     )
 
 
+FOOTER_CLUB_PT = 12.0
+
+
+def draw_footer_club_in_zone(
+    page: fitz.Page,
+    zone: fitz.Rect,
+    club_name: str,
+    *,
+    base_dir: Path | None,
+) -> None:
+    label = (club_name or "").strip().upper()
+    if not label:
+        return
+    fonts = font_paths(base_dir) if base_dir else {}
+    noto = fonts.get("noto")
+    font = _load_font(noto)
+    max_pt = min(FOOTER_CLUB_PT, zone.height * 0.88)
+    fontsize = _fit_fontsize(font, zone, max_pt) if font else max_pt
+    draw_font_text(
+        page,
+        zone,
+        label,
+        fontsize=fontsize,
+        color=ARENA_800,
+        fontfile=noto,
+        align=fitz.TEXT_ALIGN_CENTER,
+    )
+
+
 def draw_page_footer_logo(
     page: fitz.Page,
     *,
     logo_bytes: bytes | None,
     logo_wh: tuple[int, int] | None,
+    club_name: str | None = None,
+    base_dir: Path | None = None,
 ) -> None:
     page_rect = page.rect
     bottom_limit = page_rect.y1 - FOOTER_BOTTOM_MARGIN_PT
@@ -312,24 +343,31 @@ def draw_page_footer_logo(
         WHITE,
         overlay=True,
     )
-    if not logo_bytes or not logo_wh:
-        return
-    dest = contain_rect(zone, float(logo_wh[0]), float(logo_wh[1]))
-    dest = fitz.Rect(
-        dest.x0,
-        bottom_limit - dest.height,
-        dest.x1,
-        bottom_limit,
-    )
-    if dest.width < zone.width:
-        shift = (zone.width - dest.width) / 2
+    if logo_bytes and logo_wh:
+        dest = contain_rect(zone, float(logo_wh[0]), float(logo_wh[1]))
         dest = fitz.Rect(
-            zone.x0 + shift,
-            dest.y0,
-            zone.x0 + shift + dest.width,
-            dest.y1,
+            dest.x0,
+            bottom_limit - dest.height,
+            dest.x1,
+            bottom_limit,
         )
-    page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
+        if dest.width < zone.width:
+            shift = (zone.width - dest.width) / 2
+            dest = fitz.Rect(
+                zone.x0 + shift,
+                dest.y0,
+                zone.x0 + shift + dest.width,
+                dest.y1,
+            )
+        page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
+        return
+
+    draw_footer_club_in_zone(
+        page,
+        zone,
+        club_name or "",
+        base_dir=base_dir,
+    )
 
 
 def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
@@ -429,4 +467,10 @@ def overlay_page_chrome(
 ) -> None:
     """Bandeau + pied de page par-dessus une page déjà rendue (tableaux bracket…)."""
     draw_page_header(page, tournoi, title, base_dir=base_dir)
-    draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+    draw_page_footer_logo(
+        page,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=getattr(tournoi, "club", None),
+        base_dir=base_dir,
+    )

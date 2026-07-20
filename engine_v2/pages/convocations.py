@@ -54,4 +54,10 @@ def render_convocations_page(
         narrow=True,
     )
 
-    draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+    draw_page_footer_logo(
+        page,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=tournoi.club,
+        base_dir=base_dir,
+    )

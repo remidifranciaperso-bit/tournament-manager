@@ -7,11 +7,11 @@ export function formatDateFr(iso: string) {
 
 export function syncTerrains(form: TournamentForm, nb: number): TournamentForm {
   const terrains = [...form.terrains];
-  while (terrains.length < nb) terrains.push(`Terrain ${terrains.length + 1}`);
+  while (terrains.length < nb) terrains.push(`TERRAIN ${terrains.length + 1}`);
   while (terrains.length > nb) terrains.pop();
   const terrainPrincipal = terrains.includes(form.terrainPrincipal)
     ? form.terrainPrincipal
-    : terrains[0] ?? "Terrain 1";
+    : terrains[0] ?? "TERRAIN 1";
   return { ...form, nbTerrains: nb, terrains, terrainPrincipal };
 }
 

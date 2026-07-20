@@ -70,6 +70,14 @@ _BEZIER_K = 0.5522847498
 
 _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 
+_EMOJI_ASSET_FILES = {
+    "🏆": "trophy.png",
+    "❌": "cross.png",
+    "🥇": "gold.png",
+    "🥈": "silver.png",
+    "🥉": "bronze.png",
+}
+
 
 def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
     if base_dir is None:
@@ -95,6 +103,8 @@ def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
             base_dir / "fonts" / "NotoColorEmoji.ttf",
             Path("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"),
             Path("/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf"),
+            Path("/usr/share/fonts/truetype/noto/NotoColorEmoji-Regular.ttf"),
+            Path("/System/Library/Fonts/Apple Color Emoji.ttc"),
         ],
     }
     return {
@@ -132,6 +142,44 @@ def _table_cell_pad_pt(content_width: float) -> float:
     )
 
 
+def _emoji_asset_bytes(base_dir: Path | None, char: str) -> bytes | None:
+    filename = _EMOJI_ASSET_FILES.get(char)
+    if not filename or base_dir is None:
+        return None
+    path = base_dir / "engine_v2" / "assets" / "emoji" / filename
+    if path.is_file():
+        return path.read_bytes()
+    return None
+
+
+def _rasterize_emoji_png(char: str, px: int, fonts: dict[str, Path | None]) -> bytes | None:
+    emoji_path = fonts.get("emoji")
+    if not emoji_path or not emoji_path.is_file():
+        return None
+    try:
+        from io import BytesIO
+
+        from PIL import Image, ImageDraw, ImageFont
+
+        for size in (px, max(px, 24), 32, 40):
+            try:
+                font = ImageFont.truetype(str(emoji_path), size)
+            except OSError:
+                continue
+            bbox = font.getbbox(char)
+            iw = max(bbox[2] - bbox[0], 1)
+            ih = max(bbox[3] - bbox[1], 1)
+            img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            draw.text((-bbox[0], -bbox[1]), char, font=font, embedded_color=True)
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            return buf.getvalue()
+    except Exception:
+        return None
+    return None
+
+
 def _insert_html_emoji_cell(
     page: fitz.Page,
     rect: fitz.Rect,
@@ -140,28 +188,61 @@ def _insert_html_emoji_cell(
     fontsize: float,
     color: tuple[float, float, float],
     pad_pt: float | None = None,
+    fonts: dict[str, Path | None] | None = None,
+    base_dir: Path | None = None,
 ) -> bool:
-    """Placeholder planning avec emojis couleur (insert_htmlbox)."""
-    import html as html_module
-
+    """Placeholder planning : emoji couleur (PNG) + libellé TSL."""
     value = (text or "").strip()
     if not value:
         return False
     pad = pad_pt if pad_pt is not None else 2.0
-    r, g, b = color
-    rgb = f"rgb({int(r * 255)},{int(g * 255)},{int(b * 255)})"
-    content = html_module.escape(value)
-    html = (
-        f'<div style="font-family: \'Noto Color Emoji\', \'Apple Color Emoji\', '
-        f"'Segoe UI Emoji', sans-serif; font-size:{fontsize}pt; color:{rgb}; "
-        f'padding-left:{pad}px; line-height:1.15; white-space:nowrap;">'
-        f"{content}</div>"
-    )
-    try:
-        page.insert_htmlbox(rect, html)
-        return True
-    except Exception:
+
+    emoji_char: str | None = None
+    body = value
+    for prefix in ("🏆", "❌", "🥇", "🥈", "🥉"):
+        if value.startswith(prefix):
+            emoji_char = prefix
+            body = value[len(prefix) :].lstrip(" \u2009")
+            break
+    if emoji_char is None:
         return False
+
+    font_paths = fonts or {}
+    emoji_bytes = _emoji_asset_bytes(base_dir, emoji_char)
+    if emoji_bytes is None:
+        px = max(24, int(fontsize * 2.5))
+        emoji_bytes = _rasterize_emoji_png(emoji_char, px, font_paths)
+    if emoji_bytes is None:
+        return False
+
+    emoji_h = min(rect.height * 0.72, fontsize * 1.35)
+    emoji_w = emoji_h
+    emoji_rect = fitz.Rect(
+        rect.x0 + pad,
+        rect.y0 + (rect.height - emoji_h) / 2,
+        rect.x0 + pad + emoji_w,
+        rect.y0 + (rect.height + emoji_h) / 2,
+    )
+    page.insert_image(emoji_rect, stream=emoji_bytes, keep_proportion=True)
+
+    text_rect = fitz.Rect(
+        emoji_rect.x1 + pad * 0.35,
+        rect.y0,
+        rect.x1 - pad,
+        rect.y1,
+    )
+    _insert_textbox(
+        page,
+        text_rect,
+        body or "—",
+        fontsize=fontsize,
+        color=color,
+        align=fitz.TEXT_ALIGN_LEFT,
+        fontfile=font_paths.get("tsl"),
+        pad_pt=0,
+        fonts=font_paths,
+    )
+    return True
 
 
 def _insert_textbox(
@@ -425,7 +506,7 @@ def _draw_match_box(
             label_rect,
             "score:",
             fontsize=_pt_on_area(SCORE_LABEL_PT, area),
-            color=(0.55, 0.75, 0.85),
+            color=TEMPLATE_BLUE,
             fontfile=fonts.get("noto"),
             bold=False,
             align=fitz.TEXT_ALIGN_CENTER,
@@ -677,14 +758,15 @@ def _draw_white_body_shell(
     return body_bottom
 
 
-def _draw_hand_checkbox(page: fitz.Page, cell: fitz.Rect) -> None:
+def _draw_hand_checkbox(page: fitz.Page, cell: fitz.Rect, *, pad_pt: float = 0.0) -> None:
     """Carré à cocher à la main (colonne Terminé export PDF)."""
-    size = min(cell.width * 0.38, cell.height * 0.52, 11.0)
+    inner = fitz.Rect(cell.x0, cell.y0, cell.x1 - pad_pt, cell.y1)
+    size = min(inner.width * 0.38, inner.height * 0.52, 11.0)
     box = fitz.Rect(
-        cell.x0 + (cell.width - size) / 2,
-        cell.y0 + (cell.height - size) / 2,
-        cell.x0 + (cell.width + size) / 2,
-        cell.y0 + (cell.height + size) / 2,
+        inner.x1 - size,
+        inner.y0 + (inner.height - size) / 2,
+        inner.x1,
+        inner.y0 + (inner.height + size) / 2,
     )
     page.draw_rect(box, color=TEMPLATE_BLUE, width=0.8, overlay=True)
 
@@ -791,7 +873,7 @@ def _draw_live_table_card(
             color_index += 1
             align = aligns[index]
             if checkbox_cols and index in checkbox_cols:
-                _draw_hand_checkbox(page, cell)
+                _draw_hand_checkbox(page, cell, pad_pt=cell_pad)
                 x += width
                 continue
             body_pt = TEAM_PLACEHOLDER_PT if is_placeholder(value) else TABLE_BODY_PT
@@ -807,6 +889,8 @@ def _draw_live_table_card(
                     fontsize=body_pt,
                     color=color,
                     pad_pt=cell_pad,
+                    fonts=fonts,
+                    base_dir=base_dir,
                 )
             ):
                 x += width
@@ -885,7 +969,7 @@ def draw_planning_table(
             fitz.TEXT_ALIGN_LEFT,
             fitz.TEXT_ALIGN_LEFT,
             fitz.TEXT_ALIGN_LEFT,
-            fitz.TEXT_ALIGN_CENTER,
+            fitz.TEXT_ALIGN_RIGHT,
         ],
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
         body_bold=[True, False, True, False, False, False],

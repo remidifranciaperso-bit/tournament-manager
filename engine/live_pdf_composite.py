@@ -100,6 +100,8 @@ def _compose_page_chrome(
     footer_slide_index: int | None = None,
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
+    club_name: str | None = None,
+    base_dir=None,
     crosspage_stub: dict | None = None,
 ) -> fitz.Rect:
     """Bandeau Engine + pied de page ; retourne la zone contenu (fond blanc)."""
@@ -167,6 +169,16 @@ def _compose_page_chrome(
                 dest.y1,
             )
         page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
+    elif (club_name or "").strip() and base_dir is not None:
+        page.draw_rect(footer_dest, color=None, fill=(1, 1, 1), overlay=False)
+        from engine_v2.pages._layout import draw_footer_club_in_zone
+
+        draw_footer_club_in_zone(
+            page,
+            footer_dest,
+            club_name,
+            base_dir=base_dir,
+        )
     else:
         footer_engine_page = source[footer_index]
         footer_engine_rect = footer_engine_page.rect
@@ -189,6 +201,7 @@ def composer_page_planning_native(
     footer_slide_index: int | None = None,
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
+    club_name: str | None = None,
 ) -> None:
     """Bandeaux Engine + tableau planning PyMuPDF (en-têtes identiques participants)."""
     from engine.live_export_render_support import draw_planning_table
@@ -200,6 +213,8 @@ def composer_page_planning_native(
         footer_slide_index=footer_slide_index,
         logo_bytes=logo_bytes,
         logo_wh=logo_wh,
+        club_name=club_name,
+        base_dir=base_dir,
     )
     draw_planning_table(
         page,
@@ -222,6 +237,8 @@ def composer_page_export(
     footer_slide_index: int | None = None,
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
+    club_name: str | None = None,
+    base_dir=None,
     crosspage_stub: dict | None = None,
 ) -> None:
     """Fond blanc + bandeaux Engine (slide courante) + capture Manager."""
@@ -233,6 +250,8 @@ def composer_page_export(
         footer_slide_index=footer_slide_index,
         logo_bytes=logo_bytes,
         logo_wh=logo_wh,
+        club_name=club_name,
+        base_dir=base_dir,
         crosspage_stub=crosspage_stub,
     )
     rect = page.rect

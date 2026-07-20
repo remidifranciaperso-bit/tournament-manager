@@ -74,7 +74,13 @@ def _render_chrome_shell(
     """Page coquille : bandeau V2 + zone blanche (contenu = capture Live)."""
     prepare_content_page(page)
     draw_page_header(page, tournoi, title, base_dir=base_dir)
-    draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+    draw_page_footer_logo(
+        page,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=tournoi.club,
+        base_dir=base_dir,
+    )
 
 
 def build_v2_composite_shell_pdf(
@@ -153,6 +159,8 @@ def build_v2_composite_shell_pdf(
                         page,
                         logo_bytes=logo_bytes,
                         logo_wh=logo_wh,
+                        club_name=tournoi.club,
+                        base_dir=base_dir,
                     )
             else:
                 prepare_content_page(page)

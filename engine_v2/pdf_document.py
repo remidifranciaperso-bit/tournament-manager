@@ -103,7 +103,13 @@ def _render_bracket_page(
             overlay=False,
         )
 
-    draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+    draw_page_footer_logo(
+        page,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=tournoi.club,
+        base_dir=base_dir,
+    )
     draw_crosspage_margin_stub(page, page.rect, bracket_area, stub)
 
 
@@ -240,7 +246,13 @@ def build_tournament_pdf(
                 base_dir=base_dir,
                 export_mode=True,
             )
-            draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+            draw_page_footer_logo(
+                page,
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
+                club_name=tournoi.club,
+                base_dir=base_dir,
+            )
 
         final_entries = page_map.get("final", [])
         final_page_count = max(1, len(final_entries))
@@ -268,7 +280,13 @@ def build_tournament_pdf(
                 base_dir=base_dir,
                 place_range=place_range,
             )
-            draw_page_footer_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+            draw_page_footer_logo(
+                page,
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
+                club_name=tournoi.club,
+                base_dir=base_dir,
+            )
 
         if doc.page_count == 0:
             raise RuntimeError("PDF Engine V2 vide.")

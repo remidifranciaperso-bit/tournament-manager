@@ -217,7 +217,7 @@ export function TemplateMatchBox({
           style={{ height: "14%" }}
         >
           <span
-            className="font-noto font-normal leading-none text-template-blue/45"
+            className="font-noto font-normal leading-none text-template-blue"
             style={{ fontSize: scoreLabelPx }}
           >
             score:

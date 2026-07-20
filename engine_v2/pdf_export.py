@@ -72,6 +72,7 @@ def exporter_pdf_engine_v2(
         planning_layout = (snapshot or {}).get("planning_layout") or {}
         matches = (snapshot or {}).get("matches") or []
         match_results = (snapshot or {}).get("match_results") or {}
+        club_name = ((snapshot or {}).get("meta") or {}).get("club")
         render_base = base_dir or Path(__file__).resolve().parent.parent
 
         for key, capture_data in captures.items():
@@ -92,6 +93,8 @@ def exporter_pdf_engine_v2(
                 section="main",
                 logo_bytes=logo_bytes,
                 logo_wh=logo_wh,
+                club_name=club_name,
+                base_dir=render_base,
             )
 
         for section in ("main", "classement", "planning", "final"):
@@ -119,6 +122,7 @@ def exporter_pdf_engine_v2(
                         footer_slide_index=footer_reference,
                         logo_bytes=logo_bytes,
                         logo_wh=logo_wh,
+                        club_name=club_name,
                     )
                     continue
 
@@ -140,6 +144,8 @@ def exporter_pdf_engine_v2(
                     ),
                     logo_bytes=logo_bytes,
                     logo_wh=logo_wh,
+                    club_name=club_name,
+                    base_dir=render_base,
                     crosspage_stub=(crosspage_stubs or {}).get(key),
                 )
 

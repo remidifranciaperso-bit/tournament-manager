@@ -324,7 +324,7 @@ export function ClubStep({
             autoComplete="off"
             className="text-input lime-input"
             value={form.club}
-            onChange={(e) => patch({ club: e.target.value })}
+            onChange={(e) => patch({ club: e.target.value.toUpperCase() })}
             placeholder="Nom du club"
             spellCheck={false}
           />
@@ -764,7 +764,7 @@ export function TerrainsStep({
               value={nom}
               onChange={(e) => {
                 const terrains = [...form.terrains];
-                terrains[i] = e.target.value;
+                terrains[i] = e.target.value.toUpperCase();
                 patch({ terrains });
               }}
               placeholder={`Terrain ${i + 1}`}
