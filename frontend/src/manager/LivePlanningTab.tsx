@@ -19,7 +19,6 @@ import {
   LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
 } from "./liveDataTable";
-import { isBracketPlaceholder } from "./formatBracketLabel";
 
 interface LivePlanningTabProps {
   layoutFields: LiveLayoutField[];
@@ -54,15 +53,6 @@ function HandCheckboxSquare() {
       aria-hidden
     />
   );
-}
-
-/** Même rendu que les boîtes match (font-tsl + emoji navigateur). */
-function planningTeamCellClass(text: string, capture: boolean): string {
-  const size = liveTeamTextClass(text);
-  if (capture && isBracketPlaceholder(text)) {
-    return `${LIVE_TABLE_CELL_TSL} ${size}`;
-  }
-  return `${LIVE_TABLE_CELL_NOTO} ${size}`;
 }
 
 export function LivePlanningTab({
@@ -154,12 +144,12 @@ export function LivePlanningTab({
           {row.terrain || "—"}
         </td>
         <td
-          className={`${planningTeamCellClass(row.equipe1, capture)} ${nowrap}`}
+          className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} ${nowrap}`}
         >
           {row.equipe1}
         </td>
         <td
-          className={`${planningTeamCellClass(row.equipe2, capture)} ${nowrap}`}
+          className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} ${nowrap}`}
         >
           {row.equipe2}
         </td>
@@ -242,11 +232,8 @@ export function LivePlanningTab({
   if (capture) {
     return (
       <div className="flex w-full items-center justify-center bg-white">
-        <div className={`${LIVE_TABLE_CAPTURE_SHELL} w-full bg-white`}>
-          <table className={[tableClass, "table-fixed w-full"].join(" ")}>
-            {PLANNING_COLGROUP}
-            <tbody className="bg-white">{bodyRows}</tbody>
-          </table>
+        <div className={`${LIVE_TABLE_CAPTURE_SHELL} w-full bg-template-blue`}>
+          {table}
         </div>
       </div>
     );

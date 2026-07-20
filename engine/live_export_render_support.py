@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -73,6 +74,29 @@ _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 _PLACEHOLDER_EMOJI_PREFIXES = ("🏆", "❌", "🥇", "🥈", "🥉")
 
 
+def _emoji_font_candidates(base_dir: Path) -> list[Path]:
+    """Apple sur Mac (comme Chrome), Noto sur Linux (comme Chromium Render)."""
+    bundled = base_dir / "fonts" / "NotoColorEmoji.ttf"
+    system = [
+        Path("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"),
+        Path("/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf"),
+        Path("/usr/share/fonts/truetype/noto/NotoColorEmoji-Regular.ttf"),
+    ]
+    apple = Path("/System/Library/Fonts/Apple Color Emoji.ttc")
+    if sys.platform == "darwin":
+        ordered = [apple, bundled, *system]
+    else:
+        ordered = [bundled, *system, apple]
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for path in ordered:
+        if path in seen or not path.is_file():
+            continue
+        seen.add(path)
+        unique.append(path)
+    return unique
+
+
 def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
     if base_dir is None:
         return {"brush": None, "tsl": None, "noto": None, "emoji": None}
@@ -93,16 +117,12 @@ def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
             base_dir / "frontend" / "public" / "fonts" / "NotoSans-Regular.ttf",
             base_dir / "frontend" / "dist" / "fonts" / "NotoSans-Regular.ttf",
         ],
-        "emoji": [
-            base_dir / "fonts" / "NotoColorEmoji.ttf",
-            Path("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"),
-            Path("/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf"),
-            Path("/usr/share/fonts/truetype/noto/NotoColorEmoji-Regular.ttf"),
-            Path("/System/Library/Fonts/Apple Color Emoji.ttc"),
-        ],
+        "emoji": _emoji_font_candidates(base_dir),
     }
     return {
         key: next((path for path in paths if path.is_file()), None)
+        if key != "emoji"
+        else (paths[0] if paths else None)
         for key, paths in candidates.items()
     }
 
@@ -145,13 +165,78 @@ def _split_placeholder_emoji(text: str) -> tuple[str | None, str]:
     return None, value
 
 
-def _rasterize_emoji_char(
-    char: str,
+def _load_truetype_font(path: Path, size: int):
+    from PIL import ImageFont
+
+    if path.suffix.lower() == ".ttc":
+        return ImageFont.truetype(str(path), size, index=0)
+    return ImageFont.truetype(str(path), size)
+
+
+def _load_emoji_font(path: Path, target_size: int):
+    """Polices bitmap/COLR (Apple, Noto) n'acceptent que certaines tailles."""
+    candidates = sorted(
+        {32, 40, 48, 52, 64, 80, 96, 128, 160, max(32, target_size)},
+        key=lambda size: (abs(size - target_size), size),
+    )
+    last_error: Exception | None = None
+    for size in candidates:
+        try:
+            return _load_truetype_font(path, size), size
+        except OSError as exc:
+            last_error = exc
+            continue
+    if last_error is not None:
+        raise last_error
+    raise OSError("emoji font unavailable")
+
+
+def _rasterize_placeholder_display(
+    text: str,
     fontsize: float,
     fonts: dict[str, Path | None],
 ) -> tuple[bytes, float, float] | None:
-    """Emoji couleur seul — même police que le navigateur (Apple / Noto Color Emoji)."""
-    return _rasterize_placeholder_line(char, fontsize, fonts)
+    """Placeholder complet : emoji couleur + libellé TSL (comme boîtes match)."""
+    value = (text or "").strip()
+    emoji_char, body = _split_placeholder_emoji(value)
+    if emoji_char is None:
+        return None
+    emoji_path = fonts.get("emoji")
+    tsl_path = fonts.get("tsl")
+    if not emoji_path or not tsl_path:
+        return None
+    try:
+        from io import BytesIO
+
+        from PIL import Image, ImageDraw
+
+        target_fs = max(32, int(round(fontsize * 4.5)))
+        emoji_font, fs = _load_emoji_font(emoji_path, target_fs)
+        tsl_font = _load_truetype_font(tsl_path, fs)
+        label = body or "—"
+        gap = max(2, int(fs * 0.12))
+        eb = emoji_font.getbbox(emoji_char)
+        tb = tsl_font.getbbox(label)
+        ew, eh = eb[2] - eb[0], eb[3] - eb[1]
+        tw, th = tb[2] - tb[0], tb[3] - tb[1]
+        iw = max(1, ew + gap + tw)
+        ih = max(1, max(eh, th))
+        img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.text((-eb[0], -eb[1]), emoji_char, font=emoji_font, embedded_color=True)
+        fill = (
+            int(ARENA_800[0] * 255),
+            int(ARENA_800[1] * 255),
+            int(ARENA_800[2] * 255),
+            255,
+        )
+        draw.text((ew + gap - tb[0], -tb[1]), label, font=tsl_font, fill=fill)
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        pt_scale = fontsize / fs
+        return buf.getvalue(), iw * pt_scale, ih * pt_scale
+    except Exception:
+        return None
 
 
 def _rasterize_placeholder_line(
@@ -159,34 +244,7 @@ def _rasterize_placeholder_line(
     fontsize: float,
     fonts: dict[str, Path | None],
 ) -> tuple[bytes, float, float] | None:
-    """Libellé placeholder complet en PNG couleur (comme boîtes match Live)."""
-    emoji_path = fonts.get("emoji")
-    if not emoji_path or not emoji_path.is_file():
-        return None
-    try:
-        from io import BytesIO
-
-        from PIL import Image, ImageDraw, ImageFont
-
-        px = max(28, int(fontsize * 3.2))
-        for size in (px, 32, 40, 48):
-            try:
-                font = ImageFont.truetype(str(emoji_path), size)
-            except OSError:
-                continue
-            bbox = font.getbbox(text)
-            iw = max(bbox[2] - bbox[0], 1)
-            ih = max(bbox[3] - bbox[1], 1)
-            img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(img)
-            draw.text((-bbox[0], -bbox[1]), text, font=font, embedded_color=True)
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            pt_scale = fontsize / size
-            return buf.getvalue(), iw * pt_scale, ih * pt_scale
-    except Exception:
-        return None
-    return None
+    return _rasterize_placeholder_display(text, fontsize, fonts)
 
 
 def _insert_html_emoji_cell(
@@ -200,51 +258,32 @@ def _insert_html_emoji_cell(
     fonts: dict[str, Path | None] | None = None,
     base_dir: Path | None = None,
 ) -> bool:
-    """Placeholder planning : emoji couleur système + libellé TSL (comme boîtes match)."""
+    """Placeholder planning natif : emoji couleur + libellé TSL (comme boîtes match)."""
     value = (text or "").strip()
     if not value:
         return False
     pad = pad_pt if pad_pt is not None else 2.0
     font_paths = fonts or {}
 
-    emoji_char, body = _split_placeholder_emoji(value)
-    if emoji_char is None:
-        return False
-
-    raster = _rasterize_emoji_char(emoji_char, fontsize, font_paths)
+    raster = _rasterize_placeholder_display(value, fontsize, font_paths)
     if raster is None:
         return False
     png_bytes, img_w_pt, img_h_pt = raster
     if img_w_pt <= 0 or img_h_pt <= 0:
         return False
 
-    emoji_h = min(rect.height * 0.72, fontsize * 1.35)
-    emoji_w = img_w_pt * (emoji_h / img_h_pt)
-    emoji_rect = fitz.Rect(
+    draw_h = min(rect.height * 0.82, img_h_pt)
+    draw_w = img_w_pt * (draw_h / img_h_pt)
+    if draw_w > rect.width - 2 * pad:
+        draw_w = rect.width - 2 * pad
+        draw_h = img_h_pt * (draw_w / img_w_pt)
+    dest = fitz.Rect(
         rect.x0 + pad,
-        rect.y0 + (rect.height - emoji_h) / 2,
-        rect.x0 + pad + emoji_w,
-        rect.y0 + (rect.height + emoji_h) / 2,
+        rect.y0 + (rect.height - draw_h) / 2,
+        rect.x0 + pad + draw_w,
+        rect.y0 + (rect.height + draw_h) / 2,
     )
-    page.insert_image(emoji_rect, stream=png_bytes, keep_proportion=True)
-
-    text_rect = fitz.Rect(
-        emoji_rect.x1 + pad * 0.35,
-        rect.y0,
-        rect.x1 - pad,
-        rect.y1,
-    )
-    _insert_textbox(
-        page,
-        text_rect,
-        body or "—",
-        fontsize=fontsize,
-        color=color,
-        align=fitz.TEXT_ALIGN_LEFT,
-        fontfile=font_paths.get("tsl"),
-        pad_pt=0,
-        fonts=font_paths,
-    )
+    page.insert_image(dest, stream=png_bytes, keep_proportion=True)
     return True
 
 
