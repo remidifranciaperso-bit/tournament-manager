@@ -9,8 +9,8 @@ from engine.ppt_engine import equipe_label_court
 WIN_RE = re.compile(r"^Vainqueur\s+(.+)$", re.IGNORECASE)
 LOSE_RE = re.compile(r"^Perdant\s+(.+)$", re.IGNORECASE)
 
-ICONE_VAINQUEUR = "🏆 "
-ICONE_PERDANT = "❌ "
+ICONE_VAINQUEUR = "🏆\u2009"
+ICONE_PERDANT = "❌\u2009"
 
 
 def _matches_by_code(matches: list[dict]) -> dict[str, dict]:

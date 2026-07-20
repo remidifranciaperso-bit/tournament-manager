@@ -13,6 +13,7 @@ import {
   LIVE_TABLE_CELL_TSL_BOLD,
   LIVE_TABLE_HEAD,
   LIVE_TABLE_HEAD_EXPORT,
+  LIVE_TABLE_HEAD_NATIVE,
   LIVE_TABLE_ROW,
   LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
@@ -104,7 +105,11 @@ export function LivePlanningTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
-  const headClass = exportMode || capture ? LIVE_TABLE_HEAD_EXPORT : LIVE_TABLE_HEAD;
+  const headClass = capture
+    ? LIVE_TABLE_HEAD_NATIVE
+    : exportMode
+      ? LIVE_TABLE_HEAD_EXPORT
+      : LIVE_TABLE_HEAD;
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
   const doneLabel = exportMode ? "Terminé" : "Fait";
 

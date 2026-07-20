@@ -115,10 +115,7 @@ export function TemplateMatchBox({
   const team2Px = teamFontSize(team2, scaleH);
   const vsPx = ptOnSlide(TEMPLATE_PT.vs, scaleH);
   const scorePx = ptOnSlide(TEMPLATE_PT.score, scaleH);
-  const team1Weight =
-    winnerSide == null || winnerSide === 1 ? "font-semibold" : "font-normal";
-  const team2Weight =
-    winnerSide == null || winnerSide === 2 ? "font-semibold" : "font-normal";
+  const scoreLabelPx = ptOnSlide(TEMPLATE_PT.scoreLabel, scaleH);
   const team1Font = isBracketPlaceholder(team1) ? "font-tsl" : "font-noto";
   const team2Font = isBracketPlaceholder(team2) ? "font-tsl" : "font-noto";
   const team1Align = isBracketPlaceholder(team1)
@@ -176,7 +173,7 @@ export function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div
-          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team1Font} ${team1Weight} ${team1Align} ${isBracketPlaceholder(team1) ? "whitespace-nowrap" : "overflow-hidden"}`}
+          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${isBracketPlaceholder(team1) ? "whitespace-nowrap" : "overflow-hidden"}`}
           style={{ fontSize: team1Px }}
         >
           <span className={isBracketPlaceholder(team1) ? "shrink-0" : "line-clamp-2 break-words"}>{team1}</span>
@@ -188,7 +185,7 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team2Font} ${team2Weight} ${team2Align} ${isBracketPlaceholder(team2) ? "whitespace-nowrap" : "overflow-hidden"}`}
+          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${isBracketPlaceholder(team2) ? "whitespace-nowrap" : "overflow-hidden"}`}
           style={{ fontSize: team2Px }}
         >
           <span className={isBracketPlaceholder(team2) ? "shrink-0" : "line-clamp-2 break-words"}>{team2}</span>
@@ -204,10 +201,16 @@ export function TemplateMatchBox({
         </div>
       ) : (
         <div
-          className="shrink-0 rounded-b-lg border-t border-dashed border-template-blue/15"
+          className="flex shrink-0 flex-col items-center justify-center rounded-b-lg border-t border-dashed border-template-blue/15 pt-0.5"
           style={{ height: "14%" }}
-          aria-hidden
-        />
+        >
+          <span
+            className="font-noto font-normal leading-none text-template-blue/45"
+            style={{ fontSize: scoreLabelPx }}
+          >
+            score:
+          </span>
+        </div>
       )}
       </div>
     </div>

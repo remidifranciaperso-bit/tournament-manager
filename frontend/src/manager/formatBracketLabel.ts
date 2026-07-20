@@ -1,8 +1,9 @@
-const ICONE_VAINQUEUR = "🏆 ";
-const ICONE_PERDANT = "❌ ";
-const ICONE_POULE_1 = "🥇 ";
-const ICONE_POULE_2 = "🥈 ";
-const ICONE_POULE_3 = "🥉 ";
+const EMOJI_GAP = "\u2009";
+const ICONE_VAINQUEUR = `🏆${EMOJI_GAP}`;
+const ICONE_PERDANT = `❌${EMOJI_GAP}`;
+const ICONE_POULE_1 = `🥇${EMOJI_GAP}`;
+const ICONE_POULE_2 = `🥈${EMOJI_GAP}`;
+const ICONE_POULE_3 = `🥉${EMOJI_GAP}`;
 
 function ensurePlaceholderColon(text: string, icon: string): string {
   const body = text.slice(icon.length).trim().replace(/:$/, "");

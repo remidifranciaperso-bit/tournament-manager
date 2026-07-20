@@ -30,6 +30,10 @@ export const LIVE_TABLE_CAPTURE_SHELL =
 export const LIVE_TABLE_CAPTURE_HEAD_ROW =
   "grid w-full bg-template-blue text-white";
 
+/** En-têtes capture PDF alignés tableaux natifs participants/convocations. */
+export const LIVE_TABLE_HEAD_NATIVE =
+  "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
+
 export const LIVE_TABLE_ROW = "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]";
 
 export const LIVE_TABLE_ROW_EXPORT =

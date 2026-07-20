@@ -30,6 +30,7 @@ TEAM_PT = 12.0
 TEAM_PLACEHOLDER_PT = 8.5
 VS_PT = 9.0
 SCORE_PT = 9.0
+SCORE_LABEL_PT = 6.0
 FEED_PT = 8.0
 PLACEMENT_PT = 11.0
 TABLE_HEAD_PT = 9.0
@@ -294,7 +295,6 @@ def _draw_match_box(
         match_results,
     )
 
-    winner = result.get("winner") if result else None
     team1_rect = fitz.Rect(body.x0 + 2, body.y0 + 2, body.x1 - 2, mid_y - 2)
     team2_rect = fitz.Rect(body.x0 + 2, mid_y + 2, body.x1 - 2, body.y1 - 2)
     team1_px = _pt_on_area(
@@ -313,7 +313,7 @@ def _draw_match_box(
         fontsize=team1_px,
         color=ARENA_800,
         fontfile=fonts.get("tsl") if is_placeholder(equipe1) else fonts.get("noto"),
-        bold=winner in (None, 1),
+        bold=False,
         align=fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe1) else fitz.TEXT_ALIGN_CENTER,
     )
     _insert_textbox(
@@ -323,7 +323,7 @@ def _draw_match_box(
         fontsize=team2_px,
         color=ARENA_800,
         fontfile=fonts.get("tsl") if is_placeholder(equipe2) else fonts.get("noto"),
-        bold=winner in (None, 2),
+        bold=False,
         align=fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe2) else fitz.TEXT_ALIGN_CENTER,
     )
 
@@ -364,6 +364,22 @@ def _draw_match_box(
             width=0.4,
             dashes="[2 2]",
             overlay=True,
+        )
+        label_rect = fitz.Rect(
+            score_rect.x0,
+            score_rect.y0 + score_rect.height * 0.15,
+            score_rect.x1,
+            score_rect.y1,
+        )
+        _insert_textbox(
+            page,
+            label_rect,
+            "score:",
+            fontsize=_pt_on_area(SCORE_LABEL_PT, area),
+            color=(0.55, 0.75, 0.85),
+            fontfile=fonts.get("noto"),
+            bold=False,
+            align=fitz.TEXT_ALIGN_CENTER,
         )
 
 

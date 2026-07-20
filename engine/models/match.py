@@ -17,12 +17,12 @@ class Match:
     def equipe1_label(self):
         if isinstance(self.equipe1, str):
             return self.equipe1
-        return self.equipe1.nom_complet()
+        return self.equipe1.nom_complet_court()
 
     def equipe2_label(self):
         if isinstance(self.equipe2, str):
             return self.equipe2
-        return self.equipe2.nom_complet()
+        return self.equipe2.nom_complet_court()
 
     def label(self):
         return f"{self.code} - {self.tour}"

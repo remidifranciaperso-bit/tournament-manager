@@ -9,6 +9,7 @@ export const TEMPLATE_PT = {
   teamPlaceholder: 8.5,
   vs: 9,
   score: 9,
+  scoreLabel: 6,
   feedLabel: 8,
 } as const;
 
