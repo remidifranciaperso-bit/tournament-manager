@@ -19,6 +19,8 @@ from engine_v2.pages._theme import ARENA_800, TEMPLATE_BLUE
 
 PARTICIPANTS_TABLE = {"left": 0.0178, "top": 0.121, "width": 0.9644}
 CONVOCATIONS_TABLE = {"left": 0.1215, "top": 0.1306, "width": 0.7569}
+# J1/J2 noms (égaux), clas J1/J2 (égaux), poids réduit, TS ×½ (somme = 1).
+PARTICIPANTS_COL_WIDTHS = [0.226, 0.166, 0.226, 0.166, 0.133, 0.083]
 
 
 def draw_engine_table(
@@ -37,7 +39,9 @@ def draw_engine_table(
 
     n_cols = len(headers)
     if col_widths is None:
-        col_widths = [1 / n_cols] * n_cols
+        col_widths = (
+            PARTICIPANTS_COL_WIDTHS if n_cols == len(PARTICIPANTS_COL_WIDTHS) else [1 / n_cols] * n_cols
+        )
 
     area = content_area(page.rect)
     if narrow:
@@ -96,6 +100,7 @@ def draw_engine_table(
         alignments=[fitz.TEXT_ALIGN_LEFT] * n_cols,
         body_fonts=["noto", "tsl", "noto", "tsl", "tsl", "tsl"],
         body_bold=[False, False, False, False, False, True],
+        header_bold=[False, False, False, False, False, True],
         body_colors=body_colors,
         ref_width_pt=ref_width_pt,
     )

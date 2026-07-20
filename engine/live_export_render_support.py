@@ -623,6 +623,7 @@ def _draw_live_table_card(
     alignments: list[int] | None = None,
     body_fonts: list[str | None] | None = None,
     body_bold: list[bool] | None = None,
+    header_bold: list[bool] | None = None,
     body_colors: list[tuple[float, float, float] | None] | None = None,
     ref_width_pt: float = PLANNING_BASE_PT,
 ) -> None:
@@ -641,6 +642,7 @@ def _draw_live_table_card(
     cell_pad = _table_cell_pad_pt(content.width)
     aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
     font_keys = body_fonts or ["tsl"] * len(headers)
+    header_bolds = header_bold or [False] * len(headers)
 
     base_row_h = content.height / max(row_count, 2)
     header_bottom = content.y0 + base_row_h
@@ -676,7 +678,7 @@ def _draw_live_table_card(
             color=WHITE,
             align=align,
             fontfile=fonts.get("tsl"),
-            bold=False,
+            bold=header_bolds[index] if index < len(header_bolds) else False,
             pad_pt=cell_pad,
         )
         x += width
