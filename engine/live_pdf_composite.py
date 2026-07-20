@@ -92,19 +92,17 @@ def _parse_crosspage_stub(
     return direction, midx
 
 
-def composer_page_export(
+def _compose_page_chrome(
     page: fitz.Page,
     source: fitz.Document,
     slide_index: int,
-    capture_data: str,
     *,
-    section: str = "main",
     footer_slide_index: int | None = None,
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
     crosspage_stub: dict | None = None,
-) -> None:
-    """Fond blanc + bandeaux Engine (slide courante) + capture Manager."""
+) -> fitz.Rect:
+    """Bandeau Engine + pied de page ; retourne la zone contenu (fond blanc)."""
     rect = page.rect
     header_h = rect.height * ENGINE_HEADER_RATIO
     footer_h = rect.height * ENGINE_FOOTER_RATIO
@@ -122,7 +120,7 @@ def composer_page_export(
         footer_dest.y0,
     )
 
-    stub_dir, stub_midx = _parse_crosspage_stub(crosspage_stub)
+    stub_dir, _stub_midx = _parse_crosspage_stub(crosspage_stub)
 
     page.draw_rect(rect, color=None, fill=(1, 1, 1), overlay=False)
     page.draw_rect(
@@ -146,17 +144,12 @@ def composer_page_export(
     )
     header_dest = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + header_h)
     if stub_dir == "up":
-        # Partie basse d'un tableau sur deux feuilles : la bande haute Engine ne
-        # contient pas de titre mais le calque du tableau (boîte H5). On la
-        # laisse blanche ; le connecteur D2→F sera prolongé jusqu'au bord haut.
         page.draw_rect(header_dest, color=None, fill=(1, 1, 1), overlay=False)
     else:
         _fit_pdf_clip(page, source, slide_index, header_clip, header_dest)
 
     footer_dest = fitz.Rect(rect.x0, rect.y1 - margin - footer_h, rect.x1, rect.y1 - margin)
     if logo_bytes and logo_wh:
-        # Logo de session (bon ratio, identique au live) : couvre le pied Engine
-        # (ex. calque « score: » des tours préliminaires) et reste homogène.
         page.draw_rect(footer_dest, color=None, fill=(1, 1, 1), overlay=False)
         dest = _contain_rect(footer_dest, logo_wh[0], logo_wh[1])
         dest = fitz.Rect(
@@ -181,6 +174,68 @@ def composer_page_export(
         _fit_pdf_clip(page, source, footer_index, footer_clip, footer_dest)
 
     page.draw_rect(content_rect, color=None, fill=(1, 1, 1), overlay=False)
+    return content_rect
+
+
+def composer_page_planning_native(
+    page: fitz.Page,
+    source: fitz.Document,
+    slide_index: int,
+    layout_fields: list[dict],
+    matches: list[dict],
+    match_results: dict[str, dict],
+    *,
+    base_dir,
+    footer_slide_index: int | None = None,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+) -> None:
+    """Bandeaux Engine + tableau planning PyMuPDF (en-têtes identiques participants)."""
+    from engine.live_export_render_support import draw_planning_table
+
+    content_rect = _compose_page_chrome(
+        page,
+        source,
+        slide_index,
+        footer_slide_index=footer_slide_index,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+    )
+    draw_planning_table(
+        page,
+        content_rect,
+        layout_fields,
+        matches,
+        match_results,
+        base_dir=base_dir,
+        export_mode=True,
+    )
+
+
+def composer_page_export(
+    page: fitz.Page,
+    source: fitz.Document,
+    slide_index: int,
+    capture_data: str,
+    *,
+    section: str = "main",
+    footer_slide_index: int | None = None,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+    crosspage_stub: dict | None = None,
+) -> None:
+    """Fond blanc + bandeaux Engine (slide courante) + capture Manager."""
+    stub_dir, stub_midx = _parse_crosspage_stub(crosspage_stub)
+    content_rect = _compose_page_chrome(
+        page,
+        source,
+        slide_index,
+        footer_slide_index=footer_slide_index,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        crosspage_stub=crosspage_stub,
+    )
+    rect = page.rect
 
     image_bytes = _decode_capture(capture_data)
     if len(image_bytes) < 4096:

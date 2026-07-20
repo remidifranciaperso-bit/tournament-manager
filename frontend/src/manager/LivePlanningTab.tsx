@@ -160,12 +160,40 @@ export function LivePlanningTab({
   const tableHead = (
     <thead>
       <tr className="bg-template-blue text-white">
-        <th className={`whitespace-nowrap ${headClass}`}>Code</th>
-        <th className={`whitespace-nowrap ${headClass}`}>Heure</th>
-        <th className={`whitespace-nowrap ${headClass}`}>Terrain</th>
-        <th className={`whitespace-nowrap ${headClass}`}>Équipe 1</th>
-        <th className={`whitespace-nowrap ${headClass}`}>Équipe 2</th>
-        <th className={`whitespace-nowrap text-center ${headClass}`}>
+        <th
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          style={capture ? { fontWeight: 400 } : undefined}
+        >
+          Code
+        </th>
+        <th
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          style={capture ? { fontWeight: 400 } : undefined}
+        >
+          Heure
+        </th>
+        <th
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          style={capture ? { fontWeight: 400 } : undefined}
+        >
+          Terrain
+        </th>
+        <th
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          style={capture ? { fontWeight: 400 } : undefined}
+        >
+          Équipe 1
+        </th>
+        <th
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          style={capture ? { fontWeight: 400 } : undefined}
+        >
+          Équipe 2
+        </th>
+        <th
+          className={`whitespace-nowrap text-center ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          style={capture ? { fontWeight: 400 } : undefined}
+        >
           {doneLabel}
         </th>
       </tr>

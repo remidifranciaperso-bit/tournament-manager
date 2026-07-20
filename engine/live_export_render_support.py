@@ -761,7 +761,14 @@ def draw_planning_table(
 ) -> None:
     """Tableau planning calqué sur LivePlanningTab (capture export)."""
     rows = _build_planning_rows(layout_fields, matches, match_results)
-    headers = ["Code", "Heure", "Terrain", "Équipe 1", "Équipe 2", "Terminé" if export_mode else "Fait"]
+    headers = [
+        "CODE",
+        "HEURE",
+        "TERRAIN",
+        "ÉQUIPE 1",
+        "ÉQUIPE 2",
+        "TERMINÉ" if export_mode else "FAIT",
+    ]
     col_widths = PLANNING_COL_WIDTHS
     table_area = _fit_live_table_area(
         area,
@@ -795,7 +802,7 @@ def draw_planning_table(
             fitz.TEXT_ALIGN_CENTER,
         ],
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
-        body_bold=[False, False, False, False, False, False],
+        body_bold=[True, False, True, False, False, False],
     )
 
 

@@ -45,8 +45,8 @@ _MOTIF_JOUEUR = re.compile(r"joueur", re.IGNORECASE)
 
 def cover_background_path(base_dir: Path) -> Path | None:
     candidates = [
-        base_dir / "engine_v2" / "assets" / "cover-background.png",
         base_dir / "frontend" / "public" / "images" / "padel-court-night-v6.png",
+        base_dir / "engine_v2" / "assets" / "cover-background.png",
     ]
     return next((p for p in candidates if p.is_file()), None)
 
