@@ -53,8 +53,8 @@ def narrow_table_width_pt(content_width_pt: float) -> float:
 # Alias rétrocompat (valeur de référence slide 1024 pt, pas la page PDF).
 FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT
 LIVE_CARD_RADIUS_PX = 12.0
-# Tailwind ``border`` = 1 px ≈ 0,75 pt à 96 dpi (classement final capture).
-CARD_BORDER_WIDTH = 0.75
+# 1 px CSS à la largeur ref (820 px capture) ≈ 0,75 pt, proportionnel à la largeur.
+PX_TO_PT = 72.0 / 96.0
 # Équivalent Tailwind ``border-template-blue/35`` sur fond blanc.
 CARD_BORDER_COLOR = (
     0.65 + 0.35 * TEMPLATE_BLUE[0],
@@ -536,59 +536,25 @@ def _fit_live_table_area(
     return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
 
 
-def _draw_header_bar(
-    page: fitz.Page,
-    table_area: fitz.Rect,
-    header_bottom: float,
-    radius_pt: float,
-    radius_frac: float,
-) -> None:
-    """Bandeau en-tête bleu : calotte arrondie + rectangle (sans diagonale blanche)."""
-    x0 = table_area.x0
-    y0 = table_area.y0
-    x1 = table_area.x1
-    r = min(radius_pt, table_area.width / 2, header_bottom - y0)
-    if r <= 0.5:
-        page.draw_rect(
-            fitz.Rect(x0, y0, x1, header_bottom),
-            color=TEMPLATE_BLUE,
-            fill=TEMPLATE_BLUE,
-            width=0,
-            overlay=True,
-        )
-        return
-
-    cap_bottom = y0 + 2 * r
-    page.draw_rect(
-        fitz.Rect(x0, y0, x1, cap_bottom),
-        color=TEMPLATE_BLUE,
-        fill=TEMPLATE_BLUE,
-        width=0,
-        radius=radius_frac,
-        overlay=True,
-    )
-    if header_bottom > cap_bottom - 0.1:
-        page.draw_rect(
-            fitz.Rect(x0, y0 + r, x1, header_bottom),
-            color=TEMPLATE_BLUE,
-            fill=TEMPLATE_BLUE,
-            width=0,
-            overlay=True,
-        )
+def _card_border_width(table_area: fitz.Rect, ref_width_pt: float) -> float:
+    """Épaisseur bordure = 1 px CSS à la largeur ref (comme classement final)."""
+    if ref_width_pt <= 0:
+        return PX_TO_PT
+    return max(0.45, PX_TO_PT * table_area.width / ref_width_pt)
 
 
-def _card_radius_frac(table_area: fitz.Rect, ref_width_pt: float) -> float:
-    radius_pt = LIVE_CARD_RADIUS_PX * (table_area.width / ref_width_pt)
-    short = min(table_area.width, table_area.height)
+def _radius_frac_for_rect(rect: fitz.Rect, radius_pt: float) -> float:
+    """Fraction PyMuPDF pour obtenir ``radius_pt`` sur ce rectangle."""
+    short = min(rect.width, rect.height)
     if short <= 0:
         return 0.05
     return min(0.5, max(0.018, radius_pt / short))
 
 
 def _corner_radius_pt(table_area: fitz.Rect, ref_width_pt: float) -> float:
-    return min(table_area.width, table_area.height) * _card_radius_frac(
-        table_area, ref_width_pt
-    )
+    if ref_width_pt <= 0:
+        ref_width_pt = table_area.width
+    return LIVE_CARD_RADIUS_PX * (table_area.width / ref_width_pt)
 
 
 def _inner_card_rect(table_area: fitz.Rect, border_w: float) -> fitz.Rect:
@@ -599,6 +565,49 @@ def _inner_card_rect(table_area: fitz.Rect, border_w: float) -> fitz.Rect:
         table_area.x1 - inset,
         table_area.y1 - inset,
     )
+
+
+def _draw_white_body_shell(
+    page: fitz.Page,
+    content: fitz.Rect,
+    header_bottom: float,
+    radius_pt: float,
+) -> float:
+    """Corps blanc sous l'en-tête, coins bas arrondis."""
+    body_bottom = content.y1 - radius_pt
+    if header_bottom >= content.y1 - 0.5:
+        return body_bottom
+
+    page.draw_rect(
+        fitz.Rect(content.x0, header_bottom, content.x1, body_bottom),
+        color=WHITE,
+        fill=WHITE,
+        width=0,
+        overlay=True,
+    )
+    if radius_pt <= 0.5:
+        return body_bottom
+
+    cap_h = min(content.height, 2 * radius_pt)
+    cap_rect = fitz.Rect(content.x0, content.y1 - cap_h, content.x1, content.y1)
+    page.draw_rect(
+        cap_rect,
+        color=WHITE,
+        fill=WHITE,
+        width=0,
+        radius=_radius_frac_for_rect(cap_rect, radius_pt),
+        overlay=True,
+    )
+    bridge_top = max(header_bottom, content.y1 - cap_h)
+    if body_bottom < bridge_top - 0.1:
+        page.draw_rect(
+            fitz.Rect(content.x0, body_bottom, content.x1, bridge_top),
+            color=WHITE,
+            fill=WHITE,
+            width=0,
+            overlay=True,
+        )
+    return body_bottom
 
 
 def _draw_live_table_card(
@@ -617,47 +626,44 @@ def _draw_live_table_card(
 ) -> None:
     fonts = _font_paths(base_dir)
     row_count = len(body_rows) + 1
-    radius_pt = _corner_radius_pt(table_area, ref_width_pt)
-    radius_frac = _card_radius_frac(table_area, ref_width_pt)
-    inner = _inner_card_rect(table_area, CARD_BORDER_WIDTH)
-    inner_r_pt = _corner_radius_pt(inner, ref_width_pt)
-    inner_frac = _card_radius_frac(inner, ref_width_pt)
+    border_w = _card_border_width(table_area, ref_width_pt)
+    outer_r_pt = _corner_radius_pt(table_area, ref_width_pt)
+    outer_frac = _radius_frac_for_rect(table_area, outer_r_pt)
+    content = fitz.Rect(
+        table_area.x0 + border_w,
+        table_area.y0 + border_w,
+        table_area.x1 - border_w,
+        table_area.y1 - border_w,
+    )
+    content_r_pt = max(0.0, outer_r_pt - border_w)
     aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
     font_keys = body_fonts or ["tsl"] * len(headers)
 
-    base_row_h = inner.height / max(row_count, 2)
-    header_bottom = inner.y0 + base_row_h
-    body_bottom = inner.y1 - inner_r_pt
+    base_row_h = content.height / max(row_count, 2)
+    header_bottom = content.y0 + base_row_h
+    row_line = (0.82, 0.92, 0.98)
+    row_alt = (0.97, 0.99, 1.0)
+
+    page.draw_rect(
+        table_area,
+        color=TEMPLATE_BLUE,
+        fill=TEMPLATE_BLUE,
+        width=0,
+        radius=outer_frac,
+        overlay=True,
+    )
+    body_bottom = _draw_white_body_shell(
+        page, content, header_bottom, content_r_pt
+    )
     body_row_h = max(
         0.0,
         (body_bottom - header_bottom) / max(len(body_rows), 1),
     )
-    row_line = (0.82, 0.92, 0.98)
-    row_alt = (0.97, 0.99, 1.0)
 
-    # Shell : bordure fine puis fond blanc clipé (comme overflow-hidden rounded-xl).
-    page.draw_rect(
-        table_area,
-        color=CARD_BORDER_COLOR,
-        fill=None,
-        width=CARD_BORDER_WIDTH,
-        radius=radius_frac,
-        overlay=True,
-    )
-    page.draw_rect(
-        inner,
-        color=WHITE,
-        fill=WHITE,
-        width=0,
-        radius=inner_frac,
-        overlay=True,
-    )
-    _draw_header_bar(page, inner, header_bottom, inner_r_pt, inner_frac)
-
-    x = inner.x0
+    x = content.x0
     for index, header in enumerate(headers):
-        width = inner.width * col_widths[index]
-        cell = fitz.Rect(x, inner.y0, x + width, header_bottom)
+        width = content.width * col_widths[index]
+        cell = fitz.Rect(x, content.y0, x + width, header_bottom)
         align = aligns[index]
         _insert_textbox(
             page,
@@ -675,19 +681,19 @@ def _draw_live_table_card(
     color_index = 0
     for row_index, values in enumerate(body_rows):
         y0 = header_bottom + body_row_h * row_index
-        row_rect = fitz.Rect(inner.x0, y0, inner.x1, y0 + body_row_h)
+        row_rect = fitz.Rect(content.x0, y0, content.x1, y0 + body_row_h)
         fill = WHITE if row_index % 2 == 0 else row_alt
         page.draw_line(
-            fitz.Point(inner.x0, y0),
-            fitz.Point(inner.x1, y0),
+            fitz.Point(content.x0, y0),
+            fitz.Point(content.x1, y0),
             color=row_line,
             width=0.5,
             overlay=True,
         )
         page.draw_rect(row_rect, color=fill, fill=fill, width=0, overlay=True)
-        x = inner.x0
+        x = content.x0
         for index, value in enumerate(values):
-            width = inner.width * col_widths[index]
+            width = content.width * col_widths[index]
             cell = fitz.Rect(x, y0, x + width, y0 + body_row_h)
             font_key = font_keys[index] if index < len(font_keys) else "tsl"
             fontfile = fonts.get(font_key) if font_key else None
@@ -709,6 +715,15 @@ def _draw_live_table_card(
                 bold=bold,
             )
             x += width
+
+    page.draw_rect(
+        table_area,
+        color=CARD_BORDER_COLOR,
+        fill=None,
+        width=border_w,
+        radius=outer_frac,
+        overlay=True,
+    )
 
 
 def draw_planning_table(
