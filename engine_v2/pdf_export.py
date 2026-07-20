@@ -11,6 +11,7 @@ from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import (
     capture_key,
     composer_page_export,
+    composer_page_planning_hybrid,
     composer_page_planning_native,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
@@ -114,19 +115,35 @@ def exporter_pdf_engine_v2(
                         page = merged.new_page(
                             width=page_rect.width, height=page_rect.height
                         )
-                        composer_page_planning_native(
-                            page,
-                            source,
-                            slide_index,
-                            layout_fields,
-                            matches,
-                            match_results,
-                            base_dir=render_base,
-                            footer_slide_index=footer_reference,
-                            logo_bytes=logo_bytes,
-                            logo_wh=logo_wh,
-                            club_name=club_name,
-                        )
+                        if capture_data:
+                            composer_page_planning_hybrid(
+                                page,
+                                source,
+                                slide_index,
+                                capture_data,
+                                layout_fields,
+                                matches,
+                                match_results,
+                                base_dir=render_base,
+                                footer_slide_index=footer_reference,
+                                logo_bytes=logo_bytes,
+                                logo_wh=logo_wh,
+                                club_name=club_name,
+                            )
+                        else:
+                            composer_page_planning_native(
+                                page,
+                                source,
+                                slide_index,
+                                layout_fields,
+                                matches,
+                                match_results,
+                                base_dir=render_base,
+                                footer_slide_index=footer_reference,
+                                logo_bytes=logo_bytes,
+                                logo_wh=logo_wh,
+                                club_name=club_name,
+                            )
                     else:
                         merged.insert_pdf(
                             source, from_page=slide_index, to_page=slide_index

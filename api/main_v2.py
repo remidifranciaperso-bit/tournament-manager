@@ -77,7 +77,7 @@ def frontend_check():
     dist = BASE_DIR / "frontend" / "dist" / "assets"
     if not dist.is_dir():
         return {"ok": False, "error": "frontend/dist/assets absent"}
-    marker = "export-capture-v2-20260720-planning-native"
+    marker = "export-capture-v2-20260720-planning-hybrid"
     for js in dist.glob("*.js"):
         text = js.read_text(encoding="utf-8", errors="ignore")
         if "v2/prepare" in text and "engine-v2" in text and marker in text:
