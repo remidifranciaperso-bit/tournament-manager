@@ -156,6 +156,5 @@ def composite_tournament_v2_pdf(
         captures=captures,
         logo_path=Path(logo_path) if logo_path else None,
         crosspage_stubs=crosspage_stubs,
-        snapshot=snapshot,
     )
     return output_pdf

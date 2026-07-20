@@ -38,12 +38,21 @@ const PLANNING_COLGROUP = (
   <colgroup>
     <col className="w-[7%]" />
     <col className="w-[7%]" />
-    <col className="w-[13%]" />
-    <col className="w-[28.5%]" />
-    <col className="w-[28.5%]" />
-    <col className="w-[7%]" />
+    <col className="w-[10%]" />
+    <col className="w-[31.5%]" />
+    <col className="w-[31.5%]" />
+    <col className="w-[5%]" />
   </colgroup>
 );
+
+function HandCheckboxSquare() {
+  return (
+    <span
+      className="mx-auto box-border inline-block h-3.5 w-3.5 shrink-0 border-[1.5px] border-template-blue/70 bg-white"
+      aria-hidden
+    />
+  );
+}
 
 export function LivePlanningTab({
   layoutFields,
@@ -142,7 +151,7 @@ export function LivePlanningTab({
         </td>
         <td className={`${LIVE_TABLE_CELL_TSL} text-center ${nowrap}`}>
           {exportMode ? (
-            row.duration
+            <HandCheckboxSquare />
           ) : (
             <input
               type="checkbox"

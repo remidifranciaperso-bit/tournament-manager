@@ -30,7 +30,7 @@ TEAM_PT = 12.0
 TEAM_PLACEHOLDER_PT = 8.5
 VS_PT = 9.0
 SCORE_PT = 9.0
-SCORE_LABEL_PT = 6.0
+SCORE_LABEL_PT = 10.0
 FEED_PT = 8.0
 PLACEMENT_PT = 11.0
 TABLE_HEAD_PT = 9.0
@@ -62,7 +62,7 @@ CARD_BORDER_COLOR = (
     0.65 + 0.35 * TEMPLATE_BLUE[1],
     0.65 + 0.35 * TEMPLATE_BLUE[2],
 )
-PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.285, 0.285, 0.07]
+PLANNING_COL_WIDTHS = [0.07, 0.07, 0.10, 0.315, 0.315, 0.05]
 # Inset calibré sur la 1re colonne convocations (72 % × 2 %).
 TABLE_CELL_INSET_FRAC = 0.02
 CONVOCATIONS_FIRST_COL_FRAC = 0.72
@@ -628,6 +628,18 @@ def _draw_white_body_shell(
     return body_bottom
 
 
+def _draw_hand_checkbox(page: fitz.Page, cell: fitz.Rect) -> None:
+    """Carré à cocher à la main (colonne Terminé export PDF)."""
+    size = min(cell.width * 0.38, cell.height * 0.52, 11.0)
+    box = fitz.Rect(
+        cell.x0 + (cell.width - size) / 2,
+        cell.y0 + (cell.height - size) / 2,
+        cell.x0 + (cell.width + size) / 2,
+        cell.y0 + (cell.height + size) / 2,
+    )
+    page.draw_rect(box, color=TEMPLATE_BLUE, width=0.8, overlay=True)
+
+
 def _draw_live_table_card(
     page: fitz.Page,
     table_area: fitz.Rect,
@@ -642,6 +654,7 @@ def _draw_live_table_card(
     header_bold: list[bool] | None = None,
     body_colors: list[tuple[float, float, float] | None] | None = None,
     ref_width_pt: float = PLANNING_BASE_PT,
+    checkbox_cols: list[int] | None = None,
 ) -> None:
     fonts = _font_paths(base_dir)
     row_count = len(body_rows) + 1
@@ -726,6 +739,10 @@ def _draw_live_table_card(
                 color = ARENA_800
             color_index += 1
             align = aligns[index]
+            if checkbox_cols and index in checkbox_cols:
+                _draw_hand_checkbox(page, cell)
+                x += width
+                continue
             _insert_textbox(
                 page,
                 cell,
@@ -782,7 +799,7 @@ def draw_planning_table(
             row["terrain"] or "—",
             row["equipe1"],
             row["equipe2"],
-            row["duration"] if export_mode else "☐",
+            "" if export_mode else "☐",
         ]
         for row in rows
     ]
@@ -803,6 +820,7 @@ def draw_planning_table(
         ],
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
         body_bold=[True, False, True, False, False, False],
+        checkbox_cols=[5] if export_mode else None,
     )
 
 
