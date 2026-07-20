@@ -136,7 +136,7 @@ export function LivePlanningTab({
         key={`${row.code}-${row.heure}`}
         className={exportMode ? LIVE_TABLE_ROW_EXPORT : LIVE_TABLE_ROW}
       >
-        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} ${nowrap}`}>{row.code}</td>
+        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} ${nowrap} !px-2 sm:!px-3`}>{row.code}</td>
         <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap}`}>
           {row.heure || "—"}
         </td>
@@ -153,9 +153,11 @@ export function LivePlanningTab({
         >
           {row.equipe2}
         </td>
-        <td className={`${LIVE_TABLE_CELL_TSL} text-center ${nowrap}`}>
+        <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap} !px-2 sm:!px-3`}>
           {exportMode ? (
-            <HandCheckboxSquare />
+            <div className="flex w-full justify-center">
+              <HandCheckboxSquare />
+            </div>
           ) : (
             <input
               type="checkbox"
@@ -174,7 +176,7 @@ export function LivePlanningTab({
     <thead>
       <tr className="bg-template-blue text-white">
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          className={`whitespace-nowrap text-left !px-2 sm:!px-3 ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
           style={headStyle}
         >
           Code
@@ -204,7 +206,7 @@ export function LivePlanningTab({
           Équipe 2
         </th>
         <th
-          className={`whitespace-nowrap text-center ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          className={`whitespace-nowrap text-right !px-2 sm:!px-3 ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
           style={headStyle}
         >
           {doneLabel}

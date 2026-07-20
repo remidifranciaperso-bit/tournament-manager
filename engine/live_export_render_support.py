@@ -721,14 +721,15 @@ def _draw_white_body_shell(
     return body_bottom
 
 
-def _draw_hand_checkbox(page: fitz.Page, cell: fitz.Rect) -> None:
-    """Carré à cocher à la main (colonne Terminé export PDF)."""
-    size = min(cell.width * 0.38, cell.height * 0.52, 11.0)
+def _draw_hand_checkbox(page: fitz.Page, cell: fitz.Rect, *, pad_pt: float = 0.0) -> None:
+    """Carré à cocher — centré, marge droite = inset colonne CODE."""
+    inner = fitz.Rect(cell.x0, cell.y0, cell.x1 - pad_pt, cell.y1)
+    size = min(inner.width * 0.38, inner.height * 0.52, 11.0)
     box = fitz.Rect(
-        cell.x0 + (cell.width - size) / 2,
-        cell.y0 + (cell.height - size) / 2,
-        cell.x0 + (cell.width + size) / 2,
-        cell.y0 + (cell.height + size) / 2,
+        inner.x0 + (inner.width - size) / 2,
+        inner.y0 + (inner.height - size) / 2,
+        inner.x0 + (inner.width + size) / 2,
+        inner.y0 + (inner.height + size) / 2,
     )
     page.draw_rect(box, color=TEMPLATE_BLUE, width=0.8, overlay=True)
 
@@ -835,7 +836,7 @@ def _draw_live_table_card(
             color_index += 1
             align = aligns[index]
             if checkbox_cols and index in checkbox_cols:
-                _draw_hand_checkbox(page, cell)
+                _draw_hand_checkbox(page, cell, pad_pt=cell_pad)
                 x += width
                 continue
             body_pt = TEAM_PLACEHOLDER_PT if is_placeholder(value) else TABLE_BODY_PT
@@ -931,7 +932,7 @@ def draw_planning_table(
             fitz.TEXT_ALIGN_LEFT,
             fitz.TEXT_ALIGN_LEFT,
             fitz.TEXT_ALIGN_LEFT,
-            fitz.TEXT_ALIGN_CENTER,
+            fitz.TEXT_ALIGN_RIGHT,
         ],
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
         body_bold=[True, False, True, False, False, False],
