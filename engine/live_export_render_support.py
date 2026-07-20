@@ -73,7 +73,7 @@ _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 
 def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
     if base_dir is None:
-        return {"brush": None, "tsl": None, "noto": None}
+        return {"brush": None, "tsl": None, "noto": None, "emoji": None}
     candidates = {
         "brush": [
             base_dir / "fonts" / "Grindy Brush.otf",
@@ -91,11 +91,24 @@ def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
             base_dir / "frontend" / "public" / "fonts" / "NotoSans-Regular.ttf",
             base_dir / "frontend" / "dist" / "fonts" / "NotoSans-Regular.ttf",
         ],
+        "emoji": [
+            base_dir / "fonts" / "NotoColorEmoji.ttf",
+            Path("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"),
+            Path("/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf"),
+        ],
     }
     return {
         key: next((path for path in paths if path.is_file()), None)
         for key, paths in candidates.items()
     }
+
+
+def _text_has_emoji(text: str) -> bool:
+    for char in text:
+        code = ord(char)
+        if code >= 0x1F300 or char in "🏆❌🥇🥈🥉":
+            return True
+    return False
 
 
 def _pt_on_area(pt: float, area: fitz.Rect) -> float:
@@ -130,10 +143,14 @@ def _insert_textbox(
     fontfile: Path | None = None,
     bold: bool = False,
     pad_pt: float | None = None,
+    fonts: dict[str, Path | None] | None = None,
 ) -> None:
     value = (text or "").strip()
     if not value:
         return
+
+    if fontfile is None and fonts and _text_has_emoji(value):
+        fontfile = fonts.get("emoji") or fonts.get("noto")
 
     if fontfile and fontfile.is_file():
         try:
@@ -709,6 +726,7 @@ def _draw_live_table_card(
             fontfile=fonts.get("tsl"),
             bold=header_bolds[index] if index < len(header_bolds) else False,
             pad_pt=cell_pad,
+            fonts=fonts,
         )
         x += width
 
@@ -743,16 +761,19 @@ def _draw_live_table_card(
                 _draw_hand_checkbox(page, cell)
                 x += width
                 continue
+            body_pt = TEAM_PLACEHOLDER_PT if is_placeholder(value) else TABLE_BODY_PT
+            cell_font = fonts.get("tsl") if is_placeholder(value) else fontfile
             _insert_textbox(
                 page,
                 cell,
                 value or "—",
-                fontsize=TABLE_BODY_PT,
+                fontsize=body_pt,
                 color=color,
                 align=align,
-                fontfile=fontfile,
+                fontfile=cell_font,
                 bold=bold,
                 pad_pt=cell_pad,
+                fonts=fonts,
             )
             x += width
 
