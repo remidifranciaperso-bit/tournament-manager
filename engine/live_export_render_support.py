@@ -62,6 +62,9 @@ CARD_BORDER_COLOR = (
     0.65 + 0.35 * TEMPLATE_BLUE[2],
 )
 PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.285, 0.285, 0.07]
+# Inset calibré sur la 1re colonne convocations (72 % × 2 %).
+TABLE_CELL_INSET_FRAC = 0.02
+CONVOCATIONS_FIRST_COL_FRAC = 0.72
 _BEZIER_K = 0.5522847498
 
 _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
@@ -107,6 +110,14 @@ def _pct_rect(box: dict, area: fitz.Rect) -> fitz.Rect:
     )
 
 
+def _table_cell_pad_pt(content_width: float) -> float:
+    """Padding horizontal cellule — même décalage que convocations (ÉQUIPE / noms)."""
+    return max(
+        4.0,
+        content_width * CONVOCATIONS_FIRST_COL_FRAC * TABLE_CELL_INSET_FRAC,
+    )
+
+
 def _insert_textbox(
     page: fitz.Page,
     rect: fitz.Rect,
@@ -117,6 +128,7 @@ def _insert_textbox(
     align: int = fitz.TEXT_ALIGN_CENTER,
     fontfile: Path | None = None,
     bold: bool = False,
+    pad_pt: float | None = None,
 ) -> None:
     value = (text or "").strip()
     if not value:
@@ -129,7 +141,7 @@ def _insert_textbox(
             font = None
         if font is not None:
             text_width = font.text_length(value, fontsize=fontsize)
-            inset = max(2.0, rect.width * 0.02)
+            inset = pad_pt if pad_pt is not None else max(2.0, rect.width * 0.02)
             if align == fitz.TEXT_ALIGN_LEFT:
                 x = rect.x0 + inset
             elif align == fitz.TEXT_ALIGN_RIGHT:
@@ -557,16 +569,6 @@ def _corner_radius_pt(table_area: fitz.Rect, ref_width_pt: float) -> float:
     return LIVE_CARD_RADIUS_PX * (table_area.width / ref_width_pt)
 
 
-def _inner_card_rect(table_area: fitz.Rect, border_w: float) -> fitz.Rect:
-    inset = border_w / 2
-    return fitz.Rect(
-        table_area.x0 + inset,
-        table_area.y0 + inset,
-        table_area.x1 - inset,
-        table_area.y1 - inset,
-    )
-
-
 def _draw_white_body_shell(
     page: fitz.Page,
     content: fitz.Rect,
@@ -636,6 +638,7 @@ def _draw_live_table_card(
         table_area.y1 - border_w,
     )
     content_r_pt = max(0.0, outer_r_pt - border_w)
+    cell_pad = _table_cell_pad_pt(content.width)
     aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
     font_keys = body_fonts or ["tsl"] * len(headers)
 
@@ -674,6 +677,7 @@ def _draw_live_table_card(
             align=align,
             fontfile=fonts.get("tsl"),
             bold=False,
+            pad_pt=cell_pad,
         )
         x += width
 
@@ -713,6 +717,7 @@ def _draw_live_table_card(
                 align=align,
                 fontfile=fontfile,
                 bold=bold,
+                pad_pt=cell_pad,
             )
             x += width
 
