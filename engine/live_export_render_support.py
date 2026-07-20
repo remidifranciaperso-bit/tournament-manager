@@ -70,13 +70,7 @@ _BEZIER_K = 0.5522847498
 
 _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 
-_EMOJI_ASSET_FILES = {
-    "🏆": "trophy.png",
-    "❌": "cross.png",
-    "🥇": "gold.png",
-    "🥈": "silver.png",
-    "🥉": "bronze.png",
-}
+_PLACEHOLDER_EMOJI_PREFIXES = ("🏆", "❌", "🥇", "🥈", "🥉")
 
 
 def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
@@ -144,21 +138,20 @@ def _table_cell_pad_pt(content_width: float) -> float:
 
 def _split_placeholder_emoji(text: str) -> tuple[str | None, str]:
     value = (text or "").strip()
-    for prefix in _EMOJI_ASSET_FILES:
+    for prefix in _PLACEHOLDER_EMOJI_PREFIXES:
         if value.startswith(prefix):
             body = value[len(prefix) :].lstrip(" \u2009")
             return prefix, body
     return None, value
 
 
-def _emoji_asset_bytes(base_dir: Path | None, char: str) -> bytes | None:
-    filename = _EMOJI_ASSET_FILES.get(char)
-    if not filename or base_dir is None:
-        return None
-    path = base_dir / "engine_v2" / "assets" / "emoji" / filename
-    if path.is_file():
-        return path.read_bytes()
-    return None
+def _rasterize_emoji_char(
+    char: str,
+    fontsize: float,
+    fonts: dict[str, Path | None],
+) -> tuple[bytes, float, float] | None:
+    """Emoji couleur seul — même police que le navigateur (Apple / Noto Color Emoji)."""
+    return _rasterize_placeholder_line(char, fontsize, fonts)
 
 
 def _rasterize_placeholder_line(
@@ -207,7 +200,7 @@ def _insert_html_emoji_cell(
     fonts: dict[str, Path | None] | None = None,
     base_dir: Path | None = None,
 ) -> bool:
-    """Placeholder planning : emoji couleur + libellé TSL (comme boîtes match)."""
+    """Placeholder planning : emoji couleur système + libellé TSL (comme boîtes match)."""
     value = (text or "").strip()
     if not value:
         return False
@@ -218,28 +211,15 @@ def _insert_html_emoji_cell(
     if emoji_char is None:
         return False
 
-    png_bytes = _emoji_asset_bytes(base_dir, emoji_char)
-    if png_bytes is None:
-        raster = _rasterize_placeholder_line(value, fontsize, font_paths)
-        if raster is None:
-            return False
-        png_bytes, img_w_pt, img_h_pt = raster
-        draw_h = min(rect.height * 0.82, img_h_pt)
-        draw_w = img_w_pt * (draw_h / img_h_pt)
-        if draw_w > rect.width - 2 * pad:
-            draw_w = rect.width - 2 * pad
-            draw_h = img_h_pt * (draw_w / img_w_pt)
-        dest = fitz.Rect(
-            rect.x0 + pad,
-            rect.y0 + (rect.height - draw_h) / 2,
-            rect.x0 + pad + draw_w,
-            rect.y0 + (rect.height + draw_h) / 2,
-        )
-        page.insert_image(dest, stream=png_bytes, keep_proportion=True)
-        return True
+    raster = _rasterize_emoji_char(emoji_char, fontsize, font_paths)
+    if raster is None:
+        return False
+    png_bytes, img_w_pt, img_h_pt = raster
+    if img_w_pt <= 0 or img_h_pt <= 0:
+        return False
 
     emoji_h = min(rect.height * 0.72, fontsize * 1.35)
-    emoji_w = emoji_h
+    emoji_w = img_w_pt * (emoji_h / img_h_pt)
     emoji_rect = fitz.Rect(
         rect.x0 + pad,
         rect.y0 + (rect.height - emoji_h) / 2,
