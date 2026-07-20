@@ -40,9 +40,9 @@ const PLANNING_COLGROUP = (
     <col className="w-[7%]" />
     <col className="w-[7%]" />
     <col className="w-[10%]" />
-    <col className="w-[31.5%]" />
-    <col className="w-[31.5%]" />
-    <col className="w-[5%]" />
+    <col className="w-[35%]" />
+    <col className="w-[35%]" />
+    <col className="w-[6%]" />
   </colgroup>
 );
 

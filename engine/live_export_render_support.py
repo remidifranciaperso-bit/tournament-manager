@@ -62,7 +62,7 @@ CARD_BORDER_COLOR = (
     0.65 + 0.35 * TEMPLATE_BLUE[1],
     0.65 + 0.35 * TEMPLATE_BLUE[2],
 )
-PLANNING_COL_WIDTHS = [0.07, 0.07, 0.10, 0.315, 0.315, 0.05]
+PLANNING_COL_WIDTHS = [0.07, 0.07, 0.10, 0.35, 0.35, 0.06]
 # Inset calibré sur la 1re colonne convocations (72 % × 2 %).
 TABLE_CELL_INSET_FRAC = 0.02
 CONVOCATIONS_FIRST_COL_FRAC = 0.72
@@ -130,6 +130,38 @@ def _table_cell_pad_pt(content_width: float) -> float:
         4.0,
         content_width * CONVOCATIONS_FIRST_COL_FRAC * TABLE_CELL_INSET_FRAC,
     )
+
+
+def _insert_html_emoji_cell(
+    page: fitz.Page,
+    rect: fitz.Rect,
+    text: str,
+    *,
+    fontsize: float,
+    color: tuple[float, float, float],
+    pad_pt: float | None = None,
+) -> bool:
+    """Placeholder planning avec emojis couleur (insert_htmlbox)."""
+    import html as html_module
+
+    value = (text or "").strip()
+    if not value:
+        return False
+    pad = pad_pt if pad_pt is not None else 2.0
+    r, g, b = color
+    rgb = f"rgb({int(r * 255)},{int(g * 255)},{int(b * 255)})"
+    content = html_module.escape(value)
+    html = (
+        f'<div style="font-family: \'Noto Color Emoji\', \'Apple Color Emoji\', '
+        f"'Segoe UI Emoji', sans-serif; font-size:{fontsize}pt; color:{rgb}; "
+        f'padding-left:{pad}px; line-height:1.15; white-space:nowrap;">'
+        f"{content}</div>"
+    )
+    try:
+        page.insert_htmlbox(rect, html)
+        return True
+    except Exception:
+        return False
 
 
 def _insert_textbox(
@@ -672,6 +704,7 @@ def _draw_live_table_card(
     body_colors: list[tuple[float, float, float] | None] | None = None,
     ref_width_pt: float = PLANNING_BASE_PT,
     checkbox_cols: list[int] | None = None,
+    emoji_html_cols: list[int] | None = None,
 ) -> None:
     fonts = _font_paths(base_dir)
     row_count = len(body_rows) + 1
@@ -763,6 +796,21 @@ def _draw_live_table_card(
                 continue
             body_pt = TEAM_PLACEHOLDER_PT if is_placeholder(value) else TABLE_BODY_PT
             cell_font = fonts.get("tsl") if is_placeholder(value) else fontfile
+            if (
+                emoji_html_cols
+                and index in emoji_html_cols
+                and is_placeholder(value)
+                and _insert_html_emoji_cell(
+                    page,
+                    cell,
+                    value or "—",
+                    fontsize=body_pt,
+                    color=color,
+                    pad_pt=cell_pad,
+                )
+            ):
+                x += width
+                continue
             _insert_textbox(
                 page,
                 cell,
@@ -842,6 +890,7 @@ def draw_planning_table(
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
         body_bold=[True, False, True, False, False, False],
         checkbox_cols=[5] if export_mode else None,
+        emoji_html_cols=[3, 4],
     )
 
 
