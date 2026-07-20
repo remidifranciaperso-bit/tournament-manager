@@ -53,6 +53,7 @@ def narrow_table_width_pt(content_width_pt: float) -> float:
 # Alias rétrocompat (valeur de référence slide 1024 pt, pas la page PDF).
 FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT
 LIVE_CARD_RADIUS_PX = 12.0
+CARD_BORDER_PT = 0.75
 PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.285, 0.285, 0.07]
 _BEZIER_K = 0.5522847498
 
@@ -575,38 +576,23 @@ def _draw_body_fill(
     header_bottom: float,
     radius_pt: float,
     radius_frac: float,
+    ref_width_pt: float,
 ) -> None:
-    """Corps blanc : rectangle + calotte inférieure arrondie."""
-    x0 = table_area.x0
-    y0 = header_bottom
-    x1 = table_area.x1
-    y1 = table_area.y1
-    r = min(radius_pt, table_area.width / 2, y1 - y0)
-    if r <= 0.5:
-        page.draw_rect(
-            fitz.Rect(x0, y0, x1, y1),
-            color=WHITE,
-            fill=WHITE,
-            width=0,
-            overlay=True,
-        )
+    del radius_frac, ref_width_pt
+    inset = CARD_BORDER_PT
+    inner = fitz.Rect(
+        table_area.x0 + inset,
+        header_bottom,
+        table_area.x1 - inset,
+        table_area.y1 - inset - max(0.5, radius_pt - inset),
+    )
+    if inner.width <= 0 or inner.height <= 0:
         return
-
-    cap_top = y1 - 2 * r
-    if y0 < cap_top - 0.1:
-        page.draw_rect(
-            fitz.Rect(x0, y0, x1, cap_top),
-            color=WHITE,
-            fill=WHITE,
-            width=0,
-            overlay=True,
-        )
     page.draw_rect(
-        fitz.Rect(x0, cap_top, x1, y1),
+        inner,
         color=WHITE,
         fill=WHITE,
         width=0,
-        radius=radius_frac,
         overlay=True,
     )
 
@@ -648,21 +634,26 @@ def _draw_live_table_card(
 
     base_row_h = table_area.height / max(row_count, 2)
     header_bottom = table_area.y0 + base_row_h
-    body_bottom = table_area.y1 - radius_pt
+    inset = CARD_BORDER_PT
+    inner_r_pt = max(0.5, radius_pt - inset)
+    body_bottom = table_area.y1 - inset - inner_r_pt
     body_row_h = (body_bottom - header_bottom) / max(len(body_rows), 1)
     row_line = (0.82, 0.92, 0.98)
     row_alt = (0.97, 0.99, 1.0)
+    body_x0 = table_area.x0 + inset
+    body_x1 = table_area.x1 - inset
 
-    # Carte bleue arrondie pleine zone → corps blanc : coins propres, pas de diagonale.
     page.draw_rect(
         table_area,
         color=TEMPLATE_BLUE,
         fill=TEMPLATE_BLUE,
-        width=0.8,
+        width=0,
         radius=radius_frac,
         overlay=True,
     )
-    _draw_body_fill(page, table_area, header_bottom, radius_pt, radius_frac)
+    _draw_body_fill(
+        page, table_area, header_bottom, radius_pt, radius_frac, ref_width_pt
+    )
 
     x = table_area.x0
     for index, header in enumerate(headers):
@@ -685,11 +676,11 @@ def _draw_live_table_card(
     color_index = 0
     for row_index, values in enumerate(body_rows):
         y0 = header_bottom + body_row_h * row_index
-        row_rect = fitz.Rect(table_area.x0, y0, table_area.x1, y0 + body_row_h)
+        row_rect = fitz.Rect(body_x0, y0, body_x1, y0 + body_row_h)
         fill = WHITE if row_index % 2 == 0 else row_alt
         page.draw_line(
-            fitz.Point(table_area.x0, y0),
-            fitz.Point(table_area.x1, y0),
+            fitz.Point(body_x0, y0),
+            fitz.Point(body_x1, y0),
             color=row_line,
             width=0.5,
             overlay=True,
