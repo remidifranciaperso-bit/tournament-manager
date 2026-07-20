@@ -53,7 +53,8 @@ def narrow_table_width_pt(content_width_pt: float) -> float:
 # Alias rétrocompat (valeur de référence slide 1024 pt, pas la page PDF).
 FINAL_TABLE_WIDTH_PT = FINAL_BASE_PT
 LIVE_CARD_RADIUS_PX = 12.0
-CARD_BORDER_WIDTH = 0.6
+# Tailwind ``border`` = 1 px ≈ 0,75 pt à 96 dpi (classement final capture).
+CARD_BORDER_WIDTH = 0.75
 # Équivalent Tailwind ``border-template-blue/35`` sur fond blanc.
 CARD_BORDER_COLOR = (
     0.65 + 0.35 * TEMPLATE_BLUE[0],
@@ -590,6 +591,16 @@ def _corner_radius_pt(table_area: fitz.Rect, ref_width_pt: float) -> float:
     )
 
 
+def _inner_card_rect(table_area: fitz.Rect, border_w: float) -> fitz.Rect:
+    inset = border_w / 2
+    return fitz.Rect(
+        table_area.x0 + inset,
+        table_area.y0 + inset,
+        table_area.x1 - inset,
+        table_area.y1 - inset,
+    )
+
+
 def _draw_live_table_card(
     page: fitz.Page,
     table_area: fitz.Rect,
@@ -608,31 +619,42 @@ def _draw_live_table_card(
     row_count = len(body_rows) + 1
     radius_pt = _corner_radius_pt(table_area, ref_width_pt)
     radius_frac = _card_radius_frac(table_area, ref_width_pt)
+    inner = _inner_card_rect(table_area, CARD_BORDER_WIDTH)
+    inner_r_pt = _corner_radius_pt(inner, ref_width_pt)
+    inner_frac = _card_radius_frac(inner, ref_width_pt)
     aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
     font_keys = body_fonts or ["tsl"] * len(headers)
 
     base_row_h = table_area.height / max(row_count, 2)
     header_bottom = table_area.y0 + base_row_h
-    body_bottom = table_area.y1 - radius_pt
+    body_bottom = inner.y1 - inner_r_pt
     body_row_h = (body_bottom - header_bottom) / max(len(body_rows), 1)
     row_line = (0.82, 0.92, 0.98)
     row_alt = (0.97, 0.99, 1.0)
 
-    # Comme classement final : fond blanc arrondi, en-tête bleu seul, bordure fine.
+    # Shell : bordure fine puis fond blanc clipé (comme overflow-hidden rounded-xl).
     page.draw_rect(
         table_area,
-        color=WHITE,
-        fill=WHITE,
-        width=0,
+        color=CARD_BORDER_COLOR,
+        fill=None,
+        width=CARD_BORDER_WIDTH,
         radius=radius_frac,
         overlay=True,
     )
-    _draw_header_bar(page, table_area, header_bottom, radius_pt, radius_frac)
+    page.draw_rect(
+        inner,
+        color=WHITE,
+        fill=WHITE,
+        width=0,
+        radius=inner_frac,
+        overlay=True,
+    )
+    _draw_header_bar(page, inner, header_bottom, inner_r_pt, inner_frac)
 
-    x = table_area.x0
+    x = inner.x0
     for index, header in enumerate(headers):
-        width = table_area.width * col_widths[index]
-        cell = fitz.Rect(x, table_area.y0, x + width, header_bottom)
+        width = inner.width * col_widths[index]
+        cell = fitz.Rect(x, inner.y0, x + width, header_bottom)
         align = aligns[index]
         _insert_textbox(
             page,
@@ -650,19 +672,19 @@ def _draw_live_table_card(
     color_index = 0
     for row_index, values in enumerate(body_rows):
         y0 = header_bottom + body_row_h * row_index
-        row_rect = fitz.Rect(table_area.x0, y0, table_area.x1, y0 + body_row_h)
+        row_rect = fitz.Rect(inner.x0, y0, inner.x1, y0 + body_row_h)
         fill = WHITE if row_index % 2 == 0 else row_alt
         page.draw_line(
-            fitz.Point(table_area.x0, y0),
-            fitz.Point(table_area.x1, y0),
+            fitz.Point(inner.x0, y0),
+            fitz.Point(inner.x1, y0),
             color=row_line,
             width=0.5,
             overlay=True,
         )
         page.draw_rect(row_rect, color=fill, fill=fill, width=0, overlay=True)
-        x = table_area.x0
+        x = inner.x0
         for index, value in enumerate(values):
-            width = table_area.width * col_widths[index]
+            width = inner.width * col_widths[index]
             cell = fitz.Rect(x, y0, x + width, y0 + body_row_h)
             font_key = font_keys[index] if index < len(font_keys) else "tsl"
             fontfile = fonts.get(font_key) if font_key else None
@@ -684,15 +706,6 @@ def _draw_live_table_card(
                 bold=bold,
             )
             x += width
-
-    page.draw_rect(
-        table_area,
-        color=CARD_BORDER_COLOR,
-        fill=None,
-        width=CARD_BORDER_WIDTH,
-        radius=radius_frac,
-        overlay=True,
-    )
 
 
 def draw_planning_table(
