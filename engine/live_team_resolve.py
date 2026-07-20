@@ -9,8 +9,51 @@ from engine.ppt_engine import equipe_label_court
 WIN_RE = re.compile(r"^Vainqueur\s+(.+)$", re.IGNORECASE)
 LOSE_RE = re.compile(r"^Perdant\s+(.+)$", re.IGNORECASE)
 
-ICONE_VAINQUEUR = "🏆\u2009"
-ICONE_PERDANT = "❌\u2009"
+EMOJI_GAP = "\u2009"
+ICONE_VAINQUEUR = f"🏆{EMOJI_GAP}"
+ICONE_PERDANT = f"❌{EMOJI_GAP}"
+ICONE_POULE_1 = f"🥇{EMOJI_GAP}"
+ICONE_POULE_2 = f"🥈{EMOJI_GAP}"
+ICONE_POULE_3 = f"🥉{EMOJI_GAP}"
+
+
+def _ensure_placeholder_colon(text: str, icon: str) -> str:
+    body = text[len(icon) :].strip().rstrip(":")
+    return f"{icon}{body}:" if body else f"{icon}:"
+
+
+def format_team_slot(label: str) -> str:
+    """Aligné sur ``formatTeamSlot`` (LiveBracketSlide / planning Live)."""
+    if not isinstance(label, str):
+        return equipe_label_court(label)
+
+    text = label.strip()
+    if not text:
+        return "—"
+
+    for icon in (
+        ICONE_VAINQUEUR,
+        ICONE_PERDANT,
+        ICONE_POULE_1,
+        ICONE_POULE_2,
+        ICONE_POULE_3,
+    ):
+        if text.startswith(icon):
+            return _ensure_placeholder_colon(text, icon)
+
+    if text.startswith("Vainqueur Poule "):
+        return f"{ICONE_POULE_1}{text.replace('Vainqueur ', '')}:"
+    if text.startswith("Deuxième Poule ") or text.startswith("Second Poule "):
+        body = re.sub(r"^(Deuxième|Second) ", "", text)
+        return f"{ICONE_POULE_2}{body}:"
+    if text.startswith("Troisième Poule "):
+        return f"{ICONE_POULE_3}{text.replace('Troisième ', '')}:"
+    if text.startswith("Vainqueur "):
+        return f"{ICONE_VAINQUEUR}{text.replace('Vainqueur ', '')}:"
+    if text.startswith("Perdant "):
+        return f"{ICONE_PERDANT}{text.replace('Perdant ', '')}:"
+
+    return equipe_label_court(text)
 
 
 def _matches_by_code(matches: list[dict]) -> dict[str, dict]:
@@ -81,25 +124,6 @@ def feed_key_from_team_label(label: str) -> str | None:
     if lose:
         return f"LOSE_{lose.group(1).strip()}"
     return None
-
-
-def format_team_slot(label: str) -> str:
-    """Comme ``equipe_label_court`` (Engine V1 / PPTX) — 🏆 H3: / ❌ D1:."""
-    if not isinstance(label, str):
-        return equipe_label_court(label)
-
-    text = label.strip()
-    if not text:
-        return "—"
-
-    if text.startswith(ICONE_VAINQUEUR):
-        body = text[len(ICONE_VAINQUEUR) :].strip().rstrip(":")
-        return f"{ICONE_VAINQUEUR}{body}:" if body else f"{ICONE_VAINQUEUR}:"
-    if text.startswith(ICONE_PERDANT):
-        body = text[len(ICONE_PERDANT) :].strip().rstrip(":")
-        return f"{ICONE_PERDANT}{body}:" if body else f"{ICONE_PERDANT}:"
-
-    return equipe_label_court(text)
 
 
 def format_feed_key(key: str) -> str:

@@ -5,14 +5,32 @@ export function formatDateFr(iso: string) {
   return `${d}/${m}/${y}`;
 }
 
+/** Club / terrains — toujours en majuscules (Engine V2 + Manager). */
+export function normalizeUppercaseFields(
+  partial: Partial<TournamentForm>
+): Partial<TournamentForm> {
+  const next: Partial<TournamentForm> = { ...partial };
+  if (typeof partial.club === "string") {
+    next.club = partial.club.toUpperCase();
+  }
+  if (Array.isArray(partial.terrains)) {
+    next.terrains = partial.terrains.map((terrain) => terrain.toUpperCase());
+  }
+  if (typeof partial.terrainPrincipal === "string") {
+    next.terrainPrincipal = partial.terrainPrincipal.toUpperCase();
+  }
+  return next;
+}
+
 export function syncTerrains(form: TournamentForm, nb: number): TournamentForm {
   const terrains = [...form.terrains];
   while (terrains.length < nb) terrains.push(`TERRAIN ${terrains.length + 1}`);
   while (terrains.length > nb) terrains.pop();
-  const terrainPrincipal = terrains.includes(form.terrainPrincipal)
-    ? form.terrainPrincipal
-    : terrains[0] ?? "TERRAIN 1";
-  return { ...form, nbTerrains: nb, terrains, terrainPrincipal };
+  const upperTerrains = terrains.map((terrain) => terrain.toUpperCase());
+  const terrainPrincipal = upperTerrains.includes(form.terrainPrincipal.toUpperCase())
+    ? form.terrainPrincipal.toUpperCase()
+    : upperTerrains[0] ?? "TERRAIN 1";
+  return { ...form, nbTerrains: nb, terrains: upperTerrains, terrainPrincipal };
 }
 
 export function syncHeures(form: TournamentForm, nbJours: number): TournamentForm {

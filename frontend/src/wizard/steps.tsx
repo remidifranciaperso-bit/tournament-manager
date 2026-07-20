@@ -322,11 +322,13 @@ export function ClubStep({
             id="club"
             name="club-organisateur"
             autoComplete="off"
-            className="text-input lime-input"
+            className="text-input lime-input uppercase"
             value={form.club}
             onChange={(e) => patch({ club: e.target.value.toUpperCase() })}
             placeholder="Nom du club"
             spellCheck={false}
+            autoCapitalize="characters"
+            autoCorrect="off"
           />
         </div>
 
@@ -760,7 +762,7 @@ export function TerrainsStep({
           {form.terrains.map((nom, i) => (
             <input
               key={i}
-              className="text-input lime-input"
+              className="text-input lime-input uppercase"
               value={nom}
               onChange={(e) => {
                 const terrains = [...form.terrains];
@@ -768,6 +770,9 @@ export function TerrainsStep({
                 patch({ terrains });
               }}
               placeholder={`Terrain ${i + 1}`}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
             />
           ))}
         </div>

@@ -108,7 +108,23 @@ def _parse_tournament_form(
     if not liste_terrains:
         raise HTTPException(status_code=422, detail="Aucun terrain défini.")
 
+    liste_terrains = [str(item).strip().upper() for item in liste_terrains if str(item).strip()]
+
+    if not liste_terrains:
+        raise HTTPException(status_code=422, detail="Aucun terrain défini.")
+
     return heures, liste_terrains
+
+
+def _normalize_club_name(club: str) -> str:
+    return (club or "").strip().upper()
+
+
+def _normalize_terrain_principal(terrain_principal: str, terrains: list[str]) -> str:
+    principal = (terrain_principal or "").strip().upper()
+    if principal in terrains:
+        return principal
+    return terrains[0]
 
 
 @router.get("/health")
@@ -177,6 +193,8 @@ async def prepare_v2(
         format_match_finale=format_match_finale,
         format_match_poule=format_match_poule,
     )
+    club = _normalize_club_name(club)
+    terrain_principal = _normalize_terrain_principal(terrain_principal, liste_terrains)
 
     excel_path = _ecrire_fichier_temporaire(excel, ".xlsx")
     logo_path = None

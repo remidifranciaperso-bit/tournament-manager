@@ -21,7 +21,7 @@ import { RacketProgress } from "../components/RacketProgress";
 import { Stepper, StepperMobile } from "../components/Stepper";
 import { GhostButton, PrimaryButton } from "../components/ui";
 import { defaultForm, type PreviewResult, type TournamentForm } from "../types";
-import { poulesDisponibleFrom, syncHeures } from "../wizard/helpers";
+import { poulesDisponibleFrom, syncHeures, normalizeUppercaseFields } from "../wizard/helpers";
 import {
   ClubStep,
   FormatStep,
@@ -148,7 +148,7 @@ export default function EngineV2Page() {
   const multiJoursDisponible = nbEquipes >= 20;
 
   const patch = useCallback((partial: Partial<TournamentForm>) => {
-    setForm((prev) => ({ ...prev, ...partial }));
+    setForm((prev) => ({ ...prev, ...normalizeUppercaseFields(partial) }));
   }, []);
 
   useEffect(() => {

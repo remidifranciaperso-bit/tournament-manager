@@ -70,14 +70,6 @@ _BEZIER_K = 0.5522847498
 
 _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 
-_EMOJI_ASSET_FILES = {
-    "🏆": "trophy.png",
-    "❌": "cross.png",
-    "🥇": "gold.png",
-    "🥈": "silver.png",
-    "🥉": "bronze.png",
-}
-
 
 def _font_paths(base_dir: Path | None) -> dict[str, Path | None]:
     if base_dir is None:
@@ -142,17 +134,12 @@ def _table_cell_pad_pt(content_width: float) -> float:
     )
 
 
-def _emoji_asset_bytes(base_dir: Path | None, char: str) -> bytes | None:
-    filename = _EMOJI_ASSET_FILES.get(char)
-    if not filename or base_dir is None:
-        return None
-    path = base_dir / "engine_v2" / "assets" / "emoji" / filename
-    if path.is_file():
-        return path.read_bytes()
-    return None
-
-
-def _rasterize_emoji_png(char: str, px: int, fonts: dict[str, Path | None]) -> bytes | None:
+def _rasterize_placeholder_line(
+    text: str,
+    fontsize: float,
+    fonts: dict[str, Path | None],
+) -> tuple[bytes, float, float] | None:
+    """Libellé placeholder complet en PNG couleur (comme boîtes match Live)."""
     emoji_path = fonts.get("emoji")
     if not emoji_path or not emoji_path.is_file():
         return None
@@ -161,20 +148,22 @@ def _rasterize_emoji_png(char: str, px: int, fonts: dict[str, Path | None]) -> b
 
         from PIL import Image, ImageDraw, ImageFont
 
-        for size in (px, max(px, 24), 32, 40):
+        px = max(28, int(fontsize * 3.2))
+        for size in (px, 32, 40, 48):
             try:
                 font = ImageFont.truetype(str(emoji_path), size)
             except OSError:
                 continue
-            bbox = font.getbbox(char)
+            bbox = font.getbbox(text)
             iw = max(bbox[2] - bbox[0], 1)
             ih = max(bbox[3] - bbox[1], 1)
             img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
             draw = ImageDraw.Draw(img)
-            draw.text((-bbox[0], -bbox[1]), char, font=font, embedded_color=True)
+            draw.text((-bbox[0], -bbox[1]), text, font=font, embedded_color=True)
             buf = BytesIO()
             img.save(buf, format="PNG")
-            return buf.getvalue()
+            pt_scale = fontsize / size
+            return buf.getvalue(), iw * pt_scale, ih * pt_scale
     except Exception:
         return None
     return None
@@ -191,57 +180,31 @@ def _insert_html_emoji_cell(
     fonts: dict[str, Path | None] | None = None,
     base_dir: Path | None = None,
 ) -> bool:
-    """Placeholder planning : emoji couleur (PNG) + libellé TSL."""
+    """Placeholder planning — même rendu emoji que les boîtes match (PNG système)."""
+    del color, base_dir
     value = (text or "").strip()
     if not value:
         return False
     pad = pad_pt if pad_pt is not None else 2.0
-
-    emoji_char: str | None = None
-    body = value
-    for prefix in ("🏆", "❌", "🥇", "🥈", "🥉"):
-        if value.startswith(prefix):
-            emoji_char = prefix
-            body = value[len(prefix) :].lstrip(" \u2009")
-            break
-    if emoji_char is None:
-        return False
-
     font_paths = fonts or {}
-    emoji_bytes = _emoji_asset_bytes(base_dir, emoji_char)
-    if emoji_bytes is None:
-        px = max(24, int(fontsize * 2.5))
-        emoji_bytes = _rasterize_emoji_png(emoji_char, px, font_paths)
-    if emoji_bytes is None:
+    raster = _rasterize_placeholder_line(value, fontsize, font_paths)
+    if raster is None:
         return False
-
-    emoji_h = min(rect.height * 0.72, fontsize * 1.35)
-    emoji_w = emoji_h
-    emoji_rect = fitz.Rect(
+    png_bytes, img_w_pt, img_h_pt = raster
+    if img_w_pt <= 0 or img_h_pt <= 0:
+        return False
+    draw_h = min(rect.height * 0.82, img_h_pt)
+    draw_w = img_w_pt * (draw_h / img_h_pt)
+    if draw_w > rect.width - 2 * pad:
+        draw_w = rect.width - 2 * pad
+        draw_h = img_h_pt * (draw_w / img_w_pt)
+    dest = fitz.Rect(
         rect.x0 + pad,
-        rect.y0 + (rect.height - emoji_h) / 2,
-        rect.x0 + pad + emoji_w,
-        rect.y0 + (rect.height + emoji_h) / 2,
+        rect.y0 + (rect.height - draw_h) / 2,
+        rect.x0 + pad + draw_w,
+        rect.y0 + (rect.height + draw_h) / 2,
     )
-    page.insert_image(emoji_rect, stream=emoji_bytes, keep_proportion=True)
-
-    text_rect = fitz.Rect(
-        emoji_rect.x1 + pad * 0.35,
-        rect.y0,
-        rect.x1 - pad,
-        rect.y1,
-    )
-    _insert_textbox(
-        page,
-        text_rect,
-        body or "—",
-        fontsize=fontsize,
-        color=color,
-        align=fitz.TEXT_ALIGN_LEFT,
-        fontfile=font_paths.get("tsl"),
-        pad_pt=0,
-        fonts=font_paths,
-    )
+    page.insert_image(dest, stream=png_bytes, keep_proportion=True)
     return True
 
 
@@ -758,15 +721,14 @@ def _draw_white_body_shell(
     return body_bottom
 
 
-def _draw_hand_checkbox(page: fitz.Page, cell: fitz.Rect, *, pad_pt: float = 0.0) -> None:
+def _draw_hand_checkbox(page: fitz.Page, cell: fitz.Rect) -> None:
     """Carré à cocher à la main (colonne Terminé export PDF)."""
-    inner = fitz.Rect(cell.x0, cell.y0, cell.x1 - pad_pt, cell.y1)
-    size = min(inner.width * 0.38, inner.height * 0.52, 11.0)
+    size = min(cell.width * 0.38, cell.height * 0.52, 11.0)
     box = fitz.Rect(
-        inner.x1 - size,
-        inner.y0 + (inner.height - size) / 2,
-        inner.x1,
-        inner.y0 + (inner.height + size) / 2,
+        cell.x0 + (cell.width - size) / 2,
+        cell.y0 + (cell.height - size) / 2,
+        cell.x0 + (cell.width + size) / 2,
+        cell.y0 + (cell.height + size) / 2,
     )
     page.draw_rect(box, color=TEMPLATE_BLUE, width=0.8, overlay=True)
 
@@ -873,7 +835,7 @@ def _draw_live_table_card(
             color_index += 1
             align = aligns[index]
             if checkbox_cols and index in checkbox_cols:
-                _draw_hand_checkbox(page, cell, pad_pt=cell_pad)
+                _draw_hand_checkbox(page, cell)
                 x += width
                 continue
             body_pt = TEAM_PLACEHOLDER_PT if is_placeholder(value) else TABLE_BODY_PT
@@ -969,7 +931,7 @@ def draw_planning_table(
             fitz.TEXT_ALIGN_LEFT,
             fitz.TEXT_ALIGN_LEFT,
             fitz.TEXT_ALIGN_LEFT,
-            fitz.TEXT_ALIGN_RIGHT,
+            fitz.TEXT_ALIGN_CENTER,
         ],
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
         body_bold=[True, False, True, False, False, False],

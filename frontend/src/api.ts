@@ -330,11 +330,15 @@ export async function previewExcel(file: File): Promise<PreviewResult> {
 }
 
 function appendTournamentFormFields(body: FormData, form: TournamentForm): void {
+  const club = form.club.trim().toUpperCase();
+  const terrains = form.terrains.map((terrain) => terrain.trim().toUpperCase());
+  const terrainPrincipal = form.terrainPrincipal.trim().toUpperCase();
+
   body.append("excel", form.excelFile!);
   if (form.logoFile && !form.pasDeLogo) {
     body.append("logo", form.logoFile);
   }
-  body.append("club", form.club);
+  body.append("club", club);
   body.append("date_tournoi", form.dateTournoi);
   body.append("type_tournoi", form.typeTournoi);
   body.append("genre_tournoi", form.genreTournoi);
@@ -343,8 +347,8 @@ function appendTournamentFormFields(body: FormData, form: TournamentForm): void 
   body.append("nb_jours", String(form.nbJours));
   body.append("heures_debut_jours", JSON.stringify(form.heuresDebutJours));
   body.append("duree_match", String(form.dureeMatch));
-  body.append("terrains", JSON.stringify(form.terrains));
-  body.append("terrain_principal", form.terrainPrincipal);
+  body.append("terrains", JSON.stringify(terrains));
+  body.append("terrain_principal", terrainPrincipal);
   if (form.formatMatchTableauPrincipal) {
     body.append(
       "format_match_tableau_principal",
