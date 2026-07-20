@@ -11,6 +11,7 @@ from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import (
     capture_key,
     composer_page_export,
+    composer_page_planning_hybrid,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
 
@@ -68,6 +69,9 @@ def exporter_pdf_engine_v2(
                 merged.insert_pdf(source, from_page=index, to_page=index)
 
         footer_reference = _footer_reference_slide_index(page_map, source)
+        planning_layout = (snapshot or {}).get("planning_layout") or {}
+        matches = (snapshot or {}).get("matches") or []
+        match_results = (snapshot or {}).get("match_results") or {}
         club_name = ((snapshot or {}).get("meta") or {}).get("club")
         render_base = base_dir or Path(__file__).resolve().parent.parent
 
@@ -111,6 +115,24 @@ def exporter_pdf_engine_v2(
                     continue
 
                 page = merged.new_page(width=page_rect.width, height=page_rect.height)
+                layout_fields = planning_layout.get(str(slide_index))
+                if section == "planning" and layout_fields:
+                    composer_page_planning_hybrid(
+                        page,
+                        source,
+                        slide_index,
+                        capture_data,
+                        layout_fields,
+                        matches,
+                        match_results,
+                        base_dir=render_base,
+                        footer_slide_index=footer_reference,
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                        club_name=club_name,
+                    )
+                    continue
+
                 composer_page_export(
                     page,
                     source,

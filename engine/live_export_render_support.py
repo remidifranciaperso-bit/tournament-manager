@@ -750,6 +750,7 @@ def _draw_live_table_card(
     ref_width_pt: float = PLANNING_BASE_PT,
     checkbox_cols: list[int] | None = None,
     emoji_html_cols: list[int] | None = None,
+    body_content: bool = True,
 ) -> None:
     fonts = _font_paths(base_dir)
     row_count = len(body_rows) + 1
@@ -835,6 +836,9 @@ def _draw_live_table_card(
                 color = ARENA_800
             color_index += 1
             align = aligns[index]
+            if not body_content:
+                x += width
+                continue
             if checkbox_cols and index in checkbox_cols:
                 _draw_hand_checkbox(page, cell, pad_pt=cell_pad)
                 x += width
@@ -879,6 +883,63 @@ def _draw_live_table_card(
         width=border_w,
         radius=outer_frac,
         overlay=True,
+    )
+
+
+def planning_body_rect(table_area: fitz.Rect, body_row_count: int) -> fitz.Rect:
+    """Zone corps du tableau planning (sous la bande d'en-tête native 12 pt)."""
+    border_w = _card_border_width(table_area, PLANNING_BASE_PT)
+    content = fitz.Rect(
+        table_area.x0 + border_w,
+        table_area.y0 + border_w,
+        table_area.x1 - border_w,
+        table_area.y1 - border_w,
+    )
+    row_count = body_row_count + 1
+    header_bottom = content.y0 + content.height / max(row_count, 2)
+    content_r_pt = max(
+        0.0,
+        _corner_radius_pt(table_area, PLANNING_BASE_PT) - border_w,
+    )
+    body_bottom = content.y1 - content_r_pt
+    return fitz.Rect(content.x0, header_bottom, content.x1, body_bottom)
+
+
+def draw_planning_table_frame(
+    page: fitz.Page,
+    table_area: fitz.Rect,
+    body_row_count: int,
+    *,
+    base_dir: Path | None = None,
+) -> None:
+    """Coquille + en-têtes natifs 12 pt (corps = capture HTML par-dessus)."""
+    headers = [
+        "CODE",
+        "HEURE",
+        "TERRAIN",
+        "ÉQUIPE 1",
+        "ÉQUIPE 2",
+        "TERMINÉ",
+    ]
+    dummy_rows = [[""] * len(headers) for _ in range(body_row_count)]
+    _draw_live_table_card(
+        page,
+        table_area,
+        headers,
+        dummy_rows,
+        col_widths=PLANNING_COL_WIDTHS,
+        base_dir=base_dir,
+        alignments=[
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_LEFT,
+            fitz.TEXT_ALIGN_RIGHT,
+        ],
+        body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
+        body_bold=[True, False, True, False, False, False],
+        body_content=False,
     )
 
 

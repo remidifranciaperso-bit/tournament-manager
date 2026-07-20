@@ -189,6 +189,84 @@ def _compose_page_chrome(
     return content_rect
 
 
+def composer_page_planning_hybrid(
+    page: fitz.Page,
+    source: fitz.Document,
+    slide_index: int,
+    capture_data: str,
+    layout_fields: list[dict],
+    matches: list[dict],
+    match_results: dict[str, dict],
+    *,
+    base_dir,
+    footer_slide_index: int | None = None,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+    club_name: str | None = None,
+) -> None:
+    """Planning : en-têtes PyMuPDF 12 pt + corps capturé (emojis navigateur)."""
+    from engine.live_export_render_support import (
+        _build_planning_rows,
+        _fit_live_table_area,
+        draw_planning_table_frame,
+        planning_body_rect,
+    )
+
+    content_rect = _compose_page_chrome(
+        page,
+        source,
+        slide_index,
+        footer_slide_index=footer_slide_index,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=club_name,
+        base_dir=base_dir,
+    )
+    rows = _build_planning_rows(layout_fields, matches, match_results)
+    row_count = len(rows)
+    table_area = _fit_live_table_area(
+        content_rect,
+        width_mode="full",
+        row_count=row_count,
+    )
+    draw_planning_table_frame(
+        page,
+        table_area,
+        row_count,
+        base_dir=base_dir,
+    )
+    body_rect = planning_body_rect(table_area, row_count)
+
+    image_bytes = _decode_capture(capture_data)
+    if len(image_bytes) < 4096:
+        raise RuntimeError("Capture planning corps trop petite ou vide.")
+
+    filetype = "jpeg" if image_bytes[:2] == b"\xff\xd8" else "png"
+    image = fitz.open(stream=image_bytes, filetype=filetype)
+    try:
+        image_rect = image[0].rect
+        image_w = float(image_rect.width)
+        image_h = float(image_rect.height)
+        if image_w <= 0 or image_h <= 0:
+            raise RuntimeError("Capture planning corps invalide.")
+
+        scale = body_rect.width / image_w
+        draw_h = image_h * scale
+        if draw_h > body_rect.height:
+            scale = body_rect.height / image_h
+        draw_w = image_w * scale
+        draw_h = image_h * scale
+        x0 = body_rect.x0 + (body_rect.width - draw_w) / 2
+        y0 = body_rect.y0 + (body_rect.height - draw_h) / 2
+        page.insert_image(
+            fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
+            stream=image_bytes,
+            keep_proportion=True,
+        )
+    finally:
+        image.close()
+
+
 def composer_page_planning_native(
     page: fitz.Page,
     source: fitz.Document,

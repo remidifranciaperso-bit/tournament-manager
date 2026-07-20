@@ -72,7 +72,7 @@ function captureSelector(section: CaptureSection): string {
     return `${EXPORT_LAYER} [data-export-capture="final"]`;
   }
   if (section === "planning") {
-    return `${EXPORT_LAYER} [data-export-capture="planning"]`;
+    return `${EXPORT_LAYER} [data-export-capture="planning-body"]`;
   }
   if (section === "pools") {
     return `${EXPORT_LAYER} [data-export-capture="pools"]`;
