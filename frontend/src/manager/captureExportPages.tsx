@@ -72,7 +72,7 @@ function captureSelector(section: CaptureSection): string {
     return `${EXPORT_LAYER} [data-export-capture="final"]`;
   }
   if (section === "planning") {
-    return `${EXPORT_LAYER} [data-export-capture="planning-body"]`;
+    return `${EXPORT_LAYER} [data-export-capture="planning"]`;
   }
   if (section === "pools") {
     return `${EXPORT_LAYER} [data-export-capture="pools"]`;
@@ -155,7 +155,7 @@ export async function captureManagerExportPages(
       }
     }
 
-    for (const section of ["main", "classement", "planning", "final"] as const) {
+    for (const section of ["main", "classement", "final"] as const) {
       for (let page = 0; page < pageEntries(pageMap, section).length; page += 1) {
         const entry = pageEntries(pageMap, section)[page];
         const poolLetter =

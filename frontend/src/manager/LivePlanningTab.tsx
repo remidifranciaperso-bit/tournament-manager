@@ -19,7 +19,6 @@ import {
   LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
 } from "./liveDataTable";
-import { PLANNING_EXPORT_CAPTURE_WIDTH } from "./exportCapture";
 
 interface LivePlanningTabProps {
   layoutFields: LiveLayoutField[];
@@ -35,9 +34,6 @@ interface LivePlanningTabProps {
 
 /** Largeur de référence du tableau planning en live (avant mise à l'échelle). */
 const PLANNING_BASE_WIDTH = 1024;
-
-const PLANNING_BODY_GRID =
-  "7fr 7fr 10fr 35fr 35fr 6fr" as const;
 
 const PLANNING_COLGROUP = (
   <colgroup>
@@ -232,49 +228,6 @@ export function LivePlanningTab({
       <tbody className={capture ? "bg-white" : undefined}>{bodyRows}</tbody>
     </table>
   );
-
-  if (capture && exportMode) {
-    return (
-      <div
-        data-export-capture="planning-body"
-        className="w-full overflow-hidden bg-white"
-        style={{ width: PLANNING_EXPORT_CAPTURE_WIDTH }}
-      >
-        {rows.map((row) => (
-          <div
-            key={`${row.code}-${row.heure}`}
-            className={`grid items-center ${LIVE_TABLE_ROW_EXPORT}`}
-            style={{ gridTemplateColumns: PLANNING_BODY_GRID }}
-          >
-            <div className={`${LIVE_TABLE_CELL_TSL_BOLD} whitespace-nowrap !px-2 sm:!px-3`}>
-              {row.code}
-            </div>
-            <div className={`${LIVE_TABLE_CELL_TSL} whitespace-nowrap !px-2 sm:!px-3`}>
-              {row.heure || "—"}
-            </div>
-            <div className={`${LIVE_TABLE_CELL_NOTO_BOLD} whitespace-nowrap !px-2 sm:!px-3`}>
-              {row.terrain || "—"}
-            </div>
-            <div
-              className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe1)} whitespace-nowrap !px-2 sm:!px-3`}
-            >
-              {row.equipe1}
-            </div>
-            <div
-              className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.equipe2)} whitespace-nowrap !px-2 sm:!px-3`}
-            >
-              {row.equipe2}
-            </div>
-            <div className={`${LIVE_TABLE_CELL_TSL} whitespace-nowrap !px-2 sm:!px-3`}>
-              <div className="flex w-full justify-center">
-                <HandCheckboxSquare />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
 
   if (capture) {
     return (
