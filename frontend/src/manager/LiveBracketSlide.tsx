@@ -99,6 +99,7 @@ export function TemplateMatchBox({
   scaleH,
   placementLabel,
   splitMainBracket,
+  capture = false,
 }: {
   match: LiveMatch;
   box: BoxRectPct;
@@ -109,6 +110,7 @@ export function TemplateMatchBox({
   scaleH: number;
   placementLabel: string | null;
   splitMainBracket: boolean;
+  capture?: boolean;
 }) {
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const team1Px = teamFontSize(team1, scaleH);
@@ -124,6 +126,16 @@ export function TemplateMatchBox({
   const team2Align = isBracketPlaceholder(team2)
     ? "justify-start text-left overflow-visible"
     : "justify-center text-center";
+  const team1BodyClass = capture
+    ? "whitespace-nowrap overflow-visible shrink-0"
+    : isBracketPlaceholder(team1)
+      ? "shrink-0 whitespace-nowrap"
+      : "line-clamp-2 break-words";
+  const team2BodyClass = capture
+    ? "whitespace-nowrap overflow-visible shrink-0"
+    : isBracketPlaceholder(team2)
+      ? "shrink-0 whitespace-nowrap"
+      : "line-clamp-2 break-words";
 
   return (
     <div
@@ -150,7 +162,7 @@ export function TemplateMatchBox({
         </p>
       )}
 
-      <div className="flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm">
+      <div className={`flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm ${capture ? "overflow-visible" : ""}`}>
       <div
         className="relative shrink-0 rounded-t-lg bg-template-blue px-[0.4em] font-tsl leading-none text-white"
         style={{
@@ -171,24 +183,24 @@ export function TemplateMatchBox({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-visible">
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${isBracketPlaceholder(team1) ? "whitespace-nowrap" : "overflow-hidden"}`}
+          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"}`}
           style={{ fontSize: team1Px }}
         >
-          <span className={isBracketPlaceholder(team1) ? "shrink-0" : "line-clamp-2 break-words"}>{team1}</span>
+          <span className={team1BodyClass}>{team1}</span>
         </div>
         <div
-          className="flex shrink-0 items-center justify-center font-noto font-semibold text-arena-600"
+          className="flex shrink-0 items-center justify-center font-noto font-normal text-arena-600"
           style={{ height: "11%", fontSize: vsPx }}
         >
           vs
         </div>
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${isBracketPlaceholder(team2) ? "whitespace-nowrap" : "overflow-hidden"}`}
+          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"}`}
           style={{ fontSize: team2Px }}
         >
-          <span className={isBracketPlaceholder(team2) ? "shrink-0" : "line-clamp-2 break-words"}>{team2}</span>
+          <span className={team2BodyClass}>{team2}</span>
         </div>
       </div>
 
@@ -309,6 +321,7 @@ interface LiveBracketSlideProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   renderWidth: number;
+  capture?: boolean;
 }
 
 export function LiveBracketSlide({
@@ -316,6 +329,7 @@ export function LiveBracketSlide({
   matches,
   matchResults,
   renderWidth,
+  capture = false,
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
@@ -383,7 +397,7 @@ export function LiveBracketSlide({
       data-crosspage-dir={
         viewportCrossPageStub ? viewportCrossPageStub.direction : undefined
       }
-      className="relative shrink-0 overflow-hidden bg-white"
+      className={`relative shrink-0 bg-white ${capture ? "overflow-visible" : "overflow-hidden"}`}
       style={{ width: renderWidth, height: renderHeight }}
     >
       <BracketConnectors
@@ -423,6 +437,7 @@ export function LiveBracketSlide({
             scaleH={renderHeight}
             placementLabel={matchPlacementLabel(match.tour)}
             splitMainBracket={splitMainBracket}
+            capture={capture}
           />
         );
       })}

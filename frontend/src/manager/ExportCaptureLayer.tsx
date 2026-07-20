@@ -162,6 +162,7 @@ export function ExportCaptureLayer({
           matches={matches}
           matchResults={matchResults}
           fixedRenderWidth={EXPORT_CAPTURE_WIDTH}
+          capture
         />
       </LiveManagerDocumentPage>
     </div>

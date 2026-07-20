@@ -11,6 +11,8 @@ interface LiveBracketViewerProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   fixedRenderWidth?: number;
+  /** Mode capture PDF — pas de line-clamp, TS visible. */
+  capture?: boolean;
 }
 
 export function LiveBracketViewer({
@@ -19,6 +21,7 @@ export function LiveBracketViewer({
   matches,
   matchResults,
   fixedRenderWidth,
+  capture = false,
 }: LiveBracketViewerProps) {
   const { layout, loading, error } = useTemplateLayout(templateId);
   const slotRef = useRef<HTMLDivElement>(null);
@@ -72,6 +75,7 @@ export function LiveBracketViewer({
           matches={matches}
           matchResults={matchResults}
           renderWidth={effectiveWidth}
+          capture={capture}
         />
       ) : error ? (
         <p className="py-8 text-center text-sm text-red-500/80">

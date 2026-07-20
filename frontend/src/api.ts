@@ -8,6 +8,7 @@ import type {
 } from "./manager/liveTypes";
 import type { CrossPageStub, ManagerExportCapture } from "./manager/captureExportPages";
 import { buildExportFormData } from "./manager/captureExportPages";
+import { EXPORT_CAPTURE_BUILD_MARKER } from "./manager/formatBracketLabel";
 
 function normalizeLiveTournamentData(data: LiveTournamentData): LiveTournamentData {
   const meta = { ...data.meta };
@@ -110,8 +111,21 @@ async function fetchWithRetry(
 async function ensureEngineV2Ready(): Promise<void> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      const res = await fetch("/api/v2/health");
-      if (res.ok) return;
+      const [healthRes, bundleRes] = await Promise.all([
+        fetch("/api/v2/health"),
+        fetch("/api/v2/frontend-check"),
+      ]);
+      if (!healthRes.ok) continue;
+      if (bundleRes.ok) {
+        const bundle = (await bundleRes.json()) as { ok?: boolean };
+        if (bundle.ok) return;
+      }
+      if (attempt === 4) {
+        console.warn(
+          `Engine V2 bundle obsolète (attendu ${EXPORT_CAPTURE_BUILD_MARKER})`
+        );
+        return;
+      }
     } catch {
       /* cold start Render */
     }
@@ -180,6 +194,7 @@ export async function generateTournamentV2(
   prepared: EngineV2PrepareResult;
 }> {
   onPhase?.("prepare");
+  await ensureEngineV2Ready();
   const prepared = await prepareTournamentV2(form);
   onPrepared?.(prepared);
   await document.fonts.ready;

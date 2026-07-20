@@ -1,3 +1,6 @@
+/** Vérification déploiement bundle export (grep Docker / health). */
+export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260720";
+
 const EMOJI_GAP = "\u2009";
 const ICONE_VAINQUEUR = `🏆${EMOJI_GAP}`;
 const ICONE_PERDANT = `❌${EMOJI_GAP}`;
@@ -143,12 +146,33 @@ export function formatBracketTeamDisplay(label: string, resolved: string): strin
     resolved.trim() &&
     !isUnresolvedPlaceholder(resolved)
   ) {
-    return formatTeamWithInitials(resolved);
+    return ensureTeamTsSuffix(formatTeamWithInitials(resolved), [
+      raw,
+      resolved,
+    ]);
   }
   if (isUnresolvedPlaceholder(raw)) {
     return formatTeamSlot(raw);
   }
-  return formatTeamWithInitials(resolved.trim() || raw);
+  return ensureTeamTsSuffix(formatTeamWithInitials(resolved.trim() || raw), [
+    raw,
+    resolved,
+  ]);
+}
+
+/** Réinjecte (TSn) si le libellé source l'avait mais l'affichage boîte l'a perdu (truncate). */
+export function ensureTeamTsSuffix(
+  display: string,
+  sourceLabels: string[]
+): string {
+  if (/\(TS\d+\)/i.test(display)) return display;
+  for (const source of sourceLabels) {
+    const match = source.trim().match(/(\(TS\d+\))/i);
+    if (match) {
+      return `${display} ${match[1]}`.trim();
+    }
+  }
+  return display;
 }
 
 /** « Jean DUPONT » → « J. DUPONT » (aligné sur ``Team._nom_court_joueur``). */

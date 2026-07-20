@@ -77,13 +77,14 @@ def frontend_check():
     dist = BASE_DIR / "frontend" / "dist" / "assets"
     if not dist.is_dir():
         return {"ok": False, "error": "frontend/dist/assets absent"}
+    marker = "export-capture-v2-20260720"
     for js in dist.glob("*.js"):
         text = js.read_text(encoding="utf-8", errors="ignore")
-        if "v2/prepare" in text and "engine-v2" in text:
-            return {"ok": True, "bundle": js.name}
+        if "v2/prepare" in text and "engine-v2" in text and marker in text:
+            return {"ok": True, "bundle": js.name, "capture_marker": marker}
     return {
         "ok": False,
-        "error": "Bundle sans Engine V2 (v1/prepare absent) — rebuild frontend requis",
+        "error": f"Bundle sans marqueur capture ({marker}) — rebuild frontend requis",
     }
 
 
