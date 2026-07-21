@@ -18,14 +18,11 @@ TYPE_BOX = {"left": 0.0, "top": 0.0147, "width": 0.327, "height": 0.054}
 DATE_BOX = {"left": 0.673, "top": 0.0144, "width": 0.327, "height": 0.054}
 FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
 
+COVER_META_SHIFT = 0.033
+# Tiers droit : bord gauche du bloc sur la verticale 2/3 (pas collé au bord page).
 COVER_META_LEFT = 2 / 3
-COVER_META_RIGHT_MARGIN = 0.025
-COVER_META_WIDTH = 1.0 - COVER_META_LEFT - COVER_META_RIGHT_MARGIN
-# Bloc stats dans le tiers bas, à droite de la verticale 2/3.
-COVER_META_BLOCK_TOP = 2 / 3 + 0.018
-_META_STACK_OFFSET_HEURE = 0.703 - 0.589
-_META_STACK_OFFSET_EQUIPES = 0.785 - 0.589
-_META_STACK_OFFSET_TERRAINS = 0.866 - 0.589
+COVER_META_RIGHT_MARGIN = 0.02
+COVER_META_WIDTH = (1.0 - COVER_META_LEFT) - COVER_META_RIGHT_MARGIN
 
 COVER_LOGO_BOX = {"left": 0.274, "top": 0.102, "width": 0.443, "height": 0.108}
 COVER_LOGO_SCALE = 1.7
@@ -57,25 +54,25 @@ FOOTER_BOTTOM_MARGIN_PT = FOOTER_BOTTOM_MARGIN_MM * MM_TO_PT
 
 COVER_DATE_BOX = {
     "left": COVER_META_LEFT,
-    "top": COVER_META_BLOCK_TOP,
+    "top": 0.622 - COVER_META_SHIFT,
     "width": COVER_META_WIDTH,
     "height": 0.081,
 }
 COVER_HEURE_BOX = {
     "left": COVER_META_LEFT,
-    "top": COVER_META_BLOCK_TOP + _META_STACK_OFFSET_HEURE,
+    "top": 0.703 - COVER_META_SHIFT,
     "width": COVER_META_WIDTH,
     "height": 0.081,
 }
 COVER_EQUIPES_BOX = {
     "left": COVER_META_LEFT,
-    "top": COVER_META_BLOCK_TOP + _META_STACK_OFFSET_EQUIPES,
+    "top": 0.785 - COVER_META_SHIFT,
     "width": COVER_META_WIDTH,
     "height": 0.076,
 }
 COVER_TERRAINS_BOX = {
     "left": COVER_META_LEFT,
-    "top": COVER_META_BLOCK_TOP + _META_STACK_OFFSET_TERRAINS,
+    "top": 0.866 - COVER_META_SHIFT,
     "width": COVER_META_WIDTH,
     "height": 0.076,
 }
@@ -506,7 +503,7 @@ def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:
             fontsize=size,
             color=WHITE,
             fontfile=brush,
-            align=fitz.TEXT_ALIGN_RIGHT,
+            align=fitz.TEXT_ALIGN_LEFT,
         )
 
     _insert_textbox(
