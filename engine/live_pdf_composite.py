@@ -379,6 +379,7 @@ def composer_page_bracket_native(
         matches=matches,
         match_results=match_results,
         show_placement_labels=show_placement_labels,
+        export_mode=True,
     )
     if bracket_area.y1 < content_rect.y1 - 0.5:
         page.draw_rect(

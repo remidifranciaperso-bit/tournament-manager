@@ -573,8 +573,6 @@ def _draw_match_box_shell(
     rect: fitz.Rect,
     header_bottom: float,
     score_top: float,
-    *,
-    has_score: bool,
 ) -> None:
     radius_pt = _match_box_radius_pt(rect)
     radius_frac = _radius_frac_for_rect(rect, radius_pt)
@@ -608,40 +606,14 @@ def _draw_match_box_shell(
         overlay=True,
     )
 
-    score_rect = fitz.Rect(rect.x0, score_top, rect.x1, rect.y1)
-    if has_score:
-        page.draw_rect(
-            score_rect,
-            color=(0.97, 0.99, 1.0),
-            fill=(0.97, 0.99, 1.0),
-            width=0,
-            radius=radius_frac,
-            overlay=True,
-        )
-        if radius_pt > 0.5:
-            page.draw_rect(
-                fitz.Rect(rect.x0, score_top, rect.x1, score_top + radius_pt),
-                color=(0.97, 0.99, 1.0),
-                fill=(0.97, 0.99, 1.0),
-                width=0,
-                overlay=True,
-            )
-        page.draw_line(
-            fitz.Point(score_rect.x0, score_top),
-            fitz.Point(score_rect.x1, score_top),
-            color=CARD_BORDER_COLOR,
-            width=0.4,
-            overlay=True,
-        )
-    else:
-        page.draw_line(
-            fitz.Point(score_rect.x0, score_top),
-            fitz.Point(score_rect.x1, score_top),
-            color=TEMPLATE_BLUE,
-            width=0.4,
-            dashes="[2 2]",
-            overlay=True,
-        )
+    page.draw_line(
+        fitz.Point(rect.x0, score_top),
+        fitz.Point(rect.x1, score_top),
+        color=TEMPLATE_BLUE,
+        width=0.4,
+        dashes="[2 2]",
+        overlay=True,
+    )
 
 
 def _draw_brush_label(
@@ -687,10 +659,11 @@ def _draw_match_box(
     fonts: dict[str, Path | None],
     split_main_bracket: bool,
     base_dir: Path | None = None,
+    export_mode: bool = False,
 ) -> None:
-    has_score = bool(result and result.get("display"))
-    header_frac = 0.20 if has_score else 0.22
-    score_frac = 0.18 if has_score else 0.14
+    has_score = False if export_mode else bool(result and result.get("display"))
+    header_frac = 0.22 if export_mode or not has_score else 0.20
+    score_frac = 0.14 if export_mode or not has_score else 0.18
     header_bottom = rect.y0 + rect.height * header_frac
     score_h = rect.height * score_frac
     score_top = rect.y1 - score_h
@@ -700,7 +673,6 @@ def _draw_match_box(
         rect,
         header_bottom,
         score_top,
-        has_score=has_score,
     )
     header = fitz.Rect(rect.x0, rect.y0, rect.x1, header_bottom)
 
@@ -873,7 +845,7 @@ def _draw_match_box(
     )
 
     score_rect = fitz.Rect(rect.x0, score_top, rect.x1, rect.y1)
-    if has_score:
+    if has_score and not export_mode:
         _insert_textbox(
             page,
             score_rect,
@@ -939,6 +911,7 @@ def draw_bracket_slide(
     show_placement_labels: bool,
     base_dir: Path | None = None,
     split_main_bracket: bool = False,
+    export_mode: bool = False,
 ) -> None:
     from engine.live_team_resolve import feed_key_from_team_label
 
@@ -977,6 +950,7 @@ def draw_bracket_slide(
             fonts=fonts,
             split_main_bracket=split_main_bracket,
             base_dir=base_dir,
+            export_mode=export_mode,
         )
 
     for feed in feeds:

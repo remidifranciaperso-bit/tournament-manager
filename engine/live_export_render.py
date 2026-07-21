@@ -64,6 +64,7 @@ def render_bracket_into_area(
     match_results: dict[str, dict],
     show_placement_labels: bool,
     layout_fields: list[dict] | None = None,
+    export_mode: bool = False,
 ) -> dict[str, float | str] | None:
     """Dessine connecteurs + encarts dans ``area`` (comme la capture Live)."""
     if layout_fields is None:
@@ -99,6 +100,7 @@ def render_bracket_into_area(
         show_placement_labels=show_placement_labels,
         base_dir=base_dir,
         split_main_bracket=split_main_bracket,
+        export_mode=export_mode,
     )
     return compute_viewport_cross_page_stub(slots, box_layouts)
 
