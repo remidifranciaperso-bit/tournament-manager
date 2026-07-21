@@ -31,6 +31,7 @@ TEAM_PLACEHOLDER_PT = 8.5
 MATCH_BOX_BORDER_W = 0.8
 MATCH_BOX_RADIUS_PX = 8.0
 MATCH_TEAM_RULE_MARGIN_MM = 2.0
+MATCH_TEAM_RULE_GAP_MM = 1.0
 MATCH_TEAM_RULE_DASHES = "[6 4]"
 VS_PT = 9.0
 SCORE_PT = 9.0
@@ -665,6 +666,37 @@ def _is_emoji_placeholder_label(text: str) -> bool:
     return _split_leading_emoji((text or "").strip())[0] is not None
 
 
+def _placeholder_block_bottom_y(
+    rect: fitz.Rect,
+    text: str,
+    *,
+    fontsize: float,
+    fonts: dict[str, Path | None],
+    base_dir: Path | None,
+    pad_pt: float = 2.0,
+) -> float:
+    """Bas du bloc emoji+libellé (même géométrie que ``_draw_live_placeholder``)."""
+    value = (text or "").strip()
+    raster = _rasterize_placeholder_display(
+        value,
+        fontsize,
+        fonts,
+        base_dir=base_dir,
+        label_font_key="tsl",
+    )
+    if raster is not None:
+        _, img_w_pt, img_h_pt = raster
+        if img_w_pt > 0 and img_h_pt > 0:
+            draw_h = min(rect.height * 0.82, img_h_pt)
+            draw_w = img_w_pt * (draw_h / img_h_pt)
+            if draw_w > rect.width - 2 * pad_pt:
+                draw_w = rect.width - 2 * pad_pt
+                draw_h = img_h_pt * (draw_w / img_w_pt)
+            y0 = rect.y0 + (rect.height - draw_h) / 2
+            return y0 + draw_h
+    return rect.y0 + rect.height * 0.5 + fontsize * 0.45
+
+
 def _draw_team_placeholder_rule(
     page: fitz.Page,
     match_rect: fitz.Rect,
@@ -917,9 +949,29 @@ def _draw_match_box(
         )
 
     if _is_emoji_placeholder_label(equipe1):
-        _draw_team_placeholder_rule(page, rect, team1_rect.y1)
+        rule_y = (
+            _placeholder_block_bottom_y(
+                team1_rect,
+                equipe1,
+                fontsize=team1_px,
+                fonts=fonts,
+                base_dir=base_dir,
+            )
+            + MATCH_TEAM_RULE_GAP_MM * MM_TO_PT
+        )
+        _draw_team_placeholder_rule(page, rect, rule_y)
     if _is_emoji_placeholder_label(equipe2):
-        _draw_team_placeholder_rule(page, rect, team2_rect.y1)
+        rule_y = (
+            _placeholder_block_bottom_y(
+                team2_rect,
+                equipe2,
+                fontsize=team2_px,
+                fonts=fonts,
+                base_dir=base_dir,
+            )
+            + MATCH_TEAM_RULE_GAP_MM * MM_TO_PT
+        )
+        _draw_team_placeholder_rule(page, rect, rule_y)
 
     vs_rect = fitz.Rect(body.x0, mid_y - body.height * 0.11, body.x1, mid_y + body.height * 0.11)
     _insert_textbox(
