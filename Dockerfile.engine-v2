@@ -45,6 +45,7 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 RUN cp /usr/share/fonts/truetype/noto/NotoColorEmoji.ttf /app/fonts/NotoColorEmoji.ttf \
     && test -f /app/fonts/NotoColorEmoji.ttf \
+    && python3 scripts/bake_emoji_assets.py \
     && fc-cache -f -v > /dev/null
 
 RUN test -f frontend/dist/index.html

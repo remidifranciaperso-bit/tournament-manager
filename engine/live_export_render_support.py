@@ -62,7 +62,7 @@ CARD_BORDER_COLOR = (
     0.65 + 0.35 * TEMPLATE_BLUE[1],
     0.65 + 0.35 * TEMPLATE_BLUE[2],
 )
-PLANNING_COL_WIDTHS = [0.07, 0.07, 0.10, 0.35, 0.35, 0.06]
+PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.335, 0.335, 0.06]
 # Inset calibré sur la 1re colonne convocations (72 % × 2 %).
 TABLE_CELL_INSET_FRAC = 0.02
 CONVOCATIONS_FIRST_COL_FRAC = 0.72
