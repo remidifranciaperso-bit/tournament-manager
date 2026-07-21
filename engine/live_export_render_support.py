@@ -39,6 +39,7 @@ TABLE_HEAD_DISPLAY_PT = 12.0
 TABLE_BODY_PT = 10.0
 PLANNING_BASE_PT = 1024.0
 FINAL_BASE_PT = 820.0
+FINAL_TABLE_VERTICAL_MARGIN_PT = 14.0
 MM_TO_PT = 72.0 / 25.4
 TABLE_SIDE_MARGIN_MM = 5.0
 TABLE_SIDE_MARGIN_PT = TABLE_SIDE_MARGIN_MM * MM_TO_PT
@@ -919,21 +920,28 @@ def _fit_live_table_area(
     base_width_pt: float | None = None,
     row_count: int,
     row_h_pt: float = 26.0,
+    vertical_inset_pt: float = 0.0,
 ) -> fitz.Rect:
     """Zone tableau — pleine largeur (−5 mm) ou étroite (ratio final/planning)."""
+    fit_area = fitz.Rect(
+        area.x0,
+        area.y0 + vertical_inset_pt,
+        area.x1,
+        area.y1 - vertical_inset_pt,
+    )
     if width_mode == "narrow":
         table_w = min(
             base_width_pt or narrow_table_width_pt(area.width),
-            area.width,
+            fit_area.width,
         )
     else:
-        table_w = max(40.0, area.width - 2 * TABLE_SIDE_MARGIN_PT)
+        table_w = max(40.0, fit_area.width - 2 * TABLE_SIDE_MARGIN_PT)
     table_h = row_h_pt * max(row_count + 1, 2)
-    scale_h = min(1.0, area.height / table_h)
+    scale_h = min(1.0, fit_area.height / table_h) if fit_area.height > 0 else 1.0
     draw_w = table_w
     draw_h = table_h * scale_h
-    x0 = area.x0 + (area.width - draw_w) / 2
-    y0 = area.y0 + (area.height - draw_h) / 2
+    x0 = fit_area.x0 + (fit_area.width - draw_w) / 2
+    y0 = fit_area.y0 + (fit_area.height - draw_h) / 2
     return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
 
 
@@ -1294,17 +1302,18 @@ def draw_final_ranking(
         start, end = place_range
         rows = [row for row in rows if start <= row["place"] <= end]
 
-    headers = ["Place", "Équipe", "Points"]
+    headers = ["PLACE", "ÉQUIPE", "POINTS"]
     col_widths = [0.18, 0.58, 0.24]
     table_area = _fit_live_table_area(
         area,
         width_mode="narrow",
         row_count=len(rows),
+        vertical_inset_pt=FINAL_TABLE_VERTICAL_MARGIN_PT,
     )
     body_rows = [
         [
             format_place_label(row["place"]),
-            row["team"] or "—",
+            row["team"] or "",
             row["points"] or "—",
         ]
         for row in rows

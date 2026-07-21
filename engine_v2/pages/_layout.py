@@ -401,12 +401,31 @@ def draw_cover_logo(
     *,
     logo_bytes: bytes | None,
     logo_wh: tuple[int, int] | None,
+    club_name: str | None = None,
+    base_dir: Path | None = None,
 ) -> None:
-    if not logo_bytes or not logo_wh:
-        return
     zone = pct_rect(page.rect, COVER_LOGO_BOX)
-    dest = contain_rect(zone, float(logo_wh[0]), float(logo_wh[1]))
-    page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
+    if logo_bytes and logo_wh:
+        dest = contain_rect(zone, float(logo_wh[0]), float(logo_wh[1]))
+        page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
+        return
+    label = (club_name or "").strip().upper()
+    if not label:
+        return
+    fonts = font_paths(base_dir) if base_dir else {}
+    noto = fonts.get("noto")
+    font = _load_font(noto)
+    max_pt = zone.height * 0.92
+    fontsize = _fit_fontsize(font, zone, max_pt) if font else max_pt
+    draw_font_text(
+        page,
+        zone,
+        label,
+        fontsize=fontsize,
+        color=WHITE,
+        fontfile=noto,
+        align=fitz.TEXT_ALIGN_CENTER,
+    )
 
 
 def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:

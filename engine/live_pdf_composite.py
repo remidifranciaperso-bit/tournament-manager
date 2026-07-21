@@ -7,6 +7,7 @@ import base64
 import fitz
 
 from engine.live_export_render_support import (
+    FINAL_TABLE_VERTICAL_MARGIN_PT,
     NARROW_TABLE_RATIO,
     TABLE_SIDE_MARGIN_PT,
     narrow_table_width_pt,
@@ -352,19 +353,27 @@ def composer_page_export(
             if section in ("planning", "main", "classement", "pools")
             else 0.0
         )
-        avail_w = max(40.0, content_rect.width - 2 * side_margin)
+        placement_rect = content_rect
+        if section == "final":
+            placement_rect = fitz.Rect(
+                content_rect.x0,
+                content_rect.y0 + FINAL_TABLE_VERTICAL_MARGIN_PT,
+                content_rect.x1,
+                content_rect.y1 - FINAL_TABLE_VERTICAL_MARGIN_PT,
+            )
+        avail_w = max(40.0, placement_rect.width - 2 * side_margin)
         scale = avail_w / image_w
         if section == "final":
             max_draw_w = narrow_table_width_pt(avail_w)
             scale = min(scale, max_draw_w / image_w)
 
         draw_h = image_h * scale
-        if draw_h > content_rect.height:
-            scale = content_rect.height / image_h
-            draw_h = content_rect.height
+        if draw_h > placement_rect.height:
+            scale = placement_rect.height / image_h
+            draw_h = placement_rect.height
         draw_w = image_w * scale
-        x0 = content_rect.x0 + side_margin + (avail_w - draw_w) / 2
-        y0 = content_rect.y0 + (content_rect.height - draw_h) / 2
+        x0 = placement_rect.x0 + side_margin + (avail_w - draw_w) / 2
+        y0 = placement_rect.y0 + (placement_rect.height - draw_h) / 2
         page.insert_image(
             fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
             stream=image_bytes,

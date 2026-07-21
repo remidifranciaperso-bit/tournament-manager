@@ -428,7 +428,7 @@ def render_final_page(
         x = area.x0
         values = [
             format_place_label(row["place"]),
-            row["team"] or "—",
+            row["team"] or "",
             row["points"] or "—",
         ]
         fill = WHITE if row_index % 2 == 0 else (0.97, 0.99, 1.0)

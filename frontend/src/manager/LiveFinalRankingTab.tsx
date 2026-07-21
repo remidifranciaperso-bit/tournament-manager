@@ -14,8 +14,7 @@ import {
   LIVE_TABLE_CELL_NOTO,
   LIVE_TABLE_CELL_POINTS,
   LIVE_TABLE_CELL_TSL_BOLD,
-  LIVE_TABLE_HEAD,
-  LIVE_TABLE_HEAD_EXPORT,
+  LIVE_TABLE_HEAD_NATIVE,
   LIVE_TABLE_ROW,
   liveTeamTextClass,
 } from "./liveDataTable";
@@ -92,7 +91,7 @@ export function LiveFinalRankingTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
-  const headClass = capture ? LIVE_TABLE_HEAD_EXPORT : LIVE_TABLE_HEAD;
+  const headClass = LIVE_TABLE_HEAD_NATIVE;
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
 
   const bodyRows = rows.map((row) => (
@@ -101,7 +100,7 @@ export function LiveFinalRankingTab({
         {formatPlaceLabel(row.place)}
       </td>
       <td className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.team)}`}>
-        {row.team || <span className="text-arena-600/35">—</span>}
+        {row.team}
       </td>
       <td className={LIVE_TABLE_CELL_POINTS}>
         {row.points || <span className="text-arena-600/35">—</span>}

@@ -22,5 +22,11 @@ def render_cover_page(
     logo_wh: tuple[int, int] | None = None,
 ) -> None:
     draw_cover_background(page, base_dir)
-    draw_cover_logo(page, logo_bytes=logo_bytes, logo_wh=logo_wh)
+    draw_cover_logo(
+        page,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=getattr(tournoi, "club", None),
+        base_dir=base_dir,
+    )
     draw_cover_texts(page, tournoi, base_dir=base_dir)
