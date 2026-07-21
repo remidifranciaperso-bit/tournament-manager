@@ -827,7 +827,7 @@ def _draw_match_box(
             label_rect,
             "score:",
             fontsize=_pt_on_area(SCORE_LABEL_PT, area),
-            color=TEMPLATE_BLUE,
+            color=(0, 0, 0),
             fontfile=fonts.get("noto"),
             bold=False,
             align=fitz.TEXT_ALIGN_CENTER,
