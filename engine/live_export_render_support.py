@@ -627,13 +627,30 @@ def _draw_match_box_shell(
         overlay=True,
     )
 
-    _draw_filled_rounded_top_rect(
-        page,
-        rect,
-        header_bottom,
-        color=TEMPLATE_BLUE,
-        radius_pt=radius_pt,
-    )
+    cap_bottom = rect.y0 + radius_pt
+    if header_bottom > cap_bottom + 0.25:
+        page.draw_rect(
+            fitz.Rect(rect.x0, cap_bottom, rect.x1, header_bottom),
+            color=TEMPLATE_BLUE,
+            fill=TEMPLATE_BLUE,
+            width=0,
+            overlay=True,
+        )
+        _draw_filled_rounded_top_rect(
+            page,
+            rect,
+            cap_bottom,
+            color=TEMPLATE_BLUE,
+            radius_pt=radius_pt,
+        )
+    else:
+        _draw_filled_rounded_top_rect(
+            page,
+            rect,
+            header_bottom,
+            color=TEMPLATE_BLUE,
+            radius_pt=radius_pt,
+        )
 
     page.draw_line(
         fitz.Point(rect.x0, score_top),
