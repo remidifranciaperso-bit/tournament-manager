@@ -34,19 +34,22 @@ HEADER_SIDE_MARGIN_PT = HEADER_SIDE_MARGIN_MM * MM_TO_PT
 FOOTER_BOTTOM_MARGIN_MM = 3.0
 FOOTER_BOTTOM_MARGIN_PT = FOOTER_BOTTOM_MARGIN_MM * MM_TO_PT
 
-# Bloc date / heure / effectifs — remonté (~18 pt sur slide 540 pt).
+# Bloc date / heure / effectifs — remonté (~18 pt sur slide 540 pt), décalé à droite (fond visuel).
 COVER_META_SHIFT = 0.033
-COVER_DATE_BOX = {"left": 0.201, "top": 0.622 - COVER_META_SHIFT, "width": 0.597, "height": 0.081}
-COVER_HEURE_BOX = {"left": 0.201, "top": 0.703 - COVER_META_SHIFT, "width": 0.597, "height": 0.081}
-COVER_EQUIPES_BOX = {"left": 0.201, "top": 0.785 - COVER_META_SHIFT, "width": 0.597, "height": 0.076}
-COVER_TERRAINS_BOX = {"left": 0.201, "top": 0.866 - COVER_META_SHIFT, "width": 0.597, "height": 0.076}
+COVER_META_LEFT = 0.38
+COVER_META_WIDTH = 0.597
+COVER_DATE_BOX = {"left": COVER_META_LEFT, "top": 0.622 - COVER_META_SHIFT, "width": COVER_META_WIDTH, "height": 0.081}
+COVER_HEURE_BOX = {"left": COVER_META_LEFT, "top": 0.703 - COVER_META_SHIFT, "width": COVER_META_WIDTH, "height": 0.081}
+COVER_EQUIPES_BOX = {"left": COVER_META_LEFT, "top": 0.785 - COVER_META_SHIFT, "width": COVER_META_WIDTH, "height": 0.076}
+COVER_TERRAINS_BOX = {"left": COVER_META_LEFT, "top": 0.866 - COVER_META_SHIFT, "width": COVER_META_WIDTH, "height": 0.076}
 
 _MOTIF_JOUEUR = re.compile(r"joueur", re.IGNORECASE)
 
 def cover_background_path(base_dir: Path) -> Path | None:
     candidates = [
-        base_dir / "frontend" / "public" / "images" / "padel-court-night-v6.png",
+        base_dir / "engine_v2" / "assets" / "cover-background.jpg",
         base_dir / "engine_v2" / "assets" / "cover-background.png",
+        base_dir / "frontend" / "public" / "images" / "padel-court-night-v6.png",
     ]
     return next((p for p in candidates if p.is_file()), None)
 
@@ -377,12 +380,9 @@ def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
         fill_rect(page, rect, (0.04, 0.04, 0.06), overlay=False)
         return
 
-    img_bytes = path.read_bytes()
-    pix = fitz.Pixmap(str(path))
-    try:
-        iw, ih = float(pix.width), float(pix.height)
-    finally:
-        pix = None
+    with fitz.open(path) as imgdoc:
+        img_rect = imgdoc[0].rect
+        iw, ih = float(img_rect.width), float(img_rect.height)
 
     scale = max(rect.width / iw, rect.height / ih)
     draw_w = iw * scale
@@ -393,7 +393,7 @@ def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
         rect.x0 + (rect.width - draw_w) / 2 + draw_w,
         rect.y0 + (rect.height - draw_h) / 2 + draw_h,
     )
-    page.insert_image(dest, stream=img_bytes, keep_proportion=True)
+    page.insert_image(dest, filename=str(path), keep_proportion=True)
 
 
 def draw_cover_logo(
@@ -454,6 +454,7 @@ def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:
             fontsize=size,
             color=WHITE,
             fontfile=brush,
+            align=fitz.TEXT_ALIGN_RIGHT,
         )
 
     _insert_textbox(
