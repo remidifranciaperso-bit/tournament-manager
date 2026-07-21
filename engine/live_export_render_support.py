@@ -569,46 +569,58 @@ def _match_box_radius_pt(rect: fitz.Rect) -> float:
     return max(2.0, min(MATCH_BOX_RADIUS_PX * PX_TO_PT, rect.width * 0.055, rect.height * 0.12))
 
 
-def _draw_filled_rounded_top_rect(
+def _draw_blue_match_header(
     page: fitz.Page,
     rect: fitz.Rect,
-    bottom_y: float,
-    *,
-    color: tuple[float, float, float],
+    header_bottom: float,
     radius_pt: float,
 ) -> None:
-    """Remplissage avec coins supérieurs arrondis uniquement (bas droit)."""
-    x0, y0, x1 = rect.x0, rect.y0, rect.x1
-    y1 = bottom_y
-    radius = min(radius_pt, (x1 - x0) / 2, max(0.0, y1 - y0))
-    if radius <= 0.5:
+    """Bandeau bleu — coins haut arrondis via calotte ``draw_rect`` (comme les tableaux)."""
+    if header_bottom <= rect.y0 + 0.5:
+        return
+
+    header_h = header_bottom - rect.y0
+    if radius_pt <= 0.5:
         page.draw_rect(
-            fitz.Rect(x0, y0, x1, y1),
-            color=color,
-            fill=color,
+            fitz.Rect(rect.x0, rect.y0, rect.x1, header_bottom),
+            color=TEMPLATE_BLUE,
+            fill=TEMPLATE_BLUE,
             width=0,
             overlay=True,
         )
         return
-    shape = page.new_shape()
-    if y1 > y0 + radius + 0.01:
-        shape.draw_line(fitz.Point(x0, y1), fitz.Point(x0, y0 + radius))
-    else:
-        shape.draw_line(fitz.Point(x0, y0 + radius), fitz.Point(x0, y0 + radius))
-    shape.draw_curve(
-        fitz.Point(x0, y0),
-        fitz.Point(x0, y0),
-        fitz.Point(x0 + radius, y0),
+
+    cap_h = min(header_h, 2 * radius_pt)
+    cap_bottom = rect.y0 + cap_h
+
+    if header_bottom > cap_bottom + 0.1:
+        page.draw_rect(
+            fitz.Rect(rect.x0, cap_bottom, rect.x1, header_bottom),
+            color=TEMPLATE_BLUE,
+            fill=TEMPLATE_BLUE,
+            width=0,
+            overlay=True,
+        )
+
+    cap_rect = fitz.Rect(rect.x0, rect.y0, rect.x1, cap_bottom)
+    page.draw_rect(
+        cap_rect,
+        color=TEMPLATE_BLUE,
+        fill=TEMPLATE_BLUE,
+        width=0,
+        radius=_radius_frac_for_rect(cap_rect, radius_pt),
+        overlay=True,
     )
-    shape.draw_line(fitz.Point(x0 + radius, y0), fitz.Point(x1 - radius, y0))
-    shape.draw_curve(
-        fitz.Point(x1, y0),
-        fitz.Point(x1, y0),
-        fitz.Point(x1, y0 + radius),
-    )
-    shape.draw_line(fitz.Point(x1, y1), fitz.Point(x0, y1))
-    shape.finish(fill=color, closePath=False, width=0)
-    shape.commit(overlay=True)
+
+    bridge_bottom = cap_bottom - radius_pt
+    if cap_bottom > bridge_bottom + 0.1:
+        page.draw_rect(
+            fitz.Rect(rect.x0, bridge_bottom, rect.x1, cap_bottom),
+            color=TEMPLATE_BLUE,
+            fill=TEMPLATE_BLUE,
+            width=0,
+            overlay=True,
+        )
 
 
 def _draw_match_box_shell(
@@ -630,30 +642,12 @@ def _draw_match_box_shell(
         overlay=True,
     )
 
-    cap_bottom = rect.y0 + radius_pt
-    if header_bottom > cap_bottom + 0.25:
-        page.draw_rect(
-            fitz.Rect(rect.x0, cap_bottom, rect.x1, header_bottom),
-            color=TEMPLATE_BLUE,
-            fill=TEMPLATE_BLUE,
-            width=0,
-            overlay=True,
-        )
-        _draw_filled_rounded_top_rect(
-            page,
-            rect,
-            cap_bottom,
-            color=TEMPLATE_BLUE,
-            radius_pt=radius_pt,
-        )
-    else:
-        _draw_filled_rounded_top_rect(
-            page,
-            rect,
-            header_bottom,
-            color=TEMPLATE_BLUE,
-            radius_pt=radius_pt,
-        )
+    _draw_blue_match_header(
+        page,
+        rect,
+        header_bottom,
+        radius_pt,
+    )
 
     page.draw_line(
         fitz.Point(rect.x0, score_top),
