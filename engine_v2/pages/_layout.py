@@ -18,8 +18,23 @@ TYPE_BOX = {"left": 0.0, "top": 0.0147, "width": 0.327, "height": 0.054}
 DATE_BOX = {"left": 0.673, "top": 0.0144, "width": 0.327, "height": 0.054}
 FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
 
+COVER_META_SHIFT = 0.033
+COVER_META_TOP_FRAC = 0.622 - COVER_META_SHIFT
+COVER_META_LEFT = 2 / 3
+COVER_META_RIGHT_MARGIN = 0.025
+COVER_META_WIDTH = 1.0 - COVER_META_LEFT - COVER_META_RIGHT_MARGIN
+
 COVER_LOGO_BOX = {"left": 0.274, "top": 0.056, "width": 0.443, "height": 0.108}
-COVER_TYPE_BOX = {"left": -0.043, "top": 0.228, "width": 1.063, "height": 0.229}
+COVER_LOGO_SCALE = 1.7
+COVER_TYPE_HEIGHT = 0.229
+COVER_LOGO_BOTTOM_FRAC = COVER_LOGO_BOX["top"] + COVER_LOGO_BOX["height"]
+COVER_TYPE_BOX = {
+    "left": -0.043,
+    "top": COVER_LOGO_BOTTOM_FRAC
+    + ((COVER_META_TOP_FRAC - COVER_LOGO_BOTTOM_FRAC - COVER_TYPE_HEIGHT) / 2),
+    "width": 1.063,
+    "height": COVER_TYPE_HEIGHT,
+}
 COVER_CREDIT_BOX = {"left": 0.19, "top": 0.948, "width": 0.597, "height": 0.038}
 
 COVER_TYPE_PT = 96.0
@@ -34,14 +49,30 @@ HEADER_SIDE_MARGIN_PT = HEADER_SIDE_MARGIN_MM * MM_TO_PT
 FOOTER_BOTTOM_MARGIN_MM = 3.0
 FOOTER_BOTTOM_MARGIN_PT = FOOTER_BOTTOM_MARGIN_MM * MM_TO_PT
 
-# Bloc date / heure / effectifs — remonté (~18 pt sur slide 540 pt), décalé à droite (fond visuel).
-COVER_META_SHIFT = 0.033
-COVER_META_LEFT = 0.38
-COVER_META_WIDTH = 0.597
-COVER_DATE_BOX = {"left": COVER_META_LEFT, "top": 0.622 - COVER_META_SHIFT, "width": COVER_META_WIDTH, "height": 0.081}
-COVER_HEURE_BOX = {"left": COVER_META_LEFT, "top": 0.703 - COVER_META_SHIFT, "width": COVER_META_WIDTH, "height": 0.081}
-COVER_EQUIPES_BOX = {"left": COVER_META_LEFT, "top": 0.785 - COVER_META_SHIFT, "width": COVER_META_WIDTH, "height": 0.076}
-COVER_TERRAINS_BOX = {"left": COVER_META_LEFT, "top": 0.866 - COVER_META_SHIFT, "width": COVER_META_WIDTH, "height": 0.076}
+COVER_DATE_BOX = {
+    "left": COVER_META_LEFT,
+    "top": COVER_META_TOP_FRAC,
+    "width": COVER_META_WIDTH,
+    "height": 0.081,
+}
+COVER_HEURE_BOX = {
+    "left": COVER_META_LEFT,
+    "top": 0.703 - COVER_META_SHIFT,
+    "width": COVER_META_WIDTH,
+    "height": 0.081,
+}
+COVER_EQUIPES_BOX = {
+    "left": COVER_META_LEFT,
+    "top": 0.785 - COVER_META_SHIFT,
+    "width": COVER_META_WIDTH,
+    "height": 0.076,
+}
+COVER_TERRAINS_BOX = {
+    "left": COVER_META_LEFT,
+    "top": 0.866 - COVER_META_SHIFT,
+    "width": COVER_META_WIDTH,
+    "height": 0.076,
+}
 
 _MOTIF_JOUEUR = re.compile(r"joueur", re.IGNORECASE)
 
@@ -396,6 +427,16 @@ def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
     page.insert_image(dest, filename=str(path), keep_proportion=True)
 
 
+def _cover_logo_zone(page_rect: fitz.Rect) -> fitz.Rect:
+    """Zone logo / nom club couverture (+70 %, centrée sur la zone template)."""
+    zone = pct_rect(page_rect, COVER_LOGO_BOX)
+    cx = zone.x0 + zone.width / 2
+    cy = zone.y0 + zone.height / 2
+    w = zone.width * COVER_LOGO_SCALE
+    h = zone.height * COVER_LOGO_SCALE
+    return fitz.Rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+
+
 def draw_cover_logo(
     page: fitz.Page,
     *,
@@ -404,7 +445,7 @@ def draw_cover_logo(
     club_name: str | None = None,
     base_dir: Path | None = None,
 ) -> None:
-    zone = pct_rect(page.rect, COVER_LOGO_BOX)
+    zone = _cover_logo_zone(page.rect)
     if logo_bytes and logo_wh:
         dest = contain_rect(zone, float(logo_wh[0]), float(logo_wh[1]))
         page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
