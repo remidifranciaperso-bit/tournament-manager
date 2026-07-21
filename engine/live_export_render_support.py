@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -73,20 +72,25 @@ _PLANNING_SLOT_RE = re.compile(r"^(?:J(?P<day>\d+)_)?PL(?P<index>\d+)_CODE$")
 
 _PLACEHOLDER_EMOJI_PREFIXES = ("🏆", "❌", "🥇", "🥈", "🥉")
 
+_EMOJI_BAKED_FILES = {
+    "🏆": "trophy.png",
+    "❌": "cross.png",
+    "🥇": "gold.png",
+    "🥈": "silver.png",
+    "🥉": "bronze.png",
+}
+
 
 def _emoji_font_candidates(base_dir: Path) -> list[Path]:
-    """Apple sur Mac (comme Chrome), Noto sur Linux (comme Chromium Render)."""
+    """Noto Color Emoji partout — identique boîtes match (Chromium/Render)."""
     bundled = base_dir / "fonts" / "NotoColorEmoji.ttf"
     system = [
         Path("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"),
         Path("/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf"),
         Path("/usr/share/fonts/truetype/noto/NotoColorEmoji-Regular.ttf"),
+        Path("/System/Library/Fonts/Apple Color Emoji.ttc"),
     ]
-    apple = Path("/System/Library/Fonts/Apple Color Emoji.ttc")
-    if sys.platform == "darwin":
-        ordered = [apple, bundled, *system]
-    else:
-        ordered = [bundled, *system, apple]
+    ordered = [bundled, *system]
     seen: set[Path] = set()
     unique: list[Path] = []
     for path in ordered:
@@ -156,13 +160,59 @@ def _table_cell_pad_pt(content_width: float) -> float:
     )
 
 
-def _split_placeholder_emoji(text: str) -> tuple[str | None, str]:
+def _is_emoji_codepoint(code: int) -> bool:
+    return (
+        code >= 0x1F300
+        or 0x2600 <= code <= 0x27BF
+        or 0x2300 <= code <= 0x23FF
+        or code in (0x203C, 0x2049, 0x2122, 0x2139, 0x2194, 0x2195, 0x2B05, 0x2B06, 0x2B07)
+    )
+
+
+def _split_leading_emoji(text: str) -> tuple[str | None, str]:
+    """Emoji en tête (tournoi ou futur import JSON) + libellé."""
     value = (text or "").strip()
+    if not value:
+        return None, value
     for prefix in _PLACEHOLDER_EMOJI_PREFIXES:
         if value.startswith(prefix):
-            body = value[len(prefix) :].lstrip(" \u2009")
-            return prefix, body
+            return prefix, value[len(prefix) :].lstrip(" \u2009")
+    index = 0
+    while index < len(value):
+        code = ord(value[index])
+        if code in (0xFE0F, 0x200D) or (0x1F3FB <= code <= 0x1F3FF):
+            index += 1
+            continue
+        if not _is_emoji_codepoint(code):
+            break
+        index += 1
+        while index < len(value):
+            next_code = ord(value[index])
+            if next_code in (0xFE0F, 0x200D) or (
+                0x1F3FB <= next_code <= 0x1F3FF
+            ):
+                index += 1
+                continue
+            if _is_emoji_codepoint(next_code):
+                index += 1
+                continue
+            break
+        return value[:index], value[index:].lstrip(" \u2009")
     return None, value
+
+
+def _split_placeholder_emoji(text: str) -> tuple[str | None, str]:
+    return _split_leading_emoji(text)
+
+
+def _baked_emoji_bytes(base_dir: Path | None, char: str) -> bytes | None:
+    filename = _EMOJI_BAKED_FILES.get(char)
+    if not filename or base_dir is None:
+        return None
+    path = base_dir / "engine_v2" / "assets" / "emoji_baked" / filename
+    if path.is_file():
+        return path.read_bytes()
+    return None
 
 
 def _load_truetype_font(path: Path, size: int):
@@ -197,14 +247,15 @@ def _rasterize_placeholder_display(
     fonts: dict[str, Path | None],
     *,
     base_dir: Path | None = None,
+    label_font_key: str = "noto",
 ) -> tuple[bytes, float, float] | None:
-    """Placeholder complet : emoji couleur + libellé TSL (comme le live navigateur)."""
+    """Emoji Noto Color + libellé Noto Sans (planning) ou TSL (boîtes match)."""
     value = (text or "").strip()
-    emoji_char, body = _split_placeholder_emoji(value)
+    emoji_char, body = _split_leading_emoji(value)
     if emoji_char is None:
         return None
-    tsl_path = fonts.get("tsl")
-    if not tsl_path:
+    label_path = fonts.get(label_font_key) or fonts.get("noto")
+    if not label_path:
         return None
 
     emoji_paths: list[Path] = []
@@ -226,30 +277,60 @@ def _rasterize_placeholder_display(
         255,
     )
 
+    def _compose(emoji_img: Image.Image, fs: int) -> tuple[bytes, float, float] | None:
+        try:
+            label_font = _load_truetype_font(label_path, fs)
+        except OSError:
+            return None
+        gap = max(2, int(fs * 0.12))
+        tb = label_font.getbbox(label)
+        tw, th = tb[2] - tb[0], tb[3] - tb[1]
+        ew, eh = emoji_img.size
+        iw = max(1, ew + gap + tw)
+        ih = max(1, max(eh, th))
+        img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        ey = max(0, (ih - eh) // 2)
+        ex = 0
+        img.alpha_composite(emoji_img, (ex, ey))
+        draw.text((ew + gap - tb[0], -tb[1]), label, font=label_font, fill=fill)
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        pt_scale = fontsize / fs
+        return buf.getvalue(), iw * pt_scale, ih * pt_scale
+
+    baked = _baked_emoji_bytes(base_dir, emoji_char)
+    if baked:
+        try:
+            emoji_img = Image.open(BytesIO(baked)).convert("RGBA")
+            target_h = target_fs
+            scale = target_h / max(emoji_img.height, 1)
+            emoji_img = emoji_img.resize(
+                (max(1, int(emoji_img.width * scale)), target_h),
+                Image.Resampling.LANCZOS,
+            )
+            composed = _compose(emoji_img, target_fs)
+            if composed is not None:
+                return composed
+        except Exception:
+            pass
+
     for emoji_path in emoji_paths:
         try:
             emoji_font, fs = _load_emoji_font(emoji_path, target_fs)
-            tsl_font = _load_truetype_font(tsl_path, fs)
-            gap = max(2, int(fs * 0.12))
             eb = emoji_font.getbbox(emoji_char)
-            tb = tsl_font.getbbox(label)
             ew, eh = eb[2] - eb[0], eb[3] - eb[1]
-            tw, th = tb[2] - tb[0], tb[3] - tb[1]
-            iw = max(1, ew + gap + tw)
-            ih = max(1, max(eh, th))
-            img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(img)
+            emoji_img = Image.new("RGBA", (max(ew, 1), max(eh, 1)), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(emoji_img)
             draw.text(
                 (-eb[0], -eb[1]),
                 emoji_char,
                 font=emoji_font,
                 embedded_color=True,
             )
-            draw.text((ew + gap - tb[0], -tb[1]), label, font=tsl_font, fill=fill)
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            pt_scale = fontsize / fs
-            return buf.getvalue(), iw * pt_scale, ih * pt_scale
+            composed = _compose(emoji_img, fs)
+            if composed is not None:
+                return composed
         except Exception:
             continue
     return None
@@ -278,20 +359,25 @@ def _draw_live_placeholder(
     pad_pt: float | None = None,
     fonts: dict[str, Path | None] | None = None,
     base_dir: Path | None = None,
+    label_font_key: str = "noto",
 ) -> bool:
     """
-    Placeholder live → PDF natif : emoji couleur (Apple/Noto) + libellé TSL.
-    Même principe que le navigateur (font-tsl + repli emoji OS).
+    Placeholder → PDF natif : Noto Color Emoji + libellé Noto Sans (planning)
+    ou TSL (boîtes match). Tout emoji Unicode pris en charge via Noto.
     """
     del color
     value = (text or "").strip()
-    if not value or _split_placeholder_emoji(value)[0] is None:
+    if not value or _split_leading_emoji(value)[0] is None:
         return False
     pad = pad_pt if pad_pt is not None else 2.0
     font_paths = fonts or {}
 
     raster = _rasterize_placeholder_display(
-        value, fontsize, font_paths, base_dir=base_dir
+        value,
+        fontsize,
+        font_paths,
+        base_dir=base_dir,
+        label_font_key=label_font_key,
     )
     if raster is None:
         return False
@@ -554,6 +640,7 @@ def _draw_match_box(
             pad_pt=2,
             fonts=fonts,
             base_dir=base_dir,
+            label_font_key="tsl",
         ):
             _insert_textbox(
                 page,
@@ -588,6 +675,7 @@ def _draw_match_box(
             pad_pt=2,
             fonts=fonts,
             base_dir=base_dir,
+            label_font_key="tsl",
         ):
             _insert_textbox(
                 page,
@@ -1046,10 +1134,11 @@ def _draw_live_table_card(
                 pad_pt=cell_pad,
                 fonts=fonts,
                 base_dir=base_dir,
+                label_font_key="noto",
             ):
                 x += width
                 continue
-            cell_font = fonts.get("tsl") if is_placeholder(value) else fontfile
+            cell_font = fonts.get("noto") if is_placeholder(value) else fontfile
             _insert_textbox(
                 page,
                 cell,
