@@ -591,7 +591,10 @@ def _draw_filled_rounded_top_rect(
         )
         return
     shape = page.new_shape()
-    shape.draw_line(fitz.Point(x0, y1), fitz.Point(x0, y0 + radius))
+    if y1 > y0 + radius + 0.01:
+        shape.draw_line(fitz.Point(x0, y1), fitz.Point(x0, y0 + radius))
+    else:
+        shape.draw_line(fitz.Point(x0, y0 + radius), fitz.Point(x0, y0 + radius))
     shape.draw_curve(
         fitz.Point(x0, y0),
         fitz.Point(x0, y0),
@@ -604,7 +607,7 @@ def _draw_filled_rounded_top_rect(
         fitz.Point(x1, y0 + radius),
     )
     shape.draw_line(fitz.Point(x1, y1), fitz.Point(x0, y1))
-    shape.finish(color=color, fill=color, closePath=True, width=0)
+    shape.finish(fill=color, closePath=False, width=0)
     shape.commit(overlay=True)
 
 
