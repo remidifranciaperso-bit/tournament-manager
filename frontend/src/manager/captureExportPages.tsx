@@ -155,34 +155,27 @@ export async function captureManagerExportPages(
       }
     }
 
+    // Tableaux main/classement : rendu natif Engine V2. On ne capture que les
+    // slides « poules » insérées dans la section main.
     for (const section of ["main", "classement"] as const) {
       for (let page = 0; page < pageEntries(pageMap, section).length; page += 1) {
         const entry = pageEntries(pageMap, section)[page];
         const poolLetter =
           section === "main" ? poolSlideLetters.get(entry.index) : undefined;
+        if (!poolLetter) continue;
 
-        const poolView: ExportPoolView | undefined = poolLetter
-          ? { letter: poolLetter }
-          : undefined;
-        const target: ExportCaptureTarget = poolView
-          ? { section: "pools", subPage: page, poolView }
-          : { section, subPage: page };
+        const poolView: ExportPoolView = { letter: poolLetter };
+        const target: ExportCaptureTarget = { section: "pools", subPage: page, poolView };
 
         const captured = await captureTarget(
           navigation,
           target,
-          poolView ? "pools" : section
+          "pools"
         );
         if (!captured) continue;
 
-        // Les pages de poules sont enregistrées sous la clé « main » de leur
-        // slide : le backend les composite comme n'importe quelle page principale.
         const key = captureKey(section, entry.index);
         captures[key] = captured.image;
-        if (section === "main" && !poolView) {
-          const stub = readCrossPageStub(captured.element);
-          if (stub) crosspageStubs[key] = stub;
-        }
       }
     }
   } finally {

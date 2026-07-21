@@ -1,5 +1,5 @@
 /** Vérification déploiement bundle export (grep Docker / health). */
-export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260720-planning-native";
+export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260721-bracket-native";
 
 const EMOJI_GAP = "\u2009";
 const ICONE_VAINQUEUR = `🏆${EMOJI_GAP}`;

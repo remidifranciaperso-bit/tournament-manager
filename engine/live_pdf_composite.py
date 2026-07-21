@@ -18,6 +18,23 @@ ENGINE_HEADER_RATIO = 0.083
 ENGINE_FOOTER_RATIO = 0.042
 ENGINE_FOOTER_LOGO_WIDTH_RATIO = 1 / 3
 FOOTER_BOTTOM_MARGIN_PT = 3.0 * 72.0 / 25.4
+# Ratio slide template PPT (identique LiveBracketViewer / export capture).
+_BRACKET_SLIDE_ASPECT = 9906000 / 6858000
+
+
+def _bracket_content_area(content_rect: fitz.Rect) -> fitz.Rect:
+    """Zone slide bracket — marges 5 mm, centrée verticalement."""
+    avail_w = max(40.0, content_rect.width - 2 * TABLE_SIDE_MARGIN_PT)
+    draw_h = avail_w / _BRACKET_SLIDE_ASPECT
+    if draw_h > content_rect.height:
+        draw_h = content_rect.height
+        draw_w = draw_h * _BRACKET_SLIDE_ASPECT
+    else:
+        draw_w = avail_w
+    x0 = content_rect.x0 + (content_rect.width - draw_w) / 2
+    y0 = content_rect.y0 + (content_rect.height - draw_h) / 2
+    return fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h)
+
 
 def _decode_capture(data: str) -> bytes:
     if data.startswith("data:"):
@@ -319,6 +336,60 @@ def composer_page_final_native(
         base_dir=base_dir,
         place_range=place_range,
     )
+
+
+def composer_page_bracket_native(
+    page: fitz.Page,
+    source: fitz.Document,
+    slide_index: int,
+    *,
+    template_id: str,
+    matches: list[dict],
+    match_results: dict[str, dict],
+    base_dir,
+    footer_slide_index: int | None = None,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+    club_name: str | None = None,
+    crosspage_stub: dict | None = None,
+    show_placement_labels: bool = True,
+) -> None:
+    """Bandeaux Engine + tableau bracket PyMuPDF (sans capture DOM)."""
+    from engine.bracket_crosspage_stub import draw_crosspage_margin_stub
+    from engine.live_export_render import render_bracket_into_area
+
+    content_rect = _compose_page_chrome(
+        page,
+        source,
+        slide_index,
+        footer_slide_index=footer_slide_index,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=club_name,
+        base_dir=base_dir,
+        crosspage_stub=crosspage_stub,
+    )
+    bracket_area = _bracket_content_area(content_rect)
+    computed_stub = render_bracket_into_area(
+        page,
+        bracket_area,
+        base_dir=base_dir,
+        template_id=template_id,
+        slide_index=slide_index,
+        matches=matches,
+        match_results=match_results,
+        show_placement_labels=show_placement_labels,
+    )
+    if bracket_area.y1 < content_rect.y1 - 0.5:
+        page.draw_rect(
+            fitz.Rect(content_rect.x0, bracket_area.y1, content_rect.x1, content_rect.y1),
+            color=None,
+            fill=(1, 1, 1),
+            overlay=False,
+        )
+    stub = computed_stub or crosspage_stub
+    if stub:
+        draw_crosspage_margin_stub(page, page.rect, bracket_area, stub)
 
 
 def composer_page_planning_native(

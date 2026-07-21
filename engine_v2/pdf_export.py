@@ -10,6 +10,7 @@ import fitz
 from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import (
     capture_key,
+    composer_page_bracket_native,
     composer_page_export,
     composer_page_final_native,
     composer_page_planning_native,
@@ -78,6 +79,7 @@ def exporter_pdf_engine_v2(
         meta = (snapshot or {}).get("meta") or {}
         club_name = meta.get("club")
         nb_equipes = int(snapshot.get("nb_equipes") or meta.get("nb_equipes") or 16)
+        template_id = meta.get("template_id") or snapshot.get("template_id")
         render_base = base_dir or Path(__file__).resolve().parent.parent
         final_entries = page_map.get("final", [])
         final_page_count = max(1, len(final_entries))
@@ -116,6 +118,27 @@ def exporter_pdf_engine_v2(
                     )
 
                 layout_fields = planning_layout.get(str(slide_index))
+                if section in ("main", "classement") and template_id and matches:
+                    page = merged.new_page(
+                        width=page_rect.width, height=page_rect.height
+                    )
+                    composer_page_bracket_native(
+                        page,
+                        source,
+                        slide_index,
+                        template_id=template_id,
+                        matches=matches,
+                        match_results=match_results,
+                        base_dir=render_base,
+                        footer_slide_index=footer_reference,
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                        club_name=club_name,
+                        crosspage_stub=(crosspage_stubs or {}).get(key),
+                        show_placement_labels=True,
+                    )
+                    continue
+
                 if section == "planning":
                     if layout_fields:
                         page = merged.new_page(
