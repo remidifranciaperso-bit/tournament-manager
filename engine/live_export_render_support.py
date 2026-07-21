@@ -597,7 +597,7 @@ def _draw_filled_rounded_top_rect(
         fitz.Point(x0, y0),
         fitz.Point(x0 + radius, y0),
     )
-    shape.draw_line(fitz.Point(x1 - radius, y0), fitz.Point(x1, y0))
+    shape.draw_line(fitz.Point(x0 + radius, y0), fitz.Point(x1 - radius, y0))
     shape.draw_curve(
         fitz.Point(x1, y0),
         fitz.Point(x1, y0),
