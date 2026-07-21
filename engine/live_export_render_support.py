@@ -30,6 +30,8 @@ TEAM_PT = 12.0
 TEAM_PLACEHOLDER_PT = 8.5
 MATCH_BOX_BORDER_W = 0.8
 MATCH_BOX_RADIUS_PX = 8.0
+MATCH_TEAM_RULE_MARGIN_MM = 2.0
+MATCH_TEAM_RULE_DASHES = "[6 4]"
 VS_PT = 9.0
 SCORE_PT = 9.0
 SCORE_LABEL_PT = 10.0
@@ -659,6 +661,27 @@ def _draw_match_box_shell(
     )
 
 
+def _is_emoji_placeholder_label(text: str) -> bool:
+    return _split_leading_emoji((text or "").strip())[0] is not None
+
+
+def _draw_team_placeholder_rule(
+    page: fitz.Page,
+    match_rect: fitz.Rect,
+    y: float,
+) -> None:
+    """Trait pointillé sous un intitulé emoji — marges 2 mm, couleur ``vs``."""
+    inset = MATCH_TEAM_RULE_MARGIN_MM * MM_TO_PT
+    page.draw_line(
+        fitz.Point(match_rect.x0 + inset, y),
+        fitz.Point(match_rect.x1 - inset, y),
+        color=ARENA_600,
+        width=0.5,
+        dashes=MATCH_TEAM_RULE_DASHES,
+        overlay=True,
+    )
+
+
 def _draw_match_box_border(page: fitz.Page, rect: fitz.Rect) -> None:
     radius_pt = _match_box_radius_pt(rect)
     radius_frac = _radius_frac_for_rect(rect, radius_pt)
@@ -893,6 +916,11 @@ def _draw_match_box(
             fonts=fonts,
         )
 
+    if _is_emoji_placeholder_label(equipe1):
+        _draw_team_placeholder_rule(page, rect, team1_rect.y1)
+    if _is_emoji_placeholder_label(equipe2):
+        _draw_team_placeholder_rule(page, rect, team2_rect.y1)
+
     vs_rect = fitz.Rect(body.x0, mid_y - body.height * 0.11, body.x1, mid_y + body.height * 0.11)
     _insert_textbox(
         page,
@@ -927,7 +955,7 @@ def _draw_match_box(
             label_rect,
             "score:",
             fontsize=_pt_on_area(SCORE_LABEL_PT, area),
-            color=(0, 0, 0),
+            color=ARENA_600,
             fontfile=fonts.get("noto"),
             bold=False,
             align=fitz.TEXT_ALIGN_CENTER,
