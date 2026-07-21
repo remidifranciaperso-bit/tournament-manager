@@ -37,6 +37,8 @@ TABLE_HEAD_PT = 9.0
 TABLE_HEAD_TSL_PT = 11.0
 TABLE_HEAD_DISPLAY_PT = 12.0
 TABLE_BODY_PT = 10.0
+FINAL_TABLE_BODY_PT = 12.0
+FINAL_TABLE_HEAD_PT = 12.0
 PLANNING_BASE_PT = 1024.0
 FINAL_BASE_PT = 820.0
 FINAL_TABLE_VERTICAL_MARGIN_PT = 14.0
@@ -1039,6 +1041,9 @@ def _draw_live_table_card(
     checkbox_cols: list[int] | None = None,
     emoji_html_cols: list[int] | None = None,
     body_content: bool = True,
+    blank_cols: list[int] | None = None,
+    body_pt: float | None = None,
+    header_pt: float | None = None,
 ) -> None:
     fonts = _font_paths(base_dir)
     row_count = len(body_rows) + 1
@@ -1056,6 +1061,8 @@ def _draw_live_table_card(
     aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
     font_keys = body_fonts or ["tsl"] * len(headers)
     header_bolds = header_bold or [False] * len(headers)
+    default_body_pt = body_pt if body_pt is not None else TABLE_BODY_PT
+    head_pt = header_pt if header_pt is not None else TABLE_HEAD_DISPLAY_PT
 
     base_row_h = content.height / max(row_count, 2)
     header_bottom = content.y0 + base_row_h
@@ -1087,7 +1094,7 @@ def _draw_live_table_card(
             page,
             cell,
             header,
-            fontsize=TABLE_HEAD_DISPLAY_PT,
+            fontsize=head_pt,
             color=WHITE,
             align=align,
             fontfile=fonts.get("tsl"),
@@ -1131,12 +1138,14 @@ def _draw_live_table_card(
                 _draw_hand_checkbox(page, cell, pad_pt=cell_pad)
                 x += width
                 continue
-            body_pt = TEAM_PLACEHOLDER_PT if is_placeholder(value) else TABLE_BODY_PT
+            body_pt_cell = (
+                TEAM_PLACEHOLDER_PT if is_placeholder(value) else default_body_pt
+            )
             if is_placeholder(value) and _draw_live_placeholder(
                 page,
                 cell,
                 value or "—",
-                fontsize=body_pt,
+                fontsize=body_pt_cell,
                 color=color,
                 align=align,
                 pad_pt=cell_pad,
@@ -1147,11 +1156,17 @@ def _draw_live_table_card(
                 x += width
                 continue
             cell_font = fonts.get("noto") if is_placeholder(value) else fontfile
+            cell_text = (value or "").strip()
+            if not cell_text:
+                if blank_cols and index in blank_cols:
+                    x += width
+                    continue
+                cell_text = "—"
             _insert_textbox(
                 page,
                 cell,
-                value or "—",
-                fontsize=body_pt,
+                cell_text,
+                fontsize=body_pt_cell,
                 color=color,
                 align=align,
                 fontfile=cell_font,
@@ -1340,4 +1355,7 @@ def draw_final_ranking(
         body_bold=[False, False, False],
         body_colors=body_colors,
         ref_width_pt=narrow_table_width_pt(table_area.width),
+        blank_cols=[1],
+        body_pt=FINAL_TABLE_BODY_PT,
+        header_pt=FINAL_TABLE_HEAD_PT,
     )

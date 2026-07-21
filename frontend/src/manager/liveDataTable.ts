@@ -34,6 +34,15 @@ export const LIVE_TABLE_CAPTURE_HEAD_ROW =
 export const LIVE_TABLE_HEAD_NATIVE =
   "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
 
+export const FINAL_TABLE_HEAD =
+  "px-2 py-2.5 text-left font-tsl text-[13px] font-normal uppercase tracking-wide sm:px-3";
+
+export const FINAL_TABLE_BODY_NOTO =
+  "px-2 py-2 font-noto text-[12px] text-arena-800 sm:px-3";
+
+export const FINAL_TABLE_BODY_TSL_BOLD =
+  "px-2 py-2 font-tsl text-[12px] font-semibold text-arena-800 sm:px-3";
+
 export const LIVE_TABLE_HEAD_PLANNING_CAPTURE = LIVE_TABLE_HEAD_NATIVE;
 export const PLANNING_HEAD_CAPTURE_PX = 12;
 

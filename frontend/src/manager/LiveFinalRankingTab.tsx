@@ -11,12 +11,11 @@ import {
   LIVE_TABLE_CAPTURE,
   LIVE_TABLE_CAPTURE_SHELL,
   LIVE_TABLE_CARD,
-  LIVE_TABLE_CELL_NOTO,
   LIVE_TABLE_CELL_POINTS,
-  LIVE_TABLE_CELL_TSL_BOLD,
-  LIVE_TABLE_HEAD_NATIVE,
+  FINAL_TABLE_BODY_NOTO,
+  FINAL_TABLE_BODY_TSL_BOLD,
+  FINAL_TABLE_HEAD,
   LIVE_TABLE_ROW,
-  liveTeamTextClass,
 } from "./liveDataTable";
 import { FINAL_EXPORT_CAPTURE_WIDTH } from "./exportCapture";
 
@@ -91,16 +90,21 @@ export function LiveFinalRankingTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
-  const headClass = LIVE_TABLE_HEAD_NATIVE;
+  const headClass = FINAL_TABLE_HEAD;
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
+
+  const displayTeam = (team: string) => {
+    const value = (team || "").trim();
+    return value === "—" ? "" : value;
+  };
 
   const bodyRows = rows.map((row) => (
     <tr key={row.place} className={LIVE_TABLE_ROW}>
-      <td className={LIVE_TABLE_CELL_TSL_BOLD}>
+      <td className={FINAL_TABLE_BODY_TSL_BOLD}>
         {formatPlaceLabel(row.place)}
       </td>
-      <td className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(row.team)}`}>
-        {row.team}
+      <td className={FINAL_TABLE_BODY_NOTO}>
+        {displayTeam(row.team)}
       </td>
       <td className={LIVE_TABLE_CELL_POINTS}>
         {row.points || <span className="text-arena-600/35">—</span>}
