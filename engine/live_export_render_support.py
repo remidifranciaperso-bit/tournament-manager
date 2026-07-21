@@ -35,6 +35,7 @@ SCORE_PT = 9.0
 SCORE_LABEL_PT = 10.0
 FEED_PT = 8.0
 PLACEMENT_PT = 11.0
+PLACEMENT_BRUSH_PT = 36.0
 TABLE_HEAD_PT = 9.0
 TABLE_HEAD_TSL_PT = 11.0
 TABLE_HEAD_DISPLAY_PT = 12.0
@@ -577,7 +578,24 @@ def _draw_match_box_shell(
     radius_pt = _match_box_radius_pt(rect)
     radius_frac = _radius_frac_for_rect(rect, radius_pt)
 
-    page.draw_rect(rect, color=WHITE, fill=WHITE, width=0, radius=radius_frac, overlay=False)
+    # Masque opaque : efface les connecteurs derrière l'encart (coins compris).
+    pad = 2.5
+    page.draw_rect(
+        fitz.Rect(rect.x0 - pad, rect.y0 - pad, rect.x1 + pad, rect.y1 + pad),
+        color=WHITE,
+        fill=WHITE,
+        width=0,
+        overlay=True,
+    )
+
+    page.draw_rect(
+        rect,
+        color=WHITE,
+        fill=WHITE,
+        width=0,
+        radius=radius_frac,
+        overlay=True,
+    )
 
     header = fitz.Rect(rect.x0, rect.y0, rect.x1, header_bottom)
     page.draw_rect(
@@ -597,21 +615,25 @@ def _draw_match_box_shell(
             overlay=True,
         )
 
-    page.draw_rect(
-        rect,
-        color=TEMPLATE_BLUE,
-        fill=None,
-        width=MATCH_BOX_BORDER_W,
-        radius=radius_frac,
-        overlay=True,
-    )
-
     page.draw_line(
         fitz.Point(rect.x0, score_top),
         fitz.Point(rect.x1, score_top),
         color=TEMPLATE_BLUE,
         width=0.4,
         dashes="[2 2]",
+        overlay=True,
+    )
+
+
+def _draw_match_box_border(page: fitz.Page, rect: fitz.Rect) -> None:
+    radius_pt = _match_box_radius_pt(rect)
+    radius_frac = _radius_frac_for_rect(rect, radius_pt)
+    page.draw_rect(
+        rect,
+        color=TEMPLATE_BLUE,
+        fill=None,
+        width=MATCH_BOX_BORDER_W,
+        radius=radius_frac,
         overlay=True,
     )
 
@@ -680,6 +702,7 @@ def _draw_match_box(
     code = match.get("code", "")
     terrain = match.get("terrain") or ""
     heure = match.get("heure") or ""
+    header_bold = not export_mode
 
     code_rect = fitz.Rect(header.x0 + 2, header.y0, header.x0 + header.width * 0.42, header.y1)
     terrain_rect = fitz.Rect(header.x0, header.y0, header.x1, header.y1)
@@ -693,7 +716,7 @@ def _draw_match_box(
         color=WHITE,
         align=fitz.TEXT_ALIGN_LEFT,
         fontfile=fonts.get("tsl"),
-        bold=True,
+        bold=header_bold,
     )
     _insert_textbox(
         page,
@@ -702,7 +725,7 @@ def _draw_match_box(
         fontsize=code_px,
         color=WHITE,
         fontfile=fonts.get("noto"),
-        bold=True,
+        bold=header_bold,
     )
     _insert_textbox(
         page,
@@ -712,11 +735,14 @@ def _draw_match_box(
         color=WHITE,
         align=fitz.TEXT_ALIGN_RIGHT,
         fontfile=fonts.get("tsl"),
-        bold=True,
+        bold=header_bold,
     )
 
     if placement_label:
-        label_size = _pt_on_area(PLACEMENT_PT, area)
+        label_size = _pt_on_area(
+            PLACEMENT_BRUSH_PT if export_mode else PLACEMENT_PT,
+            area,
+        )
         if placement_label == "1-2" and split_main_bracket:
             center_x = rect.x0 + rect.width * 0.72
         else:
@@ -841,7 +867,7 @@ def _draw_match_box(
         fontsize=_pt_on_area(VS_PT, area),
         color=ARENA_600,
         fontfile=fonts.get("noto"),
-        bold=True,
+        bold=not export_mode,
     )
 
     score_rect = fitz.Rect(rect.x0, score_top, rect.x1, rect.y1)
@@ -872,6 +898,8 @@ def _draw_match_box(
             bold=False,
             align=fitz.TEXT_ALIGN_CENTER,
         )
+
+    _draw_match_box_border(page, rect)
 
 
 def _resolve_feed_text(
