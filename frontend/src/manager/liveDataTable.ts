@@ -35,7 +35,7 @@ export const LIVE_TABLE_HEAD_NATIVE =
   "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
 
 export const FINAL_TABLE_HEAD =
-  "px-2 py-2.5 text-left font-tsl text-[13px] font-normal uppercase tracking-wide sm:px-3";
+  "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
 
 export const FINAL_TABLE_BODY_NOTO =
   "px-2 py-2 font-noto text-[12px] text-arena-800 sm:px-3";

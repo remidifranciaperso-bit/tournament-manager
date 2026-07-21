@@ -155,7 +155,7 @@ export async function captureManagerExportPages(
       }
     }
 
-    for (const section of ["main", "classement", "final"] as const) {
+    for (const section of ["main", "classement"] as const) {
       for (let page = 0; page < pageEntries(pageMap, section).length; page += 1) {
         const entry = pageEntries(pageMap, section)[page];
         const poolLetter =

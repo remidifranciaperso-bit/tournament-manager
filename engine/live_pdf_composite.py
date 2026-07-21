@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import math
 
 import fitz
 
@@ -266,6 +267,58 @@ def composer_page_planning_hybrid(
         )
     finally:
         image.close()
+
+
+def final_place_range(
+    nb_equipes: int,
+    page_index: int,
+    page_count: int,
+) -> tuple[int, int]:
+    chunk = max(1, math.ceil(nb_equipes / max(page_count, 1)))
+    start = page_index * chunk + 1
+    end = min(nb_equipes, (page_index + 1) * chunk)
+    return start, end
+
+
+def composer_page_final_native(
+    page: fitz.Page,
+    source: fitz.Document,
+    slide_index: int,
+    matches: list[dict],
+    match_results: dict[str, dict],
+    fields: dict[str, str],
+    nb_equipes: int,
+    *,
+    place_range: tuple[int, int] | None = None,
+    base_dir=None,
+    footer_slide_index: int | None = None,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+    club_name: str | None = None,
+) -> None:
+    """Bandeaux Engine + tableau classement final PyMuPDF (sans capture DOM)."""
+    from engine.live_export_render_support import draw_final_ranking
+
+    content_rect = _compose_page_chrome(
+        page,
+        source,
+        slide_index,
+        footer_slide_index=footer_slide_index,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=club_name,
+        base_dir=base_dir,
+    )
+    draw_final_ranking(
+        page,
+        content_rect,
+        matches,
+        match_results,
+        fields,
+        nb_equipes,
+        base_dir=base_dir,
+        place_range=place_range,
+    )
 
 
 def composer_page_planning_native(

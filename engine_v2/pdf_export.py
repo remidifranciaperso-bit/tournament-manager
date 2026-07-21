@@ -11,7 +11,9 @@ from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import (
     capture_key,
     composer_page_export,
+    composer_page_final_native,
     composer_page_planning_native,
+    final_place_range,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
 
@@ -72,8 +74,13 @@ def exporter_pdf_engine_v2(
         planning_layout = (snapshot or {}).get("planning_layout") or {}
         matches = (snapshot or {}).get("matches") or []
         match_results = (snapshot or {}).get("match_results") or {}
-        club_name = ((snapshot or {}).get("meta") or {}).get("club")
+        fields = (snapshot or {}).get("fields") or {}
+        meta = (snapshot or {}).get("meta") or {}
+        club_name = meta.get("club")
+        nb_equipes = int(snapshot.get("nb_equipes") or meta.get("nb_equipes") or 16)
         render_base = base_dir or Path(__file__).resolve().parent.parent
+        final_entries = page_map.get("final", [])
+        final_page_count = max(1, len(final_entries))
 
         for key, capture_data in captures.items():
             if not key.startswith("composition:") or not capture_data:
@@ -131,6 +138,40 @@ def exporter_pdf_engine_v2(
                         merged.insert_pdf(
                             source, from_page=slide_index, to_page=slide_index
                         )
+                    continue
+
+                if section == "final":
+                    page_index = next(
+                        (
+                            index
+                            for index, item in enumerate(final_entries)
+                            if int(item["index"]) == slide_index
+                        ),
+                        0,
+                    )
+                    place_range = (
+                        final_place_range(nb_equipes, page_index, final_page_count)
+                        if final_page_count > 1
+                        else None
+                    )
+                    page = merged.new_page(
+                        width=page_rect.width, height=page_rect.height
+                    )
+                    composer_page_final_native(
+                        page,
+                        source,
+                        slide_index,
+                        matches,
+                        match_results,
+                        fields,
+                        nb_equipes,
+                        place_range=place_range,
+                        base_dir=render_base,
+                        footer_slide_index=footer_reference,
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                        club_name=club_name,
+                    )
                     continue
 
                 if not capture_data:
