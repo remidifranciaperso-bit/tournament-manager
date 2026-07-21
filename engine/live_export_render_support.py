@@ -352,99 +352,6 @@ def _rasterize_placeholder_display(
     return None
 
 
-def _rasterize_trailing_emoji_display(
-    text: str,
-    fontsize: float,
-    fonts: dict[str, Path | None],
-    *,
-    base_dir: Path | None = None,
-    label_font_key: str = "tsl",
-) -> tuple[bytes, float, float] | None:
-    """Libellé TSL/Noto + médaille Noto Color (classement final)."""
-    value = (text or "").strip()
-    label, emoji_char = _split_trailing_medal_emoji(value)
-    if emoji_char is None:
-        return None
-    label_path = fonts.get(label_font_key) or fonts.get("tsl") or fonts.get("noto")
-    if not label_path:
-        return None
-
-    emoji_paths: list[Path] = []
-    if base_dir is not None:
-        emoji_paths = _emoji_font_candidates(base_dir)
-    elif fonts.get("emoji"):
-        emoji_paths = [fonts["emoji"]]
-
-    from io import BytesIO
-
-    from PIL import Image, ImageDraw
-
-    target_fs = max(32, int(round(fontsize * 4.5)))
-    fill = (
-        int(ARENA_800[0] * 255),
-        int(ARENA_800[1] * 255),
-        int(ARENA_800[2] * 255),
-        255,
-    )
-
-    def _compose(emoji_img: Image.Image, fs: int) -> tuple[bytes, float, float] | None:
-        try:
-            label_font = _load_truetype_font(label_path, fs)
-        except OSError:
-            return None
-        gap = max(2, int(fs * 0.12))
-        tb = label_font.getbbox(label)
-        tw, th = tb[2] - tb[0], tb[3] - tb[1]
-        ew, eh = emoji_img.size
-        iw = max(1, tw + gap + ew)
-        ih = max(1, max(eh, th))
-        img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-        draw.text((-tb[0], -tb[1]), label, font=label_font, fill=fill)
-        ey = max(0, (ih - eh) // 2)
-        img.alpha_composite(emoji_img, (tw + gap, ey))
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        pt_scale = fontsize / fs
-        return buf.getvalue(), iw * pt_scale, ih * pt_scale
-
-    baked = _baked_emoji_bytes(base_dir, emoji_char)
-    if baked:
-        try:
-            emoji_img = Image.open(BytesIO(baked)).convert("RGBA")
-            target_h = target_fs
-            scale = target_h / max(emoji_img.height, 1)
-            emoji_img = emoji_img.resize(
-                (max(1, int(emoji_img.width * scale)), target_h),
-                Image.Resampling.LANCZOS,
-            )
-            composed = _compose(emoji_img, target_fs)
-            if composed is not None:
-                return composed
-        except Exception:
-            pass
-
-    for emoji_path in emoji_paths:
-        try:
-            emoji_font, fs = _load_emoji_font(emoji_path, target_fs)
-            eb = emoji_font.getbbox(emoji_char)
-            ew, eh = eb[2] - eb[0], eb[3] - eb[1]
-            emoji_img = Image.new("RGBA", (max(ew, 1), max(eh, 1)), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(emoji_img)
-            draw.text(
-                (-eb[0], -eb[1]),
-                emoji_char,
-                font=emoji_font,
-                embedded_color=True,
-            )
-            composed = _compose(emoji_img, fs)
-            if composed is not None:
-                return composed
-        except Exception:
-            continue
-    return None
-
-
 def _rasterize_placeholder_line(
     text: str,
     fontsize: float,
@@ -527,44 +434,52 @@ def _draw_trailing_emoji_label(
     fonts: dict[str, Path | None] | None = None,
     base_dir: Path | None = None,
     label_font_key: str = "tsl",
+    bold: bool = False,
 ) -> bool:
-    """Place + médaille (ex. « 1 🥇 ») via PNG Noto Color, comme le planning."""
-    del color
+    """Place native + médaille PNG (ex. « 3 🥉 ») — chiffre identique aux autres lignes."""
     value = (text or "").strip()
-    if not value or _split_trailing_medal_emoji(value)[1] is None:
+    label, medal = _split_trailing_medal_emoji(value)
+    if medal is None:
         return False
+
     pad = pad_pt if pad_pt is not None else 2.0
     font_paths = fonts or {}
+    label_path = font_paths.get(label_font_key) or font_paths.get("tsl")
 
-    raster = _rasterize_trailing_emoji_display(
-        value,
-        fontsize,
-        font_paths,
-        base_dir=base_dir,
-        label_font_key=label_font_key,
+    _insert_textbox(
+        page,
+        rect,
+        label,
+        fontsize=fontsize,
+        color=color,
+        align=align,
+        fontfile=label_path,
+        bold=bold,
+        pad_pt=pad,
+        fonts=fonts,
     )
-    if raster is None:
-        return False
-    png_bytes, img_w_pt, img_h_pt = raster
-    if img_w_pt <= 0 or img_h_pt <= 0:
-        return False
 
-    draw_h = min(rect.height * 0.82, img_h_pt)
-    draw_w = img_w_pt * (draw_h / img_h_pt)
-    if draw_w > rect.width - 2 * pad:
-        draw_w = rect.width - 2 * pad
-        draw_h = img_h_pt * (draw_w / img_w_pt)
+    baked = _baked_emoji_bytes(base_dir, medal)
+    if not baked:
+        return True
 
-    if align == fitz.TEXT_ALIGN_RIGHT:
-        x0 = rect.x1 - pad - draw_w
-    elif align == fitz.TEXT_ALIGN_CENTER:
-        x0 = rect.x0 + (rect.width - draw_w) / 2
+    inset = pad
+    gap = max(2.0, fontsize * 0.15)
+    if label_path and label_path.is_file():
+        try:
+            font = fitz.Font(fontfile=str(label_path))
+            label_w = font.text_length(label, fontsize=fontsize)
+        except Exception:
+            label_w = fontsize * max(len(label), 1) * 0.55
     else:
-        x0 = rect.x0 + pad
-    y0 = rect.y0 + (rect.height - draw_h) / 2
+        label_w = fontsize * max(len(label), 1) * 0.55
+
+    medal_h = fontsize * 1.05
+    medal_x = rect.x0 + inset + label_w + gap
+    medal_y = rect.y0 + (rect.height - medal_h) / 2
     page.insert_image(
-        fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
-        stream=png_bytes,
+        fitz.Rect(medal_x, medal_y, medal_x + medal_h, medal_y + medal_h),
+        stream=baked,
         keep_proportion=True,
     )
     return True
@@ -1299,10 +1214,14 @@ def _draw_live_table_card(
                 _draw_hand_checkbox(page, cell, pad_pt=cell_pad)
                 x += width
                 continue
+            cell_text = (value or "").strip()
+            place_medal = _split_trailing_medal_emoji(cell_text)[1] is not None
             body_pt_cell = (
-                TEAM_PLACEHOLDER_PT if is_placeholder(value) else default_body_pt
+                TEAM_PLACEHOLDER_PT
+                if is_placeholder(value) and not place_medal
+                else default_body_pt
             )
-            if is_placeholder(value) and _draw_live_placeholder(
+            if is_placeholder(value) and not place_medal and _draw_live_placeholder(
                 page,
                 cell,
                 value or "—",
@@ -1316,8 +1235,7 @@ def _draw_live_table_card(
             ):
                 x += width
                 continue
-            cell_font = fonts.get("noto") if is_placeholder(value) else fontfile
-            cell_text = (value or "").strip()
+            cell_font = fonts.get("noto") if is_placeholder(value) and not place_medal else fontfile
             if not cell_text:
                 if blank_cols and index in blank_cols:
                     x += width
@@ -1334,6 +1252,7 @@ def _draw_live_table_card(
                 fonts=fonts,
                 base_dir=base_dir,
                 label_font_key=font_key or "tsl",
+                bold=bold,
             ):
                 x += width
                 continue
