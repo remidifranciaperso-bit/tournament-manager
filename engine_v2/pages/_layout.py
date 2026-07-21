@@ -19,22 +19,15 @@ DATE_BOX = {"left": 0.673, "top": 0.0144, "width": 0.327, "height": 0.054}
 FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
 
 COVER_META_SHIFT = 0.033
-# Tiers droit : bord gauche du bloc sur la verticale 2/3 (pas collé au bord page).
-COVER_META_LEFT = 2 / 3
-COVER_META_RIGHT_MARGIN = 0.02
-COVER_META_WIDTH = (1.0 - COVER_META_LEFT) - COVER_META_RIGHT_MARGIN
+COVER_META_WIDTH = 0.597
+COVER_META_LEFT = (1.0 - COVER_META_WIDTH) / 2
 
 COVER_LOGO_BOX = {"left": 0.274, "top": 0.102, "width": 0.443, "height": 0.108}
 COVER_LOGO_SCALE = 1.7
 COVER_TYPE_HEIGHT = 0.229
-COVER_LOGO_BOTTOM_FRAC = COVER_LOGO_BOX["top"] + COVER_LOGO_BOX["height"]
-COVER_CONTENT_BOTTOM_FRAC = 0.948
 COVER_TYPE_BOX = {
     "left": -0.043,
-    "top": COVER_LOGO_BOTTOM_FRAC
-    + (
-        (COVER_CONTENT_BOTTOM_FRAC - COVER_LOGO_BOTTOM_FRAC - COVER_TYPE_HEIGHT) / 2
-    ),
+    "top": (1.0 - COVER_TYPE_HEIGHT) / 2,
     "width": 1.063,
     "height": COVER_TYPE_HEIGHT,
 }
@@ -503,7 +496,7 @@ def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:
             fontsize=size,
             color=WHITE,
             fontfile=brush,
-            align=fitz.TEXT_ALIGN_LEFT,
+            align=fitz.TEXT_ALIGN_CENTER,
         )
 
     _insert_textbox(
