@@ -569,6 +569,45 @@ def _match_box_radius_pt(rect: fitz.Rect) -> float:
     return max(2.0, min(MATCH_BOX_RADIUS_PX * PX_TO_PT, rect.width * 0.055, rect.height * 0.12))
 
 
+def _draw_filled_rounded_top_rect(
+    page: fitz.Page,
+    rect: fitz.Rect,
+    bottom_y: float,
+    *,
+    color: tuple[float, float, float],
+    radius_pt: float,
+) -> None:
+    """Remplissage avec coins supérieurs arrondis uniquement (bas droit)."""
+    x0, y0, x1 = rect.x0, rect.y0, rect.x1
+    y1 = bottom_y
+    radius = min(radius_pt, (x1 - x0) / 2, max(0.0, y1 - y0))
+    if radius <= 0.5:
+        page.draw_rect(
+            fitz.Rect(x0, y0, x1, y1),
+            color=color,
+            fill=color,
+            width=0,
+            overlay=True,
+        )
+        return
+    shape = page.new_shape()
+    shape.draw_line(fitz.Point(x0, y1), fitz.Point(x0, y0 + radius))
+    shape.draw_curve(
+        fitz.Point(x0, y0),
+        fitz.Point(x0, y0),
+        fitz.Point(x0 + radius, y0),
+    )
+    shape.draw_line(fitz.Point(x1 - radius, y0), fitz.Point(x1, y0))
+    shape.draw_curve(
+        fitz.Point(x1, y0),
+        fitz.Point(x1, y0),
+        fitz.Point(x1, y0 + radius),
+    )
+    shape.draw_line(fitz.Point(x1, y1), fitz.Point(x0, y1))
+    shape.finish(color=color, fill=color, closePath=True, width=0)
+    shape.commit(overlay=True)
+
+
 def _draw_match_box_shell(
     page: fitz.Page,
     rect: fitz.Rect,
@@ -578,16 +617,7 @@ def _draw_match_box_shell(
     radius_pt = _match_box_radius_pt(rect)
     radius_frac = _radius_frac_for_rect(rect, radius_pt)
 
-    # Masque opaque : efface les connecteurs derrière l'encart (coins compris).
-    pad = 2.5
-    page.draw_rect(
-        fitz.Rect(rect.x0 - pad, rect.y0 - pad, rect.x1 + pad, rect.y1 + pad),
-        color=WHITE,
-        fill=WHITE,
-        width=0,
-        overlay=True,
-    )
-
+    # Masque opaque exactement sur l'encart — aucun pad, connecteurs touchent le bord.
     page.draw_rect(
         rect,
         color=WHITE,
@@ -597,23 +627,13 @@ def _draw_match_box_shell(
         overlay=True,
     )
 
-    header = fitz.Rect(rect.x0, rect.y0, rect.x1, header_bottom)
-    page.draw_rect(
-        header,
+    _draw_filled_rounded_top_rect(
+        page,
+        rect,
+        header_bottom,
         color=TEMPLATE_BLUE,
-        fill=TEMPLATE_BLUE,
-        width=0,
-        radius=radius_frac,
-        overlay=True,
+        radius_pt=radius_pt,
     )
-    if radius_pt > 0.5:
-        page.draw_rect(
-            fitz.Rect(rect.x0, header_bottom - radius_pt, rect.x1, header_bottom),
-            color=TEMPLATE_BLUE,
-            fill=TEMPLATE_BLUE,
-            width=0,
-            overlay=True,
-        )
 
     page.draw_line(
         fitz.Point(rect.x0, score_top),
