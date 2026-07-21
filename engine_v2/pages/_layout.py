@@ -18,20 +18,26 @@ TYPE_BOX = {"left": 0.0, "top": 0.0147, "width": 0.327, "height": 0.054}
 DATE_BOX = {"left": 0.673, "top": 0.0144, "width": 0.327, "height": 0.054}
 FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
 
-COVER_META_SHIFT = 0.033
-COVER_META_TOP_FRAC = 0.622 - COVER_META_SHIFT
 COVER_META_LEFT = 2 / 3
 COVER_META_RIGHT_MARGIN = 0.025
 COVER_META_WIDTH = 1.0 - COVER_META_LEFT - COVER_META_RIGHT_MARGIN
+# Bloc stats dans le tiers bas, à droite de la verticale 2/3.
+COVER_META_BLOCK_TOP = 2 / 3 + 0.018
+_META_STACK_OFFSET_HEURE = 0.703 - 0.589
+_META_STACK_OFFSET_EQUIPES = 0.785 - 0.589
+_META_STACK_OFFSET_TERRAINS = 0.866 - 0.589
 
 COVER_LOGO_BOX = {"left": 0.274, "top": 0.056, "width": 0.443, "height": 0.108}
 COVER_LOGO_SCALE = 1.7
 COVER_TYPE_HEIGHT = 0.229
 COVER_LOGO_BOTTOM_FRAC = COVER_LOGO_BOX["top"] + COVER_LOGO_BOX["height"]
+COVER_CONTENT_BOTTOM_FRAC = 0.948
 COVER_TYPE_BOX = {
     "left": -0.043,
     "top": COVER_LOGO_BOTTOM_FRAC
-    + ((COVER_META_TOP_FRAC - COVER_LOGO_BOTTOM_FRAC - COVER_TYPE_HEIGHT) / 2),
+    + (
+        (COVER_CONTENT_BOTTOM_FRAC - COVER_LOGO_BOTTOM_FRAC - COVER_TYPE_HEIGHT) / 2
+    ),
     "width": 1.063,
     "height": COVER_TYPE_HEIGHT,
 }
@@ -51,25 +57,25 @@ FOOTER_BOTTOM_MARGIN_PT = FOOTER_BOTTOM_MARGIN_MM * MM_TO_PT
 
 COVER_DATE_BOX = {
     "left": COVER_META_LEFT,
-    "top": COVER_META_TOP_FRAC,
+    "top": COVER_META_BLOCK_TOP,
     "width": COVER_META_WIDTH,
     "height": 0.081,
 }
 COVER_HEURE_BOX = {
     "left": COVER_META_LEFT,
-    "top": 0.703 - COVER_META_SHIFT,
+    "top": COVER_META_BLOCK_TOP + _META_STACK_OFFSET_HEURE,
     "width": COVER_META_WIDTH,
     "height": 0.081,
 }
 COVER_EQUIPES_BOX = {
     "left": COVER_META_LEFT,
-    "top": 0.785 - COVER_META_SHIFT,
+    "top": COVER_META_BLOCK_TOP + _META_STACK_OFFSET_EQUIPES,
     "width": COVER_META_WIDTH,
     "height": 0.076,
 }
 COVER_TERRAINS_BOX = {
     "left": COVER_META_LEFT,
-    "top": 0.866 - COVER_META_SHIFT,
+    "top": COVER_META_BLOCK_TOP + _META_STACK_OFFSET_TERRAINS,
     "width": COVER_META_WIDTH,
     "height": 0.076,
 }
@@ -458,6 +464,11 @@ def draw_cover_logo(
     font = _load_font(noto_bold)
     max_pt = zone.height * 0.92
     fontsize = _fit_fontsize(font, zone, max_pt) if font else max_pt
+    base_zone = pct_rect(page.rect, COVER_LOGO_BOX)
+    base_max = base_zone.height * 0.92
+    base_fs = _fit_fontsize(font, base_zone, base_max) if font else base_max
+    target_pt = min(max_pt, base_fs * COVER_LOGO_SCALE)
+    fontsize = _fit_fontsize(font, zone, target_pt) if font else target_pt
     draw_font_text(
         page,
         zone,

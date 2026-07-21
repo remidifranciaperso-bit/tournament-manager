@@ -17,6 +17,7 @@ from engine.live_pdf_composite import (
     final_place_range,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
+from engine_v2.pages.cover import render_cover_page, tournoi_from_snapshot
 
 _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
 
@@ -60,8 +61,16 @@ def exporter_pdf_engine_v2(
             raise RuntimeError("PDF coquille V2 vide.")
 
         page_rect = source[0].rect
+        render_base = base_dir or Path(__file__).resolve().parent.parent
 
-        merged.insert_pdf(source, from_page=0, to_page=0)
+        cover_page = merged.new_page(width=page_rect.width, height=page_rect.height)
+        render_cover_page(
+            cover_page,
+            tournoi_from_snapshot(snapshot),
+            base_dir=render_base,
+            logo_bytes=logo_bytes,
+            logo_wh=logo_wh,
+        )
 
         for index in trouver_indices_participants(source_pdf):
             if 0 < index < source.page_count:
@@ -80,7 +89,6 @@ def exporter_pdf_engine_v2(
         club_name = meta.get("club")
         nb_equipes = int(snapshot.get("nb_equipes") or meta.get("nb_equipes") or 16)
         template_id = meta.get("template_id") or snapshot.get("template_id")
-        render_base = base_dir or Path(__file__).resolve().parent.parent
         final_entries = page_map.get("final", [])
         final_page_count = max(1, len(final_entries))
 
