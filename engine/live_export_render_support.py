@@ -28,6 +28,8 @@ SLIDE_H_PT = 540.0
 MATCH_CODE_PT = 11.0
 TEAM_PT = 12.0
 TEAM_PLACEHOLDER_PT = 8.5
+MATCH_BOX_BORDER_W = 0.8
+MATCH_BOX_RADIUS_PX = 8.0
 VS_PT = 9.0
 SCORE_PT = 9.0
 SCORE_LABEL_PT = 10.0
@@ -561,6 +563,87 @@ def _insert_textbox(
     page.insert_textbox(rect, value, **kwargs)
 
 
+def _match_box_radius_pt(rect: fitz.Rect) -> float:
+    """``rounded-lg`` Tailwind (~8 px), proportionnel à la largeur de l'encart."""
+    return max(2.0, min(MATCH_BOX_RADIUS_PX * PX_TO_PT, rect.width * 0.055, rect.height * 0.12))
+
+
+def _draw_match_box_shell(
+    page: fitz.Page,
+    rect: fitz.Rect,
+    header_bottom: float,
+    score_top: float,
+    *,
+    has_score: bool,
+) -> None:
+    radius_pt = _match_box_radius_pt(rect)
+    radius_frac = _radius_frac_for_rect(rect, radius_pt)
+
+    page.draw_rect(rect, color=WHITE, fill=WHITE, width=0, radius=radius_frac, overlay=False)
+
+    header = fitz.Rect(rect.x0, rect.y0, rect.x1, header_bottom)
+    page.draw_rect(
+        header,
+        color=TEMPLATE_BLUE,
+        fill=TEMPLATE_BLUE,
+        width=0,
+        radius=radius_frac,
+        overlay=True,
+    )
+    if radius_pt > 0.5:
+        page.draw_rect(
+            fitz.Rect(rect.x0, header_bottom - radius_pt, rect.x1, header_bottom),
+            color=TEMPLATE_BLUE,
+            fill=TEMPLATE_BLUE,
+            width=0,
+            overlay=True,
+        )
+
+    page.draw_rect(
+        rect,
+        color=TEMPLATE_BLUE,
+        fill=None,
+        width=MATCH_BOX_BORDER_W,
+        radius=radius_frac,
+        overlay=True,
+    )
+
+    score_rect = fitz.Rect(rect.x0, score_top, rect.x1, rect.y1)
+    if has_score:
+        page.draw_rect(
+            score_rect,
+            color=(0.97, 0.99, 1.0),
+            fill=(0.97, 0.99, 1.0),
+            width=0,
+            radius=radius_frac,
+            overlay=True,
+        )
+        if radius_pt > 0.5:
+            page.draw_rect(
+                fitz.Rect(rect.x0, score_top, rect.x1, score_top + radius_pt),
+                color=(0.97, 0.99, 1.0),
+                fill=(0.97, 0.99, 1.0),
+                width=0,
+                overlay=True,
+            )
+        page.draw_line(
+            fitz.Point(score_rect.x0, score_top),
+            fitz.Point(score_rect.x1, score_top),
+            color=CARD_BORDER_COLOR,
+            width=0.4,
+            overlay=True,
+        )
+    else:
+        page.draw_line(
+            fitz.Point(score_rect.x0, score_top),
+            fitz.Point(score_rect.x1, score_top),
+            color=TEMPLATE_BLUE,
+            width=0.4,
+            dashes="[2 2]",
+            overlay=True,
+        )
+
+
 def _draw_brush_label(
     page: fitz.Page,
     text: str,
@@ -608,10 +691,18 @@ def _draw_match_box(
     has_score = bool(result and result.get("display"))
     header_frac = 0.20 if has_score else 0.22
     score_frac = 0.18 if has_score else 0.14
+    header_bottom = rect.y0 + rect.height * header_frac
+    score_h = rect.height * score_frac
+    score_top = rect.y1 - score_h
 
-    page.draw_rect(rect, color=TEMPLATE_BLUE, width=0.8, overlay=True)
-    header = fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y0 + rect.height * header_frac)
-    page.draw_rect(header, color=TEMPLATE_BLUE, fill=TEMPLATE_BLUE, width=0, overlay=True)
+    _draw_match_box_shell(
+        page,
+        rect,
+        header_bottom,
+        score_top,
+        has_score=has_score,
+    )
+    header = fitz.Rect(rect.x0, rect.y0, rect.x1, header_bottom)
 
     code_px = _pt_on_area(MATCH_CODE_PT, area)
     code = match.get("code", "")
@@ -668,16 +759,8 @@ def _draw_match_box(
         )
 
     body_top = header.y1
-    score_h = rect.height * score_frac
-    body = fitz.Rect(rect.x0, body_top, rect.x1, rect.y1 - score_h)
+    body = fitz.Rect(rect.x0, body_top, rect.x1, score_top)
     mid_y = body.y0 + body.height / 2
-    page.draw_line(
-        fitz.Point(body.x0, mid_y),
-        fitz.Point(body.x1, mid_y),
-        color=TEMPLATE_BLUE,
-        width=0.5,
-        overlay=True,
-    )
 
     equipe1 = format_team_display(
         match.get("equipe1", ""),
@@ -789,15 +872,8 @@ def _draw_match_box(
         bold=True,
     )
 
-    score_rect = fitz.Rect(rect.x0, rect.y1 - score_h, rect.x1, rect.y1)
+    score_rect = fitz.Rect(rect.x0, score_top, rect.x1, rect.y1)
     if has_score:
-        page.draw_rect(
-            score_rect,
-            color=TEMPLATE_BLUE,
-            fill=(0.97, 0.99, 1.0),
-            width=0,
-            overlay=True,
-        )
         _insert_textbox(
             page,
             score_rect,
@@ -808,14 +884,6 @@ def _draw_match_box(
             bold=True,
         )
     else:
-        page.draw_line(
-            fitz.Point(score_rect.x0, score_rect.y0),
-            fitz.Point(score_rect.x1, score_rect.y0),
-            color=TEMPLATE_BLUE,
-            width=0.4,
-            dashes="[2 2]",
-            overlay=True,
-        )
         label_rect = fitz.Rect(
             score_rect.x0,
             score_rect.y0 + score_rect.height * 0.15,
