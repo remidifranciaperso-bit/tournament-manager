@@ -413,8 +413,8 @@ def draw_cover_logo(
     if not label:
         return
     fonts = font_paths(base_dir) if base_dir else {}
-    noto = fonts.get("noto")
-    font = _load_font(noto)
+    noto_bold = fonts.get("noto_bold") or fonts.get("noto")
+    font = _load_font(noto_bold)
     max_pt = zone.height * 0.92
     fontsize = _fit_fontsize(font, zone, max_pt) if font else max_pt
     draw_font_text(
@@ -423,7 +423,7 @@ def draw_cover_logo(
         label,
         fontsize=fontsize,
         color=WHITE,
-        fontfile=noto,
+        fontfile=noto_bold,
         align=fitz.TEXT_ALIGN_CENTER,
     )
 

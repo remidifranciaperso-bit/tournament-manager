@@ -40,6 +40,13 @@ def font_paths(base_dir: Path) -> dict[str, Path | None]:
             Path("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf"),
             Path("/usr/share/fonts/opentype/noto/NotoSans-Regular.ttf"),
         ],
+        "noto_bold": [
+            base_dir / "fonts" / "NotoSans-Bold.ttf",
+            base_dir / "frontend" / "public" / "fonts" / "NotoSans-Bold.ttf",
+            base_dir / "frontend" / "dist" / "fonts" / "NotoSans-Bold.ttf",
+            Path("/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"),
+            Path("/usr/share/fonts/opentype/noto/NotoSans-Bold.ttf"),
+        ],
     }
     out: dict[str, Path | None] = {}
     for key, paths in candidates.items():

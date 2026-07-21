@@ -208,6 +208,19 @@ def _split_placeholder_emoji(text: str) -> tuple[str | None, str]:
     return _split_leading_emoji(text)
 
 
+def _split_trailing_medal_emoji(text: str) -> tuple[str, str | None]:
+    """Libellé + médaille en fin (classement final : « 1 🥇 »)."""
+    value = (text or "").strip()
+    if not value:
+        return value, None
+    for medal in ("🥇", "🥈", "🥉"):
+        if value.endswith(medal):
+            label = value[: -len(medal)].strip()
+            if label:
+                return label, medal
+    return value, None
+
+
 def _baked_emoji_bytes(base_dir: Path | None, char: str) -> bytes | None:
     filename = _EMOJI_BAKED_FILES.get(char)
     if not filename or base_dir is None:
@@ -339,6 +352,99 @@ def _rasterize_placeholder_display(
     return None
 
 
+def _rasterize_trailing_emoji_display(
+    text: str,
+    fontsize: float,
+    fonts: dict[str, Path | None],
+    *,
+    base_dir: Path | None = None,
+    label_font_key: str = "tsl",
+) -> tuple[bytes, float, float] | None:
+    """Libellé TSL/Noto + médaille Noto Color (classement final)."""
+    value = (text or "").strip()
+    label, emoji_char = _split_trailing_medal_emoji(value)
+    if emoji_char is None:
+        return None
+    label_path = fonts.get(label_font_key) or fonts.get("tsl") or fonts.get("noto")
+    if not label_path:
+        return None
+
+    emoji_paths: list[Path] = []
+    if base_dir is not None:
+        emoji_paths = _emoji_font_candidates(base_dir)
+    elif fonts.get("emoji"):
+        emoji_paths = [fonts["emoji"]]
+
+    from io import BytesIO
+
+    from PIL import Image, ImageDraw
+
+    target_fs = max(32, int(round(fontsize * 4.5)))
+    fill = (
+        int(ARENA_800[0] * 255),
+        int(ARENA_800[1] * 255),
+        int(ARENA_800[2] * 255),
+        255,
+    )
+
+    def _compose(emoji_img: Image.Image, fs: int) -> tuple[bytes, float, float] | None:
+        try:
+            label_font = _load_truetype_font(label_path, fs)
+        except OSError:
+            return None
+        gap = max(2, int(fs * 0.12))
+        tb = label_font.getbbox(label)
+        tw, th = tb[2] - tb[0], tb[3] - tb[1]
+        ew, eh = emoji_img.size
+        iw = max(1, tw + gap + ew)
+        ih = max(1, max(eh, th))
+        img = Image.new("RGBA", (iw, ih), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.text((-tb[0], -tb[1]), label, font=label_font, fill=fill)
+        ey = max(0, (ih - eh) // 2)
+        img.alpha_composite(emoji_img, (tw + gap, ey))
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        pt_scale = fontsize / fs
+        return buf.getvalue(), iw * pt_scale, ih * pt_scale
+
+    baked = _baked_emoji_bytes(base_dir, emoji_char)
+    if baked:
+        try:
+            emoji_img = Image.open(BytesIO(baked)).convert("RGBA")
+            target_h = target_fs
+            scale = target_h / max(emoji_img.height, 1)
+            emoji_img = emoji_img.resize(
+                (max(1, int(emoji_img.width * scale)), target_h),
+                Image.Resampling.LANCZOS,
+            )
+            composed = _compose(emoji_img, target_fs)
+            if composed is not None:
+                return composed
+        except Exception:
+            pass
+
+    for emoji_path in emoji_paths:
+        try:
+            emoji_font, fs = _load_emoji_font(emoji_path, target_fs)
+            eb = emoji_font.getbbox(emoji_char)
+            ew, eh = eb[2] - eb[0], eb[3] - eb[1]
+            emoji_img = Image.new("RGBA", (max(ew, 1), max(eh, 1)), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(emoji_img)
+            draw.text(
+                (-eb[0], -eb[1]),
+                emoji_char,
+                font=emoji_font,
+                embedded_color=True,
+            )
+            composed = _compose(emoji_img, fs)
+            if composed is not None:
+                return composed
+        except Exception:
+            continue
+    return None
+
+
 def _rasterize_placeholder_line(
     text: str,
     fontsize: float,
@@ -376,6 +482,61 @@ def _draw_live_placeholder(
     font_paths = fonts or {}
 
     raster = _rasterize_placeholder_display(
+        value,
+        fontsize,
+        font_paths,
+        base_dir=base_dir,
+        label_font_key=label_font_key,
+    )
+    if raster is None:
+        return False
+    png_bytes, img_w_pt, img_h_pt = raster
+    if img_w_pt <= 0 or img_h_pt <= 0:
+        return False
+
+    draw_h = min(rect.height * 0.82, img_h_pt)
+    draw_w = img_w_pt * (draw_h / img_h_pt)
+    if draw_w > rect.width - 2 * pad:
+        draw_w = rect.width - 2 * pad
+        draw_h = img_h_pt * (draw_w / img_w_pt)
+
+    if align == fitz.TEXT_ALIGN_RIGHT:
+        x0 = rect.x1 - pad - draw_w
+    elif align == fitz.TEXT_ALIGN_CENTER:
+        x0 = rect.x0 + (rect.width - draw_w) / 2
+    else:
+        x0 = rect.x0 + pad
+    y0 = rect.y0 + (rect.height - draw_h) / 2
+    page.insert_image(
+        fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
+        stream=png_bytes,
+        keep_proportion=True,
+    )
+    return True
+
+
+def _draw_trailing_emoji_label(
+    page: fitz.Page,
+    rect: fitz.Rect,
+    text: str,
+    *,
+    fontsize: float,
+    color: tuple[float, float, float],
+    align: int = fitz.TEXT_ALIGN_LEFT,
+    pad_pt: float | None = None,
+    fonts: dict[str, Path | None] | None = None,
+    base_dir: Path | None = None,
+    label_font_key: str = "tsl",
+) -> bool:
+    """Place + médaille (ex. « 1 🥇 ») via PNG Noto Color, comme le planning."""
+    del color
+    value = (text or "").strip()
+    if not value or _split_trailing_medal_emoji(value)[1] is None:
+        return False
+    pad = pad_pt if pad_pt is not None else 2.0
+    font_paths = fonts or {}
+
+    raster = _rasterize_trailing_emoji_display(
         value,
         fontsize,
         font_paths,
@@ -1162,6 +1323,20 @@ def _draw_live_table_card(
                     x += width
                     continue
                 cell_text = "—"
+            if _draw_trailing_emoji_label(
+                page,
+                cell,
+                cell_text,
+                fontsize=body_pt_cell,
+                color=color,
+                align=align,
+                pad_pt=cell_pad,
+                fonts=fonts,
+                base_dir=base_dir,
+                label_font_key=font_key or "tsl",
+            ):
+                x += width
+                continue
             _insert_textbox(
                 page,
                 cell,
