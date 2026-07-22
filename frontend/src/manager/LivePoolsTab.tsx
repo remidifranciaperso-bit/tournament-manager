@@ -231,6 +231,7 @@ function PoolView({
   capture?: boolean;
 }) {
   const pool = useMemo(() => poolMatches(matches, letter), [matches, letter]);
+  const roster = useMemo(() => poolRoster(matches, letter), [matches, letter]);
   const standings = useMemo(
     () => buildPoolStandings(pool, matchResults),
     [pool, matchResults]
@@ -289,32 +290,51 @@ function PoolView({
               </tr>
             </thead>
             <tbody>
-              {standings.map((row) => {
-                const label = formatTeamWithInitials(row.team);
-                const diff =
-                  row.gameDiff > 0 ? `+${row.gameDiff}` : String(row.gameDiff);
-                return (
-                  <tr key={row.team} className={LIVE_TABLE_ROW}>
-                    <td
-                      className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(label)}`}
-                    >
-                      {label}
-                    </td>
-                    <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`}>
-                      {row.wins}
-                    </td>
-                    <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`}>
-                      {row.losses}
-                    </td>
-                    <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`}>
-                      {row.played > 0 ? diff : "—"}
-                    </td>
-                    <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`}>
-                      {row.rank}
-                    </td>
-                  </tr>
-                );
-              })}
+              {capture
+                ? roster.map((team) => {
+                    const label = formatTeamWithInitials(team);
+                    return (
+                      <tr key={team} className={LIVE_TABLE_ROW}>
+                        <td
+                          className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(label)}`}
+                        >
+                          {label}
+                        </td>
+                        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`} />
+                        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`} />
+                        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`} />
+                        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`} />
+                      </tr>
+                    );
+                  })
+                : standings.map((row) => {
+                    const label = formatTeamWithInitials(row.team);
+                    const diff =
+                      row.gameDiff > 0
+                        ? `+${row.gameDiff}`
+                        : String(row.gameDiff);
+                    return (
+                      <tr key={row.team} className={LIVE_TABLE_ROW}>
+                        <td
+                          className={`${LIVE_TABLE_CELL_NOTO} ${liveTeamTextClass(label)}`}
+                        >
+                          {label}
+                        </td>
+                        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`}>
+                          {row.wins}
+                        </td>
+                        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`}>
+                          {row.losses}
+                        </td>
+                        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`}>
+                          {row.played > 0 ? diff : "—"}
+                        </td>
+                        <td className={`${LIVE_TABLE_CELL_TSL_BOLD} text-center`}>
+                          {row.rank}
+                        </td>
+                      </tr>
+                    );
+                  })}
             </tbody>
           </table>
         </div>

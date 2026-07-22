@@ -23,7 +23,6 @@ from engine.live_pool_layout import (
     pool_matches,
     pool_roster,
 )
-from engine.live_pool_standings import PoolStandingRow, build_pool_standings
 from engine.live_team_resolve import format_team_with_initials
 
 POOL_REF_WIDTH_PT = 920.0
@@ -196,19 +195,18 @@ def _scaled_pool_block(content: fitz.Rect) -> tuple[fitz.Rect, float]:
 def draw_pool_standings_table(
     page: fitz.Page,
     area: fitz.Rect,
-    standings: list[PoolStandingRow],
+    teams: list[str],
     *,
     base_dir: Path | None,
 ) -> None:
+    """Tableau feuille poule : équipes (TS croissant), colonnes stats vides pour saisie."""
     headers = ["Équipe", "Victoires", "Défaites", "Jeux", "Classement"]
     col_widths = [0.38, 0.14, 0.14, 0.14, 0.20]
     rows: list[list[str]] = []
     body_colors: list[tuple[float, float, float]] = []
-    for row in standings:
-        label = format_team_with_initials(row.team)
-        diff = f"+{row.game_diff}" if row.game_diff > 0 else str(row.game_diff)
-        jeux = diff if row.played > 0 else "—"
-        rows.append([label, str(row.wins), str(row.losses), jeux, str(row.rank)])
+    for team in teams:
+        label = format_team_with_initials(team)
+        rows.append([label, "", "", "", ""])
         body_colors.extend([ARENA_800, TEMPLATE_BLUE, TEMPLATE_BLUE, TEMPLATE_BLUE, TEMPLATE_BLUE])
 
     table_area = _fit_live_table_area(
@@ -249,7 +247,7 @@ def draw_pool_page(
     export_mode: bool = True,
 ) -> None:
     pool = pool_matches(matches, letter)
-    standings = build_pool_standings(matches, match_results, letter=letter)
+    teams = pool_roster(matches, letter)
     fit = fitz.Rect(
         area.x0,
         area.y0 + FINAL_TABLE_VERTICAL_MARGIN_PT,
@@ -268,7 +266,8 @@ def draw_pool_page(
     start_x = block.x0 + (block.width - grid_w) / 2
     y = block.y0
 
-    match_area = fitz.Rect(start_x, y, start_x + grid_w, y + 1000)
+    # Référence typo identique aux slides bracket (``area.height`` ≈ slide template).
+    font_area = block
     for index, match in enumerate(pool):
         col = index % _GRID_COLS
         row = index // _GRID_COLS
@@ -283,7 +282,7 @@ def draw_pool_page(
             None,
             matches_by_code,
             match_results,
-            area=match_area,
+            area=font_area,
             fonts=fonts,
             split_main_bracket=False,
             base_dir=base_dir,
@@ -301,6 +300,6 @@ def draw_pool_page(
     draw_pool_standings_table(
         page,
         standings_area,
-        standings,
+        teams,
         base_dir=base_dir,
     )
