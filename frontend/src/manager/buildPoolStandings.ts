@@ -1,5 +1,6 @@
 import type { LiveLayout, LiveMatch } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
+import { teamTsFromLabel } from "./formatBracketLabel";
 
 /** Indices des slides de poules (contiennent des boîtes PA_M, PB_M, …). */
 export function poolSlideIndicesFromLayout(
@@ -99,7 +100,7 @@ interface TeamStat {
 /**
  * Classement d'une poule à partir des matchs joués : victoires, défaites,
  * jeux (différence), rang. Rang par victoires puis différence de jeux puis
- * jeux marqués ; à égalité, ordre d'apparition (seeding).
+ * jeux marqués ; à égalité, TS puis ordre d'apparition dans les matchs.
  */
 export function buildPoolStandings(
   matches: LiveMatch[],
@@ -160,6 +161,9 @@ export function buildPoolStandings(
     const diffB = b.gamesFor - b.gamesAgainst;
     if (diffB !== diffA) return diffB - diffA;
     if (b.gamesFor !== a.gamesFor) return b.gamesFor - a.gamesFor;
+    const tsA = teamTsFromLabel(a.team);
+    const tsB = teamTsFromLabel(b.team);
+    if (tsA != null && tsB != null && tsA !== tsB) return tsA - tsB;
     return a.order - b.order;
   });
 

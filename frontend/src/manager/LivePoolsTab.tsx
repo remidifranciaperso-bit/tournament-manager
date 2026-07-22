@@ -2,7 +2,10 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { SLIDE_ASPECT } from "./bracketSlideLayout";
 import { STANDARD_MATCH_BOX } from "./bracketTemplateMetrics";
 import { TemplateMatchBox } from "./LiveBracketSlide";
-import { formatTeamWithInitials } from "./formatBracketLabel";
+import {
+  compareTeamsByTs,
+  formatTeamWithInitials,
+} from "./formatBracketLabel";
 import {
   buildPoolStandings,
   poolLetters,
@@ -37,7 +40,7 @@ interface LivePoolsTabProps {
   capture?: boolean;
 }
 
-/** Roster d'une poule (équipes uniques, ordre d'apparition). */
+/** Roster d'une poule (équipes uniques, ordre TS croissant). */
 function poolRoster(matches: LiveMatch[], letter: string): string[] {
   const roster: string[] = [];
   for (const match of poolMatches(matches, letter)) {
@@ -45,7 +48,7 @@ function poolRoster(matches: LiveMatch[], letter: string): string[] {
       if (team && !roster.includes(team)) roster.push(team);
     }
   }
-  return roster;
+  return roster.sort(compareTeamsByTs);
 }
 
 function exemptTeams(fields: Record<string, string>): string[] {

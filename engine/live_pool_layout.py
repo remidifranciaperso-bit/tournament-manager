@@ -9,6 +9,23 @@ from pathlib import Path
 _POOL_FIELD_RE = re.compile(r"^P([A-D])_M\d+_")
 _POULE_ROSTER_RE = re.compile(r"^POULE_[A-Z]_\d+_EQ$")
 _POOL_CODE_RE = re.compile(r"^P([A-Z])_M(\d+)$")
+_TEAM_TS_SUFFIX_RE = re.compile(r"\(TS(\d+)\)\s*$", re.IGNORECASE)
+
+
+def team_ts_from_label(label: str) -> int | None:
+    match = _TEAM_TS_SUFFIX_RE.search((label or "").strip())
+    return int(match.group(1)) if match else None
+
+
+def _sort_roster_by_ts(roster: list[str]) -> list[str]:
+    return sorted(
+        roster,
+        key=lambda name: (
+            team_ts_from_label(name) is None,
+            team_ts_from_label(name) or 0,
+            name.casefold(),
+        ),
+    )
 
 
 def charger_layout_template(template_id: str, base_dir: Path) -> dict:
@@ -76,7 +93,7 @@ def pool_roster(matches: list[dict], letter: str) -> list[str]:
             name = (team or "").strip()
             if name and name not in roster:
                 roster.append(name)
-    return roster
+    return _sort_roster_by_ts(roster)
 
 
 def exempt_teams(fields: dict[str, str]) -> list[str]:

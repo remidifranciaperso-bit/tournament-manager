@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from engine.live_pool_layout import pool_matches
+from engine.live_pool_layout import pool_matches, team_ts_from_label
 
 
 @dataclass
@@ -73,15 +73,18 @@ def build_pool_standings(
             s2["wins"] += 1
             s1["losses"] += 1
 
-    ordered = sorted(
-        stats.values(),
-        key=lambda s: (
-            -s["wins"],
-            -(s["games_for"] - s["games_against"]),
-            -s["games_for"],
-            s["order"],
-        ),
-    )
+    def _standing_sort_key(stat: dict) -> tuple:
+        ts = team_ts_from_label(stat["team"])
+        ts_key = ts if ts is not None else 10_000 + stat["order"]
+        return (
+            -stat["wins"],
+            -(stat["games_for"] - stat["games_against"]),
+            -stat["games_for"],
+            ts_key,
+            stat["order"],
+        )
+
+    ordered = sorted(stats.values(), key=_standing_sort_key)
 
     rows: list[PoolStandingRow] = []
     for index, stat in enumerate(ordered):

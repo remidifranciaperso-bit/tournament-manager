@@ -193,6 +193,21 @@ function shortPlayerName(name: string): string {
  * Affichage bracket : initiales + nom + TS.
  * Ex. « Jean DUPONT / Marie MARTIN (TS1) » → « J. DUPONT / M. MARTIN (TS1) »
  */
+/** Numéro de tête de série depuis « … (TS12) » ; ``null`` si absent. */
+export function teamTsFromLabel(label: string): number | null {
+  const match = label.trim().match(/\(TS(\d+)\)\s*$/i);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+export function compareTeamsByTs(a: string, b: string): number {
+  const tsA = teamTsFromLabel(a);
+  const tsB = teamTsFromLabel(b);
+  if (tsA != null && tsB != null) return tsA - tsB;
+  if (tsA != null) return -1;
+  if (tsB != null) return 1;
+  return a.localeCompare(b, "fr");
+}
+
 export function formatTeamWithInitials(label: string): string {
   const text = label.trim();
   if (!text) return "—";
