@@ -50,6 +50,9 @@ COVER_LOGO_BOX = {
     "height": COVER_LOGO_BOX_HEIGHT,
 }
 COVER_LOGO_SCALE = 1.35 * 0.75
+# Cadre rectangulaire (largeur max) ; logos carrés / ronds : 50 % L×H, pas plus.
+COVER_LOGO_COMPACT_SCALE = 0.5
+COVER_LOGO_COMPACT_ASPECT_MAX = 1.12
 COVER_CREDIT_BOX = {"left": 0.19, "top": 0.948, "width": 0.597, "height": 0.038}
 
 COVER_TYPE_PT = 104.0
@@ -442,14 +445,34 @@ def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
     page.insert_image(dest, filename=str(path), keep_proportion=True)
 
 
-def _cover_logo_zone(page_rect: fitz.Rect) -> fitz.Rect:
-    """Zone logo couverture (moitié droite, aligné verticalement sur le bloc meta)."""
+def _cover_logo_is_compact(img_w: float, img_h: float) -> bool:
+    """Carré ou rond (bbox quasi carrée) — pas un bandeau rectangulaire."""
+    if img_w <= 0 or img_h <= 0:
+        return False
+    return max(img_w, img_h) / min(img_w, img_h) <= COVER_LOGO_COMPACT_ASPECT_MAX
+
+
+def _cover_logo_zone(
+    page_rect: fitz.Rect,
+    *,
+    logo_wh: tuple[int, int] | None = None,
+) -> fitz.Rect:
+    """Zone max logo couverture (contain, centrée sur le bloc meta).
+
+    Bandeau rectangulaire : largeur/hauteur du cadre actuel (largeur max).
+    Logo carré ou rond : 50 % de ce cadre en largeur et en hauteur.
+    """
     zone = pct_rect(page_rect, COVER_LOGO_BOX)
     w = zone.width * COVER_LOGO_SCALE
     h = zone.height * COVER_LOGO_SCALE
     cx = zone.x0 + zone.width / 2
     cy = zone.y0 + zone.height / 2
-    return fitz.Rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+    rect = fitz.Rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+    if logo_wh and _cover_logo_is_compact(float(logo_wh[0]), float(logo_wh[1])):
+        cw = rect.width * COVER_LOGO_COMPACT_SCALE
+        ch = rect.height * COVER_LOGO_COMPACT_SCALE
+        return fitz.Rect(cx - cw / 2, cy - ch / 2, cx + cw / 2, cy + ch / 2)
+    return rect
 
 
 def draw_cover_logo(
@@ -460,7 +483,7 @@ def draw_cover_logo(
     club_name: str | None = None,
     base_dir: Path | None = None,
 ) -> None:
-    zone = _cover_logo_zone(page.rect)
+    zone = _cover_logo_zone(page.rect, logo_wh=logo_wh)
     if logo_bytes and logo_wh:
         dest = contain_rect(zone, float(logo_wh[0]), float(logo_wh[1]))
         page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
