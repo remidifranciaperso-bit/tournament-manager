@@ -233,6 +233,7 @@ def draw_pool_standings_table(
         body_bold=[False, True, True, True, True],
         body_colors=body_colors,
         ref_width_pt=table_area.width,
+        blank_cols=[1, 2, 3, 4],
     )
 
 
