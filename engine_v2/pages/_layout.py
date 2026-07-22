@@ -9,7 +9,7 @@ import fitz
 
 from engine.pdf_footer import contain_rect
 from engine.ppt_engine import construire_valeurs_globales, detecter_genre, format_date
-from engine_v2.pages._theme import ARENA_800, BRUSH_BLUE, LIME, WHITE, YELLOW, font_paths
+from engine_v2.pages._theme import ARENA_800, BRUSH_BLUE, WHITE, YELLOW, font_paths
 
 # Géométrie template bleu (``Template_24_1J.pptx``), fractions 0–1.
 HEADER_BAND = {"left": -0.0031, "top": -0.0015, "width": 1.0067, "height": 0.0858}
@@ -18,19 +18,22 @@ TYPE_BOX = {"left": 0.0, "top": 0.0147, "width": 0.327, "height": 0.054}
 DATE_BOX = {"left": 0.673, "top": 0.0144, "width": 0.327, "height": 0.054}
 FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
 
-COVER_META_SHIFT = 0.033
-COVER_META_WIDTH = 0.597
-COVER_META_LEFT = (1.0 - COVER_META_WIDTH) / 2
+COVER_META_SHIFT = 0.0
+COVER_META_WIDTH = 0.46
+COVER_META_LEFT = 0.06
 
-COVER_LOGO_BOX = {"left": 0.274, "top": 0.102, "width": 0.443, "height": 0.108}
-COVER_LOGO_SCALE = 1.7
+# Type/genre : jonction tiers supérieur (Y = 1/3), centré horizontalement
 COVER_TYPE_HEIGHT = 0.229
+COVER_TYPE_TOP = (1.0 / 3.0) - (COVER_TYPE_HEIGHT / 2.0)
 COVER_TYPE_BOX = {
     "left": -0.043,
-    "top": (1.0 - COVER_TYPE_HEIGHT) / 2,
+    "top": COVER_TYPE_TOP,
     "width": 1.063,
     "height": COVER_TYPE_HEIGHT,
 }
+# Logo sous le type, à droite
+COVER_LOGO_BOX = {"left": 0.58, "top": 0.44, "width": 0.36, "height": 0.14}
+COVER_LOGO_SCALE = 1.35
 COVER_CREDIT_BOX = {"left": 0.19, "top": 0.948, "width": 0.597, "height": 0.038}
 
 COVER_TYPE_PT = 96.0
@@ -45,29 +48,32 @@ HEADER_SIDE_MARGIN_PT = HEADER_SIDE_MARGIN_MM * MM_TO_PT
 FOOTER_BOTTOM_MARGIN_MM = 3.0
 FOOTER_BOTTOM_MARGIN_PT = FOOTER_BOTTOM_MARGIN_MM * MM_TO_PT
 
+_META_ROW = 0.072
+_META_TOP = (1.0 / 3.0) + (COVER_TYPE_HEIGHT / 2.0) + 0.025
+
 COVER_DATE_BOX = {
     "left": COVER_META_LEFT,
-    "top": 0.622 - COVER_META_SHIFT,
+    "top": _META_TOP,
     "width": COVER_META_WIDTH,
-    "height": 0.081,
+    "height": _META_ROW,
 }
 COVER_HEURE_BOX = {
     "left": COVER_META_LEFT,
-    "top": 0.703 - COVER_META_SHIFT,
+    "top": _META_TOP + _META_ROW,
     "width": COVER_META_WIDTH,
-    "height": 0.081,
+    "height": _META_ROW,
 }
 COVER_EQUIPES_BOX = {
     "left": COVER_META_LEFT,
-    "top": 0.785 - COVER_META_SHIFT,
+    "top": _META_TOP + 2 * _META_ROW,
     "width": COVER_META_WIDTH,
-    "height": 0.076,
+    "height": _META_ROW,
 }
 COVER_TERRAINS_BOX = {
     "left": COVER_META_LEFT,
-    "top": 0.866 - COVER_META_SHIFT,
+    "top": _META_TOP + 3 * _META_ROW,
     "width": COVER_META_WIDTH,
-    "height": 0.076,
+    "height": _META_ROW,
 }
 
 _MOTIF_JOUEUR = re.compile(r"joueur", re.IGNORECASE)
@@ -424,13 +430,13 @@ def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
 
 
 def _cover_logo_zone(page_rect: fitz.Rect) -> fitz.Rect:
-    """Zone logo / nom club couverture (+70 %, centrée sur la zone template)."""
+    """Zone logo couverture (sous le type, alignée à droite)."""
     zone = pct_rect(page_rect, COVER_LOGO_BOX)
-    cx = zone.x0 + zone.width / 2
-    cy = zone.y0 + zone.height / 2
     w = zone.width * COVER_LOGO_SCALE
     h = zone.height * COVER_LOGO_SCALE
-    return fitz.Rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+    x1 = zone.x1
+    y0 = zone.y0 + (zone.height - h) / 2
+    return fitz.Rect(x1 - w, y0, x1, y0 + h)
 
 
 def draw_cover_logo(
@@ -466,7 +472,7 @@ def draw_cover_logo(
         fontsize=fontsize,
         color=WHITE,
         fontfile=noto_bold,
-        align=fitz.TEXT_ALIGN_CENTER,
+        align=fitz.TEXT_ALIGN_RIGHT,
     )
 
 
@@ -482,6 +488,7 @@ def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:
         fontsize=COVER_TYPE_PT,
         color=YELLOW,
         fontfile=brush,
+        align=fitz.TEXT_ALIGN_CENTER,
     )
     for box, key, size in (
         (COVER_DATE_BOX, "{{DATE}}", COVER_DATE_HEURE_PT),
@@ -496,7 +503,7 @@ def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:
             fontsize=size,
             color=WHITE,
             fontfile=brush,
-            align=fitz.TEXT_ALIGN_CENTER,
+            align=fitz.TEXT_ALIGN_LEFT,
         )
 
     _insert_textbox(
@@ -504,7 +511,7 @@ def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:
         pct_rect(page.rect, COVER_CREDIT_BOX),
         "Padel Tournament Engine",
         fontsize=COVER_CREDIT_PT,
-        color=LIME,
+        color=BRUSH_BLUE,
         fontfile=brush,
     )
 
