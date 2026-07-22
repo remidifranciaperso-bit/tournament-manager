@@ -1323,6 +1323,11 @@ def _draw_live_table_card(
     header_bolds = header_bold or [False] * len(headers)
     default_body_pt = body_pt if body_pt is not None else TABLE_BODY_PT
     head_pt = header_pt if header_pt is not None else TABLE_HEAD_DISPLAY_PT
+    placeholder_pt = (
+        default_body_pt * (TEAM_PLACEHOLDER_PT / TABLE_BODY_PT)
+        if body_pt is not None
+        else TEAM_PLACEHOLDER_PT
+    )
 
     base_row_h = content.height / max(row_count, 2)
     header_bottom = content.y0 + base_row_h
@@ -1401,7 +1406,7 @@ def _draw_live_table_card(
             cell_text = (value or "").strip()
             place_medal = _split_trailing_medal_emoji(cell_text)[1] is not None
             body_pt_cell = (
-                TEAM_PLACEHOLDER_PT
+                placeholder_pt
                 if is_placeholder(value) and not place_medal
                 else default_body_pt
             )

@@ -52,6 +52,7 @@ def render_convocations_page(
         base_dir=base_dir,
         col_widths=[0.72, 0.28],
         narrow=True,
+        nb_equipes=tournoi.nb_equipes,
     )
 
     draw_page_footer_logo(

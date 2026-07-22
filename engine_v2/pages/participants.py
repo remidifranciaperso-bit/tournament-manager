@@ -48,6 +48,7 @@ def render_participants_page(
         participants_headers(tournoi),
         rows,
         base_dir=base_dir,
+        nb_equipes=tournoi.nb_equipes,
     )
 
     draw_page_footer_logo(
