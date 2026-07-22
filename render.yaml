@@ -48,7 +48,7 @@ services:
       - key: DEPLOY_TARGET
         value: engine-v2
       - key: PDF_CONVERTER
-        value: libreoffice
+        value: pymupdf
       - key: OWNER_EMAIL
         value: remi.difrancia.perso@gmail.com
       - key: EMAIL_FROM
