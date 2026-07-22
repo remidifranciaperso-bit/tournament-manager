@@ -109,6 +109,7 @@ def _render_bracket_page(
         logo_wh=logo_wh,
         club_name=tournoi.club,
         base_dir=base_dir,
+        nb_equipes=tournoi.nb_equipes,
     )
     draw_crosspage_margin_stub(page, page.rect, bracket_area, stub)
 
@@ -252,6 +253,7 @@ def build_tournament_pdf(
                 logo_wh=logo_wh,
                 club_name=tournoi.club,
                 base_dir=base_dir,
+                nb_equipes=tournoi.nb_equipes,
             )
 
         final_entries = page_map.get("final", [])
@@ -286,6 +288,7 @@ def build_tournament_pdf(
                 logo_wh=logo_wh,
                 club_name=tournoi.club,
                 base_dir=base_dir,
+                nb_equipes=tournoi.nb_equipes,
             )
 
         if doc.page_count == 0:

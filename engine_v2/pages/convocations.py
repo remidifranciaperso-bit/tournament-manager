@@ -60,4 +60,5 @@ def render_convocations_page(
         logo_wh=logo_wh,
         club_name=tournoi.club,
         base_dir=base_dir,
+        nb_equipes=tournoi.nb_equipes,
     )

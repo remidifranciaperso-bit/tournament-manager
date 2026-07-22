@@ -80,6 +80,7 @@ def _render_chrome_shell(
         logo_wh=logo_wh,
         club_name=tournoi.club,
         base_dir=base_dir,
+        nb_equipes=tournoi.nb_equipes,
     )
 
 
@@ -161,6 +162,7 @@ def build_v2_composite_shell_pdf(
                         logo_wh=logo_wh,
                         club_name=tournoi.club,
                         base_dir=base_dir,
+                        nb_equipes=tournoi.nb_equipes,
                     )
             else:
                 prepare_content_page(page)

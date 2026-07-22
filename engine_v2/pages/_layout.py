@@ -17,6 +17,8 @@ TITLE_BOX = {"left": 0.002, "top": 0.0056, "width": 0.996, "height": 0.0853}
 TYPE_BOX = {"left": 0.0, "top": 0.0147, "width": 0.327, "height": 0.054}
 DATE_BOX = {"left": 0.673, "top": 0.0144, "width": 0.327, "height": 0.054}
 FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
+# Bande pied export Live (``live_pdf_composite``) — participants / convocations hors 32 eq.
+ENGINE_FOOTER_RATIO = 0.042
 
 COVER_META_SHIFT = 0.0
 COVER_META_WIDTH = 0.44
@@ -346,6 +348,33 @@ def draw_page_header(
 FOOTER_CLUB_PT = 12.0
 
 
+def _footer_logo_zone(
+    page_rect: fitz.Rect,
+    *,
+    nb_equipes: int | None = None,
+) -> tuple[fitz.Rect, float]:
+    """Zone logo pied de page ; ``bottom_limit`` = bord bas utile (marge 3 mm)."""
+    bottom_limit = page_rect.y1 - FOOTER_BOTTOM_MARGIN_PT
+    if nb_equipes == 32:
+        template = pct_rect(page_rect, FOOTER_LOGO_BOX)
+        zone = fitz.Rect(
+            template.x0,
+            bottom_limit - template.height,
+            template.x1,
+            bottom_limit,
+        )
+        return zone, bottom_limit
+
+    footer_h = page_rect.height * ENGINE_FOOTER_RATIO
+    zone = fitz.Rect(
+        page_rect.x0,
+        bottom_limit - footer_h,
+        page_rect.x1,
+        bottom_limit,
+    )
+    return zone, bottom_limit
+
+
 def draw_footer_club_in_zone(
     page: fitz.Page,
     zone: fitz.Rect,
@@ -379,16 +408,10 @@ def draw_page_footer_logo(
     logo_wh: tuple[int, int] | None,
     club_name: str | None = None,
     base_dir: Path | None = None,
+    nb_equipes: int | None = None,
 ) -> None:
     page_rect = page.rect
-    bottom_limit = page_rect.y1 - FOOTER_BOTTOM_MARGIN_PT
-    template = pct_rect(page_rect, FOOTER_LOGO_BOX)
-    zone = fitz.Rect(
-        template.x0,
-        bottom_limit - template.height,
-        template.x1,
-        bottom_limit,
-    )
+    zone, bottom_limit = _footer_logo_zone(page_rect, nb_equipes=nb_equipes)
     fill_rect(
         page,
         fitz.Rect(0, zone.y0, page_rect.width, page_rect.y1),
@@ -593,4 +616,5 @@ def overlay_page_chrome(
         logo_wh=logo_wh,
         club_name=getattr(tournoi, "club", None),
         base_dir=base_dir,
+        nb_equipes=int(getattr(tournoi, "nb_equipes", 0) or 0) or None,
     )
