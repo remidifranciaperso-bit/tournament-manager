@@ -9,6 +9,12 @@ from pptx import Presentation
 
 from engine.live_page_map import _slide_text
 from engine.pdf_titles import pdf_header_title
+from engine.live_pool_layout import (
+    charger_layout_template,
+    composition_slide_index_from_layout,
+    pool_header_title,
+    pool_slide_letters_from_layout,
+)
 from engine_v2.pages.convocations import render_convocations_page
 from engine_v2.pages.cover import render_cover_page
 from engine_v2.pages.participants import render_participants_page
@@ -99,7 +105,7 @@ def build_v2_composite_shell_pdf(
     - Slides tableau/planning/final : bandeau V2 + fond blanc (captures Live)
     """
     base_dir = Path(base_dir)
-    template_path, _template_id, cache = resolve_template_bundle(tournoi, base_dir)
+    template_path, template_id, cache = resolve_template_bundle(tournoi, base_dir)
     page_map = cache["page_map"]
     width, height = _slide_page_size(cache)
     prs = Presentation(str(template_path))
@@ -107,6 +113,17 @@ def build_v2_composite_shell_pdf(
     slide_count = len(prs.slides)
     del prs
     titles = _titles_by_index(page_map)
+    pool_letters_by_slide: dict[int, str] = {}
+    composition_index: int | None = None
+    try:
+        layout = charger_layout_template(template_id, base_dir)
+        pool_letters_by_slide = pool_slide_letters_from_layout(layout)
+        composition_index = composition_slide_index_from_layout(layout)
+    except FileNotFoundError:
+        pass
+    for slide_index, letter in pool_letters_by_slide.items():
+        if slide_index in titles:
+            titles[slide_index] = pool_header_title(letter)
 
     exports_dir = base_dir / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
@@ -138,6 +155,15 @@ def build_v2_composite_shell_pdf(
                 render_participants_page(
                     page,
                     tournoi,
+                    base_dir=base_dir,
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                )
+            elif slide_index == composition_index:
+                _render_chrome_shell(
+                    page,
+                    tournoi,
+                    "COMPOSITION DES POULES",
                     base_dir=base_dir,
                     logo_bytes=logo_bytes,
                     logo_wh=logo_wh,

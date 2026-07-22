@@ -431,6 +431,77 @@ def composer_page_planning_native(
     )
 
 
+def composer_page_pool_composition_native(
+    page: fitz.Page,
+    source: fitz.Document,
+    slide_index: int,
+    matches: list[dict],
+    fields: dict[str, str],
+    *,
+    base_dir,
+    footer_slide_index: int | None = None,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+    club_name: str | None = None,
+) -> None:
+    from engine.live_export_render_pool import draw_pool_composition
+
+    content_rect = _compose_page_chrome(
+        page,
+        source,
+        slide_index,
+        footer_slide_index=footer_slide_index,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=club_name,
+        base_dir=base_dir,
+    )
+    draw_pool_composition(
+        page,
+        content_rect,
+        matches,
+        fields,
+        base_dir=base_dir,
+    )
+
+
+def composer_page_pool_native(
+    page: fitz.Page,
+    source: fitz.Document,
+    slide_index: int,
+    letter: str,
+    matches: list[dict],
+    match_results: dict[str, dict],
+    *,
+    base_dir,
+    footer_slide_index: int | None = None,
+    logo_bytes: bytes | None = None,
+    logo_wh: tuple[int, int] | None = None,
+    club_name: str | None = None,
+) -> None:
+    from engine.live_export_render_pool import draw_pool_page
+
+    content_rect = _compose_page_chrome(
+        page,
+        source,
+        slide_index,
+        footer_slide_index=footer_slide_index,
+        logo_bytes=logo_bytes,
+        logo_wh=logo_wh,
+        club_name=club_name,
+        base_dir=base_dir,
+    )
+    draw_pool_page(
+        page,
+        content_rect,
+        letter,
+        matches,
+        match_results,
+        base_dir=base_dir,
+        export_mode=True,
+    )
+
+
 def composer_page_export(
     page: fitz.Page,
     source: fitz.Document,
