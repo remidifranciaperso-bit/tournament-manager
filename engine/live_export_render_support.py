@@ -1315,6 +1315,7 @@ def _draw_live_table_card(
     blank_cols: list[int] | None = None,
     body_pt: float | None = None,
     header_pt: float | None = None,
+    body_col_pt: list[float | None] | None = None,
 ) -> None:
     fonts = _font_paths(base_dir)
     row_count = len(body_rows) + 1
@@ -1420,6 +1421,12 @@ def _draw_live_table_card(
                 if is_placeholder(value) and not place_medal
                 else default_body_pt
             )
+            if (
+                body_col_pt
+                and index < len(body_col_pt)
+                and body_col_pt[index] is not None
+            ):
+                body_pt_cell = float(body_col_pt[index]) * layout_scale
             if is_placeholder(value) and not place_medal and _draw_live_placeholder(
                 page,
                 cell,

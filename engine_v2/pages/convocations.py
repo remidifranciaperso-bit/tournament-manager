@@ -7,6 +7,7 @@ from pathlib import Path
 import fitz
 
 from engine.ppt_engine import construire_convocations
+from engine.live_export_render_support import FINAL_TABLE_BODY_PT
 from engine_v2.pages._engine_table import CONVOCATIONS_TABLE, draw_engine_table
 from engine_v2.pages._layout import (
     draw_page_footer_logo,
@@ -53,6 +54,8 @@ def render_convocations_page(
         col_widths=[0.72, 0.28],
         narrow=True,
         nb_equipes=tournoi.nb_equipes,
+        narrow_width_scale=0.7,
+        body_col_pt=[None, FINAL_TABLE_BODY_PT],
     )
 
     draw_page_footer_logo(

@@ -32,6 +32,8 @@ def draw_engine_table(
     col_widths: list[float] | None = None,
     narrow: bool = False,
     nb_equipes: int | None = None,
+    narrow_width_scale: float = 1.0,
+    body_col_pt: list[float | None] | None = None,
 ) -> None:
     del table_box
     if not headers:
@@ -50,12 +52,14 @@ def draw_engine_table(
     }
 
     if narrow:
+        ref_w = narrow_table_width_pt(area.width) * narrow_width_scale
         table_area = _fit_live_table_area(
             area,
             width_mode="narrow",
+            base_width_pt=ref_w,
             **fit_kw,
         )
-        ref_width_pt = narrow_table_width_pt(area.width)
+        ref_width_pt = ref_w
     else:
         table_area = _fit_live_table_area(
             area,
@@ -80,6 +84,7 @@ def draw_engine_table(
             body_bold=[False, True],
             body_colors=body_colors,
             ref_width_pt=ref_width_pt,
+            body_col_pt=body_col_pt,
         )
         return
 
