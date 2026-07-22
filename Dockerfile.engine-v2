@@ -1,7 +1,7 @@
 # Engine V2 : PyMuPDF + rendu Live — build frontend inclus (voir .dockerignore).
 FROM node:20-slim AS frontend-build
 
-ARG FRONTEND_BUILD_ID=export-capture-v2-20260721-bracket-native
+ARG FRONTEND_BUILD_ID=export-capture-v2-20260720-planning-native
 RUN echo "Frontend build id: ${FRONTEND_BUILD_ID}"
 
 WORKDIR /app/frontend
@@ -13,7 +13,7 @@ RUN npm run build \
     && test -f dist/index.html \
     && grep -rq "v2/prepare" dist/assets/*.js \
     && grep -rq "engine-v2" dist/assets/*.js \
-    && grep -rq "export-capture-v2-20260721-bracket-native" dist/assets/*.js
+    && grep -rq "export-capture-v2-20260720-planning-native" dist/assets/*.js
 
 FROM python:3.12-slim
 
