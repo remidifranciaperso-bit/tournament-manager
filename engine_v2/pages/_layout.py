@@ -172,16 +172,16 @@ def footer_logo_zone(page_rect: fitz.Rect) -> fitz.Rect:
     return fitz.Rect(template.x0, y1 - template.height, template.x1, y1)
 
 
-def footer_top(page_rect: fitz.Rect) -> float:
-    return footer_logo_zone(page_rect).y0
+def footer_top(page_rect: fitz.Rect, *, nb_equipes: int | None = None) -> float:
+    return _footer_logo_zone(page_rect, nb_equipes=nb_equipes)[0].y0
 
 
-def content_area(page_rect: fitz.Rect) -> fitz.Rect:
+def content_area(page_rect: fitz.Rect, *, nb_equipes: int | None = None) -> fitz.Rect:
     return fitz.Rect(
         page_rect.x0,
         header_bottom(page_rect),
         page_rect.x1,
-        footer_top(page_rect),
+        footer_top(page_rect, nb_equipes=nb_equipes),
     )
 
 

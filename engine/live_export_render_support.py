@@ -1284,6 +1284,17 @@ def _draw_hand_checkbox(page: fitz.Page, cell: fitz.Rect, *, pad_pt: float = 0.0
     page.draw_rect(box, color=TEMPLATE_BLUE, width=0.8, overlay=True)
 
 
+# Hauteur ligne nominale des tableaux Live (planning, participants, final…).
+_LIVE_TABLE_NOMINAL_ROW_H_PT = 26.0
+
+
+def _live_table_layout_scale(table_area: fitz.Rect, row_count: int) -> float:
+    nominal_h = _LIVE_TABLE_NOMINAL_ROW_H_PT * max(row_count, 2)
+    if nominal_h <= 0 or table_area.height <= 0:
+        return 1.0
+    return min(1.0, table_area.height / nominal_h)
+
+
 def _draw_live_table_card(
     page: fitz.Page,
     table_area: fitz.Rect,
@@ -1307,6 +1318,7 @@ def _draw_live_table_card(
 ) -> None:
     fonts = _font_paths(base_dir)
     row_count = len(body_rows) + 1
+    layout_scale = _live_table_layout_scale(table_area, row_count)
     border_w = _card_border_width(table_area, ref_width_pt)
     outer_r_pt = _corner_radius_pt(table_area, ref_width_pt)
     outer_frac = _radius_frac_for_rect(table_area, outer_r_pt)
@@ -1321,13 +1333,11 @@ def _draw_live_table_card(
     aligns = alignments or [fitz.TEXT_ALIGN_LEFT] * len(headers)
     font_keys = body_fonts or ["tsl"] * len(headers)
     header_bolds = header_bold or [False] * len(headers)
-    default_body_pt = body_pt if body_pt is not None else TABLE_BODY_PT
-    head_pt = header_pt if header_pt is not None else TABLE_HEAD_DISPLAY_PT
-    placeholder_pt = (
-        default_body_pt * (TEAM_PLACEHOLDER_PT / TABLE_BODY_PT)
-        if body_pt is not None
-        else TEAM_PLACEHOLDER_PT
-    )
+    base_body_pt = body_pt if body_pt is not None else TABLE_BODY_PT
+    base_head_pt = header_pt if header_pt is not None else TABLE_HEAD_DISPLAY_PT
+    default_body_pt = base_body_pt * layout_scale
+    head_pt = base_head_pt * layout_scale
+    placeholder_pt = default_body_pt * (TEAM_PLACEHOLDER_PT / TABLE_BODY_PT)
 
     base_row_h = content.height / max(row_count, 2)
     header_bottom = content.y0 + base_row_h
@@ -1551,6 +1561,7 @@ def draw_planning_table(
         area,
         width_mode="full",
         row_count=len(rows),
+        vertical_inset_pt=FINAL_TABLE_VERTICAL_MARGIN_PT,
     )
     body_rows = [
         [

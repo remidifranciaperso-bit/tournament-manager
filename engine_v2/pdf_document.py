@@ -81,7 +81,7 @@ def _render_bracket_page(
     else:
         draw_page_header(page, tournoi, "", base_dir=base_dir)
 
-    content = content_area(page.rect)
+    content = content_area(page.rect, nb_equipes=tournoi.nb_equipes)
     bracket_area = _live_bracket_area(content)
     render_bracket_into_area(
         page,
@@ -240,7 +240,7 @@ def build_tournament_pdf(
             )
             draw_planning_table(
                 page,
-                content_area(page.rect),
+                content_area(page.rect, nb_equipes=tournoi.nb_equipes),
                 layout_fields,
                 match_dicts,
                 match_results,
@@ -274,7 +274,7 @@ def build_tournament_pdf(
             )
             draw_final_ranking(
                 page,
-                content_area(page.rect),
+                content_area(page.rect, nb_equipes=tournoi.nb_equipes),
                 match_dicts,
                 match_results,
                 fields,
