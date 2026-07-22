@@ -19,24 +19,32 @@ DATE_BOX = {"left": 0.673, "top": 0.0144, "width": 0.327, "height": 0.054}
 FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
 
 COVER_META_SHIFT = 0.0
-COVER_META_WIDTH = 0.46
-COVER_META_LEFT = 0.06
+COVER_META_WIDTH = 0.44
+# Moitié droite : centre horizontal à 75 %
+COVER_META_LEFT = 0.75 - (COVER_META_WIDTH / 2.0)
 
-# Type/genre : jonction tiers supérieur (Y = 1/3), centré horizontalement
+# Type/genre : jonction tiers supérieur (Y = 1/3), +1 cm vers le haut, centré horizontalement
 COVER_TYPE_HEIGHT = 0.229
-COVER_TYPE_TOP = (1.0 / 3.0) - (COVER_TYPE_HEIGHT / 2.0)
+COVER_TYPE_RAISE_CM = 1.0 / 21.0  # 1 cm sur hauteur A4 paysage (210 mm)
+COVER_TYPE_TOP = (1.0 / 3.0) - (COVER_TYPE_HEIGHT / 2.0) - COVER_TYPE_RAISE_CM
 COVER_TYPE_BOX = {
     "left": -0.043,
     "top": COVER_TYPE_TOP,
     "width": 1.063,
     "height": COVER_TYPE_HEIGHT,
 }
-# Logo sous le type, à droite
-COVER_LOGO_BOX = {"left": 0.58, "top": 0.44, "width": 0.36, "height": 0.14}
-COVER_LOGO_SCALE = 1.35
+# Logo sous le type, centré sur la moitié gauche
+COVER_LOGO_BOX_WIDTH = 0.36
+COVER_LOGO_BOX = {
+    "left": 0.25 - (COVER_LOGO_BOX_WIDTH / 2.0),
+    "top": 0.44,
+    "width": COVER_LOGO_BOX_WIDTH,
+    "height": 0.14,
+}
+COVER_LOGO_SCALE = 1.35 * 0.75
 COVER_CREDIT_BOX = {"left": 0.19, "top": 0.948, "width": 0.597, "height": 0.038}
 
-COVER_TYPE_PT = 118.0
+COVER_TYPE_PT = 104.0
 COVER_DATE_HEURE_PT = 30.0
 COVER_NB_PT = 28.0
 COVER_CREDIT_PT = 10.0
@@ -430,13 +438,13 @@ def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
 
 
 def _cover_logo_zone(page_rect: fitz.Rect) -> fitz.Rect:
-    """Zone logo couverture (sous le type, alignée à droite)."""
+    """Zone logo couverture (sous le type, centrée moitié gauche)."""
     zone = pct_rect(page_rect, COVER_LOGO_BOX)
     w = zone.width * COVER_LOGO_SCALE
     h = zone.height * COVER_LOGO_SCALE
-    x1 = zone.x1
-    y0 = zone.y0 + (zone.height - h) / 2
-    return fitz.Rect(x1 - w, y0, x1, y0 + h)
+    cx = zone.x0 + zone.width / 2
+    cy = zone.y0 + zone.height / 2
+    return fitz.Rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
 
 
 def draw_cover_logo(
@@ -472,7 +480,7 @@ def draw_cover_logo(
         fontsize=fontsize,
         color=WHITE,
         fontfile=noto_bold,
-        align=fitz.TEXT_ALIGN_RIGHT,
+        align=fitz.TEXT_ALIGN_CENTER,
     )
 
 
@@ -503,7 +511,7 @@ def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:
             fontsize=size,
             color=WHITE,
             fontfile=brush,
-            align=fitz.TEXT_ALIGN_LEFT,
+            align=fitz.TEXT_ALIGN_CENTER,
         )
 
     _insert_textbox(
