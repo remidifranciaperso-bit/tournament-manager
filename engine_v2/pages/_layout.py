@@ -9,7 +9,7 @@ import fitz
 
 from engine.pdf_footer import contain_rect
 from engine.ppt_engine import construire_valeurs_globales, detecter_genre, format_date
-from engine_v2.pages._theme import ARENA_800, BRUSH_BLUE, WHITE, YELLOW, font_paths
+from engine_v2.pages._theme import ARENA_600, ARENA_800, BRUSH_BLUE, WHITE, YELLOW, font_paths
 
 # Géométrie template bleu (``Template_24_1J.pptx``), fractions 0–1.
 HEADER_BAND = {"left": -0.0031, "top": -0.0015, "width": 1.0067, "height": 0.0858}
@@ -20,8 +20,8 @@ FOOTER_LOGO_BOX = {"left": 0.373, "top": 0.966, "width": 0.24, "height": 0.029}
 
 COVER_META_SHIFT = 0.0
 COVER_META_WIDTH = 0.44
-# Moitié droite : centre horizontal à 75 %
-COVER_META_LEFT = 0.75 - (COVER_META_WIDTH / 2.0)
+# Moitié gauche : infos tournoi (date, heure, équipes, terrains)
+COVER_META_LEFT = 0.25 - (COVER_META_WIDTH / 2.0)
 
 # Type/genre : jonction tiers supérieur (Y = 1/3), +1 cm vers le haut, centré horizontalement
 COVER_TYPE_HEIGHT = 0.229
@@ -33,13 +33,21 @@ COVER_TYPE_BOX = {
     "width": 1.063,
     "height": COVER_TYPE_HEIGHT,
 }
-# Logo sous le type, centré sur la moitié gauche
+
+_META_ROW = 0.072
+_META_ROWS = 4
+_META_TOP = (1.0 / 3.0) + (COVER_TYPE_HEIGHT / 2.0) + 0.025
+_META_BLOCK_HEIGHT = _META_ROW * _META_ROWS
+_META_CENTER_Y = _META_TOP + (_META_BLOCK_HEIGHT / 2.0)
+
+# Logo moitié droite, centré verticalement sur le bloc meta
 COVER_LOGO_BOX_WIDTH = 0.36
+COVER_LOGO_BOX_HEIGHT = 0.14
 COVER_LOGO_BOX = {
-    "left": 0.25 - (COVER_LOGO_BOX_WIDTH / 2.0),
-    "top": 0.44,
+    "left": 0.75 - (COVER_LOGO_BOX_WIDTH / 2.0),
+    "top": _META_CENTER_Y - (COVER_LOGO_BOX_HEIGHT / 2.0),
     "width": COVER_LOGO_BOX_WIDTH,
-    "height": 0.14,
+    "height": COVER_LOGO_BOX_HEIGHT,
 }
 COVER_LOGO_SCALE = 1.35 * 0.75
 COVER_CREDIT_BOX = {"left": 0.19, "top": 0.948, "width": 0.597, "height": 0.038}
@@ -55,9 +63,6 @@ MM_TO_PT = 72.0 / 25.4
 HEADER_SIDE_MARGIN_PT = HEADER_SIDE_MARGIN_MM * MM_TO_PT
 FOOTER_BOTTOM_MARGIN_MM = 3.0
 FOOTER_BOTTOM_MARGIN_PT = FOOTER_BOTTOM_MARGIN_MM * MM_TO_PT
-
-_META_ROW = 0.072
-_META_TOP = (1.0 / 3.0) + (COVER_TYPE_HEIGHT / 2.0) + 0.025
 
 COVER_DATE_BOX = {
     "left": COVER_META_LEFT,
@@ -438,7 +443,7 @@ def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
 
 
 def _cover_logo_zone(page_rect: fitz.Rect) -> fitz.Rect:
-    """Zone logo couverture (sous le type, centrée moitié gauche)."""
+    """Zone logo couverture (moitié droite, aligné verticalement sur le bloc meta)."""
     zone = pct_rect(page_rect, COVER_LOGO_BOX)
     w = zone.width * COVER_LOGO_SCALE
     h = zone.height * COVER_LOGO_SCALE
@@ -519,7 +524,7 @@ def draw_cover_texts(page: fitz.Page, tournoi, *, base_dir: Path) -> None:
         pct_rect(page.rect, COVER_CREDIT_BOX),
         "Padel Tournament Engine",
         fontsize=COVER_CREDIT_PT,
-        color=BRUSH_BLUE,
+        color=ARENA_600,
         fontfile=brush,
     )
 
