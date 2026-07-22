@@ -31,5 +31,6 @@ frontend/node_modules/
 app/
 .streamlit/
 
-# Scripts locaux
-scripts/
+# Scripts locaux (sauf bake emoji requis par Dockerfile.engine-v2)
+scripts/*
+!scripts/bake_emoji_assets.py

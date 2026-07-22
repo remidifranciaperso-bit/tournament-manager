@@ -11,9 +11,9 @@ COPY frontend/ .
 ENV VITE_DEPLOY_TARGET=engine-v2
 RUN npm run build \
     && test -f dist/index.html \
-    && grep -rq "v2/prepare" dist/assets/*.js \
-    && grep -rq "engine-v2" dist/assets/*.js \
-    && grep -rq "export-capture-v2-20260721-bracket-native" dist/assets/*.js
+    && grep -rq "v2/prepare" dist \
+    && grep -rq "engine-v2" dist \
+    && grep -rq "${FRONTEND_BUILD_ID}" dist
 
 FROM python:3.12-slim
 
