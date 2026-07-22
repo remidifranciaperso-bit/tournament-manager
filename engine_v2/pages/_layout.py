@@ -36,7 +36,7 @@ COVER_LOGO_BOX = {"left": 0.58, "top": 0.44, "width": 0.36, "height": 0.14}
 COVER_LOGO_SCALE = 1.35
 COVER_CREDIT_BOX = {"left": 0.19, "top": 0.948, "width": 0.597, "height": 0.038}
 
-COVER_TYPE_PT = 96.0
+COVER_TYPE_PT = 118.0
 COVER_DATE_HEURE_PT = 30.0
 COVER_NB_PT = 28.0
 COVER_CREDIT_PT = 10.0
