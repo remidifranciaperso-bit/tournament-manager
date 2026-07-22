@@ -83,8 +83,18 @@ def retirer_fond_uniforme_bord(
     return rgba
 
 
-def rogner_image_contenu(image: Image.Image, marge_px: int = 2) -> Image.Image:
-    """Rogne comme le wizard frontend (blanc opaque exclu du cadre utile)."""
+def _pixel_est_visible(rouge: int, vert: int, bleu: int, alpha: int) -> bool:
+    if alpha < _ALPHA_SEUIL:
+        return False
+    return not (
+        rouge >= _WHITE_SEUIL
+        and vert >= _WHITE_SEUIL
+        and bleu >= _WHITE_SEUIL
+    )
+
+
+def bbox_contenu_utile(image: Image.Image) -> tuple[int, int, int, int] | None:
+    """Cadre du contenu visible (mêmes règles que le rognage wizard / ``rogner_image_contenu``)."""
     rgba = image.convert("RGBA")
     largeur, hauteur = rgba.size
     pixels = rgba.load()
@@ -98,13 +108,7 @@ def rogner_image_contenu(image: Image.Image, marge_px: int = 2) -> Image.Image:
     for y in range(hauteur):
         for x in range(largeur):
             rouge, vert, bleu, alpha = pixels[x, y]
-            if alpha < _ALPHA_SEUIL:
-                continue
-            if (
-                rouge >= _WHITE_SEUIL
-                and vert >= _WHITE_SEUIL
-                and bleu >= _WHITE_SEUIL
-            ):
+            if not _pixel_est_visible(rouge, vert, bleu, alpha):
                 continue
             trouve = True
             min_x = min(min_x, x)
@@ -113,8 +117,103 @@ def rogner_image_contenu(image: Image.Image, marge_px: int = 2) -> Image.Image:
             max_y = max(max_y, y)
 
     if not trouve:
+        return None
+    return min_x, min_y, max_x, max_y
+
+
+def dimensions_contenu_utile(image: Image.Image) -> tuple[int, int] | None:
+    bbox = bbox_contenu_utile(image)
+    if bbox is None:
+        return None
+    min_x, min_y, max_x, max_y = bbox
+    return max_x - min_x + 1, max_y - min_y + 1
+
+
+def _contenu_motif_rond_ou_carre(
+    rgba: Image.Image,
+    min_x: int,
+    min_y: int,
+    max_x: int,
+    max_y: int,
+) -> bool:
+    """Coins du bbox surtout vides → pastille / cercle mal rogné (bbox un peu allongée)."""
+    w = max_x - min_x + 1
+    h = max_y - min_y + 1
+    if w < 8 or h < 8:
+        return True
+
+    corner_side = max(2, min(w, h) // 6)
+    pixels = rgba.load()
+
+    def _compter_zone(x0: int, y0: int) -> int:
+        total = 0
+        x1 = min(x0 + corner_side, max_x + 1)
+        y1 = min(y0 + corner_side, max_y + 1)
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                rouge, vert, bleu, alpha = pixels[x, y]
+                if _pixel_est_visible(rouge, vert, bleu, alpha):
+                    total += 1
+        return total
+
+    coin = (
+        _compter_zone(min_x, min_y)
+        + _compter_zone(max_x - corner_side + 1, min_y)
+        + _compter_zone(min_x, max_y - corner_side + 1)
+        + _compter_zone(max_x - corner_side + 1, max_y - corner_side + 1)
+    )
+    cx = (min_x + max_x) // 2
+    cy = (min_y + max_y) // 2
+    centre = _compter_zone(cx - corner_side // 2, cy - corner_side // 2)
+    if centre <= 0:
+        return False
+    return coin <= centre * 0.4
+
+
+# Aligné sur ``COVER_LOGO_COMPACT_ASPECT_MAX`` (page de garde V2).
+_LOGO_GARDE_COMPACT_AR = 1.12
+_LOGO_GARDE_ROND_AR_MAX = 1.45
+
+
+def logo_garde_est_compact(image: Image.Image) -> bool:
+    """Carré, rond ou pastille — pas un bandeau texte (après rognage / bbox utile)."""
+    bbox = bbox_contenu_utile(image)
+    if bbox is None:
+        largeur, hauteur = image.size
+        w, h = largeur, hauteur
+        rgba = None
+    else:
+        min_x, min_y, max_x, max_y = bbox
+        w = max_x - min_x + 1
+        h = max_y - min_y + 1
+        rgba = image.convert("RGBA")
+
+    if w <= 0 or h <= 0:
+        return False
+
+    ratio = max(w, h) / min(w, h)
+    if ratio <= _LOGO_GARDE_COMPACT_AR:
+        return True
+    if ratio <= _LOGO_GARDE_ROND_AR_MAX and bbox is not None and rgba is not None:
+        return _contenu_motif_rond_ou_carre(rgba, *bbox)
+    return False
+
+
+def logo_garde_est_compact_depuis_bytes(payload: bytes) -> bool:
+    import io
+
+    with Image.open(io.BytesIO(payload)) as img:
+        return logo_garde_est_compact(img)
+
+
+def rogner_image_contenu(image: Image.Image, marge_px: int = 2) -> Image.Image:
+    """Rogne comme le wizard frontend (blanc opaque exclu du cadre utile)."""
+    bbox = bbox_contenu_utile(image)
+    if bbox is None:
         return image
 
+    min_x, min_y, max_x, max_y = bbox
+    rgba = image.convert("RGBA")
     rogne = rgba.crop((min_x, min_y, max_x + 1, max_y + 1))
     if marge_px <= 0:
         return rogne

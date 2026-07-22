@@ -50,7 +50,7 @@ COVER_LOGO_BOX = {
     "height": COVER_LOGO_BOX_HEIGHT,
 }
 COVER_LOGO_SCALE = 1.35 * 0.75
-# Cadre rectangulaire (largeur max) ; logos carrés / ronds : 50 % L×H, pas plus.
+# Cadre rectangulaire (largeur max) ; logos carrés / ronds : 50 % de cette largeur max (côté).
 COVER_LOGO_COMPACT_SCALE = 0.5
 COVER_LOGO_COMPACT_ASPECT_MAX = 1.12
 COVER_CREDIT_BOX = {"left": 0.19, "top": 0.948, "width": 0.597, "height": 0.038}
@@ -446,21 +446,37 @@ def draw_cover_background(page: fitz.Page, base_dir: Path) -> None:
 
 
 def _cover_logo_is_compact(img_w: float, img_h: float) -> bool:
-    """Carré ou rond (bbox quasi carrée) — pas un bandeau rectangulaire."""
+    """Carré ou rond (bbox quasi carrée) — repli si pas de bytes logo."""
     if img_w <= 0 or img_h <= 0:
         return False
     return max(img_w, img_h) / min(img_w, img_h) <= COVER_LOGO_COMPACT_ASPECT_MAX
 
 
+def _cover_logo_est_compact(
+    *,
+    logo_bytes: bytes | None,
+    logo_wh: tuple[int, int] | None,
+) -> bool:
+    """Détecte carré / rond sur le contenu visible (post-rognage), pas seulement la taille fichier."""
+    if logo_bytes:
+        from engine.logo_trim import logo_garde_est_compact_depuis_bytes
+
+        return logo_garde_est_compact_depuis_bytes(logo_bytes)
+    if logo_wh:
+        return _cover_logo_is_compact(float(logo_wh[0]), float(logo_wh[1]))
+    return False
+
+
 def _cover_logo_zone(
     page_rect: fitz.Rect,
     *,
+    logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
 ) -> fitz.Rect:
     """Zone max logo couverture (contain, centrée sur le bloc meta).
 
     Bandeau rectangulaire : largeur/hauteur du cadre actuel (largeur max).
-    Logo carré ou rond : 50 % de ce cadre en largeur et en hauteur.
+    Logo carré ou rond : boîte carrée de côté = 50 % de la largeur max rectangulaire.
     """
     zone = pct_rect(page_rect, COVER_LOGO_BOX)
     w = zone.width * COVER_LOGO_SCALE
@@ -468,10 +484,9 @@ def _cover_logo_zone(
     cx = zone.x0 + zone.width / 2
     cy = zone.y0 + zone.height / 2
     rect = fitz.Rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
-    if logo_wh and _cover_logo_is_compact(float(logo_wh[0]), float(logo_wh[1])):
-        cw = rect.width * COVER_LOGO_COMPACT_SCALE
-        ch = rect.height * COVER_LOGO_COMPACT_SCALE
-        return fitz.Rect(cx - cw / 2, cy - ch / 2, cx + cw / 2, cy + ch / 2)
+    if _cover_logo_est_compact(logo_bytes=logo_bytes, logo_wh=logo_wh):
+        side = rect.width * COVER_LOGO_COMPACT_SCALE
+        return fitz.Rect(cx - side / 2, cy - side / 2, cx + side / 2, cy + side / 2)
     return rect
 
 
@@ -483,7 +498,7 @@ def draw_cover_logo(
     club_name: str | None = None,
     base_dir: Path | None = None,
 ) -> None:
-    zone = _cover_logo_zone(page.rect, logo_wh=logo_wh)
+    zone = _cover_logo_zone(page.rect, logo_bytes=logo_bytes, logo_wh=logo_wh)
     if logo_bytes and logo_wh:
         dest = contain_rect(zone, float(logo_wh[0]), float(logo_wh[1]))
         page.insert_image(dest, stream=logo_bytes, keep_proportion=True)
