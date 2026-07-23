@@ -8,6 +8,8 @@ from engine.ppt_engine import equipe_label_court
 
 WIN_RE = re.compile(r"^Vainqueur\s+(.+)$", re.IGNORECASE)
 LOSE_RE = re.compile(r"^Perdant\s+(.+)$", re.IGNORECASE)
+SECOND_RE = re.compile(r"^(?:Deuxième|Second)\s+(.+)$", re.IGNORECASE)
+THIRD_RE = re.compile(r"^Troisième\s+(.+)$", re.IGNORECASE)
 
 EMOJI_GAP = "\u2009"
 ICONE_VAINQUEUR = f"🏆{EMOJI_GAP}"
@@ -115,14 +117,25 @@ def resolve_team_label_deep(
     return resolve_team_label_deep(resolved, matches_by_code, match_results, depth + 1)
 
 
+def _normalize_feed_code(code: str) -> str:
+    """Comme ``normalizeFeedCode`` (layout WIN_POULE_A, SECOND_POULE_B, …)."""
+    return code.strip().upper().replace(" ", "_")
+
+
 def feed_key_from_team_label(label: str) -> str | None:
     text = label.strip()
     win = WIN_RE.match(text)
     if win:
-        return f"WIN_{win.group(1).strip()}"
+        return f"WIN_{_normalize_feed_code(win.group(1))}"
     lose = LOSE_RE.match(text)
     if lose:
-        return f"LOSE_{lose.group(1).strip()}"
+        return f"LOSE_{_normalize_feed_code(lose.group(1))}"
+    second = SECOND_RE.match(text)
+    if second:
+        return f"SECOND_{_normalize_feed_code(second.group(1))}"
+    third = THIRD_RE.match(text)
+    if third:
+        return f"THIRD_{_normalize_feed_code(third.group(1))}"
     return None
 
 
