@@ -22,6 +22,7 @@ import {
   PLANNING_LEGACY_LAYOUT_WIDTH,
   PLANNING_SIDE_MARGIN_PX,
   PLANNING_TABLE_LAYOUT_WIDTH,
+  PLANNING_VERTICAL_MARGIN_PX,
   PLANNING_V2_LAYOUT_MARKER,
 } from "./exportCapture";
 import {
@@ -35,12 +36,14 @@ function planningLayoutMetrics(v2TableHeaders: boolean) {
     return {
       baseWidth: PLANNING_TABLE_LAYOUT_WIDTH,
       sideMargin: PLANNING_SIDE_MARGIN_PX,
+      verticalMargin: PLANNING_VERTICAL_MARGIN_PX,
       captureShellWidth: PLANNING_EXPORT_CAPTURE_WIDTH,
     };
   }
   return {
     baseWidth: PLANNING_LEGACY_LAYOUT_WIDTH,
     sideMargin: 0,
+    verticalMargin: 0,
     captureShellWidth: PLANNING_LEGACY_LAYOUT_WIDTH,
   };
 }
@@ -91,13 +94,15 @@ export function LivePlanningTab({
 }: LivePlanningTabProps) {
   const pageRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [scaleW, setScaleW] = useState(1);
+  const [scaleH, setScaleH] = useState(1);
   const [scale, setScale] = useState(1);
   const [naturalHeight, setNaturalHeight] = useState(0);
 
-  /** Live V2 : largeur fixe (comme PDF Engine — ``draw_w = table_w``), hauteur libre. */
+  /** Live V2 : largeur identique entre onglets ; hauteur compressée si besoin (sans scroll). */
   const v2UniformTableWidth = v2TableHeaders;
 
-  const { baseWidth, sideMargin, captureShellWidth } = useMemo(
+  const { baseWidth, sideMargin, verticalMargin, captureShellWidth } = useMemo(
     () => planningLayoutMetrics(v2TableHeaders),
     [v2TableHeaders]
   );
@@ -134,10 +139,15 @@ export function LivePlanningTab({
       if (availW <= 0 || availH <= 0 || naturalH <= 0) return;
 
       const widthScale = Math.min(1, availW / baseWidth);
-      const nextScale = v2UniformTableWidth
-        ? widthScale
-        : Math.min(widthScale, availH / naturalH);
-      setScale((prev) => (prev === nextScale ? prev : nextScale));
+      const heightScale = Math.min(1, availH / naturalH);
+
+      if (v2UniformTableWidth) {
+        setScaleW((prev) => (prev === widthScale ? prev : widthScale));
+        setScaleH((prev) => (prev === heightScale ? prev : heightScale));
+      } else {
+        const uniform = Math.min(widthScale, heightScale);
+        setScale((prev) => (prev === uniform ? prev : uniform));
+      }
       setNaturalHeight((prev) => (prev === naturalH ? prev : naturalH));
     };
 
@@ -147,6 +157,9 @@ export function LivePlanningTab({
     observer.observe(card);
     return () => observer.disconnect();
   }, [capture, rows.length, baseWidth, v2UniformTableWidth]);
+
+  const layoutScaleW = v2UniformTableWidth ? scaleW : scale;
+  const layoutScaleH = v2UniformTableWidth ? scaleH : scale;
 
   const headPresentation = useLiveTableHeadPresentation(v2TableHeaders);
   const headClass = capture
@@ -283,46 +296,45 @@ export function LivePlanningTab({
     );
   }
 
-  const pagePaddingClass =
-    sideMargin > 0 ? "py-4 sm:py-6" : "px-4 py-4 sm:px-6 sm:py-6";
+  const pagePaddingClass = v2TableHeaders
+    ? ""
+    : "px-4 py-4 sm:px-6 sm:py-6";
 
-  const pageAlignClass = v2UniformTableWidth
-    ? "items-start justify-center"
-    : "items-center justify-center";
-  const pageOverflowClass = v2UniformTableWidth
-    ? "overflow-x-hidden overflow-y-auto"
-    : "overflow-hidden";
+  const pageStyle =
+    sideMargin > 0 || verticalMargin > 0
+      ? {
+          paddingLeft: sideMargin,
+          paddingRight: sideMargin,
+          paddingTop: verticalMargin,
+          paddingBottom: verticalMargin,
+        }
+      : undefined;
 
   return (
     <div
       ref={pageRef}
-      className={`flex min-h-0 flex-1 bg-white ${pagePaddingClass} ${pageOverflowClass} ${pageAlignClass}`}
+      className={`flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white ${pagePaddingClass}`}
       data-planning-layout={v2TableHeaders ? PLANNING_V2_LAYOUT_MARKER : undefined}
-      style={
-        sideMargin > 0
-          ? {
-              paddingLeft: sideMargin,
-              paddingRight: sideMargin,
-            }
-          : undefined
-      }
+      style={pageStyle}
     >
       <div
         className="relative shrink-0"
         style={{
-          width: baseWidth * scale,
-          height: naturalHeight * scale || undefined,
+          width: baseWidth * layoutScaleW,
+          height: naturalHeight * layoutScaleH || undefined,
         }}
       >
-        <LiveTableDisplayScaleProvider scale={scale}>
+        <LiveTableDisplayScaleProvider scale={layoutScaleW}>
         <div
           ref={cardRef}
           className={`${cardShellClass} absolute left-0 top-0`}
           style={{
             width: baseWidth,
-            transform: `scale(${scale})`,
+            transform: v2UniformTableWidth
+              ? `scale(${scaleW}, ${scaleH})`
+              : `scale(${scale})`,
             transformOrigin: "top left",
-            ["--live-display-scale" as string]: scale,
+            ["--live-display-scale" as string]: layoutScaleW,
           }}
         >
           {table}

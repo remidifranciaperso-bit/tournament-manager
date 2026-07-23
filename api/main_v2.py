@@ -184,7 +184,7 @@ def frontend_check():
     dist = BASE_DIR / "frontend" / "dist" / "assets"
     if not dist.is_dir():
         return {"ok": False, "error": "frontend/dist/assets absent"}
-    marker = "live-planning-uniform-width-v2-20260723"
+    marker = "live-planning-fit-margins-v2-20260723"
     for js in dist.glob("*.js"):
         text = js.read_text(encoding="utf-8", errors="ignore")
         if "v2/prepare" in text and "engine-v2" in text and marker in text:
