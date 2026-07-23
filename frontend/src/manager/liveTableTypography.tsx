@@ -14,8 +14,8 @@ import {
   LIVE_TABLE_HEAD_ENGINE_V2,
 } from "./liveDataTable";
 
-/** Aligné sur ``TABLE_HEAD_DISPLAY_PT`` (Engine / export PDF). */
-export const LIVE_TABLE_HEAD_PT = 12;
+/** Taille écran compensée (scale page) — entre Live V1 et 12 pt plein écran. */
+export const LIVE_TABLE_HEAD_SCREEN_PX = 12.5;
 
 const ENGINE_V2_PACK_VERSIONS = new Set(["engine-v2-live-capture-1"]);
 
@@ -130,8 +130,10 @@ export function liveTableHeadPresentation(
   return {
     className: LIVE_TABLE_HEAD_ENGINE_V2,
     style: {
-      fontSize: `${16 / scale}px`,
+      fontSize: `${LIVE_TABLE_HEAD_SCREEN_PX / scale}px`,
       fontWeight: 600,
+      lineHeight: 1.12,
+      letterSpacing: "0.03em",
     },
   };
 }

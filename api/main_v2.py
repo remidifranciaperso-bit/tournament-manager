@@ -65,21 +65,34 @@ app.add_middleware(
 # En-têtes tableaux Manager Live à l'écran (Poules / Planning / Classement final).
 # Inline dans index.html : fonctionne sans rebuild du bundle JS.
 # La couche #export-capture-layer (génération PDF Live) garde 12 pt / graisse normale.
-_ENGINE_V2_LIVE_TABLE_HEAD_INJECT = """
+# Taille écran : un peu au-dessus du Live V1 (xs/sm), sans dépasser les colonnes.
+# PDF export (#export-capture-layer) : 12 pt Engine, inchangé.
+_LIVE_HEAD_SCREEN_PX = 12.5
+
+_ENGINE_V2_LIVE_TABLE_HEAD_INJECT = f"""
 <style id="engine-v2-live-table-head">
-#root table thead tr.bg-template-blue th {
+#root table thead tr.bg-template-blue th {{
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   font-family: "TSL Sans", "Sora", system-ui, sans-serif !important;
-  font-size: calc(16px / var(--live-display-scale, 1)) !important;
+  font-size: calc({_LIVE_HEAD_SCREEN_PX}px / var(--live-display-scale, 1)) !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  line-height: 1.25 !important;
-}
-#export-capture-layer table thead tr.bg-template-blue th {
+  letter-spacing: 0.03em !important;
+  line-height: 1.12 !important;
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+}}
+#export-capture-layer table thead tr.bg-template-blue th {{
   font-size: 12pt !important;
   font-weight: 400 !important;
   letter-spacing: 0.05em !important;
-}
+  line-height: 1.2 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}}
 </style>
 <script id="engine-v2-live-table-head-sync">
 (function () {

@@ -17,7 +17,7 @@ export const LIVE_TABLE_CAPTURE =
 
 /** En-têtes tableaux — alignés PyMuPDF ``TABLE_HEAD_DISPLAY_PT`` (12 pt). */
 export const LIVE_TABLE_HEAD_ENGINE_V2 =
-  "live-table-col-head-v2 px-2 py-2.5 text-left font-tsl font-normal uppercase tracking-wide sm:px-3";
+  "live-table-col-head-v2 px-2 py-2 text-left font-tsl font-semibold uppercase tracking-wide sm:px-2.5";
 
 /** Live V1 — en-têtes plus compacts à l'écran. */
 export const LIVE_TABLE_HEAD_CLASSIC =
