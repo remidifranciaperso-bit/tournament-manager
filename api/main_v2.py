@@ -9,8 +9,10 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import HTMLResponse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
@@ -59,6 +61,55 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Notify-Token", "X-Live-Snapshot-Available", "X-Engine-Version"],
 )
+
+# En-têtes tableaux Manager Live (Poules / Planning / Classement final) — 12 pt ≈ 16 px, semi-gras.
+# Servi par l’API pour s’appliquer même si le bundle frontend n’a pas été rebuild.
+_ENGINE_V2_LIVE_TABLE_HEAD_CSS = """
+table thead tr.bg-template-blue th {
+  font-family: "TSL Sans", "Sora", system-ui, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.25 !important;
+}
+""".strip()
+
+_LIVE_HEAD_STYLESHEET = '<link rel="stylesheet" href="/engine-v2-live-table-head.css" />'
+
+
+@app.get("/engine-v2-live-table-head.css")
+def engine_v2_live_table_head_css():
+    return Response(
+        content=_ENGINE_V2_LIVE_TABLE_HEAD_CSS,
+        media_type="text/css",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@app.middleware("http")
+async def inject_engine_v2_live_table_head_css(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path not in ("", "/") and path != "/index.html":
+        return response
+    content_type = response.headers.get("content-type", "")
+    if "text/html" not in content_type:
+        return response
+    body = b""
+    async for chunk in response.body_iterator:
+        body += chunk
+    html = body.decode("utf-8", errors="replace")
+    if _LIVE_HEAD_STYLESHEET in html or "</head>" not in html:
+        return HTMLResponse(
+            content=html,
+            status_code=response.status_code,
+            headers=dict(response.headers),
+        )
+    html = html.replace("</head>", f"    {_LIVE_HEAD_STYLESHEET}\n  </head>", 1)
+    headers = dict(response.headers)
+    headers.pop("content-length", None)
+    return HTMLResponse(content=html, status_code=response.status_code, headers=headers)
 
 
 @app.get("/api/health")

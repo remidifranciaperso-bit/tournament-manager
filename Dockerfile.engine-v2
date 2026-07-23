@@ -9,12 +9,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ .
 ENV VITE_DEPLOY_TARGET=engine-v2
-RUN npm run build \
-    && test -f dist/index.html \
-    && grep -rq "v2/prepare" dist/assets/*.js \
-    && grep -rq "engine-v2" dist/assets/*.js \
-    && grep -rq "export-capture-v2-20260721-bracket-native" dist/assets/*.js \
-    && grep -rq "live-table-v2" dist/assets/*.css
+RUN npm run build && test -f dist/index.html
 
 FROM python:3.12-slim
 

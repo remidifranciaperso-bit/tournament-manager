@@ -131,7 +131,7 @@ export function liveTableHeadPresentation(
     className: LIVE_TABLE_HEAD_ENGINE_V2,
     style: {
       fontSize: `${16 / scale}px`,
-      fontWeight: 400,
+      fontWeight: 600,
     },
   };
 }
