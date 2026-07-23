@@ -44,11 +44,17 @@ services:
     dockerContext: .
     healthCheckPath: /api/v2/health
     autoDeploy: true
+    disk:
+      name: live-data-v2
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: DEPLOY_TARGET
         value: engine-v2
       - key: PDF_CONVERTER
         value: libreoffice
+      - key: LIVE_DATA_DIR
+        value: /data/_live
       - key: OWNER_EMAIL
         value: remi.difrancia.perso@gmail.com
       - key: EMAIL_FROM

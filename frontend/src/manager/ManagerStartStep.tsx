@@ -20,6 +20,8 @@ export function ManagerStartStep({
   const [packFile, setPackFile] = useState<File | null>(null);
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [packLoading, setPackLoading] = useState(false);
+  const [packUploadRatio, setPackUploadRatio] = useState<number | null>(null);
+  const [packProcessing, setPackProcessing] = useState(false);
   const [packError, setPackError] = useState<string | null>(null);
   const [pendingPack, setPendingPack] = useState<LiveTournamentData | null>(null);
 
@@ -31,8 +33,16 @@ export function ManagerStartStep({
     if (!file) return;
 
     setPackLoading(true);
+    setPackUploadRatio(null);
+    setPackProcessing(false);
     try {
-      const data = await initLiveFromPack(file);
+      const data = await initLiveFromPack(file, (phase, ratio) => {
+        if (phase === "upload") {
+          setPackUploadRatio(ratio);
+        } else {
+          setPackProcessing(true);
+        }
+      });
       setPendingPack(data);
     } catch (err) {
       setPackError(
@@ -42,6 +52,8 @@ export function ManagerStartStep({
       );
     } finally {
       setPackLoading(false);
+      setPackUploadRatio(null);
+      setPackProcessing(false);
     }
   };
 
@@ -92,7 +104,11 @@ export function ManagerStartStep({
               title="Glissez votre pack ZIP ici"
               hint={
                 packLoading
-                  ? "Import du pack en cours…"
+                  ? packUploadRatio != null && packUploadRatio < 1
+                    ? `Envoi du pack… ${Math.round(packUploadRatio * 100)} %`
+                    : packProcessing
+                      ? "Préparation du tournoi live sur le serveur…"
+                      : "Import du pack en cours…"
                   : "ZIP téléchargé depuis Engine"
               }
               icon={<IconUpload className="h-7 w-7" />}

@@ -28,6 +28,7 @@ TTL_SECONDS = 7 * 24 * 60 * 60
 # la maintenir « active » sans I/O superflue à chaque requête.
 _TOUCH_MIN_INTERVAL = 60 * 60
 _CLEANUP_MIN_INTERVAL = 60 * 60
+_CLEANUP_MAX_DIRS_PER_RUN = 80
 _last_cleanup_at = 0.0
 
 
@@ -54,7 +55,11 @@ def nettoyer_sessions_expirees() -> None:
         return
     _last_cleanup_at = now
     seuil = now - TTL_SECONDS
+    scanned = 0
     for dossier in _live_root().iterdir():
+        if scanned >= _CLEANUP_MAX_DIRS_PER_RUN:
+            break
+        scanned += 1
         if not dossier.is_dir():
             continue
         try:

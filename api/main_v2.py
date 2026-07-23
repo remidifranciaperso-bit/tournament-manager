@@ -16,6 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from api.v2_router import router as v2_router, warm_pymupdf
+from api.live_router import router as live_router
 from api.wizard_routes import router as wizard_router
 
 
@@ -35,6 +36,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Padel Tournament Engine V2", lifespan=lifespan)
 app.include_router(v2_router)
 app.include_router(wizard_router)
+app.include_router(live_router)
 
 
 @app.post("/api/generate")
@@ -62,10 +64,14 @@ app.add_middleware(
 @app.get("/api/health")
 def health_compat():
     """Compatibilité si le health check pointe sur /api/health."""
+    from api.live_store import BASE_LIVE_DIR
+
     return {
         "status": "ok",
         "engine": "v2-live-capture",
         "deploy": os.environ.get("DEPLOY_TARGET", "engine-v2"),
+        "live": "engine-pdf",
+        "live_data_dir": str(BASE_LIVE_DIR),
         "hint": "use /api/v2/health",
         "frontend_must_include": "v2/prepare",
     }

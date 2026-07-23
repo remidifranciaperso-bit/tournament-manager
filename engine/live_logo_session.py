@@ -55,6 +55,17 @@ def preparer_logo_import(
                 source = candidat
 
     if source is not None:
+        pack_file = (
+            Path(logo_path).resolve()
+            if logo_path is not None and Path(logo_path).is_file()
+            else None
+        )
+        if (
+            pack_file is not None
+            and pack_file.resolve() == Path(source).resolve()
+            and pack_file.stat().st_size >= 64
+        ):
+            return pack_file
         return _preparer_fichier_logo(source)
 
     return _logo_depuis_pdf(Path(pdf_path), dest_dir)

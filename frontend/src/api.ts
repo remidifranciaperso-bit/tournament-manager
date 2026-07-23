@@ -436,37 +436,61 @@ export async function generateTournament(
   return { blob, filename, notifyToken, liveSnapshotAvailable };
 }
 
-export async function initLiveFromPack(packFile: File): Promise<LiveTournamentData> {
+export async function initLiveFromPack(
+  packFile: File,
+  onProgress?: (phase: "upload" | "processing", ratio: number) => void
+): Promise<LiveTournamentData> {
   const body = new FormData();
   body.append("pack", packFile);
 
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 120_000);
+  const jsonText = await new Promise<string>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const timeout = window.setTimeout(() => {
+      xhr.abort();
+    }, 120_000);
 
-  let res: Response;
-  try {
-    res = await fetch("/api/live/init-from-pack", {
-      method: "POST",
-      body,
-      signal: controller.signal,
-    });
-  } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new Error(
-        "Import du pack trop long (PDF volumineux). Réessayez ou contactez le support."
+    xhr.upload.onprogress = (event) => {
+      if (!onProgress || !event.lengthComputable) return;
+      onProgress("upload", event.loaded / event.total);
+    };
+
+    xhr.onload = () => {
+      window.clearTimeout(timeout);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.("processing", 1);
+        resolve(xhr.responseText);
+        return;
+      }
+      void readError(
+        new Response(xhr.responseText, { status: xhr.status })
+      ).then((message) => reject(new Error(message)));
+    };
+
+    xhr.onerror = () => {
+      window.clearTimeout(timeout);
+      reject(
+        new Error(
+          "Connexion interrompue pendant l'import du pack. " +
+            "Patientez quelques secondes et réessayez."
+        )
       );
-    }
-    throw new Error(
-      "Connexion interrompue pendant l'import du pack. " +
-        "Patientez quelques secondes et réessayez."
-    );
-  } finally {
-    window.clearTimeout(timeout);
-  }
-  if (!res.ok) throw new Error(await readError(res));
+    };
+
+    xhr.onabort = () => {
+      window.clearTimeout(timeout);
+      reject(
+        new Error(
+          "Import du pack trop long (PDF volumineux). Réessayez ou contactez le support."
+        )
+      );
+    };
+
+    xhr.open("POST", "/api/live/init-from-pack");
+    xhr.send(body);
+  });
 
   const data = normalizeLiveTournamentData(
-    (await res.json()) as LiveTournamentData
+    JSON.parse(jsonText) as LiveTournamentData
   );
 
   if (!data.page_sizes) {
