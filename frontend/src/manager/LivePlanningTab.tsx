@@ -94,6 +94,9 @@ export function LivePlanningTab({
   const [scale, setScale] = useState(1);
   const [naturalHeight, setNaturalHeight] = useState(0);
 
+  /** Live V2 : largeur fixe (comme PDF Engine — ``draw_w = table_w``), hauteur libre. */
+  const v2UniformTableWidth = v2TableHeaders;
+
   const { baseWidth, sideMargin, captureShellWidth } = useMemo(
     () => planningLayoutMetrics(v2TableHeaders),
     [v2TableHeaders]
@@ -130,11 +133,10 @@ export function LivePlanningTab({
       const naturalH = card.offsetHeight;
       if (availW <= 0 || availH <= 0 || naturalH <= 0) return;
 
-      const nextScale = Math.min(
-        1,
-        availW / baseWidth,
-        availH / naturalH
-      );
+      const widthScale = Math.min(1, availW / baseWidth);
+      const nextScale = v2UniformTableWidth
+        ? widthScale
+        : Math.min(widthScale, availH / naturalH);
       setScale((prev) => (prev === nextScale ? prev : nextScale));
       setNaturalHeight((prev) => (prev === naturalH ? prev : naturalH));
     };
@@ -144,7 +146,7 @@ export function LivePlanningTab({
     observer.observe(page);
     observer.observe(card);
     return () => observer.disconnect();
-  }, [capture, rows.length, baseWidth]);
+  }, [capture, rows.length, baseWidth, v2UniformTableWidth]);
 
   const headPresentation = useLiveTableHeadPresentation(v2TableHeaders);
   const headClass = capture
@@ -284,10 +286,18 @@ export function LivePlanningTab({
   const pagePaddingClass =
     sideMargin > 0 ? "py-4 sm:py-6" : "px-4 py-4 sm:px-6 sm:py-6";
 
+  const pageAlignClass = v2UniformTableWidth
+    ? "items-start justify-center"
+    : "items-center justify-center";
+  const pageOverflowClass = v2UniformTableWidth
+    ? "overflow-x-hidden overflow-y-auto"
+    : "overflow-hidden";
+
   return (
     <div
       ref={pageRef}
-      className={`flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white ${pagePaddingClass}`}
+      className={`flex min-h-0 flex-1 bg-white ${pagePaddingClass} ${pageOverflowClass} ${pageAlignClass}`}
+      data-planning-layout={v2TableHeaders ? PLANNING_V2_LAYOUT_MARKER : undefined}
       style={
         sideMargin > 0
           ? {
