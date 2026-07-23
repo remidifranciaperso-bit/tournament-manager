@@ -68,9 +68,14 @@ app.add_middleware(
 # Taille écran : un peu au-dessus du Live V1 (xs/sm), sans dépasser les colonnes.
 # PDF export (#export-capture-layer) : 12 pt Engine, inchangé.
 _LIVE_HEAD_SCREEN_PX = 12.5
+_PLANNING_SIDE_MARGIN_PX = round(5 * 96 / 25.4)
+_PLANNING_VERTICAL_MARGIN_PX = round(4 * 96 / 25.4)
+_PLANNING_CAPTURE_WIDTH_PX = 1400
+_PLANNING_TABLE_WIDTH_PX = _PLANNING_CAPTURE_WIDTH_PX - 2 * _PLANNING_SIDE_MARGIN_PX
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-fit-margins-v2-20260723"
 
-_ENGINE_V2_LIVE_TABLE_HEAD_INJECT = """
-<style id="engine-v2-live-table-head">
+_ENGINE_V2_LIVE_MANAGER_INJECT = """
+<style id="engine-v2-live-manager-inject">
 #root table thead tr.bg-template-blue th {
   box-sizing: border-box !important;
   max-width: 100% !important;
@@ -93,24 +98,129 @@ _ENGINE_V2_LIVE_TABLE_HEAD_INJECT = """
   overflow: visible !important;
   text-overflow: clip !important;
 }
+#root .engine-v2-planning-page {
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding-left: __PLANNING_SIDE__px !important;
+  padding-right: __PLANNING_SIDE__px !important;
+  padding-top: __PLANNING_VERT__px !important;
+  padding-bottom: __PLANNING_VERT__px !important;
+}
+#root .engine-v2-planning-wrap {
+  position: relative !important;
+  flex-shrink: 0 !important;
+  width: calc(__PLANNING_BASE__px * var(--ev2-planning-sw, 1)) !important;
+  height: calc(var(--ev2-planning-nh, 1px) * var(--ev2-planning-sh, 1)) !important;
+}
+#root .engine-v2-planning-card {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: __PLANNING_BASE__px !important;
+  max-width: none !important;
+  transform: scale(var(--ev2-planning-sw, 1), var(--ev2-planning-sh, 1)) !important;
+  transform-origin: top left !important;
+}
+#export-capture-layer.engine-v2-planning-capture {
+  box-sizing: border-box !important;
+  width: __PLANNING_CAP__px !important;
+  padding-left: __PLANNING_SIDE__px !important;
+  padding-right: __PLANNING_SIDE__px !important;
+  padding-top: __PLANNING_VERT__px !important;
+  padding-bottom: __PLANNING_VERT__px !important;
+}
 </style>
-<script id="engine-v2-live-table-head-sync">
+<script id="engine-v2-live-manager-inject-sync">
 (function () {
+  var SIDE = __PLANNING_SIDE__;
+  var VERT = __PLANNING_VERT__;
+  var BASE_W = __PLANNING_BASE__;
+  var CAP_W = __PLANNING_CAP__;
+
   function syncScale() {
     document.querySelectorAll('[style*="scale("]').forEach(function (el) {
-      var m = el.style.transform.match(/scale\\(([0-9.]+)\\)/);
+      var m = el.style.transform.match(/scale\\s*\\(\\s*([0-9.]+)(?:\\s*,\\s*([0-9.]+))?\\s*\\)/);
       if (m) el.style.setProperty("--live-display-scale", m[1]);
     });
   }
-  function boot() {
+
+  function isPlanningTable(table) {
+    if (table.closest("#export-capture-layer")) return false;
+    var ths = table.querySelectorAll("thead tr.bg-template-blue th");
+    if (ths.length !== 6) return false;
+    var label = (ths[0].textContent || "").trim();
+    return label === "Code";
+  }
+
+  function findShell(table) {
+    var card = table.closest("[class*='rounded-xl'][class*='border-template-blue']");
+    if (!card) return null;
+    var wrap = card.parentElement;
+    var page = wrap && wrap.parentElement;
+    if (!wrap || !page) return null;
+    return { page: page, wrap: wrap, card: card };
+  }
+
+  function layoutLivePlanning(table) {
+    var shell = findShell(table);
+    if (!shell) return;
+    var page = shell.page;
+    var wrap = shell.wrap;
+    var card = shell.card;
+
+    page.classList.add("engine-v2-planning-page");
+    wrap.classList.add("engine-v2-planning-wrap");
+    card.classList.add("engine-v2-planning-card");
+
+    var prevTransform = card.style.transform;
+    card.style.transform = "none";
+    var naturalH = card.offsetHeight;
+    card.style.transform = prevTransform;
+
+    var availW = page.clientWidth;
+    var availH = page.clientHeight;
+    if (naturalH <= 0 || availW <= 0 || availH <= 0) return;
+
+    var scaleW = Math.min(1, availW / BASE_W);
+    var scaleH = Math.min(1, availH / naturalH);
+
+    page.style.setProperty("--ev2-planning-sw", String(scaleW));
+    page.style.setProperty("--ev2-planning-sh", String(scaleH));
+    page.style.setProperty("--ev2-planning-nh", naturalH + "px");
+    card.style.setProperty("--live-display-scale", String(scaleW));
+  }
+
+  function layoutCapturePlanning() {
+    var layer = document.getElementById("export-capture-layer");
+    if (!layer) return;
+    var table = layer.querySelector("table");
+    if (!table) return;
+    var ths = table.querySelectorAll("thead tr.bg-template-blue th");
+    if (ths.length !== 6 || (ths[0].textContent || "").trim() !== "Code") return;
+    layer.classList.add("engine-v2-planning-capture");
+  }
+
+  function layoutPlanning() {
+    document.querySelectorAll("#root table").forEach(function (table) {
+      if (isPlanningTable(table)) layoutLivePlanning(table);
+    });
+    layoutCapturePlanning();
     syncScale();
+  }
+
+  function boot() {
+    layoutPlanning();
     var root = document.getElementById("root") || document.body;
-    new MutationObserver(syncScale).observe(root, {
+    new MutationObserver(layoutPlanning).observe(root, {
       subtree: true,
+      childList: true,
       attributes: true,
       attributeFilter: ["style", "class"],
     });
-    window.addEventListener("resize", syncScale);
+    window.addEventListener("resize", layoutPlanning);
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
@@ -119,7 +229,17 @@ _ENGINE_V2_LIVE_TABLE_HEAD_INJECT = """
   }
 })();
 </script>
-""".strip().replace("__SCREEN_PX__", str(_LIVE_HEAD_SCREEN_PX))
+""".strip()
+_ENGINE_V2_LIVE_MANAGER_INJECT = (
+    _ENGINE_V2_LIVE_MANAGER_INJECT.replace("__SCREEN_PX__", str(_LIVE_HEAD_SCREEN_PX))
+    .replace("__PLANNING_SIDE__", str(_PLANNING_SIDE_MARGIN_PX))
+    .replace("__PLANNING_VERT__", str(_PLANNING_VERTICAL_MARGIN_PX))
+    .replace("__PLANNING_BASE__", str(_PLANNING_TABLE_WIDTH_PX))
+    .replace("__PLANNING_CAP__", str(_PLANNING_CAPTURE_WIDTH_PX))
+)
+
+# Rétrocompat nom constante
+_ENGINE_V2_LIVE_TABLE_HEAD_INJECT = _ENGINE_V2_LIVE_MANAGER_INJECT
 
 
 @app.get("/engine-v2-live-table-head.css")
@@ -145,7 +265,7 @@ async def inject_engine_v2_live_table_head_css(request, call_next):
     async for chunk in response.body_iterator:
         body += chunk
     html = body.decode("utf-8", errors="replace")
-    if 'id="engine-v2-live-table-head"' in html or "</head>" not in html:
+    if 'id="engine-v2-live-manager-inject"' in html or "</head>" not in html:
         return HTMLResponse(
             content=html,
             status_code=response.status_code,
@@ -153,7 +273,7 @@ async def inject_engine_v2_live_table_head_css(request, call_next):
         )
     html = html.replace(
         "</head>",
-        f"    {_ENGINE_V2_LIVE_TABLE_HEAD_INJECT}\n  </head>",
+        f"    {_ENGINE_V2_LIVE_MANAGER_INJECT}\n  </head>",
         1,
     )
     headers = dict(response.headers)
@@ -180,18 +300,30 @@ def health_compat():
 
 @app.get("/api/v2/frontend-check")
 def frontend_check():
-    """Vérifie que le bundle servi contient bien le wizard Engine V2."""
+    """État bundle JS + inject Manager Live (planning / en-têtes)."""
     dist = BASE_DIR / "frontend" / "dist" / "assets"
-    if not dist.is_dir():
-        return {"ok": False, "error": "frontend/dist/assets absent"}
-    marker = "live-planning-fit-margins-v2-20260723"
-    for js in dist.glob("*.js"):
-        text = js.read_text(encoding="utf-8", errors="ignore")
-        if "v2/prepare" in text and "engine-v2" in text and marker in text:
-            return {"ok": True, "bundle": js.name, "capture_marker": marker}
+    marker = _LIVE_MANAGER_INJECT_VERSION
+    bundle_name = None
+    bundle_has_marker = False
+    if dist.is_dir():
+        for js in dist.glob("*.js"):
+            text = js.read_text(encoding="utf-8", errors="ignore")
+            if "v2/prepare" in text and "engine-v2" in text:
+                bundle_name = js.name
+                if marker in text:
+                    bundle_has_marker = True
+                break
     return {
-        "ok": False,
-        "error": f"Bundle sans marqueur capture ({marker}) — rebuild frontend requis",
+        "ok": True,
+        "live_manager_inject": marker,
+        "planning_table_width_px": _PLANNING_TABLE_WIDTH_PX,
+        "planning_margins_mm": {"left_right": 5, "top_bottom": 4},
+        "bundle": bundle_name,
+        "bundle_has_react_marker": bundle_has_marker,
+        "note": (
+            "Le layout planning Live V2 est appliqué via inject index.html "
+            "(indépendant du bundle JS)."
+        ),
     }
 
 
