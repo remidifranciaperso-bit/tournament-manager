@@ -158,6 +158,7 @@ async def inject_engine_v2_live_table_head_css(request, call_next):
     )
     headers = dict(response.headers)
     headers.pop("content-length", None)
+    headers["Cache-Control"] = "no-store, max-age=0"
     return HTMLResponse(content=html, status_code=response.status_code, headers=headers)
 
 
