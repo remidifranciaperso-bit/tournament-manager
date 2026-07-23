@@ -15,12 +15,21 @@ export const LIVE_TABLE = "w-full border-collapse text-sm sm:text-base";
 export const LIVE_TABLE_CAPTURE =
   "w-full border-separate border-spacing-0 text-sm";
 
-export const LIVE_TABLE_HEAD =
-  "px-2 py-2.5 text-left font-tsl text-xs font-semibold uppercase tracking-wide sm:px-3 sm:text-sm";
+/** En-têtes tableaux — alignés PyMuPDF ``TABLE_HEAD_DISPLAY_PT`` (12 pt). */
+export const LIVE_TABLE_HEAD_NATIVE =
+  "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
+
+const _LIVE_V2_UI = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2";
+
+/** Affichage Manager live (poules, planning) — V1 : xs/sm ; V2 : 12 px comme Engine. */
+export const LIVE_TABLE_HEAD = _LIVE_V2_UI
+  ? LIVE_TABLE_HEAD_NATIVE
+  : "px-2 py-2.5 text-left font-tsl text-xs font-semibold uppercase tracking-wide sm:px-3 sm:text-sm";
 
 /** En-têtes capture export PDF (aligné PyMuPDF TABLE_HEAD_DISPLAY_PT = 12). */
-export const LIVE_TABLE_HEAD_EXPORT =
-  "px-2 py-2.5 text-left font-tsl text-xs font-bold uppercase tracking-wide sm:px-3 sm:text-[12px]";
+export const LIVE_TABLE_HEAD_EXPORT = _LIVE_V2_UI
+  ? LIVE_TABLE_HEAD_NATIVE
+  : "px-2 py-2.5 text-left font-tsl text-xs font-bold uppercase tracking-wide sm:px-3 sm:text-[12px]";
 
 /** Conteneur capture PDF (coins arrondis + overflow clip). */
 export const LIVE_TABLE_CAPTURE_SHELL =
@@ -29,10 +38,6 @@ export const LIVE_TABLE_CAPTURE_SHELL =
 /** Ligne titre hors `<table>` — évite la diagonale bleu/blanc html2canvas. */
 export const LIVE_TABLE_CAPTURE_HEAD_ROW =
   "grid w-full bg-template-blue text-white";
-
-/** En-têtes capture PDF alignés tableaux natifs participants/convocations. */
-export const LIVE_TABLE_HEAD_NATIVE =
-  "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
 
 export const FINAL_TABLE_HEAD =
   "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
