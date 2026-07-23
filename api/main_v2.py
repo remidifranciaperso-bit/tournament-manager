@@ -62,28 +62,60 @@ app.add_middleware(
     expose_headers=["X-Notify-Token", "X-Live-Snapshot-Available", "X-Engine-Version"],
 )
 
-# En-têtes tableaux Manager Live (Poules / Planning / Classement final) — 12 pt ≈ 16 px, semi-gras.
-# Servi par l’API pour s’appliquer même si le bundle frontend n’a pas été rebuild.
-_ENGINE_V2_LIVE_TABLE_HEAD_CSS = """
-table thead tr.bg-template-blue th {
+# En-têtes tableaux Manager Live à l'écran (Poules / Planning / Classement final).
+# Inline dans index.html : fonctionne sans rebuild du bundle JS.
+# La couche #export-capture-layer (génération PDF Live) garde 12 pt / graisse normale.
+_ENGINE_V2_LIVE_TABLE_HEAD_INJECT = """
+<style id="engine-v2-live-table-head">
+#root table thead tr.bg-template-blue th {
   font-family: "TSL Sans", "Sora", system-ui, sans-serif !important;
-  font-size: 16px !important;
+  font-size: calc(16px / var(--live-display-scale, 1)) !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
   line-height: 1.25 !important;
 }
+#export-capture-layer table thead tr.bg-template-blue th {
+  font-size: 12pt !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.05em !important;
+}
+</style>
+<script id="engine-v2-live-table-head-sync">
+(function () {
+  function syncScale() {
+    document.querySelectorAll('[style*="scale("]').forEach(function (el) {
+      var m = el.style.transform.match(/scale\\(([0-9.]+)\\)/);
+      if (m) el.style.setProperty("--live-display-scale", m[1]);
+    });
+  }
+  function boot() {
+    syncScale();
+    var root = document.getElementById("root") || document.body;
+    new MutationObserver(syncScale).observe(root, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+    window.addEventListener("resize", syncScale);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
 """.strip()
-
-_LIVE_HEAD_STYLESHEET = '<link rel="stylesheet" href="/engine-v2-live-table-head.css" />'
 
 
 @app.get("/engine-v2-live-table-head.css")
 def engine_v2_live_table_head_css():
+    """Compat — préférer le bloc inline injecté dans index.html."""
     return Response(
-        content=_ENGINE_V2_LIVE_TABLE_HEAD_CSS,
+        content="#deprecated-use-inline-inject",
         media_type="text/css",
-        headers={"Cache-Control": "public, max-age=300"},
+        headers={"Cache-Control": "no-store"},
     )
 
 
@@ -100,13 +132,17 @@ async def inject_engine_v2_live_table_head_css(request, call_next):
     async for chunk in response.body_iterator:
         body += chunk
     html = body.decode("utf-8", errors="replace")
-    if _LIVE_HEAD_STYLESHEET in html or "</head>" not in html:
+    if 'id="engine-v2-live-table-head"' in html or "</head>" not in html:
         return HTMLResponse(
             content=html,
             status_code=response.status_code,
             headers=dict(response.headers),
         )
-    html = html.replace("</head>", f"    {_LIVE_HEAD_STYLESHEET}\n  </head>", 1)
+    html = html.replace(
+        "</head>",
+        f"    {_ENGINE_V2_LIVE_TABLE_HEAD_INJECT}\n  </head>",
+        1,
+    )
     headers = dict(response.headers)
     headers.pop("content-length", None)
     return HTMLResponse(content=html, status_code=response.status_code, headers=headers)
