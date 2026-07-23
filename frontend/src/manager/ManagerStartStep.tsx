@@ -35,7 +35,6 @@ export function ManagerStartStep({
       const data = await initLiveFromPack(file);
       setPendingPack(data);
     } catch (err) {
-      setPackFile(null);
       setPackError(
         err instanceof Error
           ? err.message
@@ -57,18 +56,20 @@ export function ManagerStartStep({
   };
 
   return (
-    <ProductEntryLayout compact alignTop dimContent={!!pendingPack}>
+    <>
       {pendingPack ? (
         <ManagerPackSummaryDialog
           data={pendingPack}
           onConfirm={() => {
             onPackConfirmed(pendingPack);
             setPendingPack(null);
+            setPackFile(null);
           }}
           onCancel={cancelPackSummary}
         />
       ) : null}
 
+      <ProductEntryLayout compact alignTop dimContent={!!pendingPack}>
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center overflow-hidden px-2 pt-[clamp(2.75rem,7vh,5rem)] text-center">
         <ProductBrushHeadline product="Live" />
 
@@ -112,11 +113,15 @@ export function ManagerStartStep({
         </div>
 
         {packError ? (
-          <p className="mt-5 max-w-md rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <p
+            role="alert"
+            className="mt-5 max-w-md rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          >
             {packError}
           </p>
         ) : null}
       </div>
     </ProductEntryLayout>
+    </>
   );
 }

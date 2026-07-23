@@ -19,6 +19,7 @@ import {
   hydrateFormFromPackMeta,
   matchFormatsStepValid,
   packHasPoules,
+  packMatchFormatsComplete,
 } from "../manager/matchFormats";
 import { ManagerMatchFormatsStep } from "../manager/ManagerMatchFormatsStep";
 import { ManagerLiveResumeDialog } from "../manager/ManagerLiveResumeDialog";
@@ -291,13 +292,22 @@ export default function ManagerPage() {
           <ManagerStartStep
             onPackConfirmed={(data) => {
               const hasPoules = packHasPoules(data);
-              setPendingPackLiveData(data);
-              setPackHasPoulesFormat(hasPoules);
-              setForm((prev) => ({
-                ...prev,
-                ...hydrateFormFromPackMeta(data.meta, hasPoules),
-              }));
-              setStep(STEP_PACK_FORMAT);
+              const partial = hydrateFormFromPackMeta(data.meta, hasPoules);
+              setForm((prev) => {
+                const next = { ...prev, ...partial };
+                if (packMatchFormatsComplete(data.meta, hasPoules)) {
+                  const live = applyFormFormatsToLiveData(data, next);
+                  queueMicrotask(() =>
+                    enterLivePhase(live, next, data.meta.nb_equipes)
+                  );
+                }
+                return next;
+              });
+              if (!packMatchFormatsComplete(data.meta, hasPoules)) {
+                setPendingPackLiveData(data);
+                setPackHasPoulesFormat(hasPoules);
+                setStep(STEP_PACK_FORMAT);
+              }
             }}
             onExcelFile={(file) => {
               setForm((prev) => ({ ...prev, excelFile: file }));

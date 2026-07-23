@@ -146,6 +146,45 @@ export function packHasPoules(data: LiveTournamentData): boolean {
   );
 }
 
+function parseMatchFormatCode(
+  value: string | null | undefined
+): MatchFormatCode | null {
+  if (!value) return null;
+  return (MATCH_FORMAT_CODES as readonly string[]).includes(value)
+    ? (value as MatchFormatCode)
+    : null;
+}
+
+function parseMatchFormatChoice(
+  value: string | null | undefined
+): MatchFormatChoice {
+  if (!value || value === "identique") return "identique";
+  const code = parseMatchFormatCode(value);
+  return code ?? "identique";
+}
+
+/** Format principal figé dans le pack Engine (meta + formats_match résolus). */
+export function principalFromPackMeta(
+  meta: LiveTournamentMeta
+): MatchFormatCode | null {
+  return (
+    parseMatchFormatCode(meta.format_match_tableau_principal) ??
+    parseMatchFormatCode(meta.formats_match?.tableau_principal)
+  );
+}
+
+export function packMatchFormatsComplete(
+  meta: LiveTournamentMeta,
+  hasPoules: boolean
+): boolean {
+  const partial = hydrateFormFromPackMeta(meta, hasPoules);
+  if (!partial.formatMatchTableauPrincipal) return false;
+  if (!partial.formatMatchClassement) return false;
+  if (!partial.formatMatchFinale) return false;
+  if (hasPoules && !partial.formatMatchPoule) return false;
+  return true;
+}
+
 export function hydrateFormFromPackMeta(
   meta: LiveTournamentMeta,
   hasPoules: boolean
@@ -163,10 +202,12 @@ export function hydrateFormFromPackMeta(
     nbTerrains: meta.terrains.length,
     terrains: [...meta.terrains],
     terrainPrincipal: meta.terrain_principal,
-    formatMatchTableauPrincipal: null,
-    formatMatchClassement: "identique",
-    formatMatchFinale: "identique",
-    formatMatchPoule: "identique",
+    formatMatchTableauPrincipal: principalFromPackMeta(meta),
+    formatMatchClassement: parseMatchFormatChoice(
+      meta.format_match_classement
+    ),
+    formatMatchFinale: parseMatchFormatChoice(meta.format_match_finale),
+    formatMatchPoule: parseMatchFormatChoice(meta.format_match_poule),
   };
 }
 

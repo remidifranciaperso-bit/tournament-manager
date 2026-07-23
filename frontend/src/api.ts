@@ -440,14 +440,28 @@ export async function initLiveFromPack(packFile: File): Promise<LiveTournamentDa
   const body = new FormData();
   body.append("pack", packFile);
 
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 120_000);
+
   let res: Response;
   try {
-    res = await fetch("/api/live/init-from-pack", { method: "POST", body });
-  } catch {
+    res = await fetch("/api/live/init-from-pack", {
+      method: "POST",
+      body,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(
+        "Import du pack trop long (PDF volumineux). Réessayez ou contactez le support."
+      );
+    }
     throw new Error(
       "Connexion interrompue pendant l'import du pack. " +
         "Patientez quelques secondes et réessayez."
     );
+  } finally {
+    window.clearTimeout(timeout);
   }
   if (!res.ok) throw new Error(await readError(res));
 
@@ -455,7 +469,16 @@ export async function initLiveFromPack(packFile: File): Promise<LiveTournamentDa
     (await res.json()) as LiveTournamentData
   );
 
-  if (!data.live_token || !data.page_map || !data.page_sizes) {
+  if (!data.page_sizes) {
+    data.page_sizes = {};
+  }
+
+  const pageMap = data.page_map;
+  const hasBracketPages =
+    (pageMap?.main?.length ?? 0) > 0 ||
+    (pageMap?.classement?.length ?? 0) > 0;
+
+  if (!data.live_token || !pageMap || !hasBracketPages) {
     throw new Error(
       "Réponse live incomplète. Vérifiez le pack ZIP et réessayez."
     );

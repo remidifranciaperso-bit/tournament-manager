@@ -22,9 +22,13 @@ _CHAMPS_SNAPSHOT = (
 
 
 def valider_snapshot(snapshot: dict) -> None:
-    if not snapshot_version_acceptee(snapshot.get("version")):
+    version = snapshot.get("version")
+    if not snapshot_version_acceptee(version):
         raise ValueError(
-            "Snapshot incompatible. Regénérez le pack avec la dernière version Engine."
+            "Snapshot incompatible "
+            f"(version={version!r}). "
+            "Regénérez le pack avec la dernière version Engine "
+            "et mettez à jour le serveur Manager si besoin."
         )
 
     for cle in _CHAMPS_SNAPSHOT:
