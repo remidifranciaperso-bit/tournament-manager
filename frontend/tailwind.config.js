@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  safelist: ["live-table-v2", "live-table-col-head-v2"],
   theme: {
     extend: {
       colors: {

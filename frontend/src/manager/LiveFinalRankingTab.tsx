@@ -28,6 +28,8 @@ interface LiveFinalRankingTabProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   fields: Record<string, string>;
+  /** En-têtes colonnes 12 pt (Engine V2). */
+  v2TableHeaders?: boolean;
   /** Rendu statique pleine largeur pour la capture PDF (pas de mise à l'échelle). */
   capture?: boolean;
   /** Plage de places (incluse) à afficher, pour la pagination export (1-16 / 17-32). */
@@ -50,6 +52,7 @@ export function LiveFinalRankingTab({
   matches,
   matchResults,
   fields,
+  v2TableHeaders = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2",
   capture = false,
   placeRange,
 }: LiveFinalRankingTabProps) {
@@ -94,9 +97,10 @@ export function LiveFinalRankingTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
-  const headPresentation = useLiveTableHeadPresentation();
+  const headPresentation = useLiveTableHeadPresentation(v2TableHeaders);
   const tableClass = useLiveTableShellClass(
-    capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE
+    capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE,
+    v2TableHeaders
   );
 
   const displayTeam = (team: string) => {

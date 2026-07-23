@@ -30,6 +30,8 @@ interface LivePlanningTabProps {
   onToggleDone: (code: string) => void;
   /** Affiche la durée (lecture seule) au lieu de la case à cocher. */
   exportMode?: boolean;
+  /** En-têtes colonnes 12 pt (Engine V2). */
+  v2TableHeaders?: boolean;
   /** Rendu statique pleine largeur pour la capture PDF (pas de mise à l'échelle). */
   capture?: boolean;
 }
@@ -64,6 +66,7 @@ export function LivePlanningTab({
   matchResults,
   onToggleDone,
   exportMode = false,
+  v2TableHeaders = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2",
   capture = false,
 }: LivePlanningTabProps) {
   const pageRef = useRef<HTMLDivElement>(null);
@@ -117,7 +120,7 @@ export function LivePlanningTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
-  const headPresentation = useLiveTableHeadPresentation();
+  const headPresentation = useLiveTableHeadPresentation(v2TableHeaders);
   const headClass = capture
     ? LIVE_TABLE_HEAD_PLANNING_CAPTURE
     : headPresentation.className;
@@ -125,7 +128,8 @@ export function LivePlanningTab({
     ? ({ fontSize: "12pt", fontWeight: 400 } as const)
     : headPresentation.style;
   const tableClass = useLiveTableShellClass(
-    capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE
+    capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE,
+    v2TableHeaders
   );
   const doneLabel = exportMode ? "Terminé" : "Fait";
 

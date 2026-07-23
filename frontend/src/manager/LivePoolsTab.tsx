@@ -40,6 +40,8 @@ interface LivePoolsTabProps {
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
   fields: Record<string, string>;
+  /** En-têtes colonnes 12 pt (Engine V2). */
+  v2TableHeaders?: boolean;
   /** Rendu statique pleine largeur pour la capture PDF (pas de mise à l'échelle). */
   capture?: boolean;
 }
@@ -156,12 +158,14 @@ function ScaledPage({
 function RosterCard({
   title,
   teams,
+  v2TableHeaders,
 }: {
   title: string;
   teams: string[];
+  v2TableHeaders: boolean;
 }) {
-  const headClass = useLiveTableHeadPresentation();
-  const tableClass = useLiveTableShellClass(LIVE_TABLE);
+  const headClass = useLiveTableHeadPresentation(v2TableHeaders);
+  const tableClass = useLiveTableShellClass(LIVE_TABLE, v2TableHeaders);
   return (
     <div className={LIVE_TABLE_CARD}>
       <table className={tableClass}>
@@ -202,10 +206,12 @@ function RosterCard({
 function CompositionView({
   matches,
   fields,
+  v2TableHeaders,
   capture = false,
 }: {
   matches: LiveMatch[];
   fields: Record<string, string>;
+  v2TableHeaders: boolean;
   capture?: boolean;
 }) {
   const letters = useMemo(() => poolLetters(matches), [matches]);
@@ -216,7 +222,11 @@ function CompositionView({
       <div className="flex flex-col gap-4">
         {exempts.length > 0 ? (
           <div className="mx-auto" style={{ width: (POOL_BASE_WIDTH - 16) / 2 }}>
-            <RosterCard title="Têtes de série (exemptées)" teams={exempts} />
+            <RosterCard
+              title="Têtes de série (exemptées)"
+              teams={exempts}
+              v2TableHeaders={v2TableHeaders}
+            />
           </div>
         ) : null}
         <div className="grid grid-cols-2 gap-4">
@@ -225,6 +235,7 @@ function CompositionView({
               key={letter}
               title={`Poule ${letter}`}
               teams={poolRoster(matches, letter)}
+              v2TableHeaders={v2TableHeaders}
             />
           ))}
         </div>
@@ -237,11 +248,13 @@ function PoolView({
   letter,
   matches,
   matchResults,
+  v2TableHeaders,
   capture = false,
 }: {
   letter: string;
   matches: LiveMatch[];
   matchResults: Record<string, StoredMatchResult>;
+  v2TableHeaders: boolean;
   capture?: boolean;
 }) {
   const pool = useMemo(() => poolMatches(matches, letter), [matches, letter]);
@@ -252,8 +265,8 @@ function PoolView({
   );
 
   const columns = 3;
-  const headClass = useLiveTableHeadPresentation();
-  const tableClass = useLiveTableShellClass(LIVE_TABLE);
+  const headClass = useLiveTableHeadPresentation(v2TableHeaders);
+  const tableClass = useLiveTableShellClass(LIVE_TABLE, v2TableHeaders);
 
   return (
     <ScaledPage rows={pool.length + standings.length} capture={capture}>
@@ -380,11 +393,17 @@ export function LivePoolsTab({
   matches,
   matchResults,
   fields,
+  v2TableHeaders = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2",
   capture = false,
 }: LivePoolsTabProps) {
   if (view === "composition") {
     return (
-      <CompositionView matches={matches} fields={fields} capture={capture} />
+      <CompositionView
+        matches={matches}
+        fields={fields}
+        v2TableHeaders={v2TableHeaders}
+        capture={capture}
+      />
     );
   }
   return (
@@ -392,6 +411,7 @@ export function LivePoolsTab({
       letter={view.letter}
       matches={matches}
       matchResults={matchResults}
+      v2TableHeaders={v2TableHeaders}
       capture={capture}
     />
   );

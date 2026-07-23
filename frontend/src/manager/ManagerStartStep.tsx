@@ -92,6 +92,21 @@ export function ManagerStartStep({
           <p className="mt-1 leading-snug">
             Le tableau et les convocations restent identiques à la génération Engine.
           </p>
+          {import.meta.env.VITE_DEPLOY_TARGET !== "engine-v2" ? (
+            <p className="mt-3 text-xs leading-snug text-amber-200/90">
+              Pack <strong className="font-semibold">Engine V2</strong> : ouvrez le
+              Manager sur{" "}
+              <a
+                href="https://tournament-manager-engine-v2.onrender.com/#/manager"
+                className="text-lime underline underline-offset-2"
+                target="_blank"
+                rel="noreferrer"
+              >
+                tournament-manager-engine-v2.onrender.com
+              </a>{" "}
+              (pas la prod classique) pour les tableaux Live V2 à 12 pt.
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-9 flex w-full max-w-md flex-col items-stretch gap-6 sm:mt-10">

@@ -133,7 +133,7 @@ body {
     font-weight: 400 !important;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    font-size: calc(12pt / var(--live-display-scale, 1)) !important;
+    font-size: calc(16px / var(--live-display-scale, 1)) !important;
     line-height: 1.25;
   }
 }

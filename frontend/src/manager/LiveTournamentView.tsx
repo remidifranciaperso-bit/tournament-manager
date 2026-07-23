@@ -41,7 +41,7 @@ import { captureManagerExportPages } from "./captureExportPages";
 import type { ExportCaptureTarget, ExportPhase } from "./exportCapture";
 import { ExportCaptureLayer } from "./ExportCaptureLayer";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
-import { LiveTableTypographyProvider } from "./liveTableTypography";
+import { LiveTableTypographyProvider, resolveV2TableHeaders } from "./liveTableTypography";
 
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide sm:px-1.5 sm:py-3 sm:text-[10px]";
@@ -102,6 +102,10 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
 
   const progress = useLiveProgress(live_token, matches.length, meta);
   const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
+  const v2TableHeaders = useMemo(
+    () => resolveV2TableHeaders(meta, pack_version),
+    [meta, pack_version]
+  );
 
   useEffect(() => {
     void fetchTemplateLayout(templateId);
@@ -507,6 +511,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       matches={matches}
                       matchResults={progress.matchResults}
                       fields={fields}
+                      v2TableHeaders={v2TableHeaders}
                     />
                   </LiveManagerDocumentPage>
                 </div>
@@ -564,6 +569,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       completed={progress.completed}
                       matchResults={progress.matchResults}
                       onToggleDone={progress.toggleMatch}
+                      v2TableHeaders={v2TableHeaders}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -582,6 +588,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                     matches={matches}
                     matchResults={progress.matchResults}
                     fields={fields}
+                    v2TableHeaders={v2TableHeaders}
                   />
                 </LiveManagerDocumentPage>
               </div>
