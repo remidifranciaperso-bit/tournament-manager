@@ -46,6 +46,8 @@ RUN cp /usr/share/fonts/truetype/noto/NotoColorEmoji.ttf /app/fonts/NotoColorEmo
 
 RUN test -f frontend/dist/index.html
 
+RUN python3 -c "from api.main_v2 import app"
+
 RUN mkdir -p /app/exports \
     && chmod -R 777 /app/exports /tmp
 
