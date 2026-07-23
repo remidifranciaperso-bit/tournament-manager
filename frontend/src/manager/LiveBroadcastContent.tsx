@@ -23,6 +23,7 @@ import {
   slideIndexAt,
 } from "./liveTabs";
 import { useLiveProgress } from "./useLiveProgress";
+import { LiveTableTypographyProvider } from "./liveTableTypography";
 
 interface LiveBroadcastContentProps {
   liveData: LiveTournamentData;
@@ -171,6 +172,7 @@ export function LiveBroadcastContent({
   const broadcastMainShellRef = useRef<HTMLDivElement>(null);
 
   return (
+    <LiveTableTypographyProvider meta={meta}>
     <div
       ref={broadcastMainShellRef}
       className="pointer-events-none relative flex h-dvh w-full flex-col overflow-hidden bg-white select-none"
@@ -334,5 +336,6 @@ export function LiveBroadcastContent({
         />
       ) : null}
     </div>
+    </LiveTableTypographyProvider>
   );
 }

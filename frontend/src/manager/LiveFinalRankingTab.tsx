@@ -16,7 +16,10 @@ import {
   FINAL_TABLE_BODY_TSL_BOLD,
   LIVE_TABLE_ROW,
 } from "./liveDataTable";
-import { useLiveTableHeadClass } from "./liveTableTypography";
+import {
+  useLiveTableHeadPresentation,
+  LiveTableDisplayScaleProvider,
+} from "./liveTableTypography";
 import { FINAL_EXPORT_CAPTURE_WIDTH } from "./exportCapture";
 
 interface LiveFinalRankingTabProps {
@@ -90,7 +93,7 @@ export function LiveFinalRankingTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
-  const headClass = useLiveTableHeadClass();
+  const headPresentation = useLiveTableHeadPresentation();
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
 
   const displayTeam = (team: string) => {
@@ -117,9 +120,18 @@ export function LiveFinalRankingTab({
       {FINAL_COLGROUP}
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={headClass}>Place</th>
-          <th className={headClass}>Équipe</th>
-          <th className={`text-right ${headClass}`}>Points</th>
+          <th className={headPresentation.className} style={headPresentation.style}>
+            Place
+          </th>
+          <th className={headPresentation.className} style={headPresentation.style}>
+            Équipe
+          </th>
+          <th
+            className={`text-right ${headPresentation.className}`}
+            style={headPresentation.style}
+          >
+            Points
+          </th>
         </tr>
       </thead>
       <tbody className={capture ? "bg-white" : undefined}>{bodyRows}</tbody>
@@ -153,6 +165,7 @@ export function LiveFinalRankingTab({
           height: naturalHeight * scale || undefined,
         }}
       >
+        <LiveTableDisplayScaleProvider scale={scale}>
         <div
           ref={cardRef}
           className={`${LIVE_TABLE_CARD} absolute left-0 top-0`}
@@ -164,6 +177,7 @@ export function LiveFinalRankingTab({
         >
           {table}
         </div>
+        </LiveTableDisplayScaleProvider>
       </div>
     </div>
   );

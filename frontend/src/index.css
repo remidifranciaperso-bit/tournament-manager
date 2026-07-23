@@ -119,6 +119,13 @@ body {
     font-family: "Noto Sans", "Sora", system-ui, sans-serif;
     font-weight: 700;
   }
+
+  .live-table-col-head-v2 {
+    font-family: "TSL Sans", "Sora", system-ui, sans-serif;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
 }
 
 /* Scrollbar discrète */

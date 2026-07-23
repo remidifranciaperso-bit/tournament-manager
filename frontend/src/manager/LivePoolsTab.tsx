@@ -21,7 +21,7 @@ import {
   LIVE_TABLE_ROW,
   liveTeamTextClass,
 } from "./liveDataTable";
-import { useLiveTableHeadClass } from "./liveTableTypography";
+import { useLiveTableHeadPresentation, LiveTableDisplayScaleProvider } from "./liveTableTypography";
 
 /** Largeur de référence de la page poule (avant mise à l'échelle). */
 const POOL_BASE_WIDTH = 920;
@@ -127,6 +127,7 @@ function ScaledPage({
           height: naturalHeight * scale || undefined,
         }}
       >
+        <LiveTableDisplayScaleProvider scale={capture ? 1 : scale}>
         <div
           ref={cardRef}
           className="absolute left-0 top-0"
@@ -138,6 +139,7 @@ function ScaledPage({
         >
           {children}
         </div>
+        </LiveTableDisplayScaleProvider>
       </div>
     </div>
   );
@@ -150,13 +152,15 @@ function RosterCard({
   title: string;
   teams: string[];
 }) {
-  const headClass = useLiveTableHeadClass();
+  const headClass = useLiveTableHeadPresentation();
   return (
     <div className={LIVE_TABLE_CARD}>
       <table className={LIVE_TABLE}>
         <thead>
           <tr className="bg-template-blue text-white">
-            <th className={`text-center ${headClass}`}>{title}</th>
+            <th className={`text-center ${headClass.className}`} style={headClass.style}>
+              {title}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -239,7 +243,7 @@ function PoolView({
   );
 
   const columns = 3;
-  const headClass = useLiveTableHeadClass();
+  const headClass = useLiveTableHeadPresentation();
 
   return (
     <ScaledPage rows={pool.length + standings.length} capture={capture}>
@@ -278,15 +282,31 @@ function PoolView({
           <table className={LIVE_TABLE}>
             <thead>
               <tr className="bg-template-blue text-white">
-                <th className={headClass}>Équipe</th>
-                <th className={`w-[14%] text-center ${headClass}`}>
+                <th className={headClass.className} style={headClass.style}>
+                  Équipe
+                </th>
+                <th
+                  className={`w-[14%] text-center ${headClass.className}`}
+                  style={headClass.style}
+                >
                   Victoires
                 </th>
-                <th className={`w-[14%] text-center ${headClass}`}>
+                <th
+                  className={`w-[14%] text-center ${headClass.className}`}
+                  style={headClass.style}
+                >
                   Défaites
                 </th>
-                <th className={`w-[14%] text-center ${headClass}`}>Jeux</th>
-                <th className={`w-[16%] text-center ${headClass}`}>
+                <th
+                  className={`w-[14%] text-center ${headClass.className}`}
+                  style={headClass.style}
+                >
+                  Jeux
+                </th>
+                <th
+                  className={`w-[16%] text-center ${headClass.className}`}
+                  style={headClass.style}
+                >
                   Classement
                 </th>
               </tr>

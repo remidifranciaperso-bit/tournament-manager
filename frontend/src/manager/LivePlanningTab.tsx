@@ -16,7 +16,10 @@ import {
   LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
 } from "./liveDataTable";
-import { useLiveTableHeadClass } from "./liveTableTypography";
+import {
+  useLiveTableHeadPresentation,
+  LiveTableDisplayScaleProvider,
+} from "./liveTableTypography";
 
 interface LivePlanningTabProps {
   layoutFields: LiveLayoutField[];
@@ -113,13 +116,13 @@ export function LivePlanningTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
-  const headClassFromSession = useLiveTableHeadClass();
+  const headPresentation = useLiveTableHeadPresentation();
   const headClass = capture
     ? LIVE_TABLE_HEAD_PLANNING_CAPTURE
-    : headClassFromSession;
+    : headPresentation.className;
   const headStyle = capture
     ? ({ fontSize: "12pt", fontWeight: 400 } as const)
-    : undefined;
+    : headPresentation.style;
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
   const doneLabel = exportMode ? "Terminé" : "Fait";
 
@@ -248,6 +251,7 @@ export function LivePlanningTab({
           height: naturalHeight * scale || undefined,
         }}
       >
+        <LiveTableDisplayScaleProvider scale={scale}>
         <div
           ref={cardRef}
           className={`${LIVE_TABLE_CARD} absolute left-0 top-0`}
@@ -259,6 +263,7 @@ export function LivePlanningTab({
         >
           {table}
         </div>
+        </LiveTableDisplayScaleProvider>
       </div>
     </div>
   );
