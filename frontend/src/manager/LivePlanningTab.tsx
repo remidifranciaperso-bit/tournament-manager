@@ -7,6 +7,7 @@ import {
   LIVE_TABLE_CAPTURE,
   LIVE_TABLE_CAPTURE_SHELL,
   LIVE_TABLE_CARD,
+  LIVE_TABLE_CARD_WIDE,
   LIVE_TABLE_CELL_NOTO,
   LIVE_TABLE_CELL_NOTO_BOLD,
   LIVE_TABLE_CELL_TSL,
@@ -21,6 +22,7 @@ import {
   PLANNING_LEGACY_LAYOUT_WIDTH,
   PLANNING_SIDE_MARGIN_PX,
   PLANNING_TABLE_LAYOUT_WIDTH,
+  PLANNING_V2_LAYOUT_MARKER,
 } from "./exportCapture";
 import {
   useLiveTableHeadPresentation,
@@ -96,6 +98,7 @@ export function LivePlanningTab({
     () => planningLayoutMetrics(v2TableHeaders),
     [v2TableHeaders]
   );
+  const cardShellClass = v2TableHeaders ? LIVE_TABLE_CARD_WIDE : LIVE_TABLE_CARD;
 
   const rows = useMemo(
     () =>
@@ -304,7 +307,7 @@ export function LivePlanningTab({
         <LiveTableDisplayScaleProvider scale={scale}>
         <div
           ref={cardRef}
-          className={`${LIVE_TABLE_CARD} absolute left-0 top-0 ${v2TableHeaders ? "max-w-none" : ""}`}
+          className={`${cardShellClass} absolute left-0 top-0`}
           style={{
             width: baseWidth,
             transform: `scale(${scale})`,

@@ -9,6 +9,10 @@ export const LIVE_TABLE_PAGE_INNER =
 export const LIVE_TABLE_CARD =
   "mx-auto w-full max-w-5xl overflow-hidden rounded-xl border border-template-blue/35 shadow-sm";
 
+/** Live V2 planning — pleine largeur utile (sans plafond max-w-5xl). */
+export const LIVE_TABLE_CARD_WIDE =
+  "mx-auto w-full max-w-none overflow-hidden rounded-xl border border-template-blue/35 shadow-sm";
+
 export const LIVE_TABLE = "w-full border-collapse text-sm sm:text-base";
 
 /** Capture PDF — border-separate évite la diagonale bleu/blanc aux coins arrondis. */
