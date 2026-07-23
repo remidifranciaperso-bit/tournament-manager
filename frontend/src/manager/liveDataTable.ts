@@ -15,21 +15,22 @@ export const LIVE_TABLE = "w-full border-collapse text-sm sm:text-base";
 export const LIVE_TABLE_CAPTURE =
   "w-full border-separate border-spacing-0 text-sm";
 
-/** En-têtes tableaux — alignés PyMuPDF ``TABLE_HEAD_DISPLAY_PT`` (12 pt). */
-export const LIVE_TABLE_HEAD_NATIVE =
-  "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
+/** En-têtes tableaux — alignés PyMuPDF ``TABLE_HEAD_DISPLAY_PT`` (12 pt ≈ 16 px). */
+export const LIVE_TABLE_HEAD_ENGINE_V2 =
+  "px-2 py-2.5 text-left font-tsl text-[12pt] font-normal uppercase tracking-wide sm:px-3";
 
-const _LIVE_V2_UI = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2";
+/** Live V1 — en-têtes plus compacts à l'écran. */
+export const LIVE_TABLE_HEAD_CLASSIC =
+  "px-2 py-2.5 text-left font-tsl text-xs font-semibold uppercase tracking-wide sm:px-3 sm:text-sm";
 
-/** Affichage Manager live (poules, planning) — V1 : xs/sm ; V2 : 12 px comme Engine. */
-export const LIVE_TABLE_HEAD = _LIVE_V2_UI
-  ? LIVE_TABLE_HEAD_NATIVE
-  : "px-2 py-2.5 text-left font-tsl text-xs font-semibold uppercase tracking-wide sm:px-3 sm:text-sm";
+/** @deprecated Préférer ``useLiveTableHeadClass()`` (session / déploiement V2). */
+export const LIVE_TABLE_HEAD = LIVE_TABLE_HEAD_CLASSIC;
 
-/** En-têtes capture export PDF (aligné PyMuPDF TABLE_HEAD_DISPLAY_PT = 12). */
-export const LIVE_TABLE_HEAD_EXPORT = _LIVE_V2_UI
-  ? LIVE_TABLE_HEAD_NATIVE
-  : "px-2 py-2.5 text-left font-tsl text-xs font-bold uppercase tracking-wide sm:px-3 sm:text-[12px]";
+/** Alias capture / export natif (12 pt). */
+export const LIVE_TABLE_HEAD_NATIVE = LIVE_TABLE_HEAD_ENGINE_V2;
+
+/** @deprecated Préférer ``useLiveTableHeadClass()`` en mode export intermédiaire. */
+export const LIVE_TABLE_HEAD_EXPORT = LIVE_TABLE_HEAD_CLASSIC;
 
 /** Conteneur capture PDF (coins arrondis + overflow clip). */
 export const LIVE_TABLE_CAPTURE_SHELL =
@@ -39,8 +40,11 @@ export const LIVE_TABLE_CAPTURE_SHELL =
 export const LIVE_TABLE_CAPTURE_HEAD_ROW =
   "grid w-full bg-template-blue text-white";
 
-export const FINAL_TABLE_HEAD =
+export const FINAL_TABLE_HEAD_CLASSIC =
   "px-2 py-2.5 text-left font-tsl text-[12px] font-normal uppercase tracking-wide sm:px-3";
+
+/** @deprecated Préférer ``useLiveTableHeadClass()`` — même style 12 pt que Engine V2. */
+export const FINAL_TABLE_HEAD = FINAL_TABLE_HEAD_CLASSIC;
 
 export const FINAL_TABLE_BODY_NOTO =
   "px-2 py-2 font-noto text-[12px] text-arena-800 sm:px-3";
@@ -49,7 +53,7 @@ export const FINAL_TABLE_BODY_TSL_BOLD =
   "px-2 py-2 font-tsl text-[12px] font-semibold text-arena-800 sm:px-3";
 
 export const LIVE_TABLE_HEAD_PLANNING_CAPTURE = LIVE_TABLE_HEAD_NATIVE;
-export const PLANNING_HEAD_CAPTURE_PX = 12;
+export const PLANNING_HEAD_CAPTURE_PX = 16;
 
 export const LIVE_TABLE_ROW = "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]";
 

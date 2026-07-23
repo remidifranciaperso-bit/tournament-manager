@@ -12,6 +12,7 @@ import type {
   LiveMatch,
 } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
+import { LiveTableTypographyProvider } from "./liveTableTypography";
 
 interface ExportCaptureLayerProps {
   target: ExportCaptureTarget | null;
@@ -49,6 +50,7 @@ export function ExportCaptureLayer({
         style={{ width: EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
+        <LiveTableTypographyProvider meta={meta}>
         <LiveManagerDocumentPage
           club={meta.club}
           logoUrl={meta.logo_url}
@@ -63,6 +65,7 @@ export function ExportCaptureLayer({
             capture
           />
         </LiveManagerDocumentPage>
+        </LiveTableTypographyProvider>
       </div>
     );
   }
@@ -83,6 +86,7 @@ export function ExportCaptureLayer({
         style={{ width: FINAL_EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
+        <LiveTableTypographyProvider meta={meta}>
         <LiveManagerDocumentPage
           club={meta.club}
           logoUrl={meta.logo_url}
@@ -98,6 +102,7 @@ export function ExportCaptureLayer({
             placeRange={finalPageCount > 1 ? placeRange : undefined}
           />
         </LiveManagerDocumentPage>
+        </LiveTableTypographyProvider>
       </div>
     );
   }
@@ -119,6 +124,7 @@ export function ExportCaptureLayer({
         style={{ width: PLANNING_EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
+        <LiveTableTypographyProvider meta={meta}>
         <LiveManagerDocumentPage
           club={meta.club}
           logoUrl={meta.logo_url}
@@ -135,6 +141,7 @@ export function ExportCaptureLayer({
             capture
           />
         </LiveManagerDocumentPage>
+        </LiveTableTypographyProvider>
       </div>
     );
   }

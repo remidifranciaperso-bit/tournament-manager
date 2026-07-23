@@ -14,9 +14,9 @@ import {
   LIVE_TABLE_CELL_POINTS,
   FINAL_TABLE_BODY_NOTO,
   FINAL_TABLE_BODY_TSL_BOLD,
-  FINAL_TABLE_HEAD,
   LIVE_TABLE_ROW,
 } from "./liveDataTable";
+import { useLiveTableHeadClass } from "./liveTableTypography";
 import { FINAL_EXPORT_CAPTURE_WIDTH } from "./exportCapture";
 
 interface LiveFinalRankingTabProps {
@@ -90,7 +90,7 @@ export function LiveFinalRankingTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
-  const headClass = FINAL_TABLE_HEAD;
+  const headClass = useLiveTableHeadClass();
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
 
   const displayTeam = (team: string) => {

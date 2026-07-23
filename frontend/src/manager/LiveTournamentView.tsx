@@ -41,6 +41,7 @@ import { captureManagerExportPages } from "./captureExportPages";
 import type { ExportCaptureTarget, ExportPhase } from "./exportCapture";
 import { ExportCaptureLayer } from "./ExportCaptureLayer";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
+import { LiveTableTypographyProvider } from "./liveTableTypography";
 
 const TAB_BASE =
   "min-w-0 truncate rounded-lg px-1 py-2.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide sm:px-1.5 sm:py-3 sm:text-[10px]";
@@ -429,6 +430,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               />
             </div>
             <div className="relative min-h-0 flex-1 overflow-hidden transition-none">
+              <LiveTableTypographyProvider meta={meta}>
               <div className={stackedPanelClass(primaryTab === "live")}>
                 <LiveMatchsEnCoursTab
                   terrains={meta.terrains}
@@ -591,6 +593,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   active={primaryTab === "retransmission"}
                 />
               </div>
+              </LiveTableTypographyProvider>
             </div>
             {isBracketTab ? (
               <LiveBracketCrossPageOverlay

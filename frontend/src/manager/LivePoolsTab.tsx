@@ -18,10 +18,10 @@ import {
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_NOTO,
   LIVE_TABLE_CELL_TSL_BOLD,
-  LIVE_TABLE_HEAD,
   LIVE_TABLE_ROW,
   liveTeamTextClass,
 } from "./liveDataTable";
+import { useLiveTableHeadClass } from "./liveTableTypography";
 
 /** Largeur de référence de la page poule (avant mise à l'échelle). */
 const POOL_BASE_WIDTH = 920;
@@ -150,12 +150,13 @@ function RosterCard({
   title: string;
   teams: string[];
 }) {
+  const headClass = useLiveTableHeadClass();
   return (
     <div className={LIVE_TABLE_CARD}>
       <table className={LIVE_TABLE}>
         <thead>
           <tr className="bg-template-blue text-white">
-            <th className={`text-center ${LIVE_TABLE_HEAD}`}>{title}</th>
+            <th className={`text-center ${headClass}`}>{title}</th>
           </tr>
         </thead>
         <tbody>
@@ -238,6 +239,7 @@ function PoolView({
   );
 
   const columns = 3;
+  const headClass = useLiveTableHeadClass();
 
   return (
     <ScaledPage rows={pool.length + standings.length} capture={capture}>
@@ -276,15 +278,15 @@ function PoolView({
           <table className={LIVE_TABLE}>
             <thead>
               <tr className="bg-template-blue text-white">
-                <th className={LIVE_TABLE_HEAD}>Équipe</th>
-                <th className={`w-[14%] text-center ${LIVE_TABLE_HEAD}`}>
+                <th className={headClass}>Équipe</th>
+                <th className={`w-[14%] text-center ${headClass}`}>
                   Victoires
                 </th>
-                <th className={`w-[14%] text-center ${LIVE_TABLE_HEAD}`}>
+                <th className={`w-[14%] text-center ${headClass}`}>
                   Défaites
                 </th>
-                <th className={`w-[14%] text-center ${LIVE_TABLE_HEAD}`}>Jeux</th>
-                <th className={`w-[16%] text-center ${LIVE_TABLE_HEAD}`}>
+                <th className={`w-[14%] text-center ${headClass}`}>Jeux</th>
+                <th className={`w-[16%] text-center ${headClass}`}>
                   Classement
                 </th>
               </tr>

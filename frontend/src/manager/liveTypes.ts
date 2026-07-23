@@ -54,6 +54,7 @@ export interface LiveTournamentMeta {
   format_match_classement?: string;
   format_match_finale?: string;
   format_match_poule?: string;
+  template_id?: string | null;
   formats_match?: {
     tableau_principal: string;
     classement: string;

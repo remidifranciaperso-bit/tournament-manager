@@ -11,14 +11,12 @@ import {
   LIVE_TABLE_CELL_NOTO_BOLD,
   LIVE_TABLE_CELL_TSL,
   LIVE_TABLE_CELL_TSL_BOLD,
-  LIVE_TABLE_HEAD,
-  LIVE_TABLE_HEAD_EXPORT,
   LIVE_TABLE_HEAD_PLANNING_CAPTURE,
-  PLANNING_HEAD_CAPTURE_PX,
   LIVE_TABLE_ROW,
   LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
 } from "./liveDataTable";
+import { useLiveTableHeadClass } from "./liveTableTypography";
 
 interface LivePlanningTabProps {
   layoutFields: LiveLayoutField[];
@@ -115,13 +113,12 @@ export function LivePlanningTab({
     return () => observer.disconnect();
   }, [capture, rows.length]);
 
+  const headClassFromSession = useLiveTableHeadClass();
   const headClass = capture
     ? LIVE_TABLE_HEAD_PLANNING_CAPTURE
-    : exportMode
-      ? LIVE_TABLE_HEAD_EXPORT
-      : LIVE_TABLE_HEAD;
+    : headClassFromSession;
   const headStyle = capture
-    ? ({ fontSize: PLANNING_HEAD_CAPTURE_PX, fontWeight: 400 } as const)
+    ? ({ fontSize: "12pt", fontWeight: 400 } as const)
     : undefined;
   const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
   const doneLabel = exportMode ? "Terminé" : "Fait";
