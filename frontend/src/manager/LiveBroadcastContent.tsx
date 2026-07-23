@@ -60,6 +60,7 @@ export function LiveBroadcastContent({
     page_map,
     fields,
     planning_layout = {},
+    pack_version,
   } = liveData;
 
   const progress = useLiveProgress(live_token, matches.length, meta, {
@@ -172,7 +173,7 @@ export function LiveBroadcastContent({
   const broadcastMainShellRef = useRef<HTMLDivElement>(null);
 
   return (
-    <LiveTableTypographyProvider meta={meta}>
+    <LiveTableTypographyProvider meta={meta} packVersion={pack_version}>
     <div
       ref={broadcastMainShellRef}
       className="pointer-events-none relative flex h-dvh w-full flex-col overflow-hidden bg-white select-none"

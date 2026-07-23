@@ -19,6 +19,7 @@ import {
 import {
   useLiveTableHeadPresentation,
   LiveTableDisplayScaleProvider,
+  useLiveTableShellClass,
 } from "./liveTableTypography";
 import { FINAL_EXPORT_CAPTURE_WIDTH } from "./exportCapture";
 
@@ -94,7 +95,9 @@ export function LiveFinalRankingTab({
   }, [capture, rows.length]);
 
   const headPresentation = useLiveTableHeadPresentation();
-  const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
+  const tableClass = useLiveTableShellClass(
+    capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE
+  );
 
   const displayTeam = (team: string) => {
     const value = (team || "").trim();
@@ -140,7 +143,10 @@ export function LiveFinalRankingTab({
 
   if (capture) {
     return (
-      <div className="flex w-full items-center justify-center bg-white">
+      <div
+        className="flex w-full items-center justify-center bg-white"
+        style={{ ["--live-display-scale" as string]: 1 }}
+      >
         <div
           className="w-full"
           style={{ maxWidth: FINAL_EXPORT_CAPTURE_WIDTH }}
@@ -173,6 +179,7 @@ export function LiveFinalRankingTab({
             width: FINAL_BASE_WIDTH,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
+            ["--live-display-scale" as string]: scale,
           }}
         >
           {table}

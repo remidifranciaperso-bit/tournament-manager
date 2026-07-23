@@ -53,6 +53,7 @@ def init_live_from_snapshot(
         "page_sizes": page_sizes,
         "pdf_filename": pdf_filename,
         "live_version": "engine-pdf",
+        "pack_version": snapshot.get("version"),
     }
     logo_session = chemin_logo(live_token)
     if logo_session is None:

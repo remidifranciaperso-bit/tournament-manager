@@ -19,6 +19,7 @@ import {
 import {
   useLiveTableHeadPresentation,
   LiveTableDisplayScaleProvider,
+  useLiveTableShellClass,
 } from "./liveTableTypography";
 
 interface LivePlanningTabProps {
@@ -123,7 +124,9 @@ export function LivePlanningTab({
   const headStyle = capture
     ? ({ fontSize: "12pt", fontWeight: 400 } as const)
     : headPresentation.style;
-  const tableClass = capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE;
+  const tableClass = useLiveTableShellClass(
+    capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE
+  );
   const doneLabel = exportMode ? "Terminé" : "Fait";
 
   const bodyRows = rows.map((row) => {
@@ -231,7 +234,10 @@ export function LivePlanningTab({
 
   if (capture) {
     return (
-      <div className="flex w-full items-center justify-center bg-white">
+      <div
+        className="flex w-full items-center justify-center bg-white"
+        style={{ ["--live-display-scale" as string]: 1 }}
+      >
         <div className={`${LIVE_TABLE_CAPTURE_SHELL} w-full bg-template-blue`}>
           {table}
         </div>
@@ -259,6 +265,7 @@ export function LivePlanningTab({
             width: PLANNING_BASE_WIDTH,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
+            ["--live-display-scale" as string]: scale,
           }}
         >
           {table}

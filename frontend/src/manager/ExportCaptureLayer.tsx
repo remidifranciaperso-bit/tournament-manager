@@ -24,6 +24,7 @@ interface ExportCaptureLayerProps {
   planningLayout: Record<string, LiveLayoutField[]>;
   meta: LiveTournamentMeta;
   fields: Record<string, string>;
+  packVersion?: string | null;
 }
 
 export function ExportCaptureLayer({
@@ -36,6 +37,7 @@ export function ExportCaptureLayer({
   planningLayout,
   meta,
   fields,
+  packVersion = null,
 }: ExportCaptureLayerProps) {
   if (!target) return null;
 
@@ -50,7 +52,7 @@ export function ExportCaptureLayer({
         style={{ width: EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
-        <LiveTableTypographyProvider meta={meta}>
+        <LiveTableTypographyProvider meta={meta} packVersion={packVersion}>
         <LiveManagerDocumentPage
           club={meta.club}
           logoUrl={meta.logo_url}
@@ -86,7 +88,7 @@ export function ExportCaptureLayer({
         style={{ width: FINAL_EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
-        <LiveTableTypographyProvider meta={meta}>
+        <LiveTableTypographyProvider meta={meta} packVersion={packVersion}>
         <LiveManagerDocumentPage
           club={meta.club}
           logoUrl={meta.logo_url}
@@ -124,7 +126,7 @@ export function ExportCaptureLayer({
         style={{ width: PLANNING_EXPORT_CAPTURE_WIDTH }}
         aria-hidden
       >
-        <LiveTableTypographyProvider meta={meta}>
+        <LiveTableTypographyProvider meta={meta} packVersion={packVersion}>
         <LiveManagerDocumentPage
           club={meta.club}
           logoUrl={meta.logo_url}

@@ -97,6 +97,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     fields,
     planning_layout = {},
     pdf_filename,
+    pack_version,
   } = liveData;
 
   const progress = useLiveProgress(live_token, matches.length, meta);
@@ -430,7 +431,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               />
             </div>
             <div className="relative min-h-0 flex-1 overflow-hidden transition-none">
-              <LiveTableTypographyProvider meta={meta}>
+              <LiveTableTypographyProvider meta={meta} packVersion={pack_version}>
               <div className={stackedPanelClass(primaryTab === "live")}>
                 <LiveMatchsEnCoursTab
                   terrains={meta.terrains}
@@ -616,6 +617,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
         planningLayout={planning_layout ?? {}}
         meta={meta}
         fields={fields}
+        packVersion={pack_version}
       />
     </div>
   );

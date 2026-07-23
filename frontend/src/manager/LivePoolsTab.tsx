@@ -21,7 +21,11 @@ import {
   LIVE_TABLE_ROW,
   liveTeamTextClass,
 } from "./liveDataTable";
-import { useLiveTableHeadPresentation, LiveTableDisplayScaleProvider } from "./liveTableTypography";
+import {
+  useLiveTableHeadPresentation,
+  LiveTableDisplayScaleProvider,
+  useLiveTableShellClass,
+} from "./liveTableTypography";
 
 /** Largeur de référence de la page poule (avant mise à l'échelle). */
 const POOL_BASE_WIDTH = 920;
@@ -108,7 +112,10 @@ function ScaledPage({
   const { pageRef, cardRef, scale, naturalHeight } = useFitScale(rows);
   if (capture) {
     return (
-      <div className="bg-white px-3 py-4">
+      <div
+        className="bg-white px-3 py-4"
+        style={{ ["--live-display-scale" as string]: 1 }}
+      >
         <div className="mx-auto" style={{ width: POOL_BASE_WIDTH }}>
           {children}
         </div>
@@ -135,6 +142,7 @@ function ScaledPage({
             width: POOL_BASE_WIDTH,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
+            ["--live-display-scale" as string]: scale,
           }}
         >
           {children}
@@ -153,9 +161,10 @@ function RosterCard({
   teams: string[];
 }) {
   const headClass = useLiveTableHeadPresentation();
+  const tableClass = useLiveTableShellClass(LIVE_TABLE);
   return (
     <div className={LIVE_TABLE_CARD}>
-      <table className={LIVE_TABLE}>
+      <table className={tableClass}>
         <thead>
           <tr className="bg-template-blue text-white">
             <th className={`text-center ${headClass.className}`} style={headClass.style}>
@@ -244,6 +253,7 @@ function PoolView({
 
   const columns = 3;
   const headClass = useLiveTableHeadPresentation();
+  const tableClass = useLiveTableShellClass(LIVE_TABLE);
 
   return (
     <ScaledPage rows={pool.length + standings.length} capture={capture}>
@@ -279,7 +289,7 @@ function PoolView({
         </div>
 
         <div className={LIVE_TABLE_CARD}>
-          <table className={LIVE_TABLE}>
+          <table className={tableClass}>
             <thead>
               <tr className="bg-template-blue text-white">
                 <th className={headClass.className} style={headClass.style}>

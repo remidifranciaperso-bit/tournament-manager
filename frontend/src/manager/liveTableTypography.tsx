@@ -17,11 +17,24 @@ import {
 /** Aligné sur ``TABLE_HEAD_DISPLAY_PT`` (Engine / export PDF). */
 export const LIVE_TABLE_HEAD_PT = 12;
 
+const ENGINE_V2_PACK_VERSIONS = new Set(["engine-v2-live-capture-1"]);
+
 const LiveTableTypographyContext = createContext(false);
 const LiveTableDisplayScaleContext = createContext(1);
 
+export function isEngineV2LivePack(packVersion?: string | null): boolean {
+  return Boolean(packVersion && ENGINE_V2_PACK_VERSIONS.has(packVersion));
+}
+
 export function isEngineV2LiveMeta(meta: LiveTournamentMeta): boolean {
   return Boolean(meta.template_id);
+}
+
+export function isEngineV2LiveSession(
+  meta: LiveTournamentMeta,
+  packVersion?: string | null
+): boolean {
+  return isEngineV2LiveMeta(meta) || isEngineV2LivePack(packVersion);
 }
 
 export function LiveTableDisplayScaleProvider({
@@ -41,12 +54,14 @@ export function LiveTableDisplayScaleProvider({
 
 export function LiveTableTypographyProvider({
   meta,
+  packVersion = null,
   children,
 }: {
   meta: LiveTournamentMeta;
+  packVersion?: string | null;
   children: ReactNode;
 }) {
-  const fromMeta = isEngineV2LiveMeta(meta);
+  const fromMeta = isEngineV2LiveSession(meta, packVersion);
   const fromBuild = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2";
   const [fromDeploy, setFromDeploy] = useState(fromBuild);
 
@@ -70,6 +85,16 @@ export function LiveTableTypographyProvider({
       {children}
     </LiveTableTypographyContext.Provider>
   );
+}
+
+export function useLiveTableV2Typography(): boolean {
+  return useContext(LiveTableTypographyContext);
+}
+
+/** Classe ``live-table-v2`` + styles en-tête 12 pt (compense le scale page). */
+export function useLiveTableShellClass(baseClass: string): string {
+  const v2 = useLiveTableV2Typography();
+  return v2 ? `${baseClass} live-table-v2` : baseClass;
 }
 
 /** Compense le ``transform: scale()`` des onglets poules / planning / final. */
