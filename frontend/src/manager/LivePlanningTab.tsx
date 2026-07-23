@@ -17,10 +17,31 @@ import {
   liveTeamTextClass,
 } from "./liveDataTable";
 import {
+  PLANNING_EXPORT_CAPTURE_WIDTH,
+  PLANNING_LEGACY_LAYOUT_WIDTH,
+  PLANNING_SIDE_MARGIN_PX,
+  PLANNING_TABLE_LAYOUT_WIDTH,
+} from "./exportCapture";
+import {
   useLiveTableHeadPresentation,
   LiveTableDisplayScaleProvider,
   useLiveTableShellClass,
 } from "./liveTableTypography";
+
+function planningLayoutMetrics(v2TableHeaders: boolean) {
+  if (v2TableHeaders) {
+    return {
+      baseWidth: PLANNING_TABLE_LAYOUT_WIDTH,
+      sideMargin: PLANNING_SIDE_MARGIN_PX,
+      captureShellWidth: PLANNING_EXPORT_CAPTURE_WIDTH,
+    };
+  }
+  return {
+    baseWidth: PLANNING_LEGACY_LAYOUT_WIDTH,
+    sideMargin: 0,
+    captureShellWidth: PLANNING_LEGACY_LAYOUT_WIDTH,
+  };
+}
 
 interface LivePlanningTabProps {
   layoutFields: LiveLayoutField[];
@@ -35,9 +56,6 @@ interface LivePlanningTabProps {
   /** Rendu statique pleine largeur pour la capture PDF (pas de mise à l'échelle). */
   capture?: boolean;
 }
-
-/** Largeur de référence du tableau planning en live (avant mise à l'échelle). */
-const PLANNING_BASE_WIDTH = 1024;
 
 const PLANNING_COLGROUP = (
   <colgroup>
@@ -74,6 +92,11 @@ export function LivePlanningTab({
   const [scale, setScale] = useState(1);
   const [naturalHeight, setNaturalHeight] = useState(0);
 
+  const { baseWidth, sideMargin, captureShellWidth } = useMemo(
+    () => planningLayoutMetrics(v2TableHeaders),
+    [v2TableHeaders]
+  );
+
   const rows = useMemo(
     () =>
       buildPlanningRows(
@@ -106,7 +129,7 @@ export function LivePlanningTab({
 
       const nextScale = Math.min(
         1,
-        availW / PLANNING_BASE_WIDTH,
+        availW / baseWidth,
         availH / naturalH
       );
       setScale((prev) => (prev === nextScale ? prev : nextScale));
@@ -118,7 +141,7 @@ export function LivePlanningTab({
     observer.observe(page);
     observer.observe(card);
     return () => observer.disconnect();
-  }, [capture, rows.length]);
+  }, [capture, rows.length, baseWidth]);
 
   const headPresentation = useLiveTableHeadPresentation(v2TableHeaders);
   const headClass = capture
@@ -240,7 +263,13 @@ export function LivePlanningTab({
     return (
       <div
         className="flex w-full items-center justify-center bg-white"
-        style={{ ["--live-display-scale" as string]: 1 }}
+        style={{
+          width: captureShellWidth,
+          boxSizing: "border-box",
+          paddingLeft: sideMargin,
+          paddingRight: sideMargin,
+          ["--live-display-scale" as string]: 1,
+        }}
       >
         <div className={`${LIVE_TABLE_CAPTURE_SHELL} w-full bg-template-blue`}>
           {table}
@@ -249,24 +278,35 @@ export function LivePlanningTab({
     );
   }
 
+  const pagePaddingClass =
+    sideMargin > 0 ? "py-4 sm:py-6" : "px-4 py-4 sm:px-6 sm:py-6";
+
   return (
     <div
       ref={pageRef}
-      className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white px-4 py-4 sm:px-6 sm:py-6"
+      className={`flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white ${pagePaddingClass}`}
+      style={
+        sideMargin > 0
+          ? {
+              paddingLeft: sideMargin,
+              paddingRight: sideMargin,
+            }
+          : undefined
+      }
     >
       <div
         className="relative shrink-0"
         style={{
-          width: PLANNING_BASE_WIDTH * scale,
+          width: baseWidth * scale,
           height: naturalHeight * scale || undefined,
         }}
       >
         <LiveTableDisplayScaleProvider scale={scale}>
         <div
           ref={cardRef}
-          className={`${LIVE_TABLE_CARD} absolute left-0 top-0`}
+          className={`${LIVE_TABLE_CARD} absolute left-0 top-0 ${v2TableHeaders ? "max-w-none" : ""}`}
           style={{
-            width: PLANNING_BASE_WIDTH,
+            width: baseWidth,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
             ["--live-display-scale" as string]: scale,

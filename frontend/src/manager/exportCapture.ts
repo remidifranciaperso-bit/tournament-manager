@@ -1,7 +1,14 @@
 /** Largeur fixe du bac hors-écran pour les captures PDF. */
 export const EXPORT_CAPTURE_WIDTH = 1100;
-/** Planning export : tableau pleine largeur (moins 5 mm au composite). */
+/** Planning export : bac capture pleine largeur (composite PDF). */
 export const PLANNING_EXPORT_CAPTURE_WIDTH = 1400;
+/** Marge latérale planning — 5 mm @ 96 dpi, aligné ``TABLE_SIDE_MARGIN_MM`` (PDF Live). */
+export const PLANNING_SIDE_MARGIN_PX = Math.round((5 * 96) / 25.4);
+/** Largeur utile du tableau planning Live V2 (projection + capture), hors marges. */
+export const PLANNING_TABLE_LAYOUT_WIDTH =
+  PLANNING_EXPORT_CAPTURE_WIDTH - 2 * PLANNING_SIDE_MARGIN_PX;
+/** Live V1 — largeur de référence historique. */
+export const PLANNING_LEGACY_LAYOUT_WIDTH = 1024;
 /** Classement final — ratio live 820/1024 (convocations calées dessus). */
 export const NARROW_TABLE_RATIO = 820 / 1024;
 export const FINAL_TABLE_WIDTH_PT = 820;
