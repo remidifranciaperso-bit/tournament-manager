@@ -14,6 +14,16 @@ from engine.live_export import (
 from engine.live_valeurs import construire_champs_live
 
 SNAPSHOT_VERSION = "engine-live-snapshot-1"
+SNAPSHOT_VERSIONS_COMPATIBLES = frozenset(
+    {
+        SNAPSHOT_VERSION,
+        "engine-v2-live-capture-1",
+    }
+)
+
+
+def snapshot_version_acceptee(version: object) -> bool:
+    return isinstance(version, str) and version in SNAPSHOT_VERSIONS_COMPATIBLES
 
 
 def _encoder_logo_snapshot(logo_path: Path | str | None) -> str | None:

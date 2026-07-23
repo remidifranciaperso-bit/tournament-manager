@@ -8,7 +8,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from engine.live_snapshot import SNAPSHOT_VERSION
+from engine.live_snapshot import snapshot_version_acceptee
 from engine.pdf_pages import valider_pdf_fichier
 
 _CHAMPS_SNAPSHOT = (
@@ -22,7 +22,7 @@ _CHAMPS_SNAPSHOT = (
 
 
 def valider_snapshot(snapshot: dict) -> None:
-    if snapshot.get("version") != SNAPSHOT_VERSION:
+    if not snapshot_version_acceptee(snapshot.get("version")):
         raise ValueError(
             "Snapshot incompatible. Regénérez le pack avec la dernière version Engine."
         )
