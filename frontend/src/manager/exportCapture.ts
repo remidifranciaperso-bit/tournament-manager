@@ -6,6 +6,8 @@ export const PLANNING_EXPORT_CAPTURE_WIDTH = 1400;
 export const PLANNING_SIDE_MARGIN_PX = Math.round((5 * 96) / 25.4);
 /** Marge haut / bas projection Live V2 — 4 mm @ 96 dpi. */
 export const PLANNING_VERTICAL_MARGIN_PX = Math.round((4 * 96) / 25.4);
+/** Réserve verticale dans le calcul d’échelle (bordure carte, arrondi, arrondi px). */
+export const PLANNING_VERTICAL_FIT_INSET_PX = 8;
 /** Live V1 — largeur de référence historique. */
 export const PLANNING_LEGACY_LAYOUT_WIDTH = 1024;
 /** Pleine largeur utile bac capture (PDF). */
@@ -16,12 +18,12 @@ export const PLANNING_TABLE_LAYOUT_WIDTH = PLANNING_TABLE_LAYOUT_MAX_WIDTH;
 /** Hauteur estimée (px) — en-tête + lignes, calée sur le rendu live. */
 export function estimatePlanningTableHeight(rowCount: number): number {
   const headerPx = 52;
-  const rowPx = 38;
-  const cardChromePx = 6;
+  const rowPx = 39;
+  const cardChromePx = 10;
   return headerPx + Math.max(rowCount, 1) * rowPx + cardChromePx;
 }
 /** Marqueur bundle Live V2 (``/api/v2/frontend-check``). */
-export const PLANNING_V2_LAYOUT_MARKER = "live-planning-full-width-v2-20260724";
+export const PLANNING_V2_LAYOUT_MARKER = "live-planning-fit-vertical-v2-20260724";
 /** Classement final — ratio live 820/1024 (convocations calées dessus). */
 export const NARROW_TABLE_RATIO = 820 / 1024;
 export const FINAL_TABLE_WIDTH_PT = 820;

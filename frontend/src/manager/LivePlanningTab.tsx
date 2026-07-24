@@ -22,6 +22,7 @@ import {
   PLANNING_LEGACY_LAYOUT_WIDTH,
   PLANNING_SIDE_MARGIN_PX,
   PLANNING_TABLE_LAYOUT_WIDTH,
+  PLANNING_VERTICAL_FIT_INSET_PX,
   PLANNING_VERTICAL_MARGIN_PX,
   PLANNING_V2_LAYOUT_MARKER,
 } from "./exportCapture";
@@ -140,7 +141,10 @@ export function LivePlanningTab({
       const refHeight = v2TableHeaders
         ? Math.max(naturalH, planningReferenceHeight ?? 0)
         : naturalH;
-      const heightScale = Math.min(1, availH / refHeight);
+      const fitAvailH = v2TableHeaders
+        ? Math.max(1, availH - PLANNING_VERTICAL_FIT_INSET_PX)
+        : availH;
+      const heightScale = Math.min(1, fitAvailH / refHeight);
       const uniform = Math.min(widthScale, heightScale);
 
       setScale((prev) => (prev === uniform ? prev : uniform));
@@ -308,10 +312,14 @@ export function LivePlanningTab({
         }
       : undefined;
 
+  const pageAlignClass = v2TableHeaders
+    ? "items-start justify-center"
+    : "items-center justify-center";
+
   return (
     <div
       ref={pageRef}
-      className={`flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white ${pagePaddingClass}`}
+      className={`flex min-h-0 flex-1 overflow-hidden bg-white ${pagePaddingClass} ${pageAlignClass}`}
       data-planning-layout={v2TableHeaders ? PLANNING_V2_LAYOUT_MARKER : undefined}
       style={pageStyle}
     >

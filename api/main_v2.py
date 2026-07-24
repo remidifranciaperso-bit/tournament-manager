@@ -70,9 +70,11 @@ app.add_middleware(
 _LIVE_HEAD_SCREEN_PX = 12.5
 _PLANNING_SIDE_MARGIN_PX = round(5 * 96 / 25.4)
 _PLANNING_VERTICAL_MARGIN_PX = round(4 * 96 / 25.4)
+_PLANNING_VERTICAL_FIT_INSET_PX = 8
 _PLANNING_CAPTURE_WIDTH_PX = 1400
 _PLANNING_TABLE_WIDTH_PX = _PLANNING_CAPTURE_WIDTH_PX - 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-full-width-v2-20260724"
+_PLANNING_VERTICAL_FIT_INSET_PX = 8
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-fit-vertical-v2-20260724"
 
 _ENGINE_V2_LIVE_MANAGER_INJECT = """
 <style id="engine-v2-live-manager-inject">
@@ -109,7 +111,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   box-sizing: border-box !important;
   overflow: hidden !important;
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-start !important;
   justify-content: center !important;
   padding-left: __PLANNING_SIDE__px !important;
   padding-right: __PLANNING_SIDE__px !important;
@@ -145,6 +147,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   var SIDE = __PLANNING_SIDE__;
   var VERT = __PLANNING_VERT__;
   var BASE_W = __PLANNING_BASE__;
+  var FIT_INSET = __FIT_INSET__;
   var scheduled = false;
   var layoutCache = new WeakMap();
   var maxPlanningNaturalH = 0;
@@ -239,7 +242,11 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     var availH = page0.clientHeight;
     if (maxPlanningNaturalH <= 0 || availW <= 0 || availH <= 0) return;
 
-    var uniformScale = Math.min(1, availW / BASE_W, availH / maxPlanningNaturalH);
+    var uniformScale = Math.min(
+      1,
+      availW / BASE_W,
+      Math.max(1, availH - FIT_INSET) / maxPlanningNaturalH
+    );
 
     shells.forEach(function (shell) {
       var nh = Math.max(shell.card.scrollHeight, shell.card.offsetHeight);
@@ -295,6 +302,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = (
     .replace("__PLANNING_VERT__", str(_PLANNING_VERTICAL_MARGIN_PX))
     .replace("__PLANNING_BASE__", str(_PLANNING_TABLE_WIDTH_PX))
     .replace("__PLANNING_CAP__", str(_PLANNING_CAPTURE_WIDTH_PX))
+    .replace("__FIT_INSET__", str(_PLANNING_VERTICAL_FIT_INSET_PX))
 )
 
 # Rétrocompat nom constante
