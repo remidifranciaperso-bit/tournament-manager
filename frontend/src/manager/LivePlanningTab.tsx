@@ -24,11 +24,10 @@ import {
   PLANNING_SCALE_HEIGHT_BUFFER_PX,
   PLANNING_SIDE_MARGIN_PX,
   PLANNING_TABLE_LAYOUT_WIDTH,
-  PLANNING_TERRAIN_COL_MIN_PX,
   PLANNING_VERTICAL_FIT_INSET_PX,
   PLANNING_VERTICAL_MARGIN_PX,
   PLANNING_V2_LAYOUT_MARKER,
-  planningColWidthPercents,
+  planningColWidthsPx,
 } from "./exportCapture";
 import {
   useLiveTableHeadPresentation,
@@ -71,18 +70,21 @@ interface LivePlanningTabProps {
   planningSlideKey?: string | number;
 }
 
-const PLANNING_COL_WIDTHS = planningColWidthPercents();
+const PLANNING_V2_TABLE_CLASS = "live-planning-v2-table";
 
-const PLANNING_COLGROUP = (
-  <colgroup>
-    <col style={{ width: PLANNING_COL_WIDTHS[0] }} />
-    <col style={{ width: PLANNING_COL_WIDTHS[1] }} />
-    <col style={{ width: PLANNING_COL_WIDTHS[2], maxWidth: PLANNING_TERRAIN_COL_MIN_PX }} />
-    <col style={{ width: PLANNING_COL_WIDTHS[3] }} />
-    <col style={{ width: PLANNING_COL_WIDTHS[4] }} />
-    <col style={{ width: PLANNING_COL_WIDTHS[5] }} />
-  </colgroup>
-);
+function PlanningColgroup({ tableWidth }: { tableWidth: number }) {
+  const widths = useMemo(
+    () => planningColWidthsPx(tableWidth),
+    [tableWidth]
+  );
+  return (
+    <colgroup>
+      {widths.map((width, index) => (
+        <col key={index} style={{ width: `${width}px` }} />
+      ))}
+    </colgroup>
+  );
+}
 
 function HandCheckboxSquare() {
   return (
@@ -148,7 +150,8 @@ export function LivePlanningTab({
       const naturalH = Math.max(card.scrollHeight, card.offsetHeight);
       if (availW <= 0 || availH <= 0 || naturalH <= 0) return;
 
-      const widthScale = Math.min(1, availW / baseWidth);
+      const innerW = Math.max(1, availW - 2 * sideMargin);
+      const widthScale = Math.min(1, innerW / baseWidth);
       const shellExtra = v2TableHeaders ? PLANNING_CARD_SHELL_EXTRA_PX : 0;
       const measuredH = naturalH + shellExtra;
       const refHeight = v2TableHeaders
@@ -165,10 +168,6 @@ export function LivePlanningTab({
         fitAvailH / (refHeight + (v2TableHeaders ? PLANNING_SCALE_HEIGHT_BUFFER_PX : 0))
       );
       const uniform = Math.min(widthScale, heightScale);
-
-      if (v2TableHeaders) {
-        page.classList.add("engine-v2-planning-page");
-      }
 
       setScale((prev) => (prev === uniform ? prev : uniform));
       setNaturalHeight((prev) => (prev === naturalH ? prev : naturalH));
@@ -195,6 +194,7 @@ export function LivePlanningTab({
     planningReferenceHeight,
     v2TableHeaders,
     layoutFields.length,
+    sideMargin,
     planningSlideKey,
   ]);
 
@@ -309,18 +309,31 @@ export function LivePlanningTab({
     <table
       className={[
         tableClass,
-        "table-fixed w-full",
-        v2TableHeaders ? "engine-v2-planning-table" : "",
+        v2TableHeaders ? `${PLANNING_V2_TABLE_CLASS} table-fixed` : "table-fixed w-full",
         exportMode && !capture ? "text-sm" : "",
       ].join(" ")}
-      data-live-planning-table={v2TableHeaders ? "" : undefined}
       style={
         v2TableHeaders
-          ? { width: baseWidth, maxWidth: baseWidth }
+          ? ({
+              width: baseWidth,
+              maxWidth: baseWidth,
+              ["--live-planning-table-width" as string]: `${baseWidth}px`,
+            } as const)
           : undefined
       }
     >
-      {PLANNING_COLGROUP}
+      {v2TableHeaders ? (
+        <PlanningColgroup tableWidth={baseWidth} />
+      ) : (
+        <colgroup>
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "32%" }} />
+          <col style={{ width: "32%" }} />
+          <col style={{ width: "6%" }} />
+        </colgroup>
+      )}
       {tableHead}
       <tbody className={capture ? "bg-white" : undefined}>{bodyRows}</tbody>
     </table>

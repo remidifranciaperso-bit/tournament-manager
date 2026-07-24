@@ -142,6 +142,26 @@ body {
     padding-top: 0.45rem !important;
     padding-bottom: 0.45rem !important;
   }
+
+  /* Planning Live V2 — layout entièrement dans le bundle (pas d’inject serveur). */
+  .live-planning-v2-table {
+    table-layout: fixed;
+    width: var(--live-planning-table-width);
+    max-width: var(--live-planning-table-width);
+  }
+
+  .live-planning-v2-table.live-table-v2 thead th {
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap;
+  }
+
+  .live-planning-v2-table tbody td:nth-child(3) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* Scrollbar discrète */

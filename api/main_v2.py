@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-col-v2-20260724h"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-col-v2-20260724i"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -133,7 +133,7 @@ def _fill_live_manager_inject(template: str) -> str:
 
 
 _LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
-#root table thead tr.bg-template-blue th {
+#root table:not(.live-planning-v2-table) thead tr.bg-template-blue th {
   box-sizing: border-box !important;
   max-width: 100% !important;
   overflow: hidden !important;
@@ -155,364 +155,36 @@ _LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
   overflow: visible !important;
   text-overflow: clip !important;
 }
-#root .engine-v2-planning-card table thead tr.bg-template-blue th,
-#root [data-planning-layout] table thead tr.bg-template-blue th,
-#root table[data-live-planning-table] thead tr.bg-template-blue th {
-  overflow: visible !important;
-  text-overflow: clip !important;
-  max-width: none !important;
-  white-space: nowrap !important;
-  font-size: calc(__SCREEN_PX__px / var(--ev2-planning-s, var(--live-display-scale, 1))) !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.03em !important;
-  line-height: 1.12 !important;
-}
-#root [data-planning-layout] table,
-#root .engine-v2-planning-card table,
-#root table.engine-v2-planning-table,
-#root table[data-live-planning-table] {
-  table-layout: fixed !important;
-  width: __PLANNING_BASE__px !important;
-  max-width: __PLANNING_BASE__px !important;
-}
-#root [data-planning-layout] table col:nth-child(1),
-#root .engine-v2-planning-card table col:nth-child(1),
-#root table.engine-v2-planning-table col:nth-child(1),
-#root table[data-live-planning-table] col:nth-child(1) {
-  width: __PCOL1__ !important;
-}
-#root [data-planning-layout] table col:nth-child(2),
-#root .engine-v2-planning-card table col:nth-child(2),
-#root table.engine-v2-planning-table col:nth-child(2),
-#root table[data-live-planning-table] col:nth-child(2) {
-  width: __PCOL2__ !important;
-}
-#root [data-planning-layout] table col:nth-child(3),
-#root .engine-v2-planning-card table col:nth-child(3),
-#root table.engine-v2-planning-table col:nth-child(3),
-#root table[data-live-planning-table] col:nth-child(3) {
-  width: __PCOL3__ !important;
-  max-width: __TERRAIN_MIN__px !important;
-}
-#root [data-planning-layout] table col:nth-child(4),
-#root .engine-v2-planning-card table col:nth-child(4),
-#root table.engine-v2-planning-table col:nth-child(4),
-#root table[data-live-planning-table] col:nth-child(4) {
-  width: __PCOL4__ !important;
-}
-#root [data-planning-layout] table col:nth-child(5),
-#root .engine-v2-planning-card table col:nth-child(5),
-#root table.engine-v2-planning-table col:nth-child(5),
-#root table[data-live-planning-table] col:nth-child(5) {
-  width: __PCOL5__ !important;
-}
-#root [data-planning-layout] table col:nth-child(6),
-#root .engine-v2-planning-card table col:nth-child(6),
-#root table.engine-v2-planning-table col:nth-child(6),
-#root table[data-live-planning-table] col:nth-child(6) {
-  width: __PCOL6__ !important;
-}
-#root [data-planning-layout] table tbody td:nth-child(3),
-#root table[data-live-planning-table] tbody td:nth-child(3) {
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-#root [data-planning-layout] .engine-v2-planning-card,
-#root [data-planning-layout] .engine-v2-planning-wrap {
-  width: auto !important;
-  height: auto !important;
-  transform: none !important;
-}
-#root .engine-v2-planning-page {
-  box-sizing: border-box !important;
-  overflow: hidden !important;
-  display: flex !important;
-  align-items: flex-start !important;
-  justify-content: center !important;
-  padding-left: __PLANNING_SIDE__px !important;
-  padding-right: __PLANNING_SIDE__px !important;
-  padding-top: __PLANNING_VERT__px !important;
-  padding-bottom: __PLANNING_VERT__px !important;
-}
-#root .engine-v2-planning-wrap {
-  position: relative !important;
-  flex-shrink: 0 !important;
-  width: calc(__PLANNING_BASE__px * var(--ev2-planning-s, 1)) !important;
-  height: calc(var(--ev2-planning-nh, 1px) * var(--ev2-planning-s, 1)) !important;
-}
-#root .engine-v2-planning-card {
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: __PLANNING_BASE__px !important;
-  max-width: none !important;
-  transform: scale(var(--ev2-planning-s, 1)) !important;
-  transform-origin: top left !important;
-}
-#export-capture-layer.engine-v2-planning-capture {
-  box-sizing: border-box !important;
-  width: __PLANNING_CAP__px !important;
-  padding-left: __PLANNING_SIDE__px !important;
-  padding-right: __PLANNING_SIDE__px !important;
-  padding-top: __PLANNING_VERT__px !important;
-  padding-bottom: __PLANNING_VERT__px !important;
-}
 """.strip()
 
 _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 (function () {
-  var SIDE = __PLANNING_SIDE__;
-  var VERT = __PLANNING_VERT__;
-  var BASE_W = __PLANNING_BASE__;
-  var FIT_INSET = __FIT_INSET__;
-  var SHELL_EXTRA = __SHELL_EXTRA__;
-  var HEIGHT_BUFFER = __HEIGHT_BUFFER__;
-  var TERRAIN_MAX = __TERRAIN_MIN__;
-  var COL_WIDTHS = [__PCOL1__, __PCOL2__, __PCOL3__, __PCOL4__, __PCOL5__, __PCOL6__];
-  var scheduled = false;
-  var layoutCache = new WeakMap();
-  var maxPlanningNaturalH = 0;
-
-  function isManagerRoute() {
-    var hash = location.hash || "";
-    return hash.indexOf("/manager") !== -1;
-  }
-
   function syncScale() {
     document.querySelectorAll('[style*="scale("]').forEach(function (el) {
       var m = el.style.transform.match(/scale\\s*\\(\\s*([0-9.]+)(?:\\s*,\\s*([0-9.]+))?\\s*\\)/);
       if (!m) return;
-      var next = m[1];
-      if (el.style.getPropertyValue("--live-display-scale") === next) return;
-      el.style.setProperty("--live-display-scale", next);
-    });
-  }
-
-  function measureCardHeight(card) {
-    return Math.max(card.scrollHeight, card.offsetHeight) + SHELL_EXTRA;
-  }
-
-  function readPlanningScale(page) {
-    var s =
-      page.style.getPropertyValue("--ev2-planning-s") ||
-      page.style.getPropertyValue("--live-display-scale");
-    if (s) return s;
-    var card = page.querySelector(
-      "[class*='rounded-xl'][class*='border-template-blue']"
-    );
-    if (!card) return null;
-    s = card.style.getPropertyValue("--ev2-planning-s");
-    if (s) return s;
-    s = card.style.getPropertyValue("--live-display-scale");
-    if (s) return s;
-    var m = (card.style.transform || "").match(
-      /scale\\s*\\(\\s*([0-9.]+)(?:\\s*,\\s*([0-9.]+))?\\s*\\)/
-    );
-    return m ? m[1] : null;
-  }
-
-  function matchPlanningTable(table) {
-    if (table.closest("#export-capture-layer")) return false;
-    if (table.matches("[data-live-planning-table], .engine-v2-planning-table")) return true;
-    var ths = table.querySelectorAll("thead tr.bg-template-blue th");
-    if (ths.length !== 6) return false;
-    var first = (ths[0].textContent || "").trim().toLowerCase();
-    if (first !== "code") return false;
-    var third = (ths[2].textContent || "").trim().toLowerCase();
-    return third === "terrain";
-  }
-
-  function applyPlanningColWidths(table) {
-    if (!matchPlanningTable(table)) return;
-    table.classList.add("engine-v2-planning-table");
-    table.style.setProperty("table-layout", "fixed", "important");
-    table.style.setProperty("width", BASE_W + "px", "important");
-    table.style.setProperty("max-width", BASE_W + "px", "important");
-    var cols = table.querySelectorAll("colgroup > col, col");
-    for (var i = 0; i < COL_WIDTHS.length; i++) {
-      if (!cols[i]) continue;
-      cols[i].style.setProperty("width", COL_WIDTHS[i], "important");
-      if (i === 2) {
-        cols[i].style.setProperty("max-width", TERRAIN_MAX + "px", "important");
-      }
-    }
-  }
-
-  function syncPlanningColWidths() {
-    if (!isManagerRoute()) return;
-    document.querySelectorAll("#root table").forEach(applyPlanningColWidths);
-  }
-
-  function syncPlanningHeadVars() {
-    document
-      .querySelectorAll("#root .engine-v2-planning-page, #root [data-planning-layout]")
-      .forEach(function (page) {
-        var s = readPlanningScale(page);
-        if (!s) return;
-        page.style.setProperty("--ev2-planning-s", s);
-        page.style.setProperty("--live-display-scale", s);
-        var card = page.querySelector(
-          "[class*='rounded-xl'][class*='border-template-blue']"
-        );
-        if (card) {
-          card.style.setProperty("--ev2-planning-s", s);
-          card.style.setProperty("--live-display-scale", s);
-        }
-      });
-  }
-
-  function isPlanningTableForLayout(table) {
-    if (table.closest("#export-capture-layer")) return false;
-    if (table.closest("[data-planning-layout]")) return false;
-    return matchPlanningTable(table);
-  }
-
-  function isPlanningTable(table) {
-    return matchPlanningTable(table);
-  }
-
-  function findShell(table) {
-    var card = table.closest("[class*='rounded-xl'][class*='border-template-blue']");
-    if (!card || card.closest("#export-capture-layer")) return null;
-    var wrap = card.parentElement;
-    var page = wrap && wrap.parentElement;
-    if (!wrap || !page) return null;
-    return { page: page, wrap: wrap, card: card };
-  }
-
-  function layoutLivePlanning(shell, uniformScale, naturalH) {
-    var page = shell.page;
-    var wrap = shell.wrap;
-    var card = shell.card;
-
-    page.classList.add("engine-v2-planning-page");
-    wrap.classList.add("engine-v2-planning-wrap");
-    card.classList.add("engine-v2-planning-card");
-
-    var sStr = String(uniformScale);
-    var nh = naturalH + "px";
-
-    var cached = layoutCache.get(page);
-    if (cached && cached.s === sStr && cached.nh === nh) {
-      return;
-    }
-    layoutCache.set(page, { s: sStr, nh: nh });
-
-    page.style.setProperty("--ev2-planning-s", sStr);
-    page.style.setProperty("--ev2-planning-nh", nh);
-    page.style.setProperty("--live-display-scale", sStr);
-    card.style.setProperty("--live-display-scale", sStr);
-  }
-
-  function layoutCapturePlanning() {
-    var layer = document.getElementById("export-capture-layer");
-    if (!layer) return;
-    var table = layer.querySelector("table");
-    if (!table) return;
-    var ths = table.querySelectorAll("thead tr.bg-template-blue th");
-    if (ths.length !== 6 || (ths[0].textContent || "").trim().toLowerCase() !== "code") return;
-    layer.classList.add("engine-v2-planning-capture");
-  }
-
-  function layoutPlanning() {
-    if (!isManagerRoute()) return;
-
-    var shells = [];
-    document.querySelectorAll("#root table").forEach(function (table) {
-      if (!isPlanningTableForLayout(table)) return;
-      var shell = findShell(table);
-      if (shell) shells.push(shell);
-    });
-
-    if (!shells.length) {
-      layoutCapturePlanning();
-      syncPlanningHeadVars();
-      syncPlanningColWidths();
-      syncScale();
-      return;
-    }
-
-    shells.forEach(function (shell) {
-      var nh = measureCardHeight(shell.card);
-      if (nh > maxPlanningNaturalH) maxPlanningNaturalH = nh;
-    });
-
-    var page0 = shells[0].page;
-    var availW = page0.clientWidth;
-    var availH = page0.clientHeight;
-    if (maxPlanningNaturalH <= 0 || availW <= 0 || availH <= 0) return;
-
-    var uniformScale = Math.min(
-      1,
-      availW / BASE_W,
-      Math.max(1, availH - FIT_INSET) / (maxPlanningNaturalH + HEIGHT_BUFFER)
-    );
-
-    shells.forEach(function (shell) {
-      var nh = measureCardHeight(shell.card);
-      layoutLivePlanning(shell, uniformScale, nh - SHELL_EXTRA);
-    });
-
-    layoutCapturePlanning();
-    syncPlanningHeadVars();
-    syncPlanningColWidths();
-    syncScale();
-  }
-
-  function layoutPlanningDeferred() {
-    requestAnimationFrame(function () {
-      requestAnimationFrame(layoutPlanning);
-    });
-  }
-
-  function scheduleLayout() {
-    if (scheduled) return;
-    scheduled = true;
-    syncPlanningColWidths();
-    layoutPlanningDeferred();
-    requestAnimationFrame(function () {
-      scheduled = false;
-    });
-  }
-
-  function watchPlanningColgroups() {
-    var root = document.getElementById("root");
-    if (!root) return;
-    new MutationObserver(function () {
-      syncPlanningColWidths();
-    }).observe(root, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ["style", "width", "class"],
+      el.style.setProperty("--live-display-scale", m[1]);
     });
   }
 
   function boot() {
     syncScale();
-    syncPlanningColWidths();
-    watchPlanningColgroups();
-    layoutPlanningDeferred();
     var root = document.getElementById("root");
     if (root) {
-      new MutationObserver(scheduleLayout).observe(root, {
+      new MutationObserver(syncScale).observe(root, {
         subtree: true,
         childList: true,
+        attributes: true,
+        attributeFilter: ["style"],
       });
       if (typeof ResizeObserver !== "undefined") {
-        new ResizeObserver(scheduleLayout).observe(root);
+        new ResizeObserver(syncScale).observe(root);
       }
     }
-    window.addEventListener("resize", scheduleLayout);
-    window.addEventListener("hashchange", function () {
-      if ((location.hash || "").indexOf("/manager") === -1) {
-        maxPlanningNaturalH = 0;
-        layoutCache = new WeakMap();
-      }
-      scheduleLayout();
-    });
+    window.addEventListener("resize", syncScale);
+    window.addEventListener("hashchange", syncScale);
   }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {
@@ -636,12 +308,15 @@ def frontend_check():
     marker = _LIVE_MANAGER_INJECT_VERSION
     bundle_name = None
     bundle_has_marker = False
+    bundle_has_planning_layout = False
     if dist.is_dir():
         for js in dist.glob("*.js"):
             text = js.read_text(encoding="utf-8", errors="ignore")
             if "v2/prepare" in text and "engine-v2" in text:
                 bundle_name = js.name
-                if marker in text:
+                if "live-planning-v2-table" in text:
+                    bundle_has_planning_layout = True
+                if "live-planning-fix-v2-20260724i" in text:
                     bundle_has_marker = True
                 break
     return {
@@ -655,8 +330,8 @@ def frontend_check():
         "bundle": bundle_name,
         "bundle_has_react_marker": bundle_has_marker,
         "note": (
-            "Layout planning Live V2 via CSS/JS versionnés injectés dans index.html "
-            "(indépendant du bundle React)."
+            "Layout planning Live V2 dans le bundle React (classe live-planning-v2-table). "
+            "L’inject serveur ne touche plus au planning."
         ),
     }
 

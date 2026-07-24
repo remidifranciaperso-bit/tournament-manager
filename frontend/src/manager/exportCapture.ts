@@ -52,6 +52,21 @@ export function planningColWidthPercents(): string[] {
     return `${((widthFrac / boost) * 100).toFixed(3)}%`;
   });
 }
+
+/** Largeurs colonnes en px — somme exacte ``tableWidth`` (Live Manager, capture). */
+export function planningColWidthsPx(
+  tableWidth: number = PLANNING_TABLE_LAYOUT_WIDTH
+): number[] {
+  const widths = planningColWidthPercents().map((pct) =>
+    Math.round((tableWidth * parseFloat(pct)) / 100)
+  );
+  widths[2] = Math.min(widths[2], PLANNING_TERRAIN_COL_MIN_PX);
+  const drift = tableWidth - widths.reduce((sum, value) => sum + value, 0);
+  if (drift !== 0) {
+    widths[5] += drift;
+  }
+  return widths;
+}
 /** Hauteur estimée (px) — en-tête + lignes, calée sur le rendu live. */
 export function estimatePlanningTableHeight(rowCount: number): number {
   const headerPx = 56;
@@ -60,7 +75,7 @@ export function estimatePlanningTableHeight(rowCount: number): number {
   return headerPx + Math.max(rowCount, 1) * rowPx + cardChromePx;
 }
 /** Marqueur bundle Live V2 (``/api/v2/frontend-check``). */
-export const PLANNING_V2_LAYOUT_MARKER = "live-planning-fix-v2-20260724h";
+export const PLANNING_V2_LAYOUT_MARKER = "live-planning-fix-v2-20260724i";
 /** Classement final — ratio live 820/1024 (convocations calées dessus). */
 export const NARROW_TABLE_RATIO = 820 / 1024;
 export const FINAL_TABLE_WIDTH_PT = 820;
