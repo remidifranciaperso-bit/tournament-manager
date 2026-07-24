@@ -72,7 +72,7 @@ _PLANNING_SIDE_MARGIN_PX = round(5 * 96 / 25.4)
 _PLANNING_VERTICAL_MARGIN_PX = round(4 * 96 / 25.4)
 _PLANNING_CAPTURE_WIDTH_PX = 1400
 _PLANNING_TABLE_WIDTH_PX = _PLANNING_CAPTURE_WIDTH_PX - 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-fit-margins-v2-20260723"
+_LIVE_MANAGER_INJECT_VERSION = "live-manager-inject-v2-20260724"
 
 _ENGINE_V2_LIVE_MANAGER_INJECT = """
 <style id="engine-v2-live-manager-inject">
@@ -138,26 +138,35 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   var SIDE = __PLANNING_SIDE__;
   var VERT = __PLANNING_VERT__;
   var BASE_W = __PLANNING_BASE__;
-  var CAP_W = __PLANNING_CAP__;
+  var scheduled = false;
+  var layoutCache = new WeakMap();
+
+  function isManagerRoute() {
+    var hash = location.hash || "";
+    return hash.indexOf("/manager") !== -1;
+  }
 
   function syncScale() {
     document.querySelectorAll('[style*="scale("]').forEach(function (el) {
       var m = el.style.transform.match(/scale\\s*\\(\\s*([0-9.]+)(?:\\s*,\\s*([0-9.]+))?\\s*\\)/);
-      if (m) el.style.setProperty("--live-display-scale", m[1]);
+      if (!m) return;
+      var next = m[1];
+      if (el.style.getPropertyValue("--live-display-scale") === next) return;
+      el.style.setProperty("--live-display-scale", next);
     });
   }
 
   function isPlanningTable(table) {
     if (table.closest("#export-capture-layer")) return false;
+    if (table.closest("[data-planning-layout]")) return false;
     var ths = table.querySelectorAll("thead tr.bg-template-blue th");
     if (ths.length !== 6) return false;
-    var label = (ths[0].textContent || "").trim();
-    return label === "Code";
+    return (ths[0].textContent || "").trim() === "Code";
   }
 
   function findShell(table) {
     var card = table.closest("[class*='rounded-xl'][class*='border-template-blue']");
-    if (!card) return null;
+    if (!card || card.closest("#export-capture-layer")) return null;
     var wrap = card.parentElement;
     var page = wrap && wrap.parentElement;
     if (!wrap || !page) return null;
@@ -175,22 +184,32 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     wrap.classList.add("engine-v2-planning-wrap");
     card.classList.add("engine-v2-planning-card");
 
-    var prevTransform = card.style.transform;
-    card.style.transform = "none";
-    var naturalH = card.offsetHeight;
-    card.style.transform = prevTransform;
-
+    var naturalH = Math.max(card.scrollHeight, card.offsetHeight);
     var availW = page.clientWidth;
     var availH = page.clientHeight;
     if (naturalH <= 0 || availW <= 0 || availH <= 0) return;
 
     var scaleW = Math.min(1, availW / BASE_W);
     var scaleH = Math.min(1, availH / naturalH);
+    var sw = String(scaleW);
+    var sh = String(scaleH);
+    var nh = naturalH + "px";
 
-    page.style.setProperty("--ev2-planning-sw", String(scaleW));
-    page.style.setProperty("--ev2-planning-sh", String(scaleH));
-    page.style.setProperty("--ev2-planning-nh", naturalH + "px");
-    card.style.setProperty("--live-display-scale", String(scaleW));
+    var cached = layoutCache.get(page);
+    if (
+      cached &&
+      cached.sw === sw &&
+      cached.sh === sh &&
+      cached.nh === nh
+    ) {
+      return;
+    }
+    layoutCache.set(page, { sw: sw, sh: sh, nh: nh });
+
+    page.style.setProperty("--ev2-planning-sw", sw);
+    page.style.setProperty("--ev2-planning-sh", sh);
+    page.style.setProperty("--ev2-planning-nh", nh);
+    card.style.setProperty("--live-display-scale", sw);
   }
 
   function layoutCapturePlanning() {
@@ -204,6 +223,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   }
 
   function layoutPlanning() {
+    if (!isManagerRoute()) return;
     document.querySelectorAll("#root table").forEach(function (table) {
       if (isPlanningTable(table)) layoutLivePlanning(table);
     });
@@ -211,16 +231,30 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     syncScale();
   }
 
-  function boot() {
-    layoutPlanning();
-    var root = document.getElementById("root") || document.body;
-    new MutationObserver(layoutPlanning).observe(root, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ["style", "class"],
+  function scheduleLayout() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(function () {
+      scheduled = false;
+      layoutPlanning();
     });
-    window.addEventListener("resize", layoutPlanning);
+  }
+
+  function boot() {
+    syncScale();
+    scheduleLayout();
+    var root = document.getElementById("root");
+    if (root) {
+      new MutationObserver(scheduleLayout).observe(root, {
+        subtree: true,
+        childList: true,
+      });
+      if (typeof ResizeObserver !== "undefined") {
+        new ResizeObserver(scheduleLayout).observe(root);
+      }
+    }
+    window.addEventListener("resize", scheduleLayout);
+    window.addEventListener("hashchange", scheduleLayout);
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);

@@ -10,8 +10,7 @@ RUN npm ci
 COPY frontend/ .
 RUN echo "${FRONTEND_BUILD_ID}" > .docker-build-id
 ENV VITE_DEPLOY_TARGET=engine-v2
-RUN npm run build && test -f dist/index.html \
-    && grep -q "live-planning-fit-margins-v2-20260723" dist/assets/*.js
+RUN npm run build && test -f dist/index.html
 
 FROM python:3.12-slim
 

@@ -210,10 +210,20 @@ export default function ManagerPage() {
 
   const handlePackFormatContinue = () => {
     if (!pendingPackLiveData || !matchFormatsStepValid(form)) return;
-    const data = applyFormFormatsToLiveData(pendingPackLiveData, form);
-    setPendingPackLiveData(null);
-    setPackHasPoulesFormat(false);
-    enterLivePhase(data, form, data.meta.nb_equipes);
+    setGenError(null);
+    try {
+      const data = applyFormFormatsToLiveData(pendingPackLiveData, form);
+      setPendingPackLiveData(null);
+      setPackHasPoulesFormat(false);
+      enterLivePhase(data, form, data.meta.nb_equipes);
+    } catch (err) {
+      setGenError(
+        err instanceof Error
+          ? err.message
+          : "Impossible d'ouvrir le tournoi live."
+      );
+      setStep(STEP_PACK_FORMAT);
+    }
   };
   const goHome = () => setStep(STEP_ENTRY);
 
@@ -339,7 +349,13 @@ export default function ManagerPage() {
           </main>
 
           <footer className="shrink-0 px-4 py-4 sm:px-8">
-            <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
+            <div className="mx-auto flex max-w-2xl flex-col items-center gap-3">
+              {genError ? (
+                <p role="alert" className="text-center text-sm text-red-400">
+                  {genError}
+                </p>
+              ) : null}
+              <div className="flex w-full items-center justify-between gap-4">
               <GhostButton onClick={goBack}>← Retour</GhostButton>
               <PrimaryButton
                 onClick={handlePackFormatContinue}
@@ -347,6 +363,7 @@ export default function ManagerPage() {
               >
                 Accéder au tournoi live →
               </PrimaryButton>
+              </div>
             </div>
           </footer>
         </div>
