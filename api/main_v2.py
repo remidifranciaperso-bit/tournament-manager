@@ -74,10 +74,11 @@ _PLANNING_VERTICAL_FIT_INSET_PX = 22
 _PLANNING_CARD_SHELL_EXTRA_PX = 8
 _PLANNING_SCALE_HEIGHT_BUFFER_PX = 12
 _PLANNING_COL_TERRAIN_FRAC = 0.14
-_PLANNING_TERRAIN_COL_MIN_CHARS = 16
-_PLANNING_TERRAIN_CHAR_PX = 14
+_PLANNING_COL_BASE_FRACS = [0.08, 0.08, 0.14, 0.32, 0.32, 0.06]
+_PLANNING_TERRAIN_COL_MIN_CHARS = 17
+_PLANNING_TERRAIN_CHAR_PX = 15
 _PLANNING_TERRAIN_CELL_PAD_PX = 32
-_PLANNING_TERRAIN_COL_SAFETY_PX = 32
+_PLANNING_TERRAIN_COL_SAFETY_PX = 40
 _PLANNING_TERRAIN_COL_MIN_PX = (
     _PLANNING_TERRAIN_COL_MIN_CHARS * _PLANNING_TERRAIN_CHAR_PX
     + _PLANNING_TERRAIN_CELL_PAD_PX
@@ -96,7 +97,21 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-all-pages-v2-20260724c"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-cols-v2-20260724d"
+
+
+def _planning_col_width_percents() -> list[str]:
+    factor = _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
+    percents: list[str] = []
+    for index, frac in enumerate(_PLANNING_COL_BASE_FRACS):
+        width_frac = (
+            frac * _PLANNING_COL_TERRAIN_BOOST if index == 2 else frac
+        )
+        percents.append(f"{(width_frac / factor) * 100:.3f}%")
+    return percents
+
+
+_PLANNING_COL_WIDTH_PCTS = _planning_col_width_percents()
 
 _ENGINE_V2_LIVE_MANAGER_INJECT = """
 <style id="engine-v2-live-manager-inject">
@@ -137,6 +152,30 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   overflow: visible !important;
   text-overflow: clip !important;
   max-width: none !important;
+}
+#root [data-planning-layout] table col:nth-child(1),
+#root .engine-v2-planning-card table col:nth-child(1) {
+  width: __PCOL1__ !important;
+}
+#root [data-planning-layout] table col:nth-child(2),
+#root .engine-v2-planning-card table col:nth-child(2) {
+  width: __PCOL2__ !important;
+}
+#root [data-planning-layout] table col:nth-child(3),
+#root .engine-v2-planning-card table col:nth-child(3) {
+  width: __PCOL3__ !important;
+}
+#root [data-planning-layout] table col:nth-child(4),
+#root .engine-v2-planning-card table col:nth-child(4) {
+  width: __PCOL4__ !important;
+}
+#root [data-planning-layout] table col:nth-child(5),
+#root .engine-v2-planning-card table col:nth-child(5) {
+  width: __PCOL5__ !important;
+}
+#root [data-planning-layout] table col:nth-child(6),
+#root .engine-v2-planning-card table col:nth-child(6) {
+  width: __PCOL6__ !important;
 }
 #root .engine-v2-planning-page {
   box-sizing: border-box !important;
@@ -390,6 +429,10 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = (
     .replace("__SHELL_EXTRA__", str(_PLANNING_CARD_SHELL_EXTRA_PX))
     .replace("__HEIGHT_BUFFER__", str(_PLANNING_SCALE_HEIGHT_BUFFER_PX))
 )
+for idx, pct in enumerate(_PLANNING_COL_WIDTH_PCTS, start=1):
+    _ENGINE_V2_LIVE_MANAGER_INJECT = _ENGINE_V2_LIVE_MANAGER_INJECT.replace(
+        f"__PCOL{idx}__", pct
+    )
 
 # Rétrocompat nom constante
 _ENGINE_V2_LIVE_TABLE_HEAD_INJECT = _ENGINE_V2_LIVE_MANAGER_INJECT

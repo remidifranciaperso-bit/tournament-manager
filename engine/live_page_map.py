@@ -12,6 +12,8 @@ _PLANNING_FRACTION = re.compile(
     r"PLANNING[^0-9]*(\d+\s*/\s*\d+)",
     re.IGNORECASE,
 )
+_MULTI_DAY_PLANNING_TAG = re.compile(r"\{\{J\d+_PL\d+_")
+_LEGACY_PLANNING_TAG = re.compile(r"\{\{PL\d+_")
 
 _MAIN_PREFIXES = ("P", "H", "Q", "D", "S")
 _MAIN_EXACT = frozenset({"F", "PF"})
@@ -212,6 +214,39 @@ def _as_page_entries(indices: list[int], prs: Presentation, kind: str) -> list[d
     return entries
 
 
+def _filter_redundant_planning_entries(
+    planning_entries: list[dict],
+    prs: Presentation,
+) -> list[dict]:
+    """
+    Retire les slides planning legacy ``PL{n}`` lorsqu'un planning multi-jours
+    ``J{jour}_PL{n}`` est présent (sinon doublon Jour 1, ex. « Planning 1/4 »).
+    """
+    if not planning_entries:
+        return planning_entries
+
+    slide_texts = {
+        entry["index"]: _slide_text(prs.slides[entry["index"]])
+        for entry in planning_entries
+    }
+    has_multi_day = any(
+        _MULTI_DAY_PLANNING_TAG.search(text) for text in slide_texts.values()
+    )
+    if not has_multi_day:
+        return planning_entries
+
+    filtered: list[dict] = []
+    for entry in planning_entries:
+        text = slide_texts[entry["index"]]
+        if _MULTI_DAY_PLANNING_TAG.search(text):
+            filtered.append(entry)
+            continue
+        if _LEGACY_PLANNING_TAG.search(text):
+            continue
+        filtered.append(entry)
+    return filtered
+
+
 def _group_planning_pages(
     planning_entries: list[dict],
     prs: Presentation,
@@ -264,7 +299,10 @@ def cartographier_slides_presentation(prs: Presentation) -> dict:
 
     main_entries = _as_page_entries(main, prs, "main")
     classement_entries = _as_page_entries(classement, prs, "classement")
-    planning_entries = _as_page_entries(planning, prs, "planning")
+    planning_entries = _filter_redundant_planning_entries(
+        _as_page_entries(planning, prs, "planning"),
+        prs,
+    )
     final_entries = _as_page_entries(final, prs, "final")
 
     return {
