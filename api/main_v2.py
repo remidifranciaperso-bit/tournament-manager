@@ -97,7 +97,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-fix-v2-20260724e"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-col-v2-20260724f"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -149,14 +149,17 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   line-height: 1.12 !important;
 }
 #root [data-planning-layout] table,
-#root .engine-v2-planning-card table {
+#root .engine-v2-planning-card table,
+#root table.engine-v2-planning-table {
   table-layout: fixed !important;
   width: __PLANNING_BASE__px !important;
 }
 #root [data-planning-layout] table tbody td:nth-child(3),
 #root [data-planning-layout] table thead th:nth-child(3),
 #root .engine-v2-planning-card table tbody td:nth-child(3),
-#root .engine-v2-planning-card table thead th:nth-child(3) {
+#root .engine-v2-planning-card table thead th:nth-child(3),
+#root table.engine-v2-planning-table tbody td:nth-child(3),
+#root table.engine-v2-planning-table thead th:nth-child(3) {
   overflow: visible !important;
   text-overflow: clip !important;
   max-width: none !important;
@@ -165,27 +168,33 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   box-sizing: border-box !important;
 }
 #root [data-planning-layout] table col:nth-child(1),
-#root .engine-v2-planning-card table col:nth-child(1) {
+#root .engine-v2-planning-card table col:nth-child(1),
+#root table.engine-v2-planning-table col:nth-child(1) {
   width: __PCOL1__ !important;
 }
 #root [data-planning-layout] table col:nth-child(2),
-#root .engine-v2-planning-card table col:nth-child(2) {
+#root .engine-v2-planning-card table col:nth-child(2),
+#root table.engine-v2-planning-table col:nth-child(2) {
   width: __PCOL2__ !important;
 }
 #root [data-planning-layout] table col:nth-child(3),
-#root .engine-v2-planning-card table col:nth-child(3) {
+#root .engine-v2-planning-card table col:nth-child(3),
+#root table.engine-v2-planning-table col:nth-child(3) {
   width: __TERRAIN_MIN__px !important;
 }
 #root [data-planning-layout] table col:nth-child(4),
-#root .engine-v2-planning-card table col:nth-child(4) {
+#root .engine-v2-planning-card table col:nth-child(4),
+#root table.engine-v2-planning-table col:nth-child(4) {
   width: __PCOL4__ !important;
 }
 #root [data-planning-layout] table col:nth-child(5),
-#root .engine-v2-planning-card table col:nth-child(5) {
+#root .engine-v2-planning-card table col:nth-child(5),
+#root table.engine-v2-planning-table col:nth-child(5) {
   width: __PCOL5__ !important;
 }
 #root [data-planning-layout] table col:nth-child(6),
-#root .engine-v2-planning-card table col:nth-child(6) {
+#root .engine-v2-planning-card table col:nth-child(6),
+#root table.engine-v2-planning-table col:nth-child(6) {
   width: __PCOL6__ !important;
 }
 #root .engine-v2-planning-page {
@@ -275,16 +284,37 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     return m ? m[1] : null;
   }
 
-  function syncPlanningColWidths() {
-    document
-      .querySelectorAll(
-        "#root [data-planning-layout] table col, #root .engine-v2-planning-card table col"
-      )
-      .forEach(function (col, index) {
-        var slot = index % 6;
-        if (slot >= COL_WIDTHS.length) return;
-        col.style.setProperty("width", COL_WIDTHS[slot], "important");
+  function matchPlanningTable(table) {
+    if (table.closest("#export-capture-layer")) return false;
+    var ths = table.querySelectorAll("thead tr.bg-template-blue th");
+    if (ths.length !== 6) return false;
+    return (ths[0].textContent || "").trim() === "Code";
+  }
+
+  function applyPlanningColWidths(table) {
+    if (!matchPlanningTable(table)) return;
+    table.classList.add("engine-v2-planning-table");
+    table.style.setProperty("table-layout", "fixed", "important");
+    table.style.setProperty("width", BASE_W + "px", "important");
+    var cols = table.querySelectorAll("colgroup > col, col");
+    for (var i = 0; i < COL_WIDTHS.length; i++) {
+      if (!cols[i]) continue;
+      cols[i].style.setProperty("width", COL_WIDTHS[i], "important");
+    }
+    table
+      .querySelectorAll("thead th:nth-child(3), tbody td:nth-child(3)")
+      .forEach(function (cell) {
+        cell.style.setProperty("width", TERRAIN_COL, "important");
+        cell.style.setProperty("min-width", TERRAIN_COL, "important");
+        cell.style.setProperty("max-width", "none", "important");
+        cell.style.setProperty("overflow", "visible", "important");
+        cell.style.setProperty("text-overflow", "clip", "important");
       });
+  }
+
+  function syncPlanningColWidths() {
+    if (!isManagerRoute()) return;
+    document.querySelectorAll("#root table").forEach(applyPlanningColWidths);
   }
 
   function syncPlanningHeadVars() {
@@ -410,6 +440,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   function scheduleLayout() {
     if (scheduled) return;
     scheduled = true;
+    syncPlanningColWidths();
     layoutPlanningDeferred();
     requestAnimationFrame(function () {
       scheduled = false;
@@ -418,6 +449,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
 
   function boot() {
     syncScale();
+    syncPlanningColWidths();
     layoutPlanningDeferred();
     var root = document.getElementById("root");
     if (root) {
