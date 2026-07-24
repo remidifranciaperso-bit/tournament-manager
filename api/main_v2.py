@@ -71,10 +71,8 @@ _LIVE_HEAD_SCREEN_PX = 12.5
 _PLANNING_SIDE_MARGIN_PX = round(5 * 96 / 25.4)
 _PLANNING_VERTICAL_MARGIN_PX = round(4 * 96 / 25.4)
 _PLANNING_CAPTURE_WIDTH_PX = 1400
-_PLANNING_TABLE_WIDTH_PX = round(
-    (1024 + (_PLANNING_CAPTURE_WIDTH_PX - 2 * _PLANNING_SIDE_MARGIN_PX)) / 2
-)
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-uniform-scale-v2-20260724"
+_PLANNING_TABLE_WIDTH_PX = _PLANNING_CAPTURE_WIDTH_PX - 2 * _PLANNING_SIDE_MARGIN_PX
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-full-width-v2-20260724"
 
 _ENGINE_V2_LIVE_MANAGER_INJECT = """
 <style id="engine-v2-live-manager-inject">
@@ -99,6 +97,13 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   line-height: 1.2 !important;
   overflow: visible !important;
   text-overflow: clip !important;
+}
+#root .engine-v2-planning-card table thead tr.bg-template-blue th,
+#root [data-planning-layout] table thead tr.bg-template-blue th {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: none !important;
+  white-space: nowrap !important;
 }
 #root .engine-v2-planning-page {
   box-sizing: border-box !important;
@@ -161,7 +166,6 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
 
   function isPlanningTable(table) {
     if (table.closest("#export-capture-layer")) return false;
-    if (table.closest("[data-planning-layout]")) return false;
     var ths = table.querySelectorAll("thead tr.bg-template-blue th");
     if (ths.length !== 6) return false;
     return (ths[0].textContent || "").trim() === "Code";

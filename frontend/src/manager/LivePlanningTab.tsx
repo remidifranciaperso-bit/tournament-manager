@@ -66,11 +66,11 @@ interface LivePlanningTabProps {
 
 const PLANNING_COLGROUP = (
   <colgroup>
-    <col className="w-[7%]" />
-    <col className="w-[7%]" />
-    <col className="w-[13%]" />
-    <col className="w-[33.5%]" />
-    <col className="w-[33.5%]" />
+    <col className="w-[8%]" />
+    <col className="w-[8%]" />
+    <col className="w-[14%]" />
+    <col className="w-[32%]" />
+    <col className="w-[32%]" />
     <col className="w-[6%]" />
   </colgroup>
 );
@@ -168,6 +168,9 @@ export function LivePlanningTab({
     v2TableHeaders
   );
   const doneLabel = exportMode ? "Terminé" : "Fait";
+  const v2HeadOverflow = v2TableHeaders
+    ? "!max-w-none overflow-visible [text-overflow:clip]"
+    : "";
 
   const bodyRows = rows.map((row) => {
     const match = matchByCode.get(row.code);
@@ -219,37 +222,37 @@ export function LivePlanningTab({
     <thead>
       <tr className="bg-template-blue text-white">
         <th
-          className={`whitespace-nowrap text-left !px-2 sm:!px-3 ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          className={`whitespace-nowrap text-left !px-2 sm:!px-3 ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
           style={headStyle}
         >
           Code
         </th>
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
           style={headStyle}
         >
           Heure
         </th>
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
           style={headStyle}
         >
           Terrain
         </th>
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
           style={headStyle}
         >
           Équipe 1
         </th>
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
           style={headStyle}
         >
           Équipe 2
         </th>
         <th
-          className={`whitespace-nowrap text-right !px-2 sm:!px-3 ${headClass} ${capture ? "font-normal [font-weight:400]" : ""}`}
+          className={`whitespace-nowrap text-right !px-2 sm:!px-3 ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
           style={headStyle}
         >
           {doneLabel}
