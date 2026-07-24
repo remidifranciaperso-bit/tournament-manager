@@ -60,6 +60,8 @@ interface LivePlanningTabProps {
   v2TableHeaders?: boolean;
   /** Rendu statique pleine largeur pour la capture PDF (pas de mise à l'échelle). */
   capture?: boolean;
+  /** Hauteur de référence (slide le plus chargé) pour échelle uniforme Live V2. */
+  planningReferenceHeight?: number;
 }
 
 const PLANNING_COLGROUP = (
@@ -91,16 +93,12 @@ export function LivePlanningTab({
   exportMode = false,
   v2TableHeaders = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2",
   capture = false,
+  planningReferenceHeight,
 }: LivePlanningTabProps) {
   const pageRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const [scaleW, setScaleW] = useState(1);
-  const [scaleH, setScaleH] = useState(1);
   const [scale, setScale] = useState(1);
   const [naturalHeight, setNaturalHeight] = useState(0);
-
-  /** Live V2 : largeur identique entre onglets ; hauteur compressée si besoin (sans scroll). */
-  const v2UniformTableWidth = v2TableHeaders;
 
   const { baseWidth, sideMargin, verticalMargin, captureShellWidth } = useMemo(
     () => planningLayoutMetrics(v2TableHeaders),
@@ -139,15 +137,13 @@ export function LivePlanningTab({
       if (availW <= 0 || availH <= 0 || naturalH <= 0) return;
 
       const widthScale = Math.min(1, availW / baseWidth);
-      const heightScale = Math.min(1, availH / naturalH);
+      const refHeight = v2TableHeaders
+        ? Math.max(naturalH, planningReferenceHeight ?? 0)
+        : naturalH;
+      const heightScale = Math.min(1, availH / refHeight);
+      const uniform = Math.min(widthScale, heightScale);
 
-      if (v2UniformTableWidth) {
-        setScaleW((prev) => (prev === widthScale ? prev : widthScale));
-        setScaleH((prev) => (prev === heightScale ? prev : heightScale));
-      } else {
-        const uniform = Math.min(widthScale, heightScale);
-        setScale((prev) => (prev === uniform ? prev : uniform));
-      }
+      setScale((prev) => (prev === uniform ? prev : uniform));
       setNaturalHeight((prev) => (prev === naturalH ? prev : naturalH));
     };
 
@@ -156,10 +152,9 @@ export function LivePlanningTab({
     observer.observe(page);
     observer.observe(card);
     return () => observer.disconnect();
-  }, [capture, rows.length, baseWidth, v2UniformTableWidth]);
+  }, [capture, rows.length, baseWidth, planningReferenceHeight, v2TableHeaders]);
 
-  const layoutScaleW = v2UniformTableWidth ? scaleW : scale;
-  const layoutScaleH = v2UniformTableWidth ? scaleH : scale;
+  const layoutScale = scale;
 
   const headPresentation = useLiveTableHeadPresentation(v2TableHeaders);
   const headClass = capture
@@ -289,7 +284,7 @@ export function LivePlanningTab({
           ["--live-display-scale" as string]: 1,
         }}
       >
-        <div className={`${LIVE_TABLE_CAPTURE_SHELL} w-full bg-template-blue`}>
+        <div className={`${LIVE_TABLE_CAPTURE_SHELL} mx-auto bg-template-blue`} style={{ width: baseWidth, maxWidth: "100%" }}>
           {table}
         </div>
       </div>
@@ -320,21 +315,19 @@ export function LivePlanningTab({
       <div
         className="relative shrink-0"
         style={{
-          width: baseWidth * layoutScaleW,
-          height: naturalHeight * layoutScaleH || undefined,
+          width: baseWidth * layoutScale,
+          height: naturalHeight * layoutScale || undefined,
         }}
       >
-        <LiveTableDisplayScaleProvider scale={layoutScaleW}>
+        <LiveTableDisplayScaleProvider scale={layoutScale}>
         <div
           ref={cardRef}
           className={`${cardShellClass} absolute left-0 top-0`}
           style={{
             width: baseWidth,
-            transform: v2UniformTableWidth
-              ? `scale(${scaleW}, ${scaleH})`
-              : `scale(${scale})`,
+            transform: `scale(${layoutScale})`,
             transformOrigin: "top left",
-            ["--live-display-scale" as string]: layoutScaleW,
+            ["--live-display-scale" as string]: layoutScale,
           }}
         >
           {table}

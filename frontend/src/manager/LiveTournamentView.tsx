@@ -18,6 +18,7 @@ import { LiveBracketCrossPageOverlay } from "./LiveBracketCrossPageOverlay";
 import { BracketCrossPageMetricsProvider } from "./bracketCrossPageMetrics";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LivePlanningTab } from "./LivePlanningTab";
+import { computePlanningReferenceHeight } from "./planningLayoutScale";
 import { LiveRetransmissionTab } from "./LiveRetransmissionTab";
 import { resolveTemplateId } from "./resolveTemplateId";
 import type { LiveTournamentData } from "./liveTypes";
@@ -318,6 +319,17 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     return indices[0] ?? null;
   }, [planningPages, planningPage, page_map]);
 
+  const planningReferenceHeight = useMemo(
+    () =>
+      computePlanningReferenceHeight(
+        planning_layout,
+        matches,
+        progress.completed,
+        progress.matchResults
+      ),
+    [planning_layout, matches, progress.completed, progress.matchResults]
+  );
+
   const isBracketTab =
     primaryTab === "main" ||
     primaryTab === "classement" ||
@@ -570,6 +582,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       matchResults={progress.matchResults}
                       onToggleDone={progress.toggleMatch}
                       v2TableHeaders={v2TableHeaders}
+                      planningReferenceHeight={planningReferenceHeight}
                     />
                   </LiveManagerDocumentPage>
                 ) : (

@@ -8,6 +8,7 @@ import { LiveBracketCrossPageOverlay } from "./LiveBracketCrossPageOverlay";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LiveMatchsEnCoursTab } from "./LiveMatchsEnCoursTab";
 import { LivePlanningTab } from "./LivePlanningTab";
+import { computePlanningReferenceHeight } from "./planningLayoutScale";
 import { LiveProchainsMatchsTab } from "./LiveProchainsMatchsTab";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
 import { LivePdfPage } from "./LivePdfViewer";
@@ -121,6 +122,17 @@ export function LiveBroadcastContent({
   const planningPages = useMemo(
     () => pageEntries(page_map, "planning"),
     [page_map]
+  );
+
+  const planningReferenceHeight = useMemo(
+    () =>
+      computePlanningReferenceHeight(
+        planning_layout,
+        matches,
+        progress.completed,
+        progress.matchResults
+      ),
+    [planning_layout, matches, progress.completed, progress.matchResults]
   );
 
   const mainPage =
@@ -319,6 +331,7 @@ export function LiveBroadcastContent({
                 onToggleDone={() => {}}
                 exportMode
                 v2TableHeaders={v2TableHeaders}
+                planningReferenceHeight={planningReferenceHeight}
               />
             </LiveManagerDocumentPage>
           ) : null}
