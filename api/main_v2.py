@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260724j"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260724k"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -222,7 +222,26 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
   var VERT = __PLANNING_VERT__;
   var FIT_INSET = __FIT_INSET__;
   var COL_PX = [__COL0__, __COL1__, __COL2__, __COL3__, __COL4__, __COL5__];
+  var REF_H_KEY = "ev2-planning-ref-nh";
   var scheduled = false;
+
+  function planningRefHeight(currentNh) {
+    try {
+      var prev = parseFloat(sessionStorage.getItem(REF_H_KEY) || "0");
+      if (!isFinite(prev) || prev < 0) prev = 0;
+      var next = Math.max(currentNh, prev);
+      if (next > prev) sessionStorage.setItem(REF_H_KEY, String(next));
+      return next;
+    } catch (e) {
+      return currentNh;
+    }
+  }
+
+  function resetPlanningRefHeight() {
+    try {
+      sessionStorage.removeItem(REF_H_KEY);
+    } catch (e) {}
+  }
 
   function isManagerRoute() {
     return (location.hash || "").indexOf("/manager") !== -1;
@@ -304,10 +323,11 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
       if (nh > maxNaturalH) maxNaturalH = nh;
     });
     if (maxNaturalH <= 0) return;
+    var refH = planningRefHeight(maxNaturalH);
     var scale = Math.min(
       1,
       availW / BASE_W,
-      availH / (maxNaturalH + __HEIGHT_BUFFER__)
+      availH / (refH + __HEIGHT_BUFFER__)
     );
     var scaleStr = String(scale);
     shells.forEach(function (shell) {
@@ -349,7 +369,10 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
       }
     }
     window.addEventListener("resize", scheduleLayout);
-    window.addEventListener("hashchange", scheduleLayout);
+    window.addEventListener("hashchange", function () {
+      if ((location.hash || "").indexOf("/manager") === -1) resetPlanningRefHeight();
+      scheduleLayout();
+    });
   }
 
   if (document.readyState === "loading") {
