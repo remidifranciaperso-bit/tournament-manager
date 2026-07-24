@@ -2,14 +2,14 @@
 export const EXPORT_CAPTURE_WIDTH = 1100;
 /** Marge latérale planning — 5 mm @ 96 dpi, aligné ``TABLE_SIDE_MARGIN_MM`` (PDF Live). */
 export const PLANNING_SIDE_MARGIN_PX = Math.round((5 * 96) / 25.4);
-/** Fractions colonnes planning à la largeur d’origine (Code, Heure, Terrain, Éq1, Éq2, Fait). */
-export const PLANNING_COL_BASE_FRACS = [0.08, 0.08, 0.14, 0.32, 0.32, 0.06] as const;
+/** Fractions colonnes planning — alignées PDF Engine V2 (Code, Heure, Terrain, Éq1, Éq2, Fait). */
+export const PLANNING_COL_BASE_FRACS = [0.07, 0.07, 0.13, 0.335, 0.335, 0.06] as const;
 /** Nombre de caractères visibles sans rognage (noms de terrains). */
 export const PLANNING_TERRAIN_COL_MIN_CHARS = 17;
-/** Calibré Noto bold ~16 px, majuscules + padding horizontal cellule. */
-const PLANNING_TERRAIN_CHAR_PX = 15;
-const PLANNING_TERRAIN_CELL_PAD_PX = 32;
-const PLANNING_TERRAIN_COL_SAFETY_PX = 40;
+/** Calibré Noto bold ~14 px + padding horizontal cellule (max 16–17 car.). */
+const PLANNING_TERRAIN_CHAR_PX = 10;
+const PLANNING_TERRAIN_CELL_PAD_PX = 16;
+const PLANNING_TERRAIN_COL_SAFETY_PX = 8;
 export const PLANNING_TERRAIN_COL_MIN_PX =
   PLANNING_TERRAIN_COL_MIN_CHARS * PLANNING_TERRAIN_CHAR_PX +
   PLANNING_TERRAIN_CELL_PAD_PX +
@@ -60,7 +60,7 @@ export function estimatePlanningTableHeight(rowCount: number): number {
   return headerPx + Math.max(rowCount, 1) * rowPx + cardChromePx;
 }
 /** Marqueur bundle Live V2 (``/api/v2/frontend-check``). */
-export const PLANNING_V2_LAYOUT_MARKER = "live-planning-fix-v2-20260724g";
+export const PLANNING_V2_LAYOUT_MARKER = "live-planning-fix-v2-20260724h";
 /** Classement final — ratio live 820/1024 (convocations calées dessus). */
 export const NARROW_TABLE_RATIO = 820 / 1024;
 export const FINAL_TABLE_WIDTH_PT = 820;

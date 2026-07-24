@@ -1,7 +1,7 @@
 # Engine V2 : PyMuPDF + rendu Live — build frontend inclus (voir .dockerignore).
 FROM node:20-slim AS frontend-build
 
-ARG FRONTEND_BUILD_ID=live-planning-terrain-col-v2-20260724g
+ARG FRONTEND_BUILD_ID=live-planning-terrain-col-v2-20260724h
 RUN echo "Frontend build id: ${FRONTEND_BUILD_ID}"
 
 WORKDIR /app/frontend

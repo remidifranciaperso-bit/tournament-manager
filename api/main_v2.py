@@ -74,12 +74,12 @@ _PLANNING_VERTICAL_MARGIN_PX = round(4 * 96 / 25.4)
 _PLANNING_VERTICAL_FIT_INSET_PX = 22
 _PLANNING_CARD_SHELL_EXTRA_PX = 8
 _PLANNING_SCALE_HEIGHT_BUFFER_PX = 12
-_PLANNING_COL_TERRAIN_FRAC = 0.14
-_PLANNING_COL_BASE_FRACS = [0.08, 0.08, 0.14, 0.32, 0.32, 0.06]
+_PLANNING_COL_TERRAIN_FRAC = 0.13
+_PLANNING_COL_BASE_FRACS = [0.07, 0.07, 0.13, 0.335, 0.335, 0.06]
 _PLANNING_TERRAIN_COL_MIN_CHARS = 17
-_PLANNING_TERRAIN_CHAR_PX = 15
-_PLANNING_TERRAIN_CELL_PAD_PX = 32
-_PLANNING_TERRAIN_COL_SAFETY_PX = 40
+_PLANNING_TERRAIN_CHAR_PX = 10
+_PLANNING_TERRAIN_CELL_PAD_PX = 16
+_PLANNING_TERRAIN_COL_SAFETY_PX = 8
 _PLANNING_TERRAIN_COL_MIN_PX = (
     _PLANNING_TERRAIN_COL_MIN_CHARS * _PLANNING_TERRAIN_CHAR_PX
     + _PLANNING_TERRAIN_CELL_PAD_PX
@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-col-v2-20260724g"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-col-v2-20260724h"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -156,7 +156,8 @@ _LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
   text-overflow: clip !important;
 }
 #root .engine-v2-planning-card table thead tr.bg-template-blue th,
-#root [data-planning-layout] table thead tr.bg-template-blue th {
+#root [data-planning-layout] table thead tr.bg-template-blue th,
+#root table[data-live-planning-table] thead tr.bg-template-blue th {
   overflow: visible !important;
   text-overflow: clip !important;
   max-width: none !important;
@@ -168,96 +169,60 @@ _LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
 }
 #root [data-planning-layout] table,
 #root .engine-v2-planning-card table,
-#root table.engine-v2-planning-table {
+#root table.engine-v2-planning-table,
+#root table[data-live-planning-table] {
   table-layout: fixed !important;
   width: __PLANNING_BASE__px !important;
-}
-#root [data-planning-layout] table tbody td:nth-child(3),
-#root [data-planning-layout] table thead th:nth-child(3),
-#root .engine-v2-planning-card table tbody td:nth-child(3),
-#root .engine-v2-planning-card table thead th:nth-child(3),
-#root table.engine-v2-planning-table tbody td:nth-child(3),
-#root table.engine-v2-planning-table thead th:nth-child(3) {
-  overflow: visible !important;
-  text-overflow: clip !important;
-  max-width: none !important;
-  width: __TERRAIN_MIN__px !important;
-  min-width: __TERRAIN_MIN__px !important;
-  box-sizing: border-box !important;
+  max-width: __PLANNING_BASE__px !important;
 }
 #root [data-planning-layout] table col:nth-child(1),
 #root .engine-v2-planning-card table col:nth-child(1),
-#root table.engine-v2-planning-table col:nth-child(1) {
+#root table.engine-v2-planning-table col:nth-child(1),
+#root table[data-live-planning-table] col:nth-child(1) {
   width: __PCOL1__ !important;
 }
 #root [data-planning-layout] table col:nth-child(2),
 #root .engine-v2-planning-card table col:nth-child(2),
-#root table.engine-v2-planning-table col:nth-child(2) {
+#root table.engine-v2-planning-table col:nth-child(2),
+#root table[data-live-planning-table] col:nth-child(2) {
   width: __PCOL2__ !important;
 }
 #root [data-planning-layout] table col:nth-child(3),
 #root .engine-v2-planning-card table col:nth-child(3),
-#root table.engine-v2-planning-table col:nth-child(3) {
-  width: __TERRAIN_MIN__px !important;
+#root table.engine-v2-planning-table col:nth-child(3),
+#root table[data-live-planning-table] col:nth-child(3) {
+  width: __PCOL3__ !important;
+  max-width: __TERRAIN_MIN__px !important;
 }
 #root [data-planning-layout] table col:nth-child(4),
 #root .engine-v2-planning-card table col:nth-child(4),
-#root table.engine-v2-planning-table col:nth-child(4) {
+#root table.engine-v2-planning-table col:nth-child(4),
+#root table[data-live-planning-table] col:nth-child(4) {
   width: __PCOL4__ !important;
 }
 #root [data-planning-layout] table col:nth-child(5),
 #root .engine-v2-planning-card table col:nth-child(5),
-#root table.engine-v2-planning-table col:nth-child(5) {
+#root table.engine-v2-planning-table col:nth-child(5),
+#root table[data-live-planning-table] col:nth-child(5) {
   width: __PCOL5__ !important;
 }
 #root [data-planning-layout] table col:nth-child(6),
 #root .engine-v2-planning-card table col:nth-child(6),
-#root table.engine-v2-planning-table col:nth-child(6) {
+#root table.engine-v2-planning-table col:nth-child(6),
+#root table[data-live-planning-table] col:nth-child(6) {
   width: __PCOL6__ !important;
 }
-#root table[data-live-planning-table],
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) {
-  table-layout: fixed !important;
-  width: __PLANNING_BASE__px !important;
+#root [data-planning-layout] table tbody td:nth-child(3),
+#root table[data-live-planning-table] tbody td:nth-child(3) {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
-#root table[data-live-planning-table] thead tr.bg-template-blue th,
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) thead tr.bg-template-blue th {
-  max-width: none !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-}
-#root table[data-live-planning-table] col:nth-child(1),
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(1) {
-  width: __PCOL1__ !important;
-}
-#root table[data-live-planning-table] col:nth-child(2),
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(2) {
-  width: __PCOL2__ !important;
-}
-#root table[data-live-planning-table] col:nth-child(3),
-#root table[data-live-planning-table] thead th:nth-child(3),
-#root table[data-live-planning-table] tbody td:nth-child(3),
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(3),
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) thead th:nth-child(3),
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) tbody td:nth-child(3) {
-  width: __TERRAIN_MIN__px !important;
-  min-width: __TERRAIN_MIN__px !important;
-  max-width: none !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-  box-sizing: border-box !important;
-}
-#root table[data-live-planning-table] col:nth-child(4),
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(4) {
-  width: __PCOL4__ !important;
-}
-#root table[data-live-planning-table] col:nth-child(5),
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(5) {
-  width: __PCOL5__ !important;
-}
-#root table[data-live-planning-table] col:nth-child(6),
-#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(6) {
-  width: __PCOL6__ !important;
+#root [data-planning-layout] .engine-v2-planning-card,
+#root [data-planning-layout] .engine-v2-planning-wrap {
+  width: auto !important;
+  height: auto !important;
+  transform: none !important;
 }
 #root .engine-v2-planning-page {
   box-sizing: border-box !important;
@@ -303,8 +268,8 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
   var FIT_INSET = __FIT_INSET__;
   var SHELL_EXTRA = __SHELL_EXTRA__;
   var HEIGHT_BUFFER = __HEIGHT_BUFFER__;
-  var TERRAIN_COL = "__TERRAIN_MIN__px";
-  var COL_WIDTHS = [__PCOL1__, __PCOL2__, TERRAIN_COL, __PCOL4__, __PCOL5__, __PCOL6__];
+  var TERRAIN_MAX = __TERRAIN_MIN__;
+  var COL_WIDTHS = [__PCOL1__, __PCOL2__, __PCOL3__, __PCOL4__, __PCOL5__, __PCOL6__];
   var scheduled = false;
   var layoutCache = new WeakMap();
   var maxPlanningNaturalH = 0;
@@ -363,20 +328,15 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     table.classList.add("engine-v2-planning-table");
     table.style.setProperty("table-layout", "fixed", "important");
     table.style.setProperty("width", BASE_W + "px", "important");
+    table.style.setProperty("max-width", BASE_W + "px", "important");
     var cols = table.querySelectorAll("colgroup > col, col");
     for (var i = 0; i < COL_WIDTHS.length; i++) {
       if (!cols[i]) continue;
       cols[i].style.setProperty("width", COL_WIDTHS[i], "important");
+      if (i === 2) {
+        cols[i].style.setProperty("max-width", TERRAIN_MAX + "px", "important");
+      }
     }
-    table
-      .querySelectorAll("thead th:nth-child(3), tbody td:nth-child(3)")
-      .forEach(function (cell) {
-        cell.style.setProperty("width", TERRAIN_COL, "important");
-        cell.style.setProperty("min-width", TERRAIN_COL, "important");
-        cell.style.setProperty("max-width", "none", "important");
-        cell.style.setProperty("overflow", "visible", "important");
-        cell.style.setProperty("text-overflow", "clip", "important");
-      });
   }
 
   function syncPlanningColWidths() {
@@ -400,6 +360,12 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
           card.style.setProperty("--live-display-scale", s);
         }
       });
+  }
+
+  function isPlanningTableForLayout(table) {
+    if (table.closest("#export-capture-layer")) return false;
+    if (table.closest("[data-planning-layout]")) return false;
+    return matchPlanningTable(table);
   }
 
   function isPlanningTable(table) {
@@ -454,7 +420,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 
     var shells = [];
     document.querySelectorAll("#root table").forEach(function (table) {
-      if (!isPlanningTable(table)) return;
+      if (!isPlanningTableForLayout(table)) return;
       var shell = findShell(table);
       if (shell) shells.push(shell);
     });
