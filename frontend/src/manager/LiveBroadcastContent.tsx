@@ -332,6 +332,7 @@ export function LiveBroadcastContent({
                 exportMode
                 v2TableHeaders={v2TableHeaders}
                 planningReferenceHeight={planningReferenceHeight}
+                planningSlideKey={planningSlideIndex ?? planningPage}
               />
             </LiveManagerDocumentPage>
           ) : null}

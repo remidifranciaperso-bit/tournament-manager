@@ -70,11 +70,12 @@ app.add_middleware(
 _LIVE_HEAD_SCREEN_PX = 12.5
 _PLANNING_SIDE_MARGIN_PX = round(5 * 96 / 25.4)
 _PLANNING_VERTICAL_MARGIN_PX = round(4 * 96 / 25.4)
-_PLANNING_VERTICAL_FIT_INSET_PX = 8
+_PLANNING_VERTICAL_FIT_INSET_PX = 22
+_PLANNING_CARD_SHELL_EXTRA_PX = 8
+_PLANNING_SCALE_HEIGHT_BUFFER_PX = 12
 _PLANNING_CAPTURE_WIDTH_PX = 1400
 _PLANNING_TABLE_WIDTH_PX = _PLANNING_CAPTURE_WIDTH_PX - 2 * _PLANNING_SIDE_MARGIN_PX
-_PLANNING_VERTICAL_FIT_INSET_PX = 8
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-fit-vertical-v2-20260724"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-all-pages-v2-20260724c"
 
 _ENGINE_V2_LIVE_MANAGER_INJECT = """
 <style id="engine-v2-live-manager-inject">
@@ -106,6 +107,10 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   text-overflow: clip !important;
   max-width: none !important;
   white-space: nowrap !important;
+  font-size: calc(__SCREEN_PX__px / var(--ev2-planning-s, var(--live-display-scale, 1))) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  line-height: 1.12 !important;
 }
 #root .engine-v2-planning-page {
   box-sizing: border-box !important;
@@ -148,6 +153,8 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   var VERT = __PLANNING_VERT__;
   var BASE_W = __PLANNING_BASE__;
   var FIT_INSET = __FIT_INSET__;
+  var SHELL_EXTRA = __SHELL_EXTRA__;
+  var HEIGHT_BUFFER = __HEIGHT_BUFFER__;
   var scheduled = false;
   var layoutCache = new WeakMap();
   var maxPlanningNaturalH = 0;
@@ -167,8 +174,50 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     });
   }
 
+  function measureCardHeight(card) {
+    return Math.max(card.scrollHeight, card.offsetHeight) + SHELL_EXTRA;
+  }
+
+  function readPlanningScale(page) {
+    var s =
+      page.style.getPropertyValue("--ev2-planning-s") ||
+      page.style.getPropertyValue("--live-display-scale");
+    if (s) return s;
+    var card = page.querySelector(
+      "[class*='rounded-xl'][class*='border-template-blue']"
+    );
+    if (!card) return null;
+    s = card.style.getPropertyValue("--ev2-planning-s");
+    if (s) return s;
+    s = card.style.getPropertyValue("--live-display-scale");
+    if (s) return s;
+    var m = (card.style.transform || "").match(
+      /scale\\s*\\(\\s*([0-9.]+)(?:\\s*,\\s*([0-9.]+))?\\s*\\)/
+    );
+    return m ? m[1] : null;
+  }
+
+  function syncPlanningHeadVars() {
+    document
+      .querySelectorAll("#root .engine-v2-planning-page, #root [data-planning-layout]")
+      .forEach(function (page) {
+        var s = readPlanningScale(page);
+        if (!s) return;
+        page.style.setProperty("--ev2-planning-s", s);
+        page.style.setProperty("--live-display-scale", s);
+        var card = page.querySelector(
+          "[class*='rounded-xl'][class*='border-template-blue']"
+        );
+        if (card) {
+          card.style.setProperty("--ev2-planning-s", s);
+          card.style.setProperty("--live-display-scale", s);
+        }
+      });
+  }
+
   function isPlanningTable(table) {
     if (table.closest("#export-capture-layer")) return false;
+    if (table.closest("[data-planning-layout]")) return false;
     var ths = table.querySelectorAll("thead tr.bg-template-blue th");
     if (ths.length !== 6) return false;
     return (ths[0].textContent || "").trim() === "Code";
@@ -203,6 +252,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
 
     page.style.setProperty("--ev2-planning-s", sStr);
     page.style.setProperty("--ev2-planning-nh", nh);
+    page.style.setProperty("--live-display-scale", sStr);
     card.style.setProperty("--live-display-scale", sStr);
   }
 
@@ -228,12 +278,13 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
 
     if (!shells.length) {
       layoutCapturePlanning();
+      syncPlanningHeadVars();
       syncScale();
       return;
     }
 
     shells.forEach(function (shell) {
-      var nh = Math.max(shell.card.scrollHeight, shell.card.offsetHeight);
+      var nh = measureCardHeight(shell.card);
       if (nh > maxPlanningNaturalH) maxPlanningNaturalH = nh;
     });
 
@@ -245,30 +296,37 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     var uniformScale = Math.min(
       1,
       availW / BASE_W,
-      Math.max(1, availH - FIT_INSET) / maxPlanningNaturalH
+      Math.max(1, availH - FIT_INSET) / (maxPlanningNaturalH + HEIGHT_BUFFER)
     );
 
     shells.forEach(function (shell) {
-      var nh = Math.max(shell.card.scrollHeight, shell.card.offsetHeight);
-      layoutLivePlanning(shell, uniformScale, nh);
+      var nh = measureCardHeight(shell.card);
+      layoutLivePlanning(shell, uniformScale, nh - SHELL_EXTRA);
     });
 
     layoutCapturePlanning();
+    syncPlanningHeadVars();
     syncScale();
+  }
+
+  function layoutPlanningDeferred() {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(layoutPlanning);
+    });
   }
 
   function scheduleLayout() {
     if (scheduled) return;
     scheduled = true;
+    layoutPlanningDeferred();
     requestAnimationFrame(function () {
       scheduled = false;
-      layoutPlanning();
     });
   }
 
   function boot() {
     syncScale();
-    scheduleLayout();
+    layoutPlanningDeferred();
     var root = document.getElementById("root");
     if (root) {
       new MutationObserver(scheduleLayout).observe(root, {
@@ -303,6 +361,8 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = (
     .replace("__PLANNING_BASE__", str(_PLANNING_TABLE_WIDTH_PX))
     .replace("__PLANNING_CAP__", str(_PLANNING_CAPTURE_WIDTH_PX))
     .replace("__FIT_INSET__", str(_PLANNING_VERTICAL_FIT_INSET_PX))
+    .replace("__SHELL_EXTRA__", str(_PLANNING_CARD_SHELL_EXTRA_PX))
+    .replace("__HEIGHT_BUFFER__", str(_PLANNING_SCALE_HEIGHT_BUFFER_PX))
 )
 
 # Rétrocompat nom constante

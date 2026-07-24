@@ -583,6 +583,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       onToggleDone={progress.toggleMatch}
                       v2TableHeaders={v2TableHeaders}
                       planningReferenceHeight={planningReferenceHeight}
+                      planningSlideKey={planningSlideIndex ?? planningPage}
                     />
                   </LiveManagerDocumentPage>
                 ) : (

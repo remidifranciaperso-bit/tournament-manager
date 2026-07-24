@@ -18,8 +18,10 @@ import {
   liveTeamTextClass,
 } from "./liveDataTable";
 import {
+  PLANNING_CARD_SHELL_EXTRA_PX,
   PLANNING_EXPORT_CAPTURE_WIDTH,
   PLANNING_LEGACY_LAYOUT_WIDTH,
+  PLANNING_SCALE_HEIGHT_BUFFER_PX,
   PLANNING_SIDE_MARGIN_PX,
   PLANNING_TABLE_LAYOUT_WIDTH,
   PLANNING_VERTICAL_FIT_INSET_PX,
@@ -63,6 +65,8 @@ interface LivePlanningTabProps {
   capture?: boolean;
   /** Hauteur de référence (slide le plus chargé) pour échelle uniforme Live V2. */
   planningReferenceHeight?: number;
+  /** Clé de slide (ex. index) — force remise à l’échelle à chaque sous-onglet planning. */
+  planningSlideKey?: string | number;
 }
 
 const PLANNING_COLGROUP = (
@@ -95,6 +99,7 @@ export function LivePlanningTab({
   v2TableHeaders = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2",
   capture = false,
   planningReferenceHeight,
+  planningSlideKey = 0,
 }: LivePlanningTabProps) {
   const pageRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -131,32 +136,63 @@ export function LivePlanningTab({
     const card = cardRef.current;
     if (!page || !card) return;
 
+    let raf2 = 0;
+
     const apply = () => {
       const availW = page.clientWidth;
       const availH = page.clientHeight;
-      const naturalH = card.offsetHeight;
+      const naturalH = Math.max(card.scrollHeight, card.offsetHeight);
       if (availW <= 0 || availH <= 0 || naturalH <= 0) return;
 
       const widthScale = Math.min(1, availW / baseWidth);
+      const shellExtra = v2TableHeaders ? PLANNING_CARD_SHELL_EXTRA_PX : 0;
+      const measuredH = naturalH + shellExtra;
       const refHeight = v2TableHeaders
-        ? Math.max(naturalH, planningReferenceHeight ?? 0)
-        : naturalH;
+        ? Math.max(
+            measuredH,
+            (planningReferenceHeight ?? 0) + shellExtra + PLANNING_SCALE_HEIGHT_BUFFER_PX
+          )
+        : measuredH;
       const fitAvailH = v2TableHeaders
         ? Math.max(1, availH - PLANNING_VERTICAL_FIT_INSET_PX)
         : availH;
-      const heightScale = Math.min(1, fitAvailH / refHeight);
+      const heightScale = Math.min(
+        1,
+        fitAvailH / (refHeight + (v2TableHeaders ? PLANNING_SCALE_HEIGHT_BUFFER_PX : 0))
+      );
       const uniform = Math.min(widthScale, heightScale);
+
+      if (v2TableHeaders) {
+        page.classList.add("engine-v2-planning-page");
+      }
 
       setScale((prev) => (prev === uniform ? prev : uniform));
       setNaturalHeight((prev) => (prev === naturalH ? prev : naturalH));
     };
 
     apply();
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(apply);
+    });
     const observer = new ResizeObserver(() => apply());
     observer.observe(page);
     observer.observe(card);
-    return () => observer.disconnect();
-  }, [capture, rows.length, baseWidth, planningReferenceHeight, v2TableHeaders]);
+    const tbody = card.querySelector("tbody");
+    if (tbody) observer.observe(tbody);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      observer.disconnect();
+    };
+  }, [
+    capture,
+    rows.length,
+    baseWidth,
+    planningReferenceHeight,
+    v2TableHeaders,
+    layoutFields.length,
+    planningSlideKey,
+  ]);
 
   const layoutScale = scale;
 
@@ -302,15 +338,25 @@ export function LivePlanningTab({
     ? ""
     : "px-4 py-4 sm:px-6 sm:py-6";
 
-  const pageStyle =
-    sideMargin > 0 || verticalMargin > 0
+  const shellExtra = v2TableHeaders ? PLANNING_CARD_SHELL_EXTRA_PX : 0;
+  const scaledShellHeight = (naturalHeight + shellExtra) * layoutScale;
+
+  const pageStyle = {
+    ...(sideMargin > 0 || verticalMargin > 0
       ? {
           paddingLeft: sideMargin,
           paddingRight: sideMargin,
           paddingTop: verticalMargin,
           paddingBottom: verticalMargin,
         }
-      : undefined;
+      : {}),
+    ...(v2TableHeaders
+      ? {
+          ["--ev2-planning-s" as string]: String(layoutScale),
+          ["--live-display-scale" as string]: String(layoutScale),
+        }
+      : {}),
+  };
 
   const pageAlignClass = v2TableHeaders
     ? "items-start justify-center"
@@ -321,13 +367,13 @@ export function LivePlanningTab({
       ref={pageRef}
       className={`flex min-h-0 flex-1 overflow-hidden bg-white ${pagePaddingClass} ${pageAlignClass}`}
       data-planning-layout={v2TableHeaders ? PLANNING_V2_LAYOUT_MARKER : undefined}
-      style={pageStyle}
+      style={Object.keys(pageStyle).length ? pageStyle : undefined}
     >
       <div
         className="relative shrink-0"
         style={{
           width: baseWidth * layoutScale,
-          height: naturalHeight * layoutScale || undefined,
+          height: scaledShellHeight || undefined,
         }}
       >
         <LiveTableDisplayScaleProvider scale={layoutScale}>
@@ -338,6 +384,7 @@ export function LivePlanningTab({
             width: baseWidth,
             transform: `scale(${layoutScale})`,
             transformOrigin: "top left",
+            ["--ev2-planning-s" as string]: String(layoutScale),
             ["--live-display-scale" as string]: layoutScale,
           }}
         >
