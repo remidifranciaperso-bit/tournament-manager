@@ -229,7 +229,7 @@ export function LivePlanningTab({
         <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap}`}>
           {row.heure || "—"}
         </td>
-        <td className={`${LIVE_TABLE_CELL_NOTO_BOLD} ${nowrap}`}>
+        <td className={`${LIVE_TABLE_CELL_NOTO_BOLD} ${nowrap} overflow-visible [text-overflow:clip]`}>
           {row.terrain || "—"}
         </td>
         <td

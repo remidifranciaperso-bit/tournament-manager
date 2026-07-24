@@ -4,9 +4,23 @@ export const EXPORT_CAPTURE_WIDTH = 1100;
 export const PLANNING_SIDE_MARGIN_PX = Math.round((5 * 96) / 25.4);
 /** Fractions colonnes planning à la largeur d’origine (Code, Heure, Terrain, Éq1, Éq2, Fait). */
 export const PLANNING_COL_BASE_FRACS = [0.08, 0.08, 0.14, 0.32, 0.32, 0.06] as const;
-/** Élargissement colonne Terrain (+30 %) — les autres colonnes gardent la même largeur px. */
-export const PLANNING_COL_TERRAIN_BOOST = 1.3;
+/** Nombre de caractères visibles sans rognage (noms de terrains). */
+export const PLANNING_TERRAIN_COL_MIN_CHARS = 16;
+/** Calibré Noto bold ~16 px, majuscules + padding horizontal cellule. */
+const PLANNING_TERRAIN_CHAR_PX = 14;
+const PLANNING_TERRAIN_CELL_PAD_PX = 32;
+const PLANNING_TERRAIN_COL_SAFETY_PX = 32;
+export const PLANNING_TERRAIN_COL_MIN_PX =
+  PLANNING_TERRAIN_COL_MIN_CHARS * PLANNING_TERRAIN_CHAR_PX +
+  PLANNING_TERRAIN_CELL_PAD_PX +
+  PLANNING_TERRAIN_COL_SAFETY_PX;
 const PLANNING_TABLE_BASE_WIDTH_PX = 1400 - 2 * PLANNING_SIDE_MARGIN_PX;
+/** Élargissement colonne Terrain — les autres colonnes gardent la même largeur px. */
+export const PLANNING_COL_TERRAIN_BOOST = Math.max(
+  1,
+  PLANNING_TERRAIN_COL_MIN_PX /
+    (PLANNING_TABLE_BASE_WIDTH_PX * PLANNING_COL_BASE_FRACS[2])
+);
 export const PLANNING_TABLE_WIDTH_TERRAIN_FACTOR =
   1 + PLANNING_COL_BASE_FRACS[2] * (PLANNING_COL_TERRAIN_BOOST - 1);
 /** Pleine largeur utile tableau planning (live + capture). */
