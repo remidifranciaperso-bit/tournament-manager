@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -97,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-col-v2-20260724f"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-col-v2-20260724g"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -113,8 +114,25 @@ def _planning_col_width_percents() -> list[str]:
 
 _PLANNING_COL_WIDTH_PCTS = _planning_col_width_percents()
 
-_ENGINE_V2_LIVE_MANAGER_INJECT = """
-<style id="engine-v2-live-manager-inject">
+
+def _fill_live_manager_inject(template: str) -> str:
+    result = (
+        template.replace("__SCREEN_PX__", str(_LIVE_HEAD_SCREEN_PX))
+        .replace("__PLANNING_SIDE__", str(_PLANNING_SIDE_MARGIN_PX))
+        .replace("__PLANNING_VERT__", str(_PLANNING_VERTICAL_MARGIN_PX))
+        .replace("__PLANNING_BASE__", str(_PLANNING_TABLE_WIDTH_PX))
+        .replace("__TERRAIN_MIN__", str(_PLANNING_TERRAIN_COL_MIN_PX))
+        .replace("__PLANNING_CAP__", str(_PLANNING_CAPTURE_WIDTH_PX))
+        .replace("__FIT_INSET__", str(_PLANNING_VERTICAL_FIT_INSET_PX))
+        .replace("__SHELL_EXTRA__", str(_PLANNING_CARD_SHELL_EXTRA_PX))
+        .replace("__HEIGHT_BUFFER__", str(_PLANNING_SCALE_HEIGHT_BUFFER_PX))
+    )
+    for idx, pct in enumerate(_PLANNING_COL_WIDTH_PCTS, start=1):
+        result = result.replace(f"__PCOL{idx}__", pct)
+    return result
+
+
+_LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
 #root table thead tr.bg-template-blue th {
   box-sizing: border-box !important;
   max-width: 100% !important;
@@ -197,6 +215,50 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
 #root table.engine-v2-planning-table col:nth-child(6) {
   width: __PCOL6__ !important;
 }
+#root table[data-live-planning-table],
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) {
+  table-layout: fixed !important;
+  width: __PLANNING_BASE__px !important;
+}
+#root table[data-live-planning-table] thead tr.bg-template-blue th,
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) thead tr.bg-template-blue th {
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+#root table[data-live-planning-table] col:nth-child(1),
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(1) {
+  width: __PCOL1__ !important;
+}
+#root table[data-live-planning-table] col:nth-child(2),
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(2) {
+  width: __PCOL2__ !important;
+}
+#root table[data-live-planning-table] col:nth-child(3),
+#root table[data-live-planning-table] thead th:nth-child(3),
+#root table[data-live-planning-table] tbody td:nth-child(3),
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(3),
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) thead th:nth-child(3),
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) tbody td:nth-child(3) {
+  width: __TERRAIN_MIN__px !important;
+  min-width: __TERRAIN_MIN__px !important;
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  box-sizing: border-box !important;
+}
+#root table[data-live-planning-table] col:nth-child(4),
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(4) {
+  width: __PCOL4__ !important;
+}
+#root table[data-live-planning-table] col:nth-child(5),
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(5) {
+  width: __PCOL5__ !important;
+}
+#root table[data-live-planning-table] col:nth-child(6),
+#root table:has(thead tr.bg-template-blue th:nth-child(6):last-child) col:nth-child(6) {
+  width: __PCOL6__ !important;
+}
 #root .engine-v2-planning-page {
   box-sizing: border-box !important;
   overflow: hidden !important;
@@ -231,8 +293,9 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   padding-top: __PLANNING_VERT__px !important;
   padding-bottom: __PLANNING_VERT__px !important;
 }
-</style>
-<script id="engine-v2-live-manager-inject-sync">
+""".strip()
+
+_LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 (function () {
   var SIDE = __PLANNING_SIDE__;
   var VERT = __PLANNING_VERT__;
@@ -286,9 +349,13 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
 
   function matchPlanningTable(table) {
     if (table.closest("#export-capture-layer")) return false;
+    if (table.matches("[data-live-planning-table], .engine-v2-planning-table")) return true;
     var ths = table.querySelectorAll("thead tr.bg-template-blue th");
     if (ths.length !== 6) return false;
-    return (ths[0].textContent || "").trim() === "Code";
+    var first = (ths[0].textContent || "").trim().toLowerCase();
+    if (first !== "code") return false;
+    var third = (ths[2].textContent || "").trim().toLowerCase();
+    return third === "terrain";
   }
 
   function applyPlanningColWidths(table) {
@@ -336,11 +403,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   }
 
   function isPlanningTable(table) {
-    if (table.closest("#export-capture-layer")) return false;
-    if (table.closest("[data-planning-layout]")) return false;
-    var ths = table.querySelectorAll("thead tr.bg-template-blue th");
-    if (ths.length !== 6) return false;
-    return (ths[0].textContent || "").trim() === "Code";
+    return matchPlanningTable(table);
   }
 
   function findShell(table) {
@@ -382,7 +445,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     var table = layer.querySelector("table");
     if (!table) return;
     var ths = table.querySelectorAll("thead tr.bg-template-blue th");
-    if (ths.length !== 6 || (ths[0].textContent || "").trim() !== "Code") return;
+    if (ths.length !== 6 || (ths[0].textContent || "").trim().toLowerCase() !== "code") return;
     layer.classList.add("engine-v2-planning-capture");
   }
 
@@ -447,9 +510,23 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     });
   }
 
+  function watchPlanningColgroups() {
+    var root = document.getElementById("root");
+    if (!root) return;
+    new MutationObserver(function () {
+      syncPlanningColWidths();
+    }).observe(root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["style", "width", "class"],
+    });
+  }
+
   function boot() {
     syncScale();
     syncPlanningColWidths();
+    watchPlanningColgroups();
     layoutPlanningDeferred();
     var root = document.getElementById("root");
     if (root) {
@@ -476,35 +553,66 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     boot();
   }
 })();
-</script>
 """.strip()
-_ENGINE_V2_LIVE_MANAGER_INJECT = (
-    _ENGINE_V2_LIVE_MANAGER_INJECT.replace("__SCREEN_PX__", str(_LIVE_HEAD_SCREEN_PX))
-    .replace("__PLANNING_SIDE__", str(_PLANNING_SIDE_MARGIN_PX))
-    .replace("__PLANNING_VERT__", str(_PLANNING_VERTICAL_MARGIN_PX))
-    .replace("__PLANNING_BASE__", str(_PLANNING_TABLE_WIDTH_PX))
-    .replace("__TERRAIN_MIN__", str(_PLANNING_TERRAIN_COL_MIN_PX))
-    .replace("__PLANNING_CAP__", str(_PLANNING_CAPTURE_WIDTH_PX))
-    .replace("__FIT_INSET__", str(_PLANNING_VERTICAL_FIT_INSET_PX))
-    .replace("__SHELL_EXTRA__", str(_PLANNING_CARD_SHELL_EXTRA_PX))
-    .replace("__HEIGHT_BUFFER__", str(_PLANNING_SCALE_HEIGHT_BUFFER_PX))
+
+_LIVE_MANAGER_INJECT_CSS = _fill_live_manager_inject(_LIVE_MANAGER_INJECT_CSS_TEMPLATE)
+_LIVE_MANAGER_INJECT_JS = _fill_live_manager_inject(_LIVE_MANAGER_INJECT_JS_TEMPLATE)
+_LIVE_MANAGER_INJECT_HEAD_SNIPPET = (
+    f'<link rel="stylesheet" href="/engine-v2-live-manager-inject.css?v={_LIVE_MANAGER_INJECT_VERSION}" '
+    f'id="engine-v2-live-manager-inject">\n'
+    f'    <script defer src="/engine-v2-live-manager-inject.js?v={_LIVE_MANAGER_INJECT_VERSION}" '
+    f'id="engine-v2-live-manager-inject-sync"></script>\n'
+    f'    <meta name="live-manager-inject-version" content="{_LIVE_MANAGER_INJECT_VERSION}">'
 )
-for idx, pct in enumerate(_PLANNING_COL_WIDTH_PCTS, start=1):
-    _ENGINE_V2_LIVE_MANAGER_INJECT = _ENGINE_V2_LIVE_MANAGER_INJECT.replace(
-        f"__PCOL{idx}__", pct
+_LIVE_INJECT_STRIP_RE = re.compile(
+    r'<link[^>]*engine-v2-live-manager-inject[^>]*>\s*'
+    r'|<script[^>]*engine-v2-live-manager-inject[^>]*>\s*</script>\s*'
+    r'|<meta[^>]*live-manager-inject-version[^>]*>\s*'
+    r'|<style id="engine-v2-live-manager-inject">.*?</style>\s*'
+    r'|<script id="engine-v2-live-manager-inject-sync">.*?</script>\s*',
+    re.DOTALL | re.IGNORECASE,
+)
+
+# Rétrocompat nom constante (inline legacy — ne plus utiliser)
+_ENGINE_V2_LIVE_MANAGER_INJECT = (
+    f'<style id="engine-v2-live-manager-inject">\n{_LIVE_MANAGER_INJECT_CSS}\n</style>\n'
+    f'<script id="engine-v2-live-manager-inject-sync">\n{_LIVE_MANAGER_INJECT_JS}\n</script>'
+)
+_ENGINE_V2_LIVE_TABLE_HEAD_INJECT = _ENGINE_V2_LIVE_MANAGER_INJECT
+
+
+def _strip_live_manager_inject(html: str) -> str:
+    return _LIVE_INJECT_STRIP_RE.sub("", html)
+
+
+_NO_STORE_HEADERS = {"Cache-Control": "no-store, max-age=0, must-revalidate"}
+
+
+@app.get("/engine-v2-live-manager-inject.css")
+def engine_v2_live_manager_inject_css():
+    return Response(
+        content=_LIVE_MANAGER_INJECT_CSS,
+        media_type="text/css",
+        headers=_NO_STORE_HEADERS,
     )
 
-# Rétrocompat nom constante
-_ENGINE_V2_LIVE_TABLE_HEAD_INJECT = _ENGINE_V2_LIVE_MANAGER_INJECT
+
+@app.get("/engine-v2-live-manager-inject.js")
+def engine_v2_live_manager_inject_js():
+    return Response(
+        content=_LIVE_MANAGER_INJECT_JS,
+        media_type="application/javascript",
+        headers=_NO_STORE_HEADERS,
+    )
 
 
 @app.get("/engine-v2-live-table-head.css")
 def engine_v2_live_table_head_css():
-    """Compat — préférer le bloc inline injecté dans index.html."""
+    """Compat — redirige vers le CSS Manager Live versionné."""
     return Response(
-        content="#deprecated-use-inline-inject",
+        content=_LIVE_MANAGER_INJECT_CSS,
         media_type="text/css",
-        headers={"Cache-Control": "no-store"},
+        headers=_NO_STORE_HEADERS,
     )
 
 
@@ -521,15 +629,16 @@ async def inject_engine_v2_live_table_head_css(request, call_next):
     async for chunk in response.body_iterator:
         body += chunk
     html = body.decode("utf-8", errors="replace")
-    if 'id="engine-v2-live-manager-inject"' in html or "</head>" not in html:
+    if "</head>" not in html:
         return HTMLResponse(
             content=html,
             status_code=response.status_code,
             headers=dict(response.headers),
         )
+    html = _strip_live_manager_inject(html)
     html = html.replace(
         "</head>",
-        f"    {_ENGINE_V2_LIVE_MANAGER_INJECT}\n  </head>",
+        f"    {_LIVE_MANAGER_INJECT_HEAD_SNIPPET}\n  </head>",
         1,
     )
     headers = dict(response.headers)
@@ -573,12 +682,15 @@ def frontend_check():
         "ok": True,
         "live_manager_inject": marker,
         "planning_table_width_px": _PLANNING_TABLE_WIDTH_PX,
+        "planning_terrain_col_min_px": _PLANNING_TERRAIN_COL_MIN_PX,
         "planning_margins_mm": {"left_right": 5, "top_bottom": 4},
+        "inject_css": f"/engine-v2-live-manager-inject.css?v={_LIVE_MANAGER_INJECT_VERSION}",
+        "inject_js": f"/engine-v2-live-manager-inject.js?v={_LIVE_MANAGER_INJECT_VERSION}",
         "bundle": bundle_name,
         "bundle_has_react_marker": bundle_has_marker,
         "note": (
-            "Le layout planning Live V2 est appliqué via inject index.html "
-            "(indépendant du bundle JS)."
+            "Layout planning Live V2 via CSS/JS versionnés injectés dans index.html "
+            "(indépendant du bundle React)."
         ),
     }
 
