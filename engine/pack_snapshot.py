@@ -10,15 +10,10 @@ from pathlib import Path
 SNAPSHOT_VERSION = "engine-live-snapshot-1"
 
 
-def _cache_path(template_path: Path) -> Path:
-    return template_path.with_suffix(template_path.suffix + ".live.json")
-
-
 def _charger_cache_json(template_path: Path) -> dict:
-    chemin = _cache_path(Path(template_path))
-    if not chemin.is_file():
-        raise FileNotFoundError(f"Cache live manquant : {chemin}")
-    return json.loads(chemin.read_text(encoding="utf-8"))
+    from engine.live_template_cache import charger_cache_live
+
+    return charger_cache_live(Path(template_path))
 
 
 def _serialiser_match(match) -> dict:

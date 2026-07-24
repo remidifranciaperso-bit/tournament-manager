@@ -97,7 +97,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-terrain-cols-v2-20260724d"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-fix-v2-20260724e"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -148,10 +148,21 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   letter-spacing: 0.03em !important;
   line-height: 1.12 !important;
 }
-#root [data-planning-layout] table tbody td:nth-child(3) {
+#root [data-planning-layout] table,
+#root .engine-v2-planning-card table {
+  table-layout: fixed !important;
+  width: __PLANNING_BASE__px !important;
+}
+#root [data-planning-layout] table tbody td:nth-child(3),
+#root [data-planning-layout] table thead th:nth-child(3),
+#root .engine-v2-planning-card table tbody td:nth-child(3),
+#root .engine-v2-planning-card table thead th:nth-child(3) {
   overflow: visible !important;
   text-overflow: clip !important;
   max-width: none !important;
+  width: __TERRAIN_MIN__px !important;
+  min-width: __TERRAIN_MIN__px !important;
+  box-sizing: border-box !important;
 }
 #root [data-planning-layout] table col:nth-child(1),
 #root .engine-v2-planning-card table col:nth-child(1) {
@@ -163,7 +174,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
 }
 #root [data-planning-layout] table col:nth-child(3),
 #root .engine-v2-planning-card table col:nth-child(3) {
-  width: __PCOL3__ !important;
+  width: __TERRAIN_MIN__px !important;
 }
 #root [data-planning-layout] table col:nth-child(4),
 #root .engine-v2-planning-card table col:nth-child(4) {
@@ -220,6 +231,8 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
   var FIT_INSET = __FIT_INSET__;
   var SHELL_EXTRA = __SHELL_EXTRA__;
   var HEIGHT_BUFFER = __HEIGHT_BUFFER__;
+  var TERRAIN_COL = "__TERRAIN_MIN__px";
+  var COL_WIDTHS = [__PCOL1__, __PCOL2__, TERRAIN_COL, __PCOL4__, __PCOL5__, __PCOL6__];
   var scheduled = false;
   var layoutCache = new WeakMap();
   var maxPlanningNaturalH = 0;
@@ -260,6 +273,18 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
       /scale\\s*\\(\\s*([0-9.]+)(?:\\s*,\\s*([0-9.]+))?\\s*\\)/
     );
     return m ? m[1] : null;
+  }
+
+  function syncPlanningColWidths() {
+    document
+      .querySelectorAll(
+        "#root [data-planning-layout] table col, #root .engine-v2-planning-card table col"
+      )
+      .forEach(function (col, index) {
+        var slot = index % 6;
+        if (slot >= COL_WIDTHS.length) return;
+        col.style.setProperty("width", COL_WIDTHS[slot], "important");
+      });
   }
 
   function syncPlanningHeadVars() {
@@ -344,6 +369,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
     if (!shells.length) {
       layoutCapturePlanning();
       syncPlanningHeadVars();
+      syncPlanningColWidths();
       syncScale();
       return;
     }
@@ -371,6 +397,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = """
 
     layoutCapturePlanning();
     syncPlanningHeadVars();
+    syncPlanningColWidths();
     syncScale();
   }
 
@@ -424,6 +451,7 @@ _ENGINE_V2_LIVE_MANAGER_INJECT = (
     .replace("__PLANNING_SIDE__", str(_PLANNING_SIDE_MARGIN_PX))
     .replace("__PLANNING_VERT__", str(_PLANNING_VERTICAL_MARGIN_PX))
     .replace("__PLANNING_BASE__", str(_PLANNING_TABLE_WIDTH_PX))
+    .replace("__TERRAIN_MIN__", str(_PLANNING_TERRAIN_COL_MIN_PX))
     .replace("__PLANNING_CAP__", str(_PLANNING_CAPTURE_WIDTH_PX))
     .replace("__FIT_INSET__", str(_PLANNING_VERTICAL_FIT_INSET_PX))
     .replace("__SHELL_EXTRA__", str(_PLANNING_CARD_SHELL_EXTRA_PX))

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from engine.live_export import construire_payload_live
+from engine.live_page_map import elaguer_planning_layout, normaliser_page_map_planning
 from engine.live_template_cache import charger_cache_live
 from engine.tournament_build import chemin_template, construire_tournoi_et_matchs
 
@@ -16,7 +17,12 @@ def init_live_from_snapshot(
 
     pdf_path = Path(pdf_path)
     pdf_filename = snapshot.get("pdf_filename") or pdf_path.name
-    page_map = snapshot["page_map"]
+    planning_layout = snapshot.get("planning_layout") or {}
+    page_map = normaliser_page_map_planning(
+        snapshot["page_map"],
+        planning_layout=planning_layout,
+    )
+    planning_layout = elaguer_planning_layout(page_map, planning_layout)
     page_sizes = snapshot.get("page_sizes") or {}
 
     if not page_map.get("main") and not page_map.get("classement"):
@@ -48,7 +54,7 @@ def init_live_from_snapshot(
         "matches": snapshot["matches"],
         "page_map": page_map,
         "fields": snapshot["fields"],
-        "planning_layout": snapshot.get("planning_layout") or {},
+        "planning_layout": planning_layout,
         "live_token": live_token,
         "page_sizes": page_sizes,
         "pdf_filename": pdf_filename,

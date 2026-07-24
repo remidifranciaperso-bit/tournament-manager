@@ -1,57 +1,58 @@
 {
+  "cache_version": "planning-filter-v3-20260724",
   "page_map": {
     "main": [
       {
-        "index": 11,
+        "index": 15,
         "label": "Tour préliminaire"
       },
       {
-        "index": 12,
+        "index": 16,
         "label": "Partie 1"
       },
       {
-        "index": 18,
+        "index": 22,
         "label": "Partie 2"
       },
       {
-        "index": 19,
+        "index": 23,
         "label": "Partie 3"
       }
     ],
     "classement": [
       {
-        "index": 13,
+        "index": 17,
         "label": "CLASSEMENT 5-8"
       },
       {
-        "index": 14,
+        "index": 18,
         "label": "CLASSEMENT 9-12"
       },
       {
-        "index": 20,
+        "index": 24,
         "label": "CLASSEMENT 5-8"
       }
     ],
     "planning": [
       {
-        "index": 15,
+        "index": 19,
         "label": "PLANNING DES MATCHS"
       }
     ],
     "planning_groups": [
       [
-        15
+        19
       ]
     ],
     "final": [
       {
-        "index": 16,
+        "index": 20,
         "label": "Classement final"
       }
     ]
   },
   "planning_layout": {
-    "15": [
+    "19": [
       {
         "key": "TYPE",
         "left": 0.213,
@@ -916,27 +917,15 @@
     ]
   },
   "page_sizes": {
-    "11": {
-      "width": 780.0,
-      "height": 540.0
-    },
-    "12": {
-      "width": 780.0,
-      "height": 540.0
-    },
-    "13": {
-      "width": 780.0,
-      "height": 540.0
-    },
-    "14": {
-      "width": 780.0,
-      "height": 540.0
-    },
     "15": {
       "width": 780.0,
       "height": 540.0
     },
     "16": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "17": {
       "width": 780.0,
       "height": 540.0
     },
@@ -949,6 +938,18 @@
       "height": 540.0
     },
     "20": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "22": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "23": {
+      "width": 780.0,
+      "height": 540.0
+    },
+    "24": {
       "width": 780.0,
       "height": 540.0
     }

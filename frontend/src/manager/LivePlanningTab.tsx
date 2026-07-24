@@ -24,6 +24,7 @@ import {
   PLANNING_SCALE_HEIGHT_BUFFER_PX,
   PLANNING_SIDE_MARGIN_PX,
   PLANNING_TABLE_LAYOUT_WIDTH,
+  PLANNING_TERRAIN_COL_MIN_PX,
   PLANNING_VERTICAL_FIT_INSET_PX,
   PLANNING_VERTICAL_MARGIN_PX,
   PLANNING_V2_LAYOUT_MARKER,
@@ -76,7 +77,7 @@ const PLANNING_COLGROUP = (
   <colgroup>
     <col style={{ width: PLANNING_COL_WIDTHS[0] }} />
     <col style={{ width: PLANNING_COL_WIDTHS[1] }} />
-    <col style={{ width: PLANNING_COL_WIDTHS[2] }} />
+    <col style={{ width: `${PLANNING_TERRAIN_COL_MIN_PX}px` }} />
     <col style={{ width: PLANNING_COL_WIDTHS[3] }} />
     <col style={{ width: PLANNING_COL_WIDTHS[4] }} />
     <col style={{ width: PLANNING_COL_WIDTHS[5] }} />

@@ -3,6 +3,7 @@ import re
 from pptx import Presentation
 
 from engine.ppt_engine import parcourir_shapes
+from engine.live_layout import extraire_layout_template
 
 _CODE_TAG = re.compile(
     r"\{\{([A-Z0-9_]+)_(?:CODE|TERRAIN|HEURE|EQ1|EQ2)\}\}"
@@ -14,6 +15,8 @@ _PLANNING_FRACTION = re.compile(
 )
 _MULTI_DAY_PLANNING_TAG = re.compile(r"\{\{J\d+_PL\d+_")
 _LEGACY_PLANNING_TAG = re.compile(r"\{\{PL\d+_")
+_LEGACY_PL_CODE = re.compile(r"^PL\d+_CODE$")
+_MULTI_DAY_PL_CODE = re.compile(r"^J\d+_PL\d+_CODE$")
 
 _MAIN_PREFIXES = ("P", "H", "Q", "D", "S")
 _MAIN_EXACT = frozenset({"F", "PF"})
@@ -35,6 +38,21 @@ def _slide_text(slide) -> str:
             text = shape.text_frame.text.strip()
             if text:
                 parts.append(text)
+    return "\n".join(parts)
+
+
+def _slide_planning_tag_text(slide) -> str:
+    """Texte slide + cellules tableau (balises ``{{PL…}}`` / ``{{J1_PL…}}``)."""
+    parts = [_slide_text(slide)]
+    for shape in parcourir_shapes(slide.shapes):
+        if not getattr(shape, "has_table", False):
+            continue
+        table = shape.table
+        for row in table.rows:
+            for cell in row.cells:
+                text = cell.text.strip()
+                if text:
+                    parts.append(text)
     return "\n".join(parts)
 
 
@@ -226,7 +244,7 @@ def _filter_redundant_planning_entries(
         return planning_entries
 
     slide_texts = {
-        entry["index"]: _slide_text(prs.slides[entry["index"]])
+        entry["index"]: _slide_planning_tag_text(prs.slides[entry["index"]])
         for entry in planning_entries
     }
     has_multi_day = any(
@@ -245,6 +263,99 @@ def _filter_redundant_planning_entries(
             continue
         filtered.append(entry)
     return filtered
+
+
+def _filter_redundant_planning_from_layout(
+    planning_entries: list[dict],
+    planning_layout: dict,
+) -> list[dict]:
+    """Même filtre que PPTX, à partir des clés ``planning_layout``."""
+    if not planning_entries or not planning_layout:
+        return planning_entries
+
+    has_multi_day = any(
+        _MULTI_DAY_PL_CODE.match(field.get("key", ""))
+        for fields in planning_layout.values()
+        for field in fields
+    )
+    if not has_multi_day:
+        return planning_entries
+
+    filtered: list[dict] = []
+    for entry in planning_entries:
+        fields = planning_layout.get(str(entry["index"]), [])
+        has_slide_multi = any(
+            _MULTI_DAY_PL_CODE.match(field.get("key", "")) for field in fields
+        )
+        has_slide_legacy = any(
+            _LEGACY_PL_CODE.match(field.get("key", "")) for field in fields
+        )
+        if has_slide_legacy and not has_slide_multi:
+            continue
+        filtered.append(entry)
+    return filtered
+
+
+def _group_planning_pages_from_layout(
+    planning_entries: list[dict],
+    planning_layout: dict,
+) -> list[list[int]]:
+    if not planning_entries:
+        return []
+
+    groups: dict[int, list[int]] = {}
+    for entry in planning_entries:
+        fields = planning_layout.get(str(entry["index"]), [])
+        jour: int | None = None
+        for field in fields:
+            match = re.match(r"^J(\d+)_PL\d+_", field.get("key", ""))
+            if match:
+                jour = int(match.group(1))
+                break
+        groups.setdefault(jour or 1, []).append(entry["index"])
+
+    return [groups[jour] for jour in sorted(groups)]
+
+
+def elaguer_planning_layout(page_map: dict, planning_layout: dict) -> dict:
+    """Retire les slides planning exclues du ``page_map``."""
+    allowed = {str(entry["index"]) for entry in page_map.get("planning", [])}
+    return {
+        key: fields for key, fields in planning_layout.items() if key in allowed
+    }
+
+
+def normaliser_page_map_planning(
+    page_map: dict,
+    *,
+    planning_layout: dict | None = None,
+    template_path=None,
+) -> dict:
+    """
+    Applique le filtre anti-doublon planning (legacy ``PL{n}`` vs ``J{jour}_PL{n}``).
+    Utilisable sur cache figé ou snapshot sans regénérer le PPTX.
+    """
+    planning = list(page_map.get("planning") or [])
+    if not planning:
+        return page_map
+
+    if template_path is not None:
+        layout = extraire_layout_template(template_path)
+        filtered = _filter_redundant_planning_from_layout(planning, layout)
+        groups = _group_planning_pages_from_layout(filtered, layout)
+    elif planning_layout:
+        filtered = _filter_redundant_planning_from_layout(planning, planning_layout)
+        groups = _group_planning_pages_from_layout(filtered, planning_layout)
+    else:
+        return page_map
+
+    if filtered == planning and groups == page_map.get("planning_groups"):
+        return page_map
+
+    normalise = dict(page_map)
+    normalise["planning"] = filtered
+    normalise["planning_groups"] = groups
+    return normalise
 
 
 def _group_planning_pages(

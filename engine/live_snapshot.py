@@ -11,6 +11,7 @@ from engine.live_export import (
     serialiser_match,
     serialiser_tournoi,
 )
+from engine.live_page_map import elaguer_planning_layout, normaliser_page_map_planning
 from engine.live_valeurs import construire_champs_live
 
 SNAPSHOT_VERSION = "engine-live-snapshot-1"
@@ -66,6 +67,11 @@ def construire_snapshot_engine(
     """État tournoi exact au moment de la génération PDF (tableau + planning figés)."""
     fields = construire_champs_live(tournoi, matchs)
     planning_layout = copy.deepcopy(cache.get("planning_layout") or {})
+    page_map = normaliser_page_map_planning(
+        copy.deepcopy(cache["page_map"]),
+        planning_layout=planning_layout,
+    )
+    planning_layout = elaguer_planning_layout(page_map, planning_layout)
     if planning_layout:
         planning_layout = _enrichir_planning_layout(planning_layout, fields)
 
@@ -75,7 +81,7 @@ def construire_snapshot_engine(
         "meta": serialiser_tournoi(tournoi),
         "matches": [serialiser_match(match) for match in matchs],
         "fields": fields,
-        "page_map": cache["page_map"],
+        "page_map": page_map,
         "planning_layout": planning_layout,
         "page_sizes": cache.get("page_sizes") or {},
     }
