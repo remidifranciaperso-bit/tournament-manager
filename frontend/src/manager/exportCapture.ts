@@ -75,7 +75,7 @@ export function estimatePlanningTableHeight(rowCount: number): number {
   return headerPx + Math.max(rowCount, 1) * rowPx + cardChromePx;
 }
 /** Marqueur bundle Live V2 (``/api/v2/frontend-check``). */
-export const PLANNING_V2_LAYOUT_MARKER = "live-planning-fix-v2-20260724i";
+export const PLANNING_V2_LAYOUT_MARKER = "live-planning-fix-v2-20260724j";
 /** Classement final — ratio live 820/1024 (convocations calées dessus). */
 export const NARROW_TABLE_RATIO = 820 / 1024;
 export const FINAL_TABLE_WIDTH_PT = 820;
