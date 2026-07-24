@@ -27,6 +27,7 @@ import {
   PLANNING_VERTICAL_FIT_INSET_PX,
   PLANNING_VERTICAL_MARGIN_PX,
   PLANNING_V2_LAYOUT_MARKER,
+  planningColWidthPercents,
 } from "./exportCapture";
 import {
   useLiveTableHeadPresentation,
@@ -69,14 +70,16 @@ interface LivePlanningTabProps {
   planningSlideKey?: string | number;
 }
 
+const PLANNING_COL_WIDTHS = planningColWidthPercents();
+
 const PLANNING_COLGROUP = (
   <colgroup>
-    <col className="w-[8%]" />
-    <col className="w-[8%]" />
-    <col className="w-[14%]" />
-    <col className="w-[32%]" />
-    <col className="w-[32%]" />
-    <col className="w-[6%]" />
+    <col style={{ width: PLANNING_COL_WIDTHS[0] }} />
+    <col style={{ width: PLANNING_COL_WIDTHS[1] }} />
+    <col style={{ width: PLANNING_COL_WIDTHS[2] }} />
+    <col style={{ width: PLANNING_COL_WIDTHS[3] }} />
+    <col style={{ width: PLANNING_COL_WIDTHS[4] }} />
+    <col style={{ width: PLANNING_COL_WIDTHS[5] }} />
   </colgroup>
 );
 

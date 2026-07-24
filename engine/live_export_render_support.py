@@ -71,7 +71,25 @@ CARD_BORDER_COLOR = (
     0.65 + 0.35 * TEMPLATE_BLUE[1],
     0.65 + 0.35 * TEMPLATE_BLUE[2],
 )
-PLANNING_COL_WIDTHS = [0.07, 0.07, 0.13, 0.335, 0.335, 0.06]
+_PLANNING_COL_BASE_FRACS = [0.07, 0.07, 0.13, 0.335, 0.335, 0.06]
+_PLANNING_COL_TERRAIN_BOOST = 1.3
+_PLANNING_TABLE_WIDTH_TERRAIN_FACTOR = (
+    1 + _PLANNING_COL_BASE_FRACS[2] * (_PLANNING_COL_TERRAIN_BOOST - 1)
+)
+
+
+def _planning_col_widths() -> list[float]:
+    boost = _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
+    widths: list[float] = []
+    for index, frac in enumerate(_PLANNING_COL_BASE_FRACS):
+        width_frac = (
+            frac * _PLANNING_COL_TERRAIN_BOOST if index == 2 else frac
+        )
+        widths.append(width_frac / boost)
+    return widths
+
+
+PLANNING_COL_WIDTHS = _planning_col_widths()
 # Inset calibré sur la 1re colonne convocations (72 % × 2 %).
 TABLE_CELL_INSET_FRAC = 0.02
 CONVOCATIONS_FIRST_COL_FRAC = 0.72
