@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725b"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725c"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -525,6 +525,19 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     return BRACKET_PLACEHOLDER.test(String(text || "").trim());
   }
 
+  /** Tailles équipe planning — aligné liveTeamTextClass (LivePlanningTab). */
+  function applyPlanningTeamCellStyle(cell, text) {
+    if (!cell) return;
+    var trimmed = String(text || "").trim();
+    cell.classList.remove("text-[10px]", "sm:text-xs", "text-sm", "sm:text-base");
+    if (!trimmed || trimmed === "—") return;
+    if (bracketTeamIsPlaceholder(trimmed)) {
+      cell.classList.add("text-[10px]", "sm:text-xs");
+    } else {
+      cell.classList.add("text-sm", "sm:text-base");
+    }
+  }
+
   /** Style boîte match aligné Live V1 (font-noto, 8.5 pt placeholder / 12 pt équipe). */
   function applyBracketTeamRowStyle(rowEl, spanEl, text, scaleH, bold) {
     if (!rowEl || !spanEl || !scaleH) return;
@@ -666,9 +679,11 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
         if ((cells[3].textContent || "").trim() !== next1) {
           cells[3].textContent = next1;
         }
+        applyPlanningTeamCellStyle(cells[3], next1);
         if ((cells[4].textContent || "").trim() !== next2) {
           cells[4].textContent = next2;
         }
+        applyPlanningTeamCellStyle(cells[4], next2);
       });
     });
   }
