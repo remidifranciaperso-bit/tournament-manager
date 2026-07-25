@@ -1,5 +1,5 @@
 /** Vérification déploiement bundle export (grep Docker / health). */
-export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260725-planning-heads";
+export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260725-planning-heads-bold";
 export const BRACKET_PROPAGATE_MARKER = "bracket-propagate-v2-20260725";
 export const PLANNING_PROPAGATE_MARKER = "planning-propagate-v2-20260725b";
 

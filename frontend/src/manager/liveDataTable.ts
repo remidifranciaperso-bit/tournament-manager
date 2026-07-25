@@ -59,13 +59,13 @@ export const FINAL_TABLE_BODY_TSL_BOLD =
 export const LIVE_TABLE_HEAD_PLANNING_CAPTURE = LIVE_TABLE_HEAD_NATIVE;
 export const PLANNING_HEAD_CAPTURE_PX = 16;
 
-/** En-têtes capture PDF — identiques planning et classement final (12 pt, graisse normale). */
+/** En-têtes capture PDF — identiques planning et classement final (12 pt, gras). */
 export const LIVE_TABLE_CAPTURE_HEAD = {
   className:
-    "live-table-col-head-v2 px-2 py-2 text-left font-tsl uppercase tracking-wide sm:px-2.5",
+    "live-table-col-head-v2 px-2 py-2 text-left font-tsl font-semibold uppercase tracking-wide sm:px-2.5",
   style: {
     fontSize: "12pt",
-    fontWeight: 400,
+    fontWeight: 600,
     lineHeight: 1.2,
     letterSpacing: "0.05em",
   } as const,
