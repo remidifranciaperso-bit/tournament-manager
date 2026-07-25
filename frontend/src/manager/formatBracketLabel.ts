@@ -1,5 +1,5 @@
 /** Vérification déploiement bundle export (grep Docker / health). */
-export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260725-offscreen";
+export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260725-oneline";
 export const BRACKET_PROPAGATE_MARKER = "bracket-propagate-v2-20260725";
 export const PLANNING_PROPAGATE_MARKER = "planning-propagate-v2-20260725b";
 
@@ -208,6 +208,11 @@ export function compareTeamsByTs(a: string, b: string): number {
   if (tsA != null) return -1;
   if (tsB != null) return 1;
   return a.localeCompare(b, "fr");
+}
+
+/** Espaces insécables — html-to-image casse les lignes aux espaces malgré nowrap. */
+export function formatTeamSingleLineForCapture(text: string): string {
+  return text.trim().replace(/ /g, "\u00A0");
 }
 
 export function formatTeamWithInitials(label: string): string {

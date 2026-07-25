@@ -18,6 +18,7 @@ import {
   feedKeyFromTeamLabel,
   formatBracketTeamDisplay,
   formatFeedKey,
+  formatTeamSingleLineForCapture,
   formatTeamSlot,
   formatTeamWithInitials,
   isBracketPlaceholder,
@@ -134,6 +135,18 @@ export function TemplateMatchBox({
       : "line-clamp-2 break-words";
   const team1Weight = winnerSide === 1 ? "font-semibold" : "font-normal";
   const team2Weight = winnerSide === 2 ? "font-semibold" : "font-normal";
+  const team1Display = capture ? formatTeamSingleLineForCapture(team1) : team1;
+  const team2Display = capture ? formatTeamSingleLineForCapture(team2) : team2;
+  const teamRowCaptureStyle = capture
+    ? ({ whiteSpace: "nowrap" as const, overflow: "visible" as const })
+    : undefined;
+  const teamSpanCaptureStyle = capture
+    ? ({
+        whiteSpace: "nowrap" as const,
+        display: "inline-block" as const,
+        wordBreak: "keep-all" as const,
+      })
+    : undefined;
 
   return (
     <div
@@ -184,9 +197,11 @@ export function TemplateMatchBox({
       <div className="flex min-h-0 flex-1 flex-col overflow-visible">
         <div
           className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
-          style={{ fontSize: team1Px }}
+          style={{ fontSize: team1Px, ...teamRowCaptureStyle }}
         >
-          <span className={team1BodyClass}>{team1}</span>
+          <span className={team1BodyClass} style={teamSpanCaptureStyle}>
+            {team1Display}
+          </span>
         </div>
         <div
           className="flex shrink-0 items-center justify-center font-noto font-normal text-arena-600"
@@ -196,9 +211,11 @@ export function TemplateMatchBox({
         </div>
         <div
           className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
-          style={{ fontSize: team2Px }}
+          style={{ fontSize: team2Px, ...teamRowCaptureStyle }}
         >
-          <span className={team2BodyClass}>{team2}</span>
+          <span className={team2BodyClass} style={teamSpanCaptureStyle}>
+            {team2Display}
+          </span>
         </div>
       </div>
 
@@ -231,16 +248,19 @@ function FeedLabel({
   field,
   text,
   scaleH,
+  capture = false,
 }: {
   field: LiveLayoutField;
   text: string;
   scaleH: number;
+  capture?: boolean;
 }) {
   const mapped = mapFieldToProjection(field);
   const fontPx = ptOnSlide(
     isBracketPlaceholder(text) ? TEMPLATE_PT.teamPlaceholder : TEMPLATE_PT.team,
     scaleH
   );
+  const displayText = capture ? formatTeamSingleLineForCapture(text) : text;
 
   return (
     <div
@@ -253,7 +273,24 @@ function FeedLabel({
         fontSize: fontPx,
       }}
     >
-      <span className={isBracketPlaceholder(text) ? "whitespace-nowrap" : "line-clamp-2 break-words"}>{text}</span>
+      <span
+        className={
+          capture || isBracketPlaceholder(text)
+            ? "whitespace-nowrap"
+            : "line-clamp-2 break-words"
+        }
+        style={
+          capture
+            ? {
+                whiteSpace: "nowrap",
+                display: "inline-block",
+                wordBreak: "keep-all",
+              }
+            : undefined
+        }
+      >
+        {displayText}
+      </span>
     </div>
   );
 }
@@ -453,6 +490,7 @@ export function LiveBracketSlide({
               poolQualifiers
             )}
             scaleH={renderHeight}
+            capture={capture}
           />
         ))}
     </div>

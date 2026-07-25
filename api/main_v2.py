@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725c"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725d"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -212,6 +212,15 @@ _LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
   line-height: 1.2 !important;
   overflow: visible !important;
   text-overflow: clip !important;
+}
+#export-capture-layer [data-export-capture="bracket"] [data-bracket-slide] .flex.flex-1.items-center span,
+#export-capture-layer [data-export-capture="bracket"] [data-bracket-slide] .absolute.z-10 span {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  word-break: keep-all !important;
+  display: inline-block !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: unset !important;
 }
 """.strip()
 
@@ -541,6 +550,8 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
   /** Style boîte match aligné Live V1 (font-noto, 8.5 pt placeholder / 12 pt équipe). */
   function applyBracketTeamRowStyle(rowEl, spanEl, text, scaleH, bold) {
     if (!rowEl || !spanEl || !scaleH) return;
+    var isExportCapture =
+      rowEl.closest && rowEl.closest("#export-capture-layer");
     var isPh = bracketTeamIsPlaceholder(text);
     var pt = isPh ? 8.5 : 12;
     rowEl.style.fontSize = bracketPtOnSlide(pt, scaleH) + "px";
@@ -555,15 +566,21 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
       "overflow-hidden",
       "whitespace-nowrap"
     );
+    spanEl.classList.remove("shrink-0", "whitespace-nowrap", "line-clamp-2", "break-words");
+    if (isExportCapture) {
+      rowEl.classList.add("justify-center", "text-center", "overflow-visible", "whitespace-nowrap");
+      spanEl.classList.add("shrink-0", "whitespace-nowrap");
+      spanEl.style.whiteSpace = "nowrap";
+      spanEl.style.display = "inline-block";
+      spanEl.style.wordBreak = "keep-all";
+      spanEl.style.webkitLineClamp = "unset";
+      return;
+    }
     if (isPh) {
       rowEl.classList.add("justify-start", "text-left", "overflow-visible", "whitespace-nowrap");
-    } else {
-      rowEl.classList.add("justify-center", "text-center", "overflow-hidden");
-    }
-    spanEl.classList.remove("shrink-0", "whitespace-nowrap", "line-clamp-2", "break-words");
-    if (isPh) {
       spanEl.classList.add("shrink-0");
     } else {
+      rowEl.classList.add("justify-center", "text-center", "overflow-hidden");
       spanEl.classList.add("line-clamp-2", "break-words");
     }
   }
@@ -579,6 +596,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     if (!slides.length) return;
 
     slides.forEach(function (slide) {
+      if (slide.closest && slide.closest("#export-capture-layer")) return;
       var scaleH =
         parseInt(slide.getAttribute("data-capture-height") || "0", 10) ||
         slide.clientHeight ||

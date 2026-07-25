@@ -162,6 +162,15 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Export PDF — une ligne par nom d'équipe (html-to-image). */
+  #export-capture-layer [data-export-capture="bracket"] [data-bracket-slide] .flex.flex-1.items-center span {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    word-break: keep-all !important;
+    display: inline-block !important;
+    -webkit-line-clamp: unset !important;
+  }
 }
 
 /* Scrollbar discrète */
