@@ -86,11 +86,39 @@ function PlanningColgroup({ tableWidth }: { tableWidth: number }) {
   );
 }
 
-function HandCheckboxSquare() {
+function PlanningDoneCell({
+  done,
+  exportMode,
+  code,
+  onToggleDone,
+}: {
+  done: boolean;
+  exportMode: boolean;
+  code: string;
+  onToggleDone: (code: string) => void;
+}) {
+  if (exportMode) {
+    return (
+      <div className="flex w-full justify-center">
+        <input
+          type="checkbox"
+          checked={done}
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+          className="pointer-events-none h-4 w-4 accent-template-blue"
+        />
+      </div>
+    );
+  }
+
   return (
-    <span
-      className="mx-auto box-border inline-block h-3.5 w-3.5 shrink-0 border-[1.5px] border-template-blue/70 bg-white"
-      aria-hidden
+    <input
+      type="checkbox"
+      checked={done}
+      onChange={() => onToggleDone(code)}
+      className="h-4 w-4 accent-template-blue"
+      aria-label={`Match ${code} terminé`}
     />
   );
 }
@@ -240,19 +268,12 @@ export function LivePlanningTab({
           {row.equipe2}
         </td>
         <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap} !px-2 sm:!px-3`}>
-          {exportMode ? (
-            <div className="flex w-full justify-center">
-              <HandCheckboxSquare />
-            </div>
-          ) : (
-            <input
-              type="checkbox"
-              checked={row.done}
-              onChange={() => onToggleDone(code)}
-              className="h-4 w-4 accent-template-blue"
-              aria-label={`Match ${row.code} terminé`}
-            />
-          )}
+          <PlanningDoneCell
+            done={row.done}
+            exportMode={exportMode}
+            code={code}
+            onToggleDone={onToggleDone}
+          />
         </td>
       </tr>
     );
