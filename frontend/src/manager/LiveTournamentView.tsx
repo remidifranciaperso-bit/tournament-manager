@@ -65,10 +65,9 @@ function DocumentTabPlaceholder({
   );
 }
 
-function stackedPanelClass(active: boolean, exportCaptureActive = false) {
+function stackedPanelClass(active: boolean) {
   return [
-    "absolute inset-0 flex min-h-0 flex-col transition-none",
-    exportCaptureActive ? "overflow-visible" : "overflow-hidden",
+    "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
     active ? "visible z-10" : "pointer-events-none invisible z-0",
   ].join(" ");
 }
@@ -610,10 +609,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
 
               {isPoolFormat ? (
                 <div
-                className={stackedPanelClass(
-                  primaryTab === "poules",
-                  exportCaptureMode && primaryTab === "poules"
-                )}
+                  className={stackedPanelClass(primaryTab === "poules")}
                   {...exportPanelAttrs(primaryTab === "poules", exportCaptureMode)}
                 >
                   <LiveManagerDocumentPage
@@ -643,10 +639,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               ) : null}
 
               <div
-                className={stackedPanelClass(
-                  primaryTab === "main",
-                  exportCaptureMode && primaryTab === "main"
-                )}
+                className={stackedPanelClass(primaryTab === "main")}
                 {...exportPanelAttrs(primaryTab === "main", exportCaptureMode)}
               >
                 {mainSlideIndex !== null ? (
@@ -678,10 +671,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               </div>
 
               <div
-                className={stackedPanelClass(
-                  primaryTab === "classement",
-                  exportCaptureMode && primaryTab === "classement"
-                )}
+                className={stackedPanelClass(primaryTab === "classement")}
                 {...exportPanelAttrs(primaryTab === "classement", exportCaptureMode)}
               >
                 {classementSlideIndex !== null ? (
@@ -714,10 +704,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
 
               <div
                 className={[
-                  stackedPanelClass(
-                    primaryTab === "planning",
-                    exportCaptureMode && primaryTab === "planning"
-                  ),
+                  stackedPanelClass(primaryTab === "planning"),
                   "touch-manipulation",
                 ].join(" ")}
                 {...exportPanelAttrs(primaryTab === "planning", exportCaptureMode)}
@@ -743,7 +730,6 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       planningReferenceHeight={planningReferenceHeight}
                       planningSlideKey={planningSlideIndex ?? planningPage}
                       exportMode={exportCaptureMode && primaryTab === "planning"}
-                      capture={exportCaptureMode && primaryTab === "planning"}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -756,10 +742,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               </div>
 
               <div
-                className={stackedPanelClass(
-                  primaryTab === "final",
-                  exportCaptureMode && primaryTab === "final"
-                )}
+                className={stackedPanelClass(primaryTab === "final")}
                 {...exportPanelAttrs(primaryTab === "final", exportCaptureMode)}
               >
                 <LiveManagerDocumentPage
