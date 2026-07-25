@@ -199,7 +199,7 @@ export function TemplateMatchBox({
           className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
           style={{ fontSize: team1Px, ...teamRowCaptureStyle }}
         >
-          <span className={team1BodyClass} style={teamSpanCaptureStyle}>
+          <span className={team1BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
             {team1Display}
           </span>
         </div>
@@ -213,7 +213,7 @@ export function TemplateMatchBox({
           className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
           style={{ fontSize: team2Px, ...teamRowCaptureStyle }}
         >
-          <span className={team2BodyClass} style={teamSpanCaptureStyle}>
+          <span className={team2BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
             {team2Display}
           </span>
         </div>
@@ -274,6 +274,7 @@ function FeedLabel({
       }}
     >
       <span
+        data-export-team-label={capture ? "" : undefined}
         className={
           capture || isBracketPlaceholder(text)
             ? "whitespace-nowrap"

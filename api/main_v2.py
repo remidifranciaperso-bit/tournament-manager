@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725d"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725e"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -213,8 +213,7 @@ _LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
   overflow: visible !important;
   text-overflow: clip !important;
 }
-#export-capture-layer [data-export-capture="bracket"] [data-bracket-slide] .flex.flex-1.items-center span,
-#export-capture-layer [data-export-capture="bracket"] [data-bracket-slide] .absolute.z-10 span {
+#export-capture-layer [data-export-capture="bracket"] [data-export-team-label] {
   white-space: nowrap !important;
   overflow: visible !important;
   word-break: keep-all !important;
