@@ -21,7 +21,6 @@ import {
   formatTeamSlot,
   formatTeamWithInitials,
   isBracketPlaceholder,
-  isUnresolvedTeamLabel,
 } from "./formatBracketLabel";
 import {
   buildMatchesByCode,
@@ -70,9 +69,6 @@ function resolveTeamDisplay(
 ): string {
   const raw = label.trim();
   if (!raw) return "—";
-  if (isUnresolvedTeamLabel(raw)) {
-    return formatTeamSlot(raw);
-  }
   const resolved = resolveTeamLabelDeep(
     label,
     matchesByCode,
