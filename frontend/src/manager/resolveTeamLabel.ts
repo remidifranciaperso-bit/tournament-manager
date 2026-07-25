@@ -11,6 +11,31 @@ export function buildMatchesByCode(
   return map;
 }
 
+function lookupByCode<T>(map: Map<string, T>, code: string): T | undefined {
+  const direct = map.get(code);
+  if (direct !== undefined) return direct;
+
+  const upper = code.toUpperCase();
+  for (const [key, value] of map) {
+    if (key.toUpperCase() === upper) return value;
+  }
+  return undefined;
+}
+
+function lookupResult(
+  matchResults: Record<string, StoredMatchResult>,
+  code: string
+): StoredMatchResult | undefined {
+  const direct = matchResults[code];
+  if (direct) return direct;
+
+  const upper = code.toUpperCase();
+  for (const [key, value] of Object.entries(matchResults)) {
+    if (key.toUpperCase() === upper) return value;
+  }
+  return undefined;
+}
+
 /**
  * Remplace « Vainqueur H1 » / « Perdant Q2 » par les noms du binôme
  * une fois le match parent terminé et scoré.
@@ -47,8 +72,8 @@ export function resolveTeamLabel(
 
   if (!parentCode) return label;
 
-  const parent = matchesByCode.get(parentCode);
-  const result = matchResults[parentCode];
+  const parent = lookupByCode(matchesByCode, parentCode);
+  const result = lookupResult(matchResults, parentCode);
   if (!parent || !result) return label;
 
   const side = role === "winner" ? result.winner : result.loser;

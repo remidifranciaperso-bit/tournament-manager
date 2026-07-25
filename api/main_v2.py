@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260724k"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260725-bracket"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -354,25 +354,248 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     });
   }
 
+  /* bracket-propagate-v2-20260725 — glissement équipes (bundle legacy) */
+  var BRACKET_PLACEHOLDER =
+    /^(Vainqueur|Perdant|Deuxième|Second|Troisième|🏆|❌|🥇|🥈|🥉|1er|2e|3 )/i;
+  var bracketScheduled = false;
+
+  function loadLiveSessionData() {
+    try {
+      var raw = localStorage.getItem("manager-live-session-v1");
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.liveData || !Array.isArray(parsed.liveData.matches)) {
+        return null;
+      }
+      return parsed.liveData;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function loadBracketMatchResults(token) {
+    try {
+      var raw = localStorage.getItem("live-progress-" + token);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return {};
+      return parsed.results || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function lookupCaseMap(map, code) {
+    if (map[code]) return map[code];
+    var upper = String(code || "").toUpperCase();
+    var keys = Object.keys(map);
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].toUpperCase() === upper) return map[keys[i]];
+    }
+    return null;
+  }
+
+  function buildBracketMatchesByCode(matches) {
+    var map = {};
+    for (var i = 0; i < matches.length; i++) {
+      map[matches[i].code] = matches[i];
+    }
+    return map;
+  }
+
+  function bracketUnresolved(text) {
+    var t = String(text || "").trim();
+    return (
+      BRACKET_PLACEHOLDER.test(t) ||
+      /^Vainqueur\s+/i.test(t) ||
+      /^Perdant\s+/i.test(t)
+    );
+  }
+
+  function bracketFormatTeamSlot(label) {
+    var text = String(label || "").trim();
+    if (!text) return "—";
+    if (/^Vainqueur\s+/i.test(text)) {
+      return "🏆\u2009" + text.replace(/^Vainqueur\s+/i, "") + ":";
+    }
+    if (/^Perdant\s+/i.test(text)) {
+      return "❌\u2009" + text.replace(/^Perdant\s+/i, "") + ":";
+    }
+    return text;
+  }
+
+  function bracketShortPlayer(name) {
+    var trimmed = String(name || "").trim();
+    var idx = trimmed.indexOf(" ");
+    if (idx === -1) return trimmed;
+    var initial = trimmed.charAt(0).toUpperCase();
+    return initial + ". " + trimmed.slice(idx + 1).trim();
+  }
+
+  function bracketFormatInitials(label) {
+    var text = String(label || "").trim();
+    if (!text) return "—";
+    if (BRACKET_PLACEHOLDER.test(text)) return bracketFormatTeamSlot(text);
+    var seed = "";
+    var body = text;
+    var seedMatch = text.match(/(\(TS\d*\))\s*$/i);
+    if (seedMatch) {
+      seed = " " + seedMatch[1];
+      body = text.slice(0, seedMatch.index).trim();
+    }
+    var parts = body.split(/\s*\/\s*/).filter(Boolean);
+    if (parts.length >= 2) {
+      return parts.map(bracketShortPlayer).join(" / ") + seed;
+    }
+    return bracketShortPlayer(body) + seed;
+  }
+
+  function bracketFormatDisplay(label, resolved) {
+    var raw = String(label || "").trim();
+    if (!raw) return "—";
+    if (
+      resolved !== raw &&
+      String(resolved || "").trim() &&
+      !bracketUnresolved(resolved)
+    ) {
+      return bracketFormatInitials(resolved);
+    }
+    if (bracketUnresolved(raw)) return bracketFormatTeamSlot(raw);
+    return bracketFormatInitials(String(resolved || raw).trim());
+  }
+
+  function resolveBracketLabelOnce(label, matchesByCode, matchResults) {
+    var text = String(label || "").trim();
+    if (!text) return label;
+
+    var winMatch = text.match(/^Vainqueur\s+(.+)$/i);
+    var loseMatch = text.match(/^Perdant\s+(.+)$/i);
+    var role = null;
+    var parentCode = null;
+    if (winMatch) {
+      role = "winner";
+      parentCode = winMatch[1].trim();
+    } else if (loseMatch) {
+      role = "loser";
+      parentCode = loseMatch[1].trim();
+    } else {
+      return label;
+    }
+
+    var parent = lookupCaseMap(matchesByCode, parentCode);
+    var result = lookupCaseMap(matchResults, parentCode);
+    if (!parent || !result) return label;
+
+    var side = role === "winner" ? result.winner : result.loser;
+    var resolved =
+      side === 1
+        ? String(parent.equipe1 || "").trim()
+        : String(parent.equipe2 || "").trim();
+    return resolved || label;
+  }
+
+  function resolveBracketLabelDeep(label, matchesByCode, matchResults, depth) {
+    depth = depth || 0;
+    if (depth > 8) return label;
+    var resolved = resolveBracketLabelOnce(label, matchesByCode, matchResults);
+    if (resolved === label) return label;
+    return resolveBracketLabelDeep(
+      resolved,
+      matchesByCode,
+      matchResults,
+      depth + 1
+    );
+  }
+
+  function resolveBracketTeamDisplay(label, matchesByCode, matchResults) {
+    var raw = String(label || "").trim();
+    if (!raw) return "—";
+    var resolved = resolveBracketLabelDeep(raw, matchesByCode, matchResults);
+    return bracketFormatDisplay(raw, resolved);
+  }
+
+  function patchBracketSlides() {
+    if (!isManagerRoute()) return;
+    var liveData = loadLiveSessionData();
+    if (!liveData) return;
+
+    var matchesByCode = buildBracketMatchesByCode(liveData.matches);
+    var matchResults = loadBracketMatchResults(liveData.live_token);
+    var slides = document.querySelectorAll("[data-bracket-slide]");
+    if (!slides.length) return;
+
+    slides.forEach(function (slide) {
+      slide.querySelectorAll(":scope > .absolute.z-10").forEach(function (box) {
+        var header = box.querySelector(".rounded-t-lg.bg-template-blue");
+        if (!header) return;
+        var codeSpans = header.querySelectorAll("span.truncate.font-semibold");
+        if (!codeSpans.length) return;
+        var code = (codeSpans[0].textContent || "").trim();
+        var match = lookupCaseMap(matchesByCode, code);
+        if (!match) return;
+
+        var col = box.querySelector(".flex.min-h-0.flex-1.flex-col");
+        if (!col || col.children.length < 3) return;
+        var team1Span = col.children[0].querySelector("span");
+        var team2Span = col.children[2].querySelector("span");
+        if (!team1Span || !team2Span) return;
+
+        var next1 = resolveBracketTeamDisplay(
+          match.equipe1,
+          matchesByCode,
+          matchResults
+        );
+        var next2 = resolveBracketTeamDisplay(
+          match.equipe2,
+          matchesByCode,
+          matchResults
+        );
+        if (team1Span.textContent !== next1) team1Span.textContent = next1;
+        if (team2Span.textContent !== next2) team2Span.textContent = next2;
+      });
+    });
+  }
+
+  function scheduleBracketPatch() {
+    if (bracketScheduled) return;
+    bracketScheduled = true;
+    requestAnimationFrame(function () {
+      patchBracketSlides();
+      bracketScheduled = false;
+    });
+  }
+
   function boot() {
     layoutPlanning();
+    scheduleBracketPatch();
     var root = document.getElementById("root");
     if (root) {
-      new MutationObserver(scheduleLayout).observe(root, {
+      new MutationObserver(function () {
+        scheduleLayout();
+        scheduleBracketPatch();
+      }).observe(root, {
         subtree: true,
         childList: true,
         attributes: true,
         attributeFilter: ["style", "class"],
       });
       if (typeof ResizeObserver !== "undefined") {
-        new ResizeObserver(scheduleLayout).observe(root);
+        new ResizeObserver(function () {
+          scheduleLayout();
+          scheduleBracketPatch();
+        }).observe(root);
       }
     }
     window.addEventListener("resize", scheduleLayout);
     window.addEventListener("hashchange", function () {
       if ((location.hash || "").indexOf("/manager") === -1) resetPlanningRefHeight();
       scheduleLayout();
+      scheduleBracketPatch();
     });
+    window.addEventListener("storage", scheduleBracketPatch);
+    window.setInterval(function () {
+      if (isManagerRoute()) scheduleBracketPatch();
+    }, 500);
   }
 
   if (document.readyState === "loading") {
@@ -519,6 +742,7 @@ def frontend_check():
         "planning_margins_mm": {"left_right": 5, "top_bottom": 4},
         "inject_css": f"/engine-v2-live-manager-inject.css?v={_LIVE_MANAGER_INJECT_VERSION}",
         "inject_js": f"/engine-v2-live-manager-inject.js?v={_LIVE_MANAGER_INJECT_VERSION}",
+        "bracket_propagate_inject": "bracket-propagate-v2-20260725",
         "bundle": bundle_name,
         "bundle_has_react_marker": bundle_has_marker,
         "bundle_has_planning_layout": bundle_has_planning_layout,
