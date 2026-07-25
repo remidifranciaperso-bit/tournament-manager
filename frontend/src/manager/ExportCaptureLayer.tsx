@@ -1,4 +1,4 @@
-import { EXPORT_CAPTURE_WIDTH, FINAL_EXPORT_CAPTURE_WIDTH, PLANNING_EXPORT_CAPTURE_WIDTH, resolveBracketCaptureWidth, type ExportCaptureTarget } from "./exportCapture";
+import { EXPORT_CAPTURE_WIDTH, FINAL_EXPORT_CAPTURE_WIDTH, PLANNING_EXPORT_CAPTURE_WIDTH, type ExportCaptureTarget } from "./exportCapture";
 import { LiveBracketViewer } from "./LiveBracketViewer";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
@@ -157,7 +157,7 @@ export function ExportCaptureLayer({
   const slideIndex = slideIndexAt(pages, subPage);
   if (slideIndex === null) return null;
 
-  const bracketCaptureWidth = resolveBracketCaptureWidth();
+  const bracketCaptureWidth = EXPORT_CAPTURE_WIDTH;
 
   return (
     <div

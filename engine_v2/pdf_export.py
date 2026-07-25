@@ -12,6 +12,7 @@ from engine.live_pdf_composite import (
     capture_key,
     composer_page_export,
 )
+from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
 _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
 
 

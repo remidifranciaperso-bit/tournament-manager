@@ -424,7 +424,7 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
                 logo_path=chemin_logo(token),
                 crosspage_stubs=(body.crosspage_stubs if body else None),
             )
-    except (RuntimeError, FileNotFoundError) as exc:
+    except (RuntimeError, FileNotFoundError, NameError, ValueError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return chemin_export

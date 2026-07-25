@@ -69,16 +69,17 @@ async function waitForScreenTarget(
 }
 
 function captureSelector(section: CaptureSection): string {
+  const visibleRoot = `${LIVE_EXPORT_ROOT} .visible`;
   if (section === "final") {
-    return `${LIVE_EXPORT_ROOT} [data-export-capture="final"]`;
+    return `${visibleRoot} [data-export-capture="final"]`;
   }
   if (section === "planning") {
-    return `${LIVE_EXPORT_ROOT} [data-export-capture="planning"]`;
+    return `${visibleRoot} [data-export-capture="planning"]`;
   }
   if (section === "pools") {
-    return `${LIVE_EXPORT_ROOT} [data-export-capture="pools"]`;
+    return `${visibleRoot} [data-export-capture="pools"]`;
   }
-  return `${LIVE_EXPORT_ROOT} [data-export-capture="bracket"]`;
+  return `${visibleRoot} [data-export-capture="bracket"]`;
 }
 
 export interface CrossPageStub {
