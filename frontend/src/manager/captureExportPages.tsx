@@ -12,7 +12,9 @@ export type CaptureSection =
   | "final"
   | "pools";
 
-/** Racine du Manager Live — capture WYSIWYG depuis l'onglet affiché (comme Live V1). */
+/** Racine off-screen pour les captures PDF (couche dédiée, fiable). */
+export const EXPORT_CAPTURE_LAYER = "#export-capture-layer";
+/** @deprecated Conservé pour compatibilité — préférer EXPORT_CAPTURE_LAYER. */
 export const LIVE_EXPORT_ROOT = "#live-export-root";
 
 export function captureKey(section: string, slideIndex: number): string {
@@ -69,17 +71,16 @@ async function waitForScreenTarget(
 }
 
 function captureSelector(section: CaptureSection): string {
-  const visibleRoot = `${LIVE_EXPORT_ROOT} .visible`;
   if (section === "final") {
-    return `${visibleRoot} [data-export-capture="final"]`;
+    return `${EXPORT_CAPTURE_LAYER} [data-export-capture="final"]`;
   }
   if (section === "planning") {
-    return `${visibleRoot} [data-export-capture="planning"]`;
+    return `${EXPORT_CAPTURE_LAYER} [data-export-capture="planning"]`;
   }
   if (section === "pools") {
-    return `${visibleRoot} [data-export-capture="pools"]`;
+    return `${EXPORT_CAPTURE_LAYER} [data-export-capture="pools"]`;
   }
-  return `${visibleRoot} [data-export-capture="bracket"]`;
+  return `${EXPORT_CAPTURE_LAYER} [data-export-capture="bracket"]`;
 }
 
 export interface CrossPageStub {

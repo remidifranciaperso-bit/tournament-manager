@@ -1,5 +1,5 @@
 /** Largeur fixe du bac hors-écran pour les captures PDF. */
-export const EXPORT_CAPTURE_WIDTH = 1100;
+export const EXPORT_CAPTURE_WIDTH = 1400;
 /** Marge latérale planning — 5 mm @ 96 dpi, aligné ``TABLE_SIDE_MARGIN_MM`` (PDF Live). */
 export const PLANNING_SIDE_MARGIN_PX = Math.round((5 * 96) / 25.4);
 /** Fractions colonnes planning — alignées PDF Engine V2 (Code, Heure, Terrain, Éq1, Éq2, Fait). */

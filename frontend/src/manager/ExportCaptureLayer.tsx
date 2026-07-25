@@ -166,21 +166,23 @@ export function ExportCaptureLayer({
       style={{ width: bracketCaptureWidth }}
       aria-hidden
     >
-      <LiveManagerDocumentPage
-        club={meta.club}
-        logoUrl={meta.logo_url}
-        capture="bracket"
-        showFooter={false}
-      >
-        <LiveBracketViewer
-          templateId={templateId}
-          slideIndex={slideIndex}
-          matches={matches}
-          matchResults={matchResults}
-          fixedRenderWidth={bracketCaptureWidth}
-          capture
-        />
-      </LiveManagerDocumentPage>
+      <LiveTableTypographyProvider meta={meta} packVersion={packVersion}>
+        <LiveManagerDocumentPage
+          club={meta.club}
+          logoUrl={meta.logo_url}
+          capture="bracket"
+          showFooter={false}
+        >
+          <LiveBracketViewer
+            templateId={templateId}
+            slideIndex={slideIndex}
+            matches={matches}
+            matchResults={matchResults}
+            fixedRenderWidth={bracketCaptureWidth}
+            capture
+          />
+        </LiveManagerDocumentPage>
+      </LiveTableTypographyProvider>
     </div>
   );
 }
