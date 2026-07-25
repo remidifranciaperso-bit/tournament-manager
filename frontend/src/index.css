@@ -164,12 +164,6 @@ body {
   }
 
   /* Export PDF — une ligne par nom d'équipe (html-to-image). */
-  #export-capture-layer [data-export-capture="planning"] tbody td:nth-child(2) {
-    font-size: 15px !important;
-    font-weight: 600 !important;
-  }
-
-  /* Export PDF — une ligne par nom d'équipe (html-to-image). */
   #export-capture-layer [data-export-team-label] {
     white-space: nowrap !important;
     overflow: visible !important;

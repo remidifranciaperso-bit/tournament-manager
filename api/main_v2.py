@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725e"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725f"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -550,7 +550,8 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
   function applyBracketTeamRowStyle(rowEl, spanEl, text, scaleH, bold) {
     if (!rowEl || !spanEl || !scaleH) return;
     var isExportCapture =
-      rowEl.closest && rowEl.closest("#export-capture-layer");
+      rowEl.closest &&
+      (rowEl.closest("#export-capture-layer") || rowEl.closest("[data-export-capture]"));
     var isPh = bracketTeamIsPlaceholder(text);
     var pt = isPh ? 8.5 : 12;
     rowEl.style.fontSize = bracketPtOnSlide(pt, scaleH) + "px";
@@ -596,6 +597,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 
     slides.forEach(function (slide) {
       if (slide.closest && slide.closest("#export-capture-layer")) return;
+      if (slide.closest && slide.closest("[data-export-capture]")) return;
       var scaleH =
         parseInt(slide.getAttribute("data-capture-height") || "0", 10) ||
         slide.clientHeight ||

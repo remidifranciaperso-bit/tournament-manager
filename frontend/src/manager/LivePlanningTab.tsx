@@ -5,6 +5,7 @@ import type { StoredMatchResult } from "./useLiveProgress";
 import {
   LIVE_TABLE,
   LIVE_TABLE_CAPTURE,
+  LIVE_TABLE_CAPTURE_SHELL,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CARD_WIDE,
   LIVE_TABLE_CELL_NOTO,
@@ -14,7 +15,6 @@ import {
   LIVE_TABLE_HEAD_PLANNING_CAPTURE,
   LIVE_TABLE_ROW,
   LIVE_TABLE_ROW_EXPORT,
-  PLANNING_HEURE_CAPTURE_PX,
   liveTeamTextClass,
 } from "./liveDataTable";
 import {
@@ -227,10 +227,7 @@ export function LivePlanningTab({
         className={exportMode ? LIVE_TABLE_ROW_EXPORT : LIVE_TABLE_ROW}
       >
         <td className={`${LIVE_TABLE_CELL_TSL_BOLD} ${nowrap} !px-2 sm:!px-3`}>{row.code}</td>
-        <td
-          className={`${LIVE_TABLE_CELL_TSL} ${nowrap}${capture ? " font-semibold" : ""}`}
-          style={capture ? { fontSize: `${PLANNING_HEURE_CAPTURE_PX}px` } : undefined}
-        >
+        <td className={`${LIVE_TABLE_CELL_TSL} ${nowrap}`}>
           {row.heure || "—"}
         </td>
         <td className={`${LIVE_TABLE_CELL_NOTO_BOLD} ${nowrap} overflow-hidden text-ellipsis`}>
@@ -345,7 +342,7 @@ export function LivePlanningTab({
   if (capture) {
     return (
       <div
-        className="flex w-full items-start justify-center bg-white"
+        className="flex w-full items-center justify-center bg-white"
         style={{
           width: captureShellWidth,
           boxSizing: "border-box",
@@ -354,26 +351,12 @@ export function LivePlanningTab({
           ["--live-display-scale" as string]: 1,
         }}
       >
-        <table
-          className={[
-            tableClass,
-            v2TableHeaders ? `${PLANNING_V2_TABLE_CLASS} table-fixed` : "table-fixed w-full",
-          ].join(" ")}
+        <div
+          className={`${LIVE_TABLE_CAPTURE_SHELL} mx-auto bg-template-blue`}
           style={{ width: baseWidth, maxWidth: "100%" }}
         >
-          {v2TableHeaders ? (
-            <PlanningColgroup tableWidth={baseWidth} />
-          ) : (
-            <colgroup>
-              <col style={{ width: "8%" }} />
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "32%" }} />
-              <col style={{ width: "32%" }} />
-              <col style={{ width: "6%" }} />
-            </colgroup>
-          )}
-          <tbody className="bg-white">{bodyRows}</tbody>
-        </table>
+          {table}
+        </div>
       </div>
     );
   }

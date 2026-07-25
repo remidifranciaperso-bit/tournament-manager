@@ -11,7 +11,6 @@ from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import (
     capture_key,
     composer_page_export,
-    composer_page_planning_hybrid,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
 _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
@@ -72,9 +71,6 @@ def exporter_pdf_engine_v2(
         footer_reference = _footer_reference_slide_index(page_map, source)
         meta = (snapshot or {}).get("meta") or {}
         club_name = meta.get("club")
-        planning_layout = (snapshot or {}).get("planning_layout") or {}
-        snapshot_matches = (snapshot or {}).get("matches") or []
-        snapshot_match_results = (snapshot or {}).get("match_results") or {}
 
         for key, capture_data in captures.items():
             if not key.startswith("composition:") or not capture_data:
@@ -120,44 +116,21 @@ def exporter_pdf_engine_v2(
                 page = merged.new_page(
                     width=page_rect.width, height=page_rect.height
                 )
-                layout_fields = (
-                    planning_layout.get(str(slide_index), [])
-                    if section == "planning"
-                    else []
+                composer_page_export(
+                    page,
+                    source,
+                    slide_index,
+                    capture_data,
+                    section=section,
+                    footer_slide_index=(
+                        footer_reference if section == "planning" else None
+                    ),
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                    club_name=club_name,
+                    base_dir=render_base,
+                    crosspage_stub=(crosspage_stubs or {}).get(key),
                 )
-                if not isinstance(layout_fields, list):
-                    layout_fields = []
-                if section == "planning" and layout_fields:
-                    composer_page_planning_hybrid(
-                        page,
-                        source,
-                        slide_index,
-                        capture_data,
-                        layout_fields,
-                        snapshot_matches,
-                        snapshot_match_results,
-                        base_dir=render_base,
-                        footer_slide_index=footer_reference,
-                        logo_bytes=logo_bytes,
-                        logo_wh=logo_wh,
-                        club_name=club_name,
-                    )
-                else:
-                    composer_page_export(
-                        page,
-                        source,
-                        slide_index,
-                        capture_data,
-                        section=section,
-                        footer_slide_index=(
-                            footer_reference if section == "planning" else None
-                        ),
-                        logo_bytes=logo_bytes,
-                        logo_wh=logo_wh,
-                        club_name=club_name,
-                        base_dir=render_base,
-                        crosspage_stub=(crosspage_stubs or {}).get(key),
-                    )
 
         if merged.page_count == 0:
             raise RuntimeError("Aucune page dans l'export V2.")
