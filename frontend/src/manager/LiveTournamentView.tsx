@@ -39,7 +39,8 @@ import { LiveTabTitle } from "./LiveTabTitle";
 import { useLiveProgress } from "./useLiveProgress";
 import type { LivePdfExportPayload } from "./LivePdfViewer";
 import { captureManagerExportPages } from "./captureExportPages";
-import type { ExportCaptureTarget, ExportPhase, ExportPoolView } from "./exportCapture";
+import type { ExportCaptureTarget, ExportPhase } from "./exportCapture";
+import { ExportCaptureLayer } from "./ExportCaptureLayer";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
 import { LiveTableTypographyProvider, resolveV2TableHeaders } from "./liveTableTypography";
 
@@ -70,10 +71,6 @@ function stackedPanelClass(active: boolean) {
     "absolute inset-0 flex min-h-0 flex-col overflow-hidden transition-none",
     active ? "visible z-10" : "pointer-events-none invisible z-0",
   ].join(" ");
-}
-
-function exportPanelAttrs(active: boolean, exportCaptureMode: boolean) {
-  return exportCaptureMode && active ? ({ "data-export-active-panel": "" } as const) : {};
 }
 
 function tabClass(active: boolean) {
@@ -224,10 +221,6 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     () => pageEntries(page_map, "planning"),
     [page_map]
   );
-  const finalPages = useMemo(
-    () => pageEntries(page_map, "final"),
-    [page_map]
-  );
 
   const [primaryTab, setPrimaryTab] = useState<LivePrimaryTab>("live");
   const [mainPage, setMainPage] = useState(0);
@@ -238,111 +231,24 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     () => new Set()
   );
   const [exportPhase, setExportPhase] = useState<ExportPhase>("idle");
-  const [exportCaptureMode, setExportCaptureMode] = useState(false);
-  const [finalPage, setFinalPage] = useState(0);
-  const exportRestoreRef = useRef<{
-    primaryTab: LivePrimaryTab;
-    mainPage: number;
-    classementPage: number;
-    planningPage: number;
-    poulesPage: number;
-    finalPage: number;
-  } | null>(null);
+  const [exportCaptureTarget, setExportCaptureTarget] =
+    useState<ExportCaptureTarget | null>(null);
   const bracketShellRef = useRef<HTMLDivElement>(null);
-
-  const finalPlaceRange = useMemo((): [number, number] | undefined => {
-    const pageCount = Math.max(1, finalPages.length);
-    if (pageCount <= 1) return undefined;
-    const chunk = Math.ceil(meta.nb_equipes / pageCount);
-    return [
-      finalPage * chunk + 1,
-      Math.min(meta.nb_equipes, (finalPage + 1) * chunk),
-    ];
-  }, [finalPages.length, finalPage, meta.nb_equipes]);
-
-  const applyExportTarget = useCallback(
-    (target: ExportCaptureTarget) => {
-      if (target.section === "main") {
-        setPrimaryTab("main");
-        setMainPage(target.subPage);
-        return;
-      }
-      if (target.section === "classement") {
-        setPrimaryTab("classement");
-        setClassementPage(target.subPage);
-        return;
-      }
-      if (target.section === "planning") {
-        setPrimaryTab("planning");
-        setPlanningPage(target.subPage);
-        return;
-      }
-      if (target.section === "final") {
-        setPrimaryTab("final");
-        setFinalPage(target.subPage);
-        return;
-      }
-      if (target.section === "pools") {
-        setPrimaryTab("poules");
-        const view = target.poolView ?? "composition";
-        if (view === "composition") {
-          setPoulesPage(0);
-          return;
-        }
-        const letter = (view as Extract<ExportPoolView, { letter: string }>).letter;
-        const index = poolLettersList.indexOf(letter);
-        setPoulesPage(index >= 0 ? index + 1 : 0);
-      }
-    },
-    [poolLettersList]
-  );
 
   const captureExportPages = useCallback(async () => {
     return captureManagerExportPages(
       page_map,
       {
         showPage: (nextTarget) => {
-          if (!exportRestoreRef.current) {
-            exportRestoreRef.current = {
-              primaryTab,
-              mainPage,
-              classementPage,
-              planningPage,
-              poulesPage,
-              finalPage,
-            };
-          }
-          setExportCaptureMode(true);
-          applyExportTarget(nextTarget);
+          setExportCaptureTarget(nextTarget);
         },
         restore: () => {
-          setExportCaptureMode(false);
-          const previous = exportRestoreRef.current;
-          if (previous) {
-            setPrimaryTab(previous.primaryTab);
-            setMainPage(previous.mainPage);
-            setClassementPage(previous.classementPage);
-            setPlanningPage(previous.planningPage);
-            setPoulesPage(previous.poulesPage);
-            setFinalPage(previous.finalPage);
-          }
-          exportRestoreRef.current = null;
+          setExportCaptureTarget(null);
         },
       },
       { compositionSlideIndex, poolSlideLetters }
     );
-  }, [
-    page_map,
-    compositionSlideIndex,
-    poolSlideLetters,
-    primaryTab,
-    mainPage,
-    classementPage,
-    planningPage,
-    poulesPage,
-    finalPage,
-    applyExportTarget,
-  ]);
+  }, [page_map, compositionSlideIndex, poolSlideLetters]);
 
   const activeSubPages = useMemo(() => {
     switch (primaryTab) {
@@ -608,20 +514,8 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
               </div>
 
               {isPoolFormat ? (
-                <div
-                  className={stackedPanelClass(primaryTab === "poules")}
-                  {...exportPanelAttrs(primaryTab === "poules", exportCaptureMode)}
-                >
-                  <LiveManagerDocumentPage
-                    club={meta.club}
-                    logoUrl={meta.logo_url}
-                    capture={
-                      exportCaptureMode && primaryTab === "poules"
-                        ? "pools"
-                        : undefined
-                    }
-                    showFooter={!exportCaptureMode}
-                  >
+                <div className={stackedPanelClass(primaryTab === "poules")}>
+                  <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                     <LivePoolsTab
                       view={
                         poulesPage === 0
@@ -632,33 +526,19 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       matchResults={progress.matchResults}
                       fields={fields}
                       v2TableHeaders={v2TableHeaders}
-                      capture={exportCaptureMode && primaryTab === "poules"}
                     />
                   </LiveManagerDocumentPage>
                 </div>
               ) : null}
 
-              <div
-                className={stackedPanelClass(primaryTab === "main")}
-                {...exportPanelAttrs(primaryTab === "main", exportCaptureMode)}
-              >
+              <div className={stackedPanelClass(primaryTab === "main")}>
                 {mainSlideIndex !== null ? (
-                  <LiveManagerDocumentPage
-                    club={meta.club}
-                    logoUrl={meta.logo_url}
-                    capture={
-                      exportCaptureMode && primaryTab === "main"
-                        ? "bracket"
-                        : undefined
-                    }
-                    showFooter={!exportCaptureMode}
-                  >
+                  <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                     <LiveBracketViewer
                       templateId={templateId}
                       slideIndex={mainSlideIndex}
                       matches={matches}
                       matchResults={progress.matchResults}
-                      capture={exportCaptureMode && primaryTab === "main"}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -670,27 +550,14 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                 )}
               </div>
 
-              <div
-                className={stackedPanelClass(primaryTab === "classement")}
-                {...exportPanelAttrs(primaryTab === "classement", exportCaptureMode)}
-              >
+              <div className={stackedPanelClass(primaryTab === "classement")}>
                 {classementSlideIndex !== null ? (
-                  <LiveManagerDocumentPage
-                    club={meta.club}
-                    logoUrl={meta.logo_url}
-                    capture={
-                      exportCaptureMode && primaryTab === "classement"
-                        ? "bracket"
-                        : undefined
-                    }
-                    showFooter={!exportCaptureMode}
-                  >
+                  <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                     <LiveBracketViewer
                       templateId={templateId}
                       slideIndex={classementSlideIndex}
                       matches={matches}
                       matchResults={progress.matchResults}
-                      capture={exportCaptureMode && primaryTab === "classement"}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -707,19 +574,9 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   stackedPanelClass(primaryTab === "planning"),
                   "touch-manipulation",
                 ].join(" ")}
-                {...exportPanelAttrs(primaryTab === "planning", exportCaptureMode)}
               >
                 {planningSlideIndex !== null ? (
-                  <LiveManagerDocumentPage
-                    club={meta.club}
-                    logoUrl={meta.logo_url}
-                    capture={
-                      exportCaptureMode && primaryTab === "planning"
-                        ? "planning"
-                        : undefined
-                    }
-                    showFooter={!exportCaptureMode}
-                  >
+                  <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                     <LivePlanningTab
                       layoutFields={planning_layout[String(planningSlideIndex)] ?? []}
                       matches={matches}
@@ -729,7 +586,6 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                       v2TableHeaders={v2TableHeaders}
                       planningReferenceHeight={planningReferenceHeight}
                       planningSlideKey={planningSlideIndex ?? planningPage}
-                      exportMode={exportCaptureMode && primaryTab === "planning"}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -741,30 +597,14 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                 )}
               </div>
 
-              <div
-                className={stackedPanelClass(primaryTab === "final")}
-                {...exportPanelAttrs(primaryTab === "final", exportCaptureMode)}
-              >
-                <LiveManagerDocumentPage
-                  club={meta.club}
-                  logoUrl={meta.logo_url}
-                  capture={
-                    exportCaptureMode && primaryTab === "final" ? "final" : undefined
-                  }
-                  showFooter={!exportCaptureMode}
-                >
+              <div className={stackedPanelClass(primaryTab === "final")}>
+                <LiveManagerDocumentPage club={meta.club} logoUrl={meta.logo_url}>
                   <LiveFinalRankingTab
                     meta={meta}
                     matches={matches}
                     matchResults={progress.matchResults}
                     fields={fields}
                     v2TableHeaders={v2TableHeaders}
-                    capture={exportCaptureMode && primaryTab === "final"}
-                    placeRange={
-                      exportCaptureMode && primaryTab === "final"
-                        ? finalPlaceRange
-                        : undefined
-                    }
                   />
                 </LiveManagerDocumentPage>
               </div>
@@ -789,6 +629,19 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
           </div>
         </div>
       </div>
+
+      <ExportCaptureLayer
+        target={exportCaptureTarget}
+        templateId={templateId}
+        pageMap={page_map}
+        matches={matches}
+        matchResults={progress.matchResults}
+        completed={progress.completed}
+        planningLayout={planning_layout ?? {}}
+        meta={meta}
+        fields={fields}
+        packVersion={pack_version}
+      />
     </div>
   );
 }

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import base64
 import math
+from io import BytesIO
 
 import fitz
+from PIL import Image, ImageChops
 
 from engine.live_export_render_support import (
     FINAL_TABLE_VERTICAL_MARGIN_PT,
@@ -41,6 +43,38 @@ def _decode_capture(data: str) -> bytes:
         _, payload = data.split(",", 1)
         return base64.b64decode(payload)
     return base64.b64decode(data)
+
+
+_TRIM_WHITE_RGB = (255, 255, 255)
+_TRIM_MIN_CONTENT_PX = 80
+
+
+def _capture_image_size(image_bytes: bytes) -> tuple[float, float]:
+    filetype = "jpeg" if image_bytes[:2] == b"\xff\xd8" else "png"
+    image = fitz.open(stream=image_bytes, filetype=filetype)
+    try:
+        rect = image[0].rect
+        return float(rect.width), float(rect.height)
+    finally:
+        image.close()
+
+
+def _trim_capture_whitespace(image_bytes: bytes) -> tuple[bytes, float, float]:
+    """Rogne les marges blanches autour d'un tableau centré dans la capture."""
+    with Image.open(BytesIO(image_bytes)) as img:
+        rgb = img.convert("RGB")
+        full_w, full_h = rgb.size
+        bg = Image.new("RGB", rgb.size, _TRIM_WHITE_RGB)
+        bbox = ImageChops.difference(rgb, bg).getbbox()
+        if bbox is None:
+            return image_bytes, float(full_w), float(full_h)
+        cropped = rgb.crop(bbox)
+        crop_w, crop_h = cropped.size
+        if crop_w < _TRIM_MIN_CONTENT_PX or crop_h < _TRIM_MIN_CONTENT_PX:
+            return image_bytes, float(full_w), float(full_h)
+        out = BytesIO()
+        cropped.save(out, format="PNG", optimize=True)
+        return out.getvalue(), float(crop_w), float(crop_h)
 
 
 def _fit_pdf_clip(
@@ -540,91 +574,87 @@ def composer_page_export(
     if len(image_bytes) < 4096:
         raise RuntimeError("Capture Manager trop petite ou vide.")
 
-    filetype = "jpeg" if image_bytes[:2] == b"\xff\xd8" else "png"
-    image = fitz.open(stream=image_bytes, filetype=filetype)
-    try:
-        image_rect = image[0].rect
-        image_w = float(image_rect.width)
-        image_h = float(image_rect.height)
-        if image_w <= 0 or image_h <= 0:
-            raise RuntimeError("Capture Manager invalide.")
+    if section in ("planning", "final"):
+        image_bytes, image_w, image_h = _trim_capture_whitespace(image_bytes)
+    else:
+        image_w, image_h = _capture_image_size(image_bytes)
+    if image_w <= 0 or image_h <= 0:
+        raise RuntimeError("Capture Manager invalide.")
 
-        side_margin = (
-            TABLE_SIDE_MARGIN_PT
-            if section in ("planning", "main", "classement", "pools")
-            else 0.0
+    side_margin = (
+        TABLE_SIDE_MARGIN_PT
+        if section in ("planning", "main", "classement", "pools")
+        else 0.0
+    )
+    placement_rect = content_rect
+    if section == "final":
+        placement_rect = fitz.Rect(
+            content_rect.x0,
+            content_rect.y0 + FINAL_TABLE_VERTICAL_MARGIN_PT,
+            content_rect.x1,
+            content_rect.y1 - FINAL_TABLE_VERTICAL_MARGIN_PT,
         )
-        placement_rect = content_rect
-        if section == "final":
-            placement_rect = fitz.Rect(
-                content_rect.x0,
-                content_rect.y0 + FINAL_TABLE_VERTICAL_MARGIN_PT,
-                content_rect.x1,
-                content_rect.y1 - FINAL_TABLE_VERTICAL_MARGIN_PT,
-            )
-        avail_w = max(40.0, placement_rect.width - 2 * side_margin)
-        scale = avail_w / image_w
-        if section == "final":
-            max_draw_w = narrow_table_width_pt(avail_w)
-            scale = min(scale, max_draw_w / image_w)
+    avail_w = max(40.0, placement_rect.width - 2 * side_margin)
+    scale = avail_w / image_w
+    if section == "final":
+        max_draw_w = narrow_table_width_pt(avail_w)
+        scale = min(scale, max_draw_w / image_w)
 
-        draw_h = image_h * scale
-        if draw_h > placement_rect.height:
-            scale = placement_rect.height / image_h
-            draw_h = placement_rect.height
-        draw_w = image_w * scale
-        x0 = placement_rect.x0 + side_margin + (avail_w - draw_w) / 2
-        y0 = placement_rect.y0 + (placement_rect.height - draw_h) / 2
-        page.insert_image(
-            fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
-            stream=image_bytes,
-            keep_proportion=True,
+    draw_h = image_h * scale
+    if draw_h > placement_rect.height:
+        scale = placement_rect.height / image_h
+        draw_h = placement_rect.height
+    draw_w = image_w * scale
+    x0 = placement_rect.x0 + side_margin + (avail_w - draw_w) / 2
+    y0 = placement_rect.y0 + (placement_rect.height - draw_h) / 2
+    page.insert_image(
+        fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
+        stream=image_bytes,
+        keep_proportion=True,
+    )
+
+    if y0 > content_rect.y0 + 0.5:
+        page.draw_rect(
+            fitz.Rect(content_rect.x0, content_rect.y0, content_rect.x1, y0),
+            color=None,
+            fill=(1, 1, 1),
+            overlay=False,
         )
 
-        if y0 > content_rect.y0 + 0.5:
-            page.draw_rect(
-                fitz.Rect(content_rect.x0, content_rect.y0, content_rect.x1, y0),
-                color=None,
-                fill=(1, 1, 1),
-                overlay=False,
-            )
+    gap_top = y0 + draw_h
+    if gap_top < content_rect.y1 - 0.5:
+        page.draw_rect(
+            fitz.Rect(content_rect.x0, gap_top, content_rect.x1, content_rect.y1),
+            color=None,
+            fill=(1, 1, 1),
+            overlay=False,
+        )
 
-        gap_top = y0 + draw_h
-        if gap_top < content_rect.y1 - 0.5:
-            page.draw_rect(
-                fitz.Rect(content_rect.x0, gap_top, content_rect.x1, content_rect.y1),
-                color=None,
-                fill=(1, 1, 1),
-                overlay=False,
+    # Prolongement du connecteur inter-pages D2↔F jusqu'au bord de la feuille
+    # (tableau principal sur deux pages), pour la continuité une fois les
+    # deux feuilles assemblées. La capture s'arrête au bord de son encart :
+    # on complète dans la bande haute (partie basse) ou basse (partie haute).
+    if stub_dir and stub_midx is not None and draw_w > 0:
+        x = x0 + draw_w * stub_midx / 100.0
+        stroke = max(0.4, draw_w * 0.0008)
+        color = (0.0, 176 / 255.0, 240 / 255.0)
+        # Petit chevauchement dans la capture (même axe, même couleur, donc
+        # invisible) pour combler tout arrondi à la jonction bande↔capture.
+        overlap = max(4.0, draw_h * 0.02)
+        if stub_dir == "up":
+            page.draw_line(
+                fitz.Point(x, rect.y0),
+                fitz.Point(x, y0 + overlap),
+                color=color,
+                width=stroke,
             )
-
-        # Prolongement du connecteur inter-pages D2↔F jusqu'au bord de la feuille
-        # (tableau principal sur deux pages), pour la continuité une fois les
-        # deux feuilles assemblées. La capture s'arrête au bord de son encart :
-        # on complète dans la bande haute (partie basse) ou basse (partie haute).
-        if stub_dir and stub_midx is not None and draw_w > 0:
-            x = x0 + draw_w * stub_midx / 100.0
-            stroke = max(0.4, draw_w * 0.0008)
-            color = (0.0, 176 / 255.0, 240 / 255.0)
-            # Petit chevauchement dans la capture (même axe, même couleur, donc
-            # invisible) pour combler tout arrondi à la jonction bande↔capture.
-            overlap = max(4.0, draw_h * 0.02)
-            if stub_dir == "up":
-                page.draw_line(
-                    fitz.Point(x, rect.y0),
-                    fitz.Point(x, y0 + overlap),
-                    color=color,
-                    width=stroke,
-                )
-            else:  # down : partie haute → prolonge vers le bas
-                page.draw_line(
-                    fitz.Point(x, y0 + draw_h - overlap),
-                    fitz.Point(x, rect.y1),
-                    color=color,
-                    width=stroke,
-                )
-    finally:
-        image.close()
+        else:  # down : partie haute → prolonge vers le bas
+            page.draw_line(
+                fitz.Point(x, y0 + draw_h - overlap),
+                fitz.Point(x, rect.y1),
+                color=color,
+                width=stroke,
+            )
 
 
 def capture_key(section: str, slide_index: int) -> str:
