@@ -1,7 +1,7 @@
 # Engine V2 : PyMuPDF + rendu Live — build frontend inclus (voir .dockerignore).
 FROM node:20-slim AS frontend-build
 
-ARG FRONTEND_BUILD_ID=export-capture-v2-20260725-terrain-fix
+ARG FRONTEND_BUILD_ID=export-capture-v2-20260725-planning-head
 RUN echo "Frontend build id: ${FRONTEND_BUILD_ID}"
 
 WORKDIR /app/frontend
@@ -13,7 +13,7 @@ ENV VITE_DEPLOY_TARGET=engine-v2
 RUN npm run build && test -f dist/index.html \
   && grep -q 'live-planning-v2-table' dist/assets/*.js \
   && grep -q 'planning-propagate-v2-20260725b' dist/assets/*.js \
-  && grep -q 'export-capture-v2-20260725-terrain-fix' dist/assets/*.js
+  && grep -q 'export-capture-v2-20260725-planning-head' dist/assets/*.js
 
 FROM python:3.12-slim
 

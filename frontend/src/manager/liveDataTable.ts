@@ -58,6 +58,8 @@ export const FINAL_TABLE_BODY_TSL_BOLD =
 
 export const LIVE_TABLE_HEAD_PLANNING_CAPTURE = LIVE_TABLE_HEAD_NATIVE;
 export const PLANNING_HEAD_CAPTURE_PX = 16;
+/** Colonne Heure — légèrement plus grande en capture PDF (corps hybride). */
+export const PLANNING_HEURE_CAPTURE_PX = 15;
 
 export const LIVE_TABLE_ROW = "border-t border-template-blue/15 odd:bg-white even:bg-template-blue/[0.04]";
 
