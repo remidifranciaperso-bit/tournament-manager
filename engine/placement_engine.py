@@ -64,14 +64,9 @@ def _positions_tableau_16_standard(ts, rng):
     for pos, team in zip([2, 6, 9, 13], ts5_8):
         positions[pos] = team
 
-    ts15_16 = [ts[15], ts[16]]
-    rng.shuffle(ts15_16)
-    positions[1] = ts15_16[0]
-    positions[14] = ts15_16[1]
-
-    ts9_14 = [ts[i] for i in range(9, 15)]
-    rng.shuffle(ts9_14)
-    for pos, team in zip([3, 5, 7, 8, 10, 12], ts9_14):
+    ts9_16 = [ts[i] for i in range(9, 17)]
+    rng.shuffle(ts9_16)
+    for pos, team in zip([1, 3, 5, 7, 8, 10, 12, 14], ts9_16):
         positions[pos] = team
 
     return positions
@@ -134,23 +129,20 @@ def construire_bracket_8(teams, seed=None):
     ts34 = [ts[3], ts[4]]
     rng.shuffle(ts34)
 
-    ts56 = [ts[5], ts[6]]
-    rng.shuffle(ts56)
-
-    ts78 = [ts[7], ts[8]]
-    rng.shuffle(ts78)
+    ts5_8 = [ts[5], ts[6], ts[7], ts[8]]
+    rng.shuffle(ts5_8)
 
     positions = [
         ts[2],
-        ts78[0],
+        ts5_8[0],
 
         ts34[0],
-        ts56[0],
+        ts5_8[1],
 
-        ts56[1],
+        ts5_8[2],
         ts34[1],
 
-        ts78[1],
+        ts5_8[3],
         ts[1],
     ]
 
