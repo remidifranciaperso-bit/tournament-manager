@@ -159,6 +159,8 @@ def exporter_pdf_engine_v2(
                 capture_data = captures.get(key)
 
                 if slide_index < 0 or slide_index >= source.page_count:
+                    if not capture_data:
+                        continue
                     raise RuntimeError(
                         f"Page coquille introuvable pour l'index {slide_index}."
                     )

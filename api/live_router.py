@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -14,6 +15,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from api.live_store import (
+    charger_pack_version,
     charger_page_map,
     chemin_logo,
     chemin_page,
@@ -41,6 +43,8 @@ class LivePdfExportBody(BaseModel):
     nb_equipes: int | None = None
     captures: dict[str, str] | None = None
     crosspage_stubs: dict[str, dict] | None = None
+    meta: dict | None = None
+    pack_version: str | None = None
 
 
 def _ecrire_logo_temporaire(upload: UploadFile, suffix: str) -> Path:
@@ -332,6 +336,38 @@ async def _captures_depuis_form(form) -> dict[str, str]:
     return captures
 
 
+def _export_est_engine_v2(body: LivePdfExportBody | None, token: str) -> bool:
+    from engine.live_snapshot import snapshot_est_engine_v2
+
+    if os.environ.get("DEPLOY_TARGET") == "engine-v2":
+        return True
+    if body and snapshot_est_engine_v2(body.pack_version):
+        return True
+    return snapshot_est_engine_v2(charger_pack_version(token))
+
+
+def _snapshot_depuis_export_body(
+    body: LivePdfExportBody,
+    page_map: dict,
+) -> dict:
+    meta = dict(body.meta or {})
+    if body.template_id and "template_id" not in meta:
+        meta["template_id"] = body.template_id
+    if body.nb_equipes is not None and "nb_equipes" not in meta:
+        meta["nb_equipes"] = body.nb_equipes
+    return {
+        "page_map": page_map,
+        "matches": body.matches or [],
+        "match_results": body.match_results or {},
+        "fields": body.fields or {},
+        "planning_layout": body.planning_layout or {},
+        "nb_equipes": body.nb_equipes,
+        "template_id": body.template_id,
+        "meta": meta,
+        "version": body.pack_version,
+    }
+
+
 def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Path:
     chemin_source = chemin_pdf_complet(token)
     if chemin_source is None:
@@ -349,7 +385,8 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
         raise HTTPException(status_code=404, detail="Session live introuvable.")
 
     captures = (body.captures if body else None) or {}
-    if not captures:
+    est_v2 = _export_est_engine_v2(body, token)
+    if not captures and not est_v2:
         raise HTTPException(
             status_code=422,
             detail="Captures Manager requises pour l'export PDF.",
@@ -357,16 +394,36 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
 
     chemin_export = session / "export.pdf"
     try:
-        from engine.live_pdf_export import exporter_pdf_tournoi_manager
+        if est_v2:
+            from engine_v2.pdf_export import exporter_pdf_engine_v2
 
-        exporter_pdf_tournoi_manager(
-            chemin_source,
-            chemin_export,
-            page_map=carte,
-            captures=captures,
-            logo_path=chemin_logo(token),
-            crosspage_stubs=(body.crosspage_stubs if body else None),
-        )
+            if body is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Payload export requis pour Engine V2.",
+                )
+            snapshot = _snapshot_depuis_export_body(body, carte)
+            exporter_pdf_engine_v2(
+                chemin_source,
+                chemin_export,
+                page_map=carte,
+                captures=captures,
+                logo_path=chemin_logo(token),
+                crosspage_stubs=body.crosspage_stubs,
+                snapshot=snapshot,
+                base_dir=BASE_DIR,
+            )
+        else:
+            from engine.live_pdf_export import exporter_pdf_tournoi_manager
+
+            exporter_pdf_tournoi_manager(
+                chemin_source,
+                chemin_export,
+                page_map=carte,
+                captures=captures,
+                logo_path=chemin_logo(token),
+                crosspage_stubs=(body.crosspage_stubs if body else None),
+            )
     except (RuntimeError, FileNotFoundError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

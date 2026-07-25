@@ -152,7 +152,12 @@ def _compose_page_chrome(
     )
 
     if slide_index < 0 or slide_index >= source.page_count:
-        raise RuntimeError(f"Page Engine introuvable pour l'index {slide_index}.")
+        if footer_slide_index is not None and 0 <= footer_slide_index < source.page_count:
+            slide_index = footer_slide_index
+        elif source.page_count > 0:
+            slide_index = min(1, source.page_count - 1)
+        else:
+            raise RuntimeError(f"Page Engine introuvable pour l'index {slide_index}.")
 
     footer_index = footer_slide_index if footer_slide_index is not None else slide_index
     if footer_index < 0 or footer_index >= source.page_count:

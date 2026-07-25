@@ -131,6 +131,8 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
       fields,
       planning_layout: planning_layout ?? {},
       nb_equipes: meta.nb_equipes,
+      meta,
+      pack_version,
     };
   }, [
     page_map,
@@ -140,7 +142,8 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
     progress.completed,
     fields,
     planning_layout,
-    meta.nb_equipes,
+    meta,
+    pack_version,
   ]);
 
   // Matchs réaffectés à un autre terrain via « forcer un match » sur un terrain

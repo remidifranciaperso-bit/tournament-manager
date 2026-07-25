@@ -27,6 +27,16 @@ def snapshot_version_acceptee(version: object) -> bool:
     return isinstance(version, str) and version in SNAPSHOT_VERSIONS_COMPATIBLES
 
 
+def snapshot_est_engine_v2(snapshot_or_version: dict | str | None) -> bool:
+    """True si le snapshot / pack provient du pipeline Engine V2 Live."""
+    if isinstance(snapshot_or_version, dict):
+        version = snapshot_or_version.get("version")
+        if version == "engine-v2-live-capture-1":
+            return True
+        return snapshot_or_version.get("engine") == "v2-live-capture"
+    return snapshot_or_version == "engine-v2-live-capture-1"
+
+
 def _encoder_logo_snapshot(logo_path: Path | str | None) -> str | None:
     if logo_path is None:
         return None

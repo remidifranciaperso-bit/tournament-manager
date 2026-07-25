@@ -5,6 +5,7 @@ import {
   type ManagerExportCapture,
 } from "./captureExportPages";
 import type { ExportPhase } from "./exportCapture";
+import { resolveV2TableHeaders } from "./liveTableTypography";
 import type { PlanningCheckboxOverlay } from "./planningOverlays";
 import type { LiveLayoutField, LiveMatch, LivePageMap, LiveTournamentMeta } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -20,6 +21,8 @@ export interface LivePdfExportPayload {
   nb_equipes: number;
   captures?: Record<string, string>;
   crosspage_stubs?: Record<string, CrossPageStub>;
+  meta?: LiveTournamentMeta;
+  pack_version?: string | null;
 }
 
 function triggerPdfDownload(blob: Blob, filename: string) {
@@ -291,8 +294,11 @@ export async function downloadTournamentExportPdf(
   }
 
   if (Object.keys(captures).length === 0) {
-    onPhase?.("idle");
-    throw new Error("Aucune capture Manager n'a pu être générée.");
+    const v2Export = resolveV2TableHeaders(payload.meta, payload.pack_version);
+    if (!v2Export) {
+      onPhase?.("idle");
+      throw new Error("Aucune capture Manager n'a pu être générée.");
+    }
   }
 
   onPhase?.("upload");

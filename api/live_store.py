@@ -79,6 +79,7 @@ def creer_session(
     trim_logo: bool = True,
     page_indices: list[int] | None = None,
     page_sizes: dict[str, dict[str, float]] | None = None,
+    pack_version: str | None = None,
 ) -> tuple[str, Path, dict[str, dict[str, float]]]:
     from engine.pdf_pages import valider_pdf_fichier
 
@@ -102,6 +103,8 @@ def creer_session(
             json.dumps(page_map, ensure_ascii=False),
             encoding="utf-8",
         )
+    if pack_version:
+        (session_dir / "pack_version.txt").write_text(pack_version, encoding="utf-8")
     if logo_path is not None:
         source = Path(logo_path)
         if source.is_file():
@@ -187,6 +190,17 @@ def charger_page_map(token: str) -> dict | None:
         return json.loads(fichier.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return None
+
+
+def charger_pack_version(token: str) -> str | None:
+    session = chemin_session(token)
+    if session is None:
+        return None
+    fichier = session / "pack_version.txt"
+    if not fichier.is_file():
+        return None
+    version = fichier.read_text(encoding="utf-8").strip()
+    return version or None
 
 
 def chemin_logo(token: str) -> Path | None:

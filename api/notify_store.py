@@ -37,6 +37,22 @@ def enregistrer_pdf(pdf_path: Path) -> str:
     return token
 
 
+def enregistrer_shell_pdf(token: str, shell_path: Path) -> None:
+    """Conserve la coquille V2 (1 page / slide) pour export Live et pack Manager."""
+    shell_path = Path(shell_path)
+    if not shell_path.is_file():
+        return
+    destination = _notify_dir() / f"{token}.shell.pdf"
+    shutil.copy2(shell_path, destination)
+
+
+def chemin_shell_pdf(token: str) -> Path | None:
+    if not token or not token.isalnum():
+        return None
+    chemin = _notify_dir() / f"{token}.shell.pdf"
+    return chemin if chemin.is_file() else None
+
+
 def enregistrer_snapshot(token: str, snapshot: dict) -> None:
     destination = _notify_dir() / f"{token}.live.json"
     destination.write_text(
@@ -93,6 +109,9 @@ def supprimer_pdf(token: str) -> None:
     chemin = chemin_pdf(token)
     if chemin is not None:
         chemin.unlink(missing_ok=True)
+    shell = chemin_shell_pdf(token)
+    if shell is not None:
+        shell.unlink(missing_ok=True)
     export_pdf = chemin_export_pdf(token)
     if export_pdf is not None:
         export_pdf.unlink(missing_ok=True)
@@ -103,9 +122,12 @@ def supprimer_pdf(token: str) -> None:
 
 def creer_archive_manager_live(token: str) -> Path | None:
     """ZIP : PDF Engine + fichier .live.json pour reprise Manager."""
-    pdf_path = chemin_pdf(token)
     snapshot_path = chemin_snapshot(token)
-    if pdf_path is None or snapshot_path is None:
+    if snapshot_path is None:
+        return None
+    # Pack Manager Live : coquille V2 (indices slides) — pas le PDF composite final.
+    pdf_path = chemin_shell_pdf(token) or chemin_pdf(token)
+    if pdf_path is None:
         return None
 
     base = pdf_path.stem

@@ -14,9 +14,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from api.notify_store import (
     chemin_logo_notify,
     chemin_pdf,
+    chemin_shell_pdf,
     chemin_snapshot,
     enregistrer_logo,
     enregistrer_pdf,
+    enregistrer_shell_pdf,
     enregistrer_snapshot,
     supprimer_pdf,
 )
@@ -227,6 +229,7 @@ async def prepare_v2(
         )
 
         notify_token = enregistrer_pdf(shell_path)
+        enregistrer_shell_pdf(notify_token, shell_path)
         enregistrer_snapshot(notify_token, snapshot)
         if logo_path is not None:
             enregistrer_logo(notify_token, logo_path)
@@ -271,7 +274,7 @@ async def export_v2(token: str, request: Request):
     """Composite captures Live + coquille Engine → PDF final (identique export Manager)."""
     from engine_v2.generate import composite_tournament_v2_pdf
 
-    shell_path = chemin_pdf(token)
+    shell_path = chemin_shell_pdf(token) or chemin_pdf(token)
     snapshot_path = chemin_snapshot(token)
     if shell_path is None or snapshot_path is None:
         raise HTTPException(status_code=404, detail="Session V2 introuvable.")
@@ -289,8 +292,6 @@ async def export_v2(token: str, request: Request):
 
     payload = json.loads(payload_raw)
     captures = await _captures_depuis_form(form)
-    if not captures:
-        raise HTTPException(status_code=422, detail="Captures Live requises.")
 
     crosspage_stubs = payload.get("crosspage_stubs") or {}
     export_path = shell_path.parent / f"{token}.export.pdf"
@@ -305,10 +306,12 @@ async def export_v2(token: str, request: Request):
             logo_path=logo_path,
             crosspage_stubs=crosspage_stubs,
         )
-        # Pack Manager Live : conserver le PDF exporté (pas la coquille seule).
         import shutil
 
-        shutil.copy2(export_path, shell_path)
+        # PDF téléchargeable (composite) — la coquille reste dans {token}.shell.pdf
+        display_pdf = chemin_pdf(token)
+        if display_pdf is not None:
+            shutil.copy2(export_path, display_pdf)
     except (RuntimeError, FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     except Exception as exc:

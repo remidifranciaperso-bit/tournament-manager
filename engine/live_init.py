@@ -40,6 +40,7 @@ def init_live_from_snapshot(
         move_pdf=True,
         trim_logo=False,
         page_sizes=page_sizes,
+        pack_version=snapshot.get("version"),
     )
 
     from api.live_store import chemin_logo
