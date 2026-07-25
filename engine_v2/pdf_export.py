@@ -25,8 +25,6 @@ from engine.live_pool_layout import (
     pool_header_title,
     pool_slide_letters_from_layout,
 )
-from engine_v2.pages.cover import render_cover_page, tournoi_from_snapshot
-
 _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
 
 
@@ -71,14 +69,8 @@ def exporter_pdf_engine_v2(
         page_rect = source[0].rect
         render_base = base_dir or Path(__file__).resolve().parent.parent
 
-        cover_page = merged.new_page(width=page_rect.width, height=page_rect.height)
-        render_cover_page(
-            cover_page,
-            tournoi_from_snapshot(snapshot),
-            base_dir=render_base,
-            logo_bytes=logo_bytes,
-            logo_wh=logo_wh,
-        )
+        # Garde : page 0 de la coquille (méta complètes à la génération), comme export Live V1.
+        merged.insert_pdf(source, from_page=0, to_page=0)
 
         for index in trouver_indices_participants(source_pdf):
             if 0 < index < source.page_count:
@@ -167,6 +159,29 @@ def exporter_pdf_engine_v2(
 
                 layout_fields = planning_layout.get(str(slide_index))
                 pool_letter = pool_letters_by_slide.get(slide_index)
+
+                # Captures DOM Manager (Live V1) : équipes/scores tels qu'à l'écran.
+                if capture_data:
+                    page = merged.new_page(
+                        width=page_rect.width, height=page_rect.height
+                    )
+                    composer_page_export(
+                        page,
+                        source,
+                        slide_index,
+                        capture_data,
+                        section=section,
+                        footer_slide_index=(
+                            footer_reference if section == "planning" else None
+                        ),
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                        club_name=club_name,
+                        base_dir=render_base,
+                        crosspage_stub=(crosspage_stubs or {}).get(key),
+                    )
+                    continue
+
                 if (
                     pool_letter
                     and section in ("main", "classement")
@@ -270,25 +285,7 @@ def exporter_pdf_engine_v2(
                     )
                     continue
 
-                if not capture_data:
-                    merged.insert_pdf(
-                        source, from_page=slide_index, to_page=slide_index
-                    )
-                    continue
-
-                page = merged.new_page(width=page_rect.width, height=page_rect.height)
-                composer_page_export(
-                    page,
-                    source,
-                    slide_index,
-                    capture_data,
-                    section=section,
-                    logo_bytes=logo_bytes,
-                    logo_wh=logo_wh,
-                    club_name=club_name,
-                    base_dir=render_base,
-                    crosspage_stub=(crosspage_stubs or {}).get(key),
-                )
+                merged.insert_pdf(source, from_page=slide_index, to_page=slide_index)
 
         if merged.page_count == 0:
             raise RuntimeError("Aucune page dans l'export V2.")
