@@ -114,23 +114,21 @@ export function TemplateMatchBox({
   const vsPx = ptOnSlide(TEMPLATE_PT.vs, scaleH);
   const scorePx = ptOnSlide(TEMPLATE_PT.score, scaleH);
   const scoreLabelPx = ptOnSlide(TEMPLATE_PT.scoreLabel, scaleH);
-  const team1Font = isBracketPlaceholder(team1) ? "font-tsl" : "font-noto";
-  const team2Font = isBracketPlaceholder(team2) ? "font-tsl" : "font-noto";
   const team1Align = isBracketPlaceholder(team1)
-    ? "justify-start text-left overflow-visible"
-    : "justify-center text-center";
+    ? "justify-start text-left overflow-visible whitespace-nowrap"
+    : "justify-center text-center overflow-hidden";
   const team2Align = isBracketPlaceholder(team2)
-    ? "justify-start text-left overflow-visible"
-    : "justify-center text-center";
+    ? "justify-start text-left overflow-visible whitespace-nowrap"
+    : "justify-center text-center overflow-hidden";
   const team1BodyClass = capture
     ? "whitespace-nowrap overflow-visible shrink-0"
     : isBracketPlaceholder(team1)
-      ? "shrink-0 whitespace-nowrap"
+      ? "shrink-0"
       : "line-clamp-2 break-words";
   const team2BodyClass = capture
     ? "whitespace-nowrap overflow-visible shrink-0"
     : isBracketPlaceholder(team2)
-      ? "shrink-0 whitespace-nowrap"
+      ? "shrink-0"
       : "line-clamp-2 break-words";
 
   return (
@@ -181,7 +179,7 @@ export function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-visible">
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"}`}
+          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 font-noto ${team1Align} ${capture ? "overflow-visible" : ""}`}
           style={{ fontSize: team1Px }}
         >
           <span className={team1BodyClass}>{team1}</span>
@@ -193,7 +191,7 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"}`}
+          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 font-noto ${team2Align} ${capture ? "overflow-visible" : ""}`}
           style={{ fontSize: team2Px }}
         >
           <span className={team2BodyClass}>{team2}</span>

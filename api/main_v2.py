@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260725-bracket"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260725-bracket-style"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -514,6 +514,46 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     return bracketFormatDisplay(raw, resolved);
   }
 
+  var BRACKET_SLIDE_H_IN = 6858000 / 914400;
+
+  function bracketPtOnSlide(pt, scaleH) {
+    return Math.max(6, Math.round((pt / 72) * (scaleH / BRACKET_SLIDE_H_IN)));
+  }
+
+  function bracketTeamIsPlaceholder(text) {
+    return BRACKET_PLACEHOLDER.test(String(text || "").trim());
+  }
+
+  /** Style boîte match aligné Live V1 (font-noto, 8.5 pt placeholder / 12 pt équipe). */
+  function applyBracketTeamRowStyle(rowEl, spanEl, text, scaleH) {
+    if (!rowEl || !spanEl || !scaleH) return;
+    var isPh = bracketTeamIsPlaceholder(text);
+    var pt = isPh ? 8.5 : 12;
+    rowEl.style.fontSize = bracketPtOnSlide(pt, scaleH) + "px";
+    rowEl.classList.remove("font-tsl");
+    rowEl.classList.add("font-noto");
+    rowEl.classList.remove(
+      "justify-start",
+      "justify-center",
+      "text-left",
+      "text-center",
+      "overflow-visible",
+      "overflow-hidden",
+      "whitespace-nowrap"
+    );
+    if (isPh) {
+      rowEl.classList.add("justify-start", "text-left", "overflow-visible", "whitespace-nowrap");
+    } else {
+      rowEl.classList.add("justify-center", "text-center", "overflow-hidden");
+    }
+    spanEl.classList.remove("shrink-0", "whitespace-nowrap", "line-clamp-2", "break-words");
+    if (isPh) {
+      spanEl.classList.add("shrink-0");
+    } else {
+      spanEl.classList.add("line-clamp-2", "break-words");
+    }
+  }
+
   function patchBracketSlides() {
     if (!isManagerRoute()) return;
     var liveData = loadLiveSessionData();
@@ -525,6 +565,10 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     if (!slides.length) return;
 
     slides.forEach(function (slide) {
+      var scaleH =
+        parseInt(slide.getAttribute("data-capture-height") || "0", 10) ||
+        slide.clientHeight ||
+        720;
       slide.querySelectorAll(":scope > .absolute.z-10").forEach(function (box) {
         var header = box.querySelector(".rounded-t-lg.bg-template-blue");
         if (!header) return;
@@ -536,8 +580,10 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 
         var col = box.querySelector(".flex.min-h-0.flex-1.flex-col");
         if (!col || col.children.length < 3) return;
-        var team1Span = col.children[0].querySelector("span");
-        var team2Span = col.children[2].querySelector("span");
+        var team1Row = col.children[0];
+        var team2Row = col.children[2];
+        var team1Span = team1Row.querySelector("span");
+        var team2Span = team2Row.querySelector("span");
         if (!team1Span || !team2Span) return;
 
         var next1 = resolveBracketTeamDisplay(
@@ -550,8 +596,10 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
           matchesByCode,
           matchResults
         );
-        if (team1Span.textContent !== next1) team1Span.textContent = next1;
-        if (team2Span.textContent !== next2) team2Span.textContent = next2;
+        team1Span.textContent = next1;
+        team2Span.textContent = next2;
+        applyBracketTeamRowStyle(team1Row, team1Span, next1, scaleH);
+        applyBracketTeamRowStyle(team2Row, team2Span, next2, scaleH);
       });
     });
   }
