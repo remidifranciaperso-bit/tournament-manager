@@ -206,7 +206,7 @@ export function LivePlanningTab({
     capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE,
     v2TableHeaders
   );
-  const doneLabel = exportMode ? "Terminé" : "Fait";
+  const doneLabel = v2TableHeaders ? "Fait" : exportMode ? "Terminé" : "Fait";
   const v2HeadOverflow =
     v2TableHeaders && !capture
       ? "!max-w-none overflow-visible [text-overflow:clip]"
