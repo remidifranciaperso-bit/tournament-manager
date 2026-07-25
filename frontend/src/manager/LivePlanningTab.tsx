@@ -12,7 +12,7 @@ import {
   LIVE_TABLE_CELL_NOTO_BOLD,
   LIVE_TABLE_CELL_TSL,
   LIVE_TABLE_CELL_TSL_BOLD,
-  LIVE_TABLE_HEAD_PLANNING_CAPTURE,
+  LIVE_TABLE_CAPTURE_HEAD,
   LIVE_TABLE_ROW,
   LIVE_TABLE_ROW_EXPORT,
   liveTeamTextClass,
@@ -201,20 +201,16 @@ export function LivePlanningTab({
   const layoutScale = scale;
 
   const headPresentation = useLiveTableHeadPresentation(v2TableHeaders);
-  const headClass = capture
-    ? LIVE_TABLE_HEAD_PLANNING_CAPTURE
-    : headPresentation.className;
-  const headStyle = capture
-    ? ({ fontSize: "12pt", fontWeight: 400 } as const)
-    : headPresentation.style;
+  const head = capture ? LIVE_TABLE_CAPTURE_HEAD : headPresentation;
   const tableClass = useLiveTableShellClass(
     capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE,
     v2TableHeaders
   );
   const doneLabel = exportMode ? "Terminé" : "Fait";
-  const v2HeadOverflow = v2TableHeaders
-    ? "!max-w-none overflow-visible [text-overflow:clip]"
-    : "";
+  const v2HeadOverflow =
+    v2TableHeaders && !capture
+      ? "!max-w-none overflow-visible [text-overflow:clip]"
+      : "";
 
   const bodyRows = rows.map((row) => {
     const match = matchByCode.get(row.code);
@@ -266,38 +262,38 @@ export function LivePlanningTab({
     <thead>
       <tr className="bg-template-blue text-white">
         <th
-          className={`whitespace-nowrap text-left !px-2 sm:!px-3 ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
-          style={headStyle}
+          className={`whitespace-nowrap text-left ${head.className} ${v2HeadOverflow}`}
+          style={head.style}
         >
           Code
         </th>
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
-          style={headStyle}
+          className={`whitespace-nowrap ${head.className} ${v2HeadOverflow}`}
+          style={head.style}
         >
           Heure
         </th>
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
-          style={headStyle}
+          className={`whitespace-nowrap ${head.className} ${v2HeadOverflow}`}
+          style={head.style}
         >
           Terrain
         </th>
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
-          style={headStyle}
+          className={`whitespace-nowrap ${head.className} ${v2HeadOverflow}`}
+          style={head.style}
         >
           Équipe 1
         </th>
         <th
-          className={`whitespace-nowrap ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
-          style={headStyle}
+          className={`whitespace-nowrap ${head.className} ${v2HeadOverflow}`}
+          style={head.style}
         >
           Équipe 2
         </th>
         <th
-          className={`whitespace-nowrap text-right !px-2 sm:!px-3 ${headClass} ${capture ? "font-normal [font-weight:400]" : ""} ${v2HeadOverflow}`}
-          style={headStyle}
+          className={`whitespace-nowrap text-right ${head.className} ${v2HeadOverflow}`}
+          style={head.style}
         >
           {doneLabel}
         </th>

@@ -9,6 +9,7 @@ import type { StoredMatchResult } from "./useLiveProgress";
 import {
   LIVE_TABLE,
   LIVE_TABLE_CAPTURE,
+  LIVE_TABLE_CAPTURE_HEAD,
   LIVE_TABLE_CAPTURE_SHELL,
   LIVE_TABLE_CARD,
   LIVE_TABLE_CELL_POINTS,
@@ -98,6 +99,7 @@ export function LiveFinalRankingTab({
   }, [capture, rows.length]);
 
   const headPresentation = useLiveTableHeadPresentation(v2TableHeaders);
+  const head = capture ? LIVE_TABLE_CAPTURE_HEAD : headPresentation;
   const tableClass = useLiveTableShellClass(
     capture ? LIVE_TABLE_CAPTURE : LIVE_TABLE,
     v2TableHeaders
@@ -127,15 +129,15 @@ export function LiveFinalRankingTab({
       {FINAL_COLGROUP}
       <thead>
         <tr className="bg-template-blue text-white">
-          <th className={headPresentation.className} style={headPresentation.style}>
+          <th className={head.className} style={head.style}>
             Place
           </th>
-          <th className={headPresentation.className} style={headPresentation.style}>
+          <th className={head.className} style={head.style}>
             Équipe
           </th>
           <th
-            className={`text-right ${headPresentation.className}`}
-            style={headPresentation.style}
+            className={`text-right ${head.className}`}
+            style={head.style}
           >
             Points
           </th>

@@ -163,6 +163,19 @@ body {
     white-space: nowrap;
   }
 
+  /* Export PDF — en-têtes planning = classement final (12 pt, graisse normale). */
+  #export-capture-layer [data-export-capture="planning"] thead th,
+  #export-capture-layer [data-export-capture="final"] thead th {
+    font-family: "TSL Sans", "Sora", system-ui, sans-serif !important;
+    font-size: 12pt !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.05em !important;
+    line-height: 1.2 !important;
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.45rem !important;
+    text-transform: uppercase !important;
+  }
+
   /* Export PDF — une ligne par nom d'équipe (html-to-image). */
   #export-capture-layer [data-export-team-label] {
     white-space: nowrap !important;
