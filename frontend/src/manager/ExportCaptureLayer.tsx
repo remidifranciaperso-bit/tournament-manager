@@ -1,4 +1,4 @@
-import { EXPORT_CAPTURE_WIDTH, FINAL_EXPORT_CAPTURE_WIDTH, PLANNING_EXPORT_CAPTURE_WIDTH, type ExportCaptureTarget } from "./exportCapture";
+import { EXPORT_CAPTURE_WIDTH, FINAL_EXPORT_CAPTURE_WIDTH, PLANNING_EXPORT_CAPTURE_WIDTH, resolveBracketCaptureWidth, type ExportCaptureTarget } from "./exportCapture";
 import { LiveBracketViewer } from "./LiveBracketViewer";
 import { LiveFinalRankingTab } from "./LiveFinalRankingTab";
 import { LiveManagerDocumentPage } from "./LiveManagerDocumentPage";
@@ -157,11 +157,13 @@ export function ExportCaptureLayer({
   const slideIndex = slideIndexAt(pages, subPage);
   if (slideIndex === null) return null;
 
+  const bracketCaptureWidth = resolveBracketCaptureWidth();
+
   return (
     <div
       id="export-capture-layer"
       className="pointer-events-none fixed -left-[120vw] top-0 z-0 inline-block bg-white"
-      style={{ width: EXPORT_CAPTURE_WIDTH }}
+      style={{ width: bracketCaptureWidth }}
       aria-hidden
     >
       <LiveManagerDocumentPage
@@ -175,7 +177,7 @@ export function ExportCaptureLayer({
           slideIndex={slideIndex}
           matches={matches}
           matchResults={matchResults}
-          fixedRenderWidth={EXPORT_CAPTURE_WIDTH}
+          fixedRenderWidth={bracketCaptureWidth}
           capture
         />
       </LiveManagerDocumentPage>

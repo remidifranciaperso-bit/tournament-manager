@@ -31,10 +31,10 @@ export function fitTeamFontSizeForCapture(
   text: string,
   basePx: number,
   maxWidthPx: number,
-  minPx = 7
+  minPx = 6
 ): number {
   if (!text.trim() || maxWidthPx <= 0 || basePx <= 0) return basePx;
-  const estimated = text.length * basePx * 0.53;
+  const estimated = text.length * basePx * 0.68;
   if (estimated <= maxWidthPx) return basePx;
   return Math.max(minPx, Math.floor(basePx * (maxWidthPx / estimated)));
 }

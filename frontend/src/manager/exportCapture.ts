@@ -1,5 +1,5 @@
-/** Largeur fixe du bac hors-écran pour les captures PDF. */
-export const EXPORT_CAPTURE_WIDTH = 1100;
+/** Largeur fixe du bac hors-écran pour les captures PDF (repli si mesure live indisponible). */
+export const EXPORT_CAPTURE_WIDTH = 1400;
 /** Marge latérale planning — 5 mm @ 96 dpi, aligné ``TABLE_SIDE_MARGIN_MM`` (PDF Live). */
 export const PLANNING_SIDE_MARGIN_PX = Math.round((5 * 96) / 25.4);
 /** Fractions colonnes planning — alignées PDF Engine V2 (Code, Heure, Terrain, Éq1, Éq2, Fait). */
@@ -80,6 +80,20 @@ export const PLANNING_V2_LAYOUT_MARKER = "live-planning-fix-v2-20260724j";
 export const NARROW_TABLE_RATIO = 820 / 1024;
 export const FINAL_TABLE_WIDTH_PT = 820;
 export const FINAL_EXPORT_CAPTURE_WIDTH = FINAL_TABLE_WIDTH_PT;
+
+/** Même largeur que le bracket visible dans l’onglet Live (WYSIWYG export PDF). */
+export function resolveBracketCaptureWidth(
+  fallback = EXPORT_CAPTURE_WIDTH
+): number {
+  let maxWidth = 0;
+  for (const slide of document.querySelectorAll<HTMLElement>("[data-bracket-slide]")) {
+    const fromAttr = Number(slide.getAttribute("data-capture-width"));
+    const measured =
+      fromAttr > 0 ? fromAttr : Math.max(slide.offsetWidth, slide.clientWidth);
+    if (measured > maxWidth) maxWidth = measured;
+  }
+  return maxWidth >= 320 ? Math.round(maxWidth) : fallback;
+}
 
 export type ExportPhase = "idle" | "capture" | "upload" | "download";
 

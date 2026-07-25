@@ -101,15 +101,21 @@ function captureTeamFontSize(
   return fitTeamFontSizeForCapture(text, basePx, teamRowMaxWidthPx(box, scaleH));
 }
 
-function captureTeamTextStyle(fontPx: number): CSSProperties {
+function captureTeamLabel(text: string): string {
+  return text.replace(/ /g, "\u00A0");
+}
+
+function captureTeamTextStyle(fontPx: number, align: "left" | "center"): CSSProperties {
   return {
     fontSize: fontPx,
     whiteSpace: "nowrap",
+    wordBreak: "keep-all",
+    overflowWrap: "normal",
     overflow: "hidden",
     display: "block",
     width: "100%",
-    textAlign: "center",
-    lineHeight: 1.15,
+    textAlign: align,
+    lineHeight: 1.1,
   };
 }
 
@@ -166,6 +172,8 @@ export function TemplateMatchBox({
       : "line-clamp-2 break-words";
   const team1Weight = winnerSide === 1 ? "font-semibold" : "font-normal";
   const team2Weight = winnerSide === 2 ? "font-semibold" : "font-normal";
+  const team1CaptureLabel = capture ? captureTeamLabel(team1) : team1;
+  const team2CaptureLabel = capture ? captureTeamLabel(team2) : team2;
 
   return (
     <div
@@ -213,22 +221,24 @@ export function TemplateMatchBox({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-visible">
+      <div className={capture ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "flex min-h-0 flex-1 flex-col overflow-visible"}>
         <div
-          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 font-noto ${team1Weight} ${team1Align}`}
-          style={capture ? undefined : { fontSize: team1Px }}
+          className={`flex items-center overflow-hidden px-1.5 font-noto leading-none text-arena-800 ${team1Weight} ${team1Align} ${capture ? "" : "flex-1 leading-tight"}`}
+          style={capture ? { height: score ? "31%" : "33%" } : undefined}
+          {...(capture ? { "data-bracket-team-row": true } : {})}
         >
           <span
             className={team1BodyClass}
+            {...(capture ? { "data-bracket-team": true } : {})}
             style={
               capture
                 ? isBracketPlaceholder(team1)
-                  ? { ...captureTeamTextStyle(team1DisplayPx), textAlign: "left" }
-                  : captureTeamTextStyle(team1DisplayPx)
-                : undefined
+                  ? captureTeamTextStyle(team1DisplayPx, "left")
+                  : captureTeamTextStyle(team1DisplayPx, "center")
+                : { fontSize: team1Px }
             }
           >
-            {team1}
+            {team1CaptureLabel}
           </span>
         </div>
         <div
@@ -238,20 +248,22 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 font-noto ${team2Weight} ${team2Align}`}
-          style={capture ? undefined : { fontSize: team2Px }}
+          className={`flex items-center overflow-hidden px-1.5 font-noto leading-none text-arena-800 ${team2Weight} ${team2Align} ${capture ? "" : "flex-1 leading-tight"}`}
+          style={capture ? { height: score ? "31%" : "33%" } : undefined}
+          {...(capture ? { "data-bracket-team-row": true } : {})}
         >
           <span
             className={team2BodyClass}
+            {...(capture ? { "data-bracket-team": true } : {})}
             style={
               capture
                 ? isBracketPlaceholder(team2)
-                  ? { ...captureTeamTextStyle(team2DisplayPx), textAlign: "left" }
-                  : captureTeamTextStyle(team2DisplayPx)
-                : undefined
+                  ? captureTeamTextStyle(team2DisplayPx, "left")
+                  : captureTeamTextStyle(team2DisplayPx, "center")
+                : { fontSize: team2Px }
             }
           >
-            {team2}
+            {team2CaptureLabel}
           </span>
         </div>
       </div>
@@ -302,6 +314,7 @@ function FeedLabel({
     capture && !isBracketPlaceholder(text)
       ? fitTeamFontSizeForCapture(text, baseFontPx, feedMaxWidth)
       : baseFontPx;
+  const feedCaptureLabel = capture ? captureTeamLabel(text) : text;
 
   return (
     <div
@@ -313,18 +326,20 @@ function FeedLabel({
         height: `${mapped.height}%`,
         fontSize: capture ? undefined : fontPx,
       }}
+      {...(capture ? { "data-bracket-team-row": true } : {})}
     >
       <span
         className={capture ? "block w-full shrink-0" : isBracketPlaceholder(text) ? "whitespace-nowrap" : "line-clamp-2 break-words"}
+        {...(capture ? { "data-bracket-team": true } : {})}
         style={
           capture
             ? isBracketPlaceholder(text)
-              ? { ...captureTeamTextStyle(fontPx), textAlign: "left" }
-              : captureTeamTextStyle(fontPx)
+              ? captureTeamTextStyle(fontPx, "left")
+              : captureTeamTextStyle(fontPx, "center")
             : undefined
         }
       >
-        {text}
+        {feedCaptureLabel}
       </span>
     </div>
   );
