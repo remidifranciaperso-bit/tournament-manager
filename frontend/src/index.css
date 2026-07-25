@@ -162,22 +162,6 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  /* Export PDF — noms d'équipes sur une seule ligne (html-to-image). */
-  #export-capture-layer [data-bracket-team] {
-    white-space: nowrap !important;
-    word-break: keep-all !important;
-    overflow-wrap: normal !important;
-    overflow: hidden !important;
-    display: block !important;
-    width: 100% !important;
-    line-height: 1.1 !important;
-  }
-
-  #export-capture-layer [data-bracket-team-row] {
-    overflow: hidden !important;
-    min-width: 0 !important;
-  }
 }
 
 /* Scrollbar discrète */

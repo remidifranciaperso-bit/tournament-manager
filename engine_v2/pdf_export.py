@@ -10,20 +10,7 @@ import fitz
 from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import (
     capture_key,
-    composer_page_bracket_native,
     composer_page_export,
-    composer_page_final_native,
-    composer_page_planning_native,
-    composer_page_pool_composition_native,
-    composer_page_pool_native,
-    final_place_range,
-)
-from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
-from engine.live_pool_layout import (
-    charger_layout_template,
-    composition_slide_index_from_layout,
-    pool_header_title,
-    pool_slide_letters_from_layout,
 )
 _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
 
@@ -81,46 +68,8 @@ def exporter_pdf_engine_v2(
                 merged.insert_pdf(source, from_page=index, to_page=index)
 
         footer_reference = _footer_reference_slide_index(page_map, source)
-        planning_layout = (snapshot or {}).get("planning_layout") or {}
-        matches = (snapshot or {}).get("matches") or []
-        match_results = (snapshot or {}).get("match_results") or {}
-        fields = (snapshot or {}).get("fields") or {}
         meta = (snapshot or {}).get("meta") or {}
         club_name = meta.get("club")
-        nb_equipes = int(snapshot.get("nb_equipes") or meta.get("nb_equipes") or 16)
-        template_id = meta.get("template_id") or snapshot.get("template_id")
-        final_entries = page_map.get("final", [])
-        final_page_count = max(1, len(final_entries))
-
-        pool_letters_by_slide: dict[int, str] = {}
-        composition_index: int | None = None
-        if template_id:
-            try:
-                layout = charger_layout_template(template_id, render_base)
-                pool_letters_by_slide = pool_slide_letters_from_layout(layout)
-                composition_index = composition_slide_index_from_layout(layout)
-            except FileNotFoundError:
-                pass
-
-        if (
-            composition_index is not None
-            and template_id
-            and matches
-            and 0 <= composition_index < source.page_count
-        ):
-            page = merged.new_page(width=page_rect.width, height=page_rect.height)
-            composer_page_pool_composition_native(
-                page,
-                source,
-                composition_index,
-                matches,
-                fields,
-                base_dir=render_base,
-                footer_slide_index=footer_reference,
-                logo_bytes=logo_bytes,
-                logo_wh=logo_wh,
-                club_name=club_name,
-            )
 
         for key, capture_data in captures.items():
             if not key.startswith("composition:") or not capture_data:
@@ -157,135 +106,30 @@ def exporter_pdf_engine_v2(
                         f"Page coquille introuvable pour l'index {slide_index}."
                     )
 
-                layout_fields = planning_layout.get(str(slide_index))
-                pool_letter = pool_letters_by_slide.get(slide_index)
-
-                # Captures DOM Manager (Live V1) : équipes/scores tels qu'à l'écran.
-                if capture_data:
-                    page = merged.new_page(
-                        width=page_rect.width, height=page_rect.height
-                    )
-                    composer_page_export(
-                        page,
-                        source,
-                        slide_index,
-                        capture_data,
-                        section=section,
-                        footer_slide_index=(
-                            footer_reference if section == "planning" else None
-                        ),
-                        logo_bytes=logo_bytes,
-                        logo_wh=logo_wh,
-                        club_name=club_name,
-                        base_dir=render_base,
-                        crosspage_stub=(crosspage_stubs or {}).get(key),
+                if not capture_data:
+                    merged.insert_pdf(
+                        source, from_page=slide_index, to_page=slide_index
                     )
                     continue
 
-                if (
-                    pool_letter
-                    and section in ("main", "classement")
-                    and template_id
-                    and matches
-                ):
-                    page = merged.new_page(
-                        width=page_rect.width, height=page_rect.height
-                    )
-                    composer_page_pool_native(
-                        page,
-                        source,
-                        slide_index,
-                        pool_letter,
-                        matches,
-                        match_results,
-                        base_dir=render_base,
-                        footer_slide_index=footer_reference,
-                        logo_bytes=logo_bytes,
-                        logo_wh=logo_wh,
-                        club_name=club_name,
-                    )
-                    continue
-
-                if section in ("main", "classement") and template_id and matches:
-                    page = merged.new_page(
-                        width=page_rect.width, height=page_rect.height
-                    )
-                    composer_page_bracket_native(
-                        page,
-                        source,
-                        slide_index,
-                        template_id=template_id,
-                        matches=matches,
-                        match_results=match_results,
-                        base_dir=render_base,
-                        footer_slide_index=footer_reference,
-                        logo_bytes=logo_bytes,
-                        logo_wh=logo_wh,
-                        club_name=club_name,
-                        crosspage_stub=(crosspage_stubs or {}).get(key),
-                        show_placement_labels=True,
-                    )
-                    continue
-
-                if section == "planning":
-                    if layout_fields:
-                        page = merged.new_page(
-                            width=page_rect.width, height=page_rect.height
-                        )
-                        composer_page_planning_native(
-                            page,
-                            source,
-                            slide_index,
-                            layout_fields,
-                            matches,
-                            match_results,
-                            base_dir=render_base,
-                            footer_slide_index=footer_reference,
-                            logo_bytes=logo_bytes,
-                            logo_wh=logo_wh,
-                            club_name=club_name,
-                        )
-                    else:
-                        merged.insert_pdf(
-                            source, from_page=slide_index, to_page=slide_index
-                        )
-                    continue
-
-                if section == "final":
-                    page_index = next(
-                        (
-                            index
-                            for index, item in enumerate(final_entries)
-                            if int(item["index"]) == slide_index
-                        ),
-                        0,
-                    )
-                    place_range = (
-                        final_place_range(nb_equipes, page_index, final_page_count)
-                        if final_page_count > 1
-                        else None
-                    )
-                    page = merged.new_page(
-                        width=page_rect.width, height=page_rect.height
-                    )
-                    composer_page_final_native(
-                        page,
-                        source,
-                        slide_index,
-                        matches,
-                        match_results,
-                        fields,
-                        nb_equipes,
-                        place_range=place_range,
-                        base_dir=render_base,
-                        footer_slide_index=footer_reference,
-                        logo_bytes=logo_bytes,
-                        logo_wh=logo_wh,
-                        club_name=club_name,
-                    )
-                    continue
-
-                merged.insert_pdf(source, from_page=slide_index, to_page=slide_index)
+                page = merged.new_page(
+                    width=page_rect.width, height=page_rect.height
+                )
+                composer_page_export(
+                    page,
+                    source,
+                    slide_index,
+                    capture_data,
+                    section=section,
+                    footer_slide_index=(
+                        footer_reference if section == "planning" else None
+                    ),
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                    club_name=club_name,
+                    base_dir=render_base,
+                    crosspage_stub=(crosspage_stubs or {}).get(key),
+                )
 
         if merged.page_count == 0:
             raise RuntimeError("Aucune page dans l'export V2.")

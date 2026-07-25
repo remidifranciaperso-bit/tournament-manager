@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo } from "react";
 import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 import {
   parseBracketSlide,
@@ -11,7 +11,6 @@ import {
 import { buildBracketConnectors, getViewportCrossPageStub } from "./bracketConnectors";
 import { mapFieldToProjection, type BoxRectPct } from "./bracketGeometry";
 import {
-  fitTeamFontSizeForCapture,
   ptOnSlide,
   TEMPLATE_PT,
 } from "./bracketTemplateMetrics";
@@ -86,39 +85,6 @@ function teamFontSize(text: string, scaleH: number): number {
   return ptOnSlide(pt, scaleH);
 }
 
-function teamRowMaxWidthPx(box: BoxRectPct, scaleH: number): number {
-  const renderWidth = scaleH * SLIDE_ASPECT;
-  return (box.width / 100) * renderWidth * 0.84;
-}
-
-function captureTeamFontSize(
-  text: string,
-  basePx: number,
-  box: BoxRectPct,
-  scaleH: number
-): number {
-  if (isBracketPlaceholder(text)) return basePx;
-  return fitTeamFontSizeForCapture(text, basePx, teamRowMaxWidthPx(box, scaleH));
-}
-
-function captureTeamLabel(text: string): string {
-  return text.replace(/ /g, "\u00A0");
-}
-
-function captureTeamTextStyle(fontPx: number, align: "left" | "center"): CSSProperties {
-  return {
-    fontSize: fontPx,
-    whiteSpace: "nowrap",
-    wordBreak: "keep-all",
-    overflowWrap: "normal",
-    overflow: "hidden",
-    display: "block",
-    width: "100%",
-    textAlign: align,
-    lineHeight: 1.1,
-  };
-}
-
 export function TemplateMatchBox({
   match,
   box,
@@ -145,35 +111,29 @@ export function TemplateMatchBox({
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const team1Px = teamFontSize(team1, scaleH);
   const team2Px = teamFontSize(team2, scaleH);
-  const team1DisplayPx = capture
-    ? captureTeamFontSize(team1, team1Px, box, scaleH)
-    : team1Px;
-  const team2DisplayPx = capture
-    ? captureTeamFontSize(team2, team2Px, box, scaleH)
-    : team2Px;
   const vsPx = ptOnSlide(TEMPLATE_PT.vs, scaleH);
   const scorePx = ptOnSlide(TEMPLATE_PT.score, scaleH);
   const scoreLabelPx = ptOnSlide(TEMPLATE_PT.scoreLabel, scaleH);
+  const team1Font = isBracketPlaceholder(team1) ? "font-tsl" : "font-noto";
+  const team2Font = isBracketPlaceholder(team2) ? "font-tsl" : "font-noto";
   const team1Align = isBracketPlaceholder(team1)
-    ? "justify-start text-left overflow-visible whitespace-nowrap"
-    : "justify-center text-center overflow-hidden";
+    ? "justify-start text-left overflow-visible"
+    : "justify-center text-center";
   const team2Align = isBracketPlaceholder(team2)
-    ? "justify-start text-left overflow-visible whitespace-nowrap"
-    : "justify-center text-center overflow-hidden";
+    ? "justify-start text-left overflow-visible"
+    : "justify-center text-center";
   const team1BodyClass = capture
-    ? "block w-full shrink-0"
+    ? "whitespace-nowrap overflow-visible shrink-0"
     : isBracketPlaceholder(team1)
-      ? "shrink-0"
+      ? "shrink-0 whitespace-nowrap"
       : "line-clamp-2 break-words";
   const team2BodyClass = capture
-    ? "block w-full shrink-0"
+    ? "whitespace-nowrap overflow-visible shrink-0"
     : isBracketPlaceholder(team2)
-      ? "shrink-0"
+      ? "shrink-0 whitespace-nowrap"
       : "line-clamp-2 break-words";
   const team1Weight = winnerSide === 1 ? "font-semibold" : "font-normal";
   const team2Weight = winnerSide === 2 ? "font-semibold" : "font-normal";
-  const team1CaptureLabel = capture ? captureTeamLabel(team1) : team1;
-  const team2CaptureLabel = capture ? captureTeamLabel(team2) : team2;
 
   return (
     <div
@@ -200,7 +160,7 @@ export function TemplateMatchBox({
         </p>
       )}
 
-      <div className="flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm">
+      <div className={`flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm ${capture ? "overflow-visible" : ""}`}>
       <div
         className="relative shrink-0 rounded-t-lg bg-template-blue px-[0.4em] font-tsl leading-none text-white"
         style={{
@@ -221,25 +181,12 @@ export function TemplateMatchBox({
         </div>
       </div>
 
-      <div className={capture ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "flex min-h-0 flex-1 flex-col overflow-visible"}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-visible">
         <div
-          className={`flex items-center overflow-hidden px-1.5 font-noto leading-none text-arena-800 ${team1Weight} ${team1Align} ${capture ? "" : "flex-1 leading-tight"}`}
-          style={capture ? { height: score ? "31%" : "33%" } : undefined}
-          {...(capture ? { "data-bracket-team-row": true } : {})}
+          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
+          style={{ fontSize: team1Px }}
         >
-          <span
-            className={team1BodyClass}
-            {...(capture ? { "data-bracket-team": true } : {})}
-            style={
-              capture
-                ? isBracketPlaceholder(team1)
-                  ? captureTeamTextStyle(team1DisplayPx, "left")
-                  : captureTeamTextStyle(team1DisplayPx, "center")
-                : { fontSize: team1Px }
-            }
-          >
-            {team1CaptureLabel}
-          </span>
+          <span className={team1BodyClass}>{team1}</span>
         </div>
         <div
           className="flex shrink-0 items-center justify-center font-noto font-normal text-arena-600"
@@ -248,23 +195,10 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex items-center overflow-hidden px-1.5 font-noto leading-none text-arena-800 ${team2Weight} ${team2Align} ${capture ? "" : "flex-1 leading-tight"}`}
-          style={capture ? { height: score ? "31%" : "33%" } : undefined}
-          {...(capture ? { "data-bracket-team-row": true } : {})}
+          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
+          style={{ fontSize: team2Px }}
         >
-          <span
-            className={team2BodyClass}
-            {...(capture ? { "data-bracket-team": true } : {})}
-            style={
-              capture
-                ? isBracketPlaceholder(team2)
-                  ? captureTeamTextStyle(team2DisplayPx, "left")
-                  : captureTeamTextStyle(team2DisplayPx, "center")
-                : { fontSize: team2Px }
-            }
-          >
-            {team2CaptureLabel}
-          </span>
+          <span className={team2BodyClass}>{team2}</span>
         </div>
       </div>
 
@@ -297,24 +231,16 @@ function FeedLabel({
   field,
   text,
   scaleH,
-  capture = false,
 }: {
   field: LiveLayoutField;
   text: string;
   scaleH: number;
-  capture?: boolean;
 }) {
   const mapped = mapFieldToProjection(field);
-  const baseFontPx = ptOnSlide(
+  const fontPx = ptOnSlide(
     isBracketPlaceholder(text) ? TEMPLATE_PT.teamPlaceholder : TEMPLATE_PT.team,
     scaleH
   );
-  const feedMaxWidth = (mapped.width / 100) * scaleH * SLIDE_ASPECT * 0.9;
-  const fontPx =
-    capture && !isBracketPlaceholder(text)
-      ? fitTeamFontSizeForCapture(text, baseFontPx, feedMaxWidth)
-      : baseFontPx;
-  const feedCaptureLabel = capture ? captureTeamLabel(text) : text;
 
   return (
     <div
@@ -324,23 +250,10 @@ function FeedLabel({
         top: `${mapped.top}%`,
         width: `${mapped.width}%`,
         height: `${mapped.height}%`,
-        fontSize: capture ? undefined : fontPx,
+        fontSize: fontPx,
       }}
-      {...(capture ? { "data-bracket-team-row": true } : {})}
     >
-      <span
-        className={capture ? "block w-full shrink-0" : isBracketPlaceholder(text) ? "whitespace-nowrap" : "line-clamp-2 break-words"}
-        {...(capture ? { "data-bracket-team": true } : {})}
-        style={
-          capture
-            ? isBracketPlaceholder(text)
-              ? captureTeamTextStyle(fontPx, "left")
-              : captureTeamTextStyle(fontPx, "center")
-            : undefined
-        }
-      >
-        {feedCaptureLabel}
-      </span>
+      <span className={isBracketPlaceholder(text) ? "whitespace-nowrap" : "line-clamp-2 break-words"}>{text}</span>
     </div>
   );
 }
@@ -540,7 +453,6 @@ export function LiveBracketSlide({
               poolQualifiers
             )}
             scaleH={renderHeight}
-            capture={capture}
           />
         ))}
     </div>

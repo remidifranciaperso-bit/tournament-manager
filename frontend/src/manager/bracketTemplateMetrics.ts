@@ -26,19 +26,6 @@ export function ptOnSlide(pt: number, slidePixelHeight: number): number {
   return Math.max(6, Math.round((pt / 72) * (slidePixelHeight / SLIDE_H_IN)));
 }
 
-/** Réduit la taille pour tenir sur une ligne dans une boîte match (capture export PDF). */
-export function fitTeamFontSizeForCapture(
-  text: string,
-  basePx: number,
-  maxWidthPx: number,
-  minPx = 6
-): number {
-  if (!text.trim() || maxWidthPx <= 0 || basePx <= 0) return basePx;
-  const estimated = text.length * basePx * 0.68;
-  if (estimated <= maxWidthPx) return basePx;
-  return Math.max(minPx, Math.floor(basePx * (maxWidthPx / estimated)));
-}
-
 export function projectionContentSize() {
   return { width: 100, height: 100 };
 }

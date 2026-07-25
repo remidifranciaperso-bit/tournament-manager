@@ -12,6 +12,9 @@ export type CaptureSection =
   | "final"
   | "pools";
 
+/** Racine du Manager Live — capture WYSIWYG depuis l'onglet affiché (comme Live V1). */
+export const LIVE_EXPORT_ROOT = "#live-export-root";
+
 export function captureKey(section: string, slideIndex: number): string {
   return `${section}:${slideIndex}`;
 }
@@ -65,19 +68,17 @@ async function waitForScreenTarget(
   throw new Error(`Capture écran impossible : ${selector}`);
 }
 
-const EXPORT_LAYER = "#export-capture-layer";
-
 function captureSelector(section: CaptureSection): string {
   if (section === "final") {
-    return `${EXPORT_LAYER} [data-export-capture="final"]`;
+    return `${LIVE_EXPORT_ROOT} [data-export-capture="final"]`;
   }
   if (section === "planning") {
-    return `${EXPORT_LAYER} [data-export-capture="planning"]`;
+    return `${LIVE_EXPORT_ROOT} [data-export-capture="planning"]`;
   }
   if (section === "pools") {
-    return `${EXPORT_LAYER} [data-export-capture="pools"]`;
+    return `${LIVE_EXPORT_ROOT} [data-export-capture="pools"]`;
   }
-  return `${EXPORT_LAYER} [data-export-capture="bracket"]`;
+  return `${LIVE_EXPORT_ROOT} [data-export-capture="bracket"]`;
 }
 
 export interface CrossPageStub {
@@ -115,8 +116,6 @@ async function captureTarget(
     const image = await captureElementImage(element, { highQuality: true });
     return { image, element };
   } catch (error) {
-    // Capture vide (page sans contenu Manager) : on la saute, le backend garde
-    // la page Engine d'origine.
     if (
       error instanceof Error &&
       error.message.includes("capture écran est vide")
@@ -130,10 +129,6 @@ async function captureTarget(
 export async function captureManagerExportPages(
   pageMap: LivePageMap,
   navigation: ScreenCaptureNavigation,
-  /**
-   * Plan d'export des poules : page « Composition » (insérée après participants)
-   * et pages de poules (« Partie N ») rendues depuis l'onglet Poules du Manager.
-   */
   poolExport?: PoolExportPlan
 ): Promise<ManagerExportCapture> {
   const captures: Record<string, string> = {};
@@ -141,8 +136,6 @@ export async function captureManagerExportPages(
   const poolSlideLetters = poolExport?.poolSlideLetters ?? new Map<number, string>();
 
   try {
-    // Page « Composition » des poules (rosters) : capturée depuis l'onglet
-    // Poules et insérée par le backend juste après la page participants.
     if (poolExport?.compositionSlideIndex != null) {
       const captured = await captureTarget(
         navigation,
@@ -155,7 +148,7 @@ export async function captureManagerExportPages(
       }
     }
 
-    for (const section of ["main", "classement", "planning"] as const) {
+    for (const section of ["main", "classement", "planning", "final"] as const) {
       for (let page = 0; page < pageEntries(pageMap, section).length; page += 1) {
         const entry = pageEntries(pageMap, section)[page];
         const poolLetter =
