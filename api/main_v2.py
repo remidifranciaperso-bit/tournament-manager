@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260725-bracket-style"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260725-bracket-weight"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -525,13 +525,13 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
   }
 
   /** Style boîte match aligné Live V1 (font-noto, 8.5 pt placeholder / 12 pt équipe). */
-  function applyBracketTeamRowStyle(rowEl, spanEl, text, scaleH) {
+  function applyBracketTeamRowStyle(rowEl, spanEl, text, scaleH, bold) {
     if (!rowEl || !spanEl || !scaleH) return;
     var isPh = bracketTeamIsPlaceholder(text);
     var pt = isPh ? 8.5 : 12;
     rowEl.style.fontSize = bracketPtOnSlide(pt, scaleH) + "px";
-    rowEl.classList.remove("font-tsl");
-    rowEl.classList.add("font-noto");
+    rowEl.classList.remove("font-tsl", "font-semibold", "font-normal");
+    rowEl.classList.add("font-noto", bold ? "font-semibold" : "font-normal");
     rowEl.classList.remove(
       "justify-start",
       "justify-center",
@@ -596,10 +596,12 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
           matchesByCode,
           matchResults
         );
+        var result = lookupCaseMap(matchResults, code);
+        var winnerSide = result && result.winner ? result.winner : null;
         team1Span.textContent = next1;
         team2Span.textContent = next2;
-        applyBracketTeamRowStyle(team1Row, team1Span, next1, scaleH);
-        applyBracketTeamRowStyle(team2Row, team2Span, next2, scaleH);
+        applyBracketTeamRowStyle(team1Row, team1Span, next1, scaleH, winnerSide === 1);
+        applyBracketTeamRowStyle(team2Row, team2Span, next2, scaleH, winnerSide === 2);
       });
     });
   }

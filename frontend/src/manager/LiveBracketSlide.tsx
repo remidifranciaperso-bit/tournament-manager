@@ -130,6 +130,8 @@ export function TemplateMatchBox({
     : isBracketPlaceholder(team2)
       ? "shrink-0"
       : "line-clamp-2 break-words";
+  const team1Weight = winnerSide === 1 ? "font-semibold" : "font-normal";
+  const team2Weight = winnerSide === 2 ? "font-semibold" : "font-normal";
 
   return (
     <div
@@ -179,7 +181,7 @@ export function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-visible">
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 font-noto ${team1Align} ${capture ? "overflow-visible" : ""}`}
+          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 font-noto ${team1Weight} ${team1Align} ${capture ? "overflow-visible" : ""}`}
           style={{ fontSize: team1Px }}
         >
           <span className={team1BodyClass}>{team1}</span>
@@ -191,7 +193,7 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 font-noto ${team2Align} ${capture ? "overflow-visible" : ""}`}
+          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 font-noto ${team2Weight} ${team2Align} ${capture ? "overflow-visible" : ""}`}
           style={{ fontSize: team2Px }}
         >
           <span className={team2BodyClass}>{team2}</span>
