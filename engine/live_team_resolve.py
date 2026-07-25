@@ -168,6 +168,7 @@ _PLACEHOLDER_PREFIX = re.compile(
     r"^(Vainqueur|Perdant|Deuxième|Second|Troisième|🏆|❌|🥇|🥈|🥉|1er|2e|3 )",
     re.IGNORECASE,
 )
+_NUMERIC_DISPLAY_RE = re.compile(r"^[\d\s]+$")
 
 
 def _is_unresolved_placeholder(label: str) -> bool:
@@ -223,4 +224,11 @@ def format_team_display(
 
 
 def is_placeholder(text: str) -> bool:
-    return bool(_PLACEHOLDER_PREFIX.match((text or "").strip()))
+    stripped = (text or "").strip()
+    if not stripped:
+        return False
+    # Classements / poids (ex. « 3 609 ») : le préfixe « 3 » des placeholders poules
+    # ne doit pas les confondre avec un libellé du type « 3 PA_M1: ».
+    if _NUMERIC_DISPLAY_RE.fullmatch(stripped):
+        return False
+    return bool(_PLACEHOLDER_PREFIX.match(stripped))
