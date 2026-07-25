@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-layout-v2-20260725-bracket-weight"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -606,11 +606,66 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     });
   }
 
+  /** Propagation vainqueurs/perdants dans le planning (bundle legacy, comme bracket). */
+  function isReactPlanningTable(table) {
+    if (table.closest("#export-capture-layer")) return false;
+    if (
+      table.classList.contains("live-planning-v2-table") &&
+      table.closest("[data-planning-layout]")
+    ) {
+      return true;
+    }
+    if (!table.closest("[data-planning-layout]")) return false;
+    var ths = table.querySelectorAll("thead tr.bg-template-blue th");
+    if (ths.length !== 6) return false;
+    var first = (ths[0].textContent || "").trim().toLowerCase();
+    var fourth = (ths[3].textContent || "").trim().toLowerCase();
+    return first === "code" && fourth.indexOf("quipe") !== -1;
+  }
+
+  function patchPlanningTables() {
+    if (!isManagerRoute()) return;
+    var liveData = loadLiveSessionData();
+    if (!liveData) return;
+
+    var matchesByCode = buildBracketMatchesByCode(liveData.matches);
+    var matchResults = loadBracketMatchResults(liveData.live_token);
+
+    document.querySelectorAll("#root table").forEach(function (table) {
+      if (!isReactPlanningTable(table)) return;
+      table.querySelectorAll("tbody tr").forEach(function (row) {
+        var cells = row.querySelectorAll("td");
+        if (cells.length < 5) return;
+        var code = (cells[0].textContent || "").trim();
+        if (!code) return;
+        var match = lookupCaseMap(matchesByCode, code);
+        if (!match) return;
+        var next1 = resolveBracketTeamDisplay(
+          match.equipe1,
+          matchesByCode,
+          matchResults
+        );
+        var next2 = resolveBracketTeamDisplay(
+          match.equipe2,
+          matchesByCode,
+          matchResults
+        );
+        if ((cells[3].textContent || "").trim() !== next1) {
+          cells[3].textContent = next1;
+        }
+        if ((cells[4].textContent || "").trim() !== next2) {
+          cells[4].textContent = next2;
+        }
+      });
+    });
+  }
+
   function scheduleBracketPatch() {
     if (bracketScheduled) return;
     bracketScheduled = true;
     requestAnimationFrame(function () {
       patchBracketSlides();
+      patchPlanningTables();
       bracketScheduled = false;
     });
   }
