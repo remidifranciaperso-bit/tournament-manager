@@ -574,7 +574,10 @@ def composer_page_export(
             draw_h = placement_rect.height
         draw_w = image_w * scale
         x0 = placement_rect.x0 + side_margin + (avail_w - draw_w) / 2
-        y0 = placement_rect.y0 + (placement_rect.height - draw_h) / 2
+        if section in ("planning", "final", "classement", "pools"):
+            y0 = placement_rect.y0
+        else:
+            y0 = placement_rect.y0 + (placement_rect.height - draw_h) / 2
         page.insert_image(
             fitz.Rect(x0, y0, x0 + draw_w, y0 + draw_h),
             stream=image_bytes,

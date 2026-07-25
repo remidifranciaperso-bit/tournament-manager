@@ -342,7 +342,7 @@ export function LivePlanningTab({
   if (capture) {
     return (
       <div
-        className="flex w-full items-center justify-center bg-white"
+        className="inline-block bg-white"
         style={{
           width: captureShellWidth,
           boxSizing: "border-box",
@@ -352,8 +352,8 @@ export function LivePlanningTab({
         }}
       >
         <div
-          className={`${LIVE_TABLE_CAPTURE_SHELL} mx-auto bg-template-blue`}
-          style={{ width: baseWidth, maxWidth: "100%" }}
+          className={`${LIVE_TABLE_CAPTURE_SHELL} bg-template-blue`}
+          style={{ width: baseWidth }}
         >
           {table}
         </div>

@@ -148,16 +148,14 @@ export function LiveFinalRankingTab({
   if (capture) {
     return (
       <div
-        className="flex w-full items-center justify-center bg-white"
-        style={{ ["--live-display-scale" as string]: 1 }}
+        className="inline-block bg-white"
+        style={{
+          width: FINAL_EXPORT_CAPTURE_WIDTH,
+          ["--live-display-scale" as string]: 1,
+        }}
       >
-        <div
-          className="w-full"
-          style={{ maxWidth: FINAL_EXPORT_CAPTURE_WIDTH }}
-        >
-          <div className={`${LIVE_TABLE_CAPTURE_SHELL} bg-template-blue`}>
-            {table}
-          </div>
+        <div className={`${LIVE_TABLE_CAPTURE_SHELL} bg-template-blue`}>
+          {table}
         </div>
       </div>
     );

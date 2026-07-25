@@ -23,14 +23,14 @@ export function LiveManagerDocumentPage({
     <div
       className={
         exportMode
-          ? "inline-flex w-full flex-col items-stretch bg-white"
+          ? "inline-flex w-fit max-w-full flex-col items-stretch self-center bg-white"
           : "flex min-h-0 flex-1 flex-col overflow-hidden bg-white"
       }
     >
       <div
         className={
           exportMode
-            ? "shrink-0 bg-white"
+            ? "w-fit max-w-full shrink-0 bg-white"
             : "flex min-h-0 flex-1 flex-col overflow-hidden"
         }
         {...(capture ? { "data-export-capture": capture } : {})}
