@@ -98,7 +98,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725"
+_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725b"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -358,6 +358,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
   var BRACKET_PLACEHOLDER =
     /^(Vainqueur|Perdant|Deuxième|Second|Troisième|🏆|❌|🥇|🥈|🥉|1er|2e|3 )/i;
   var bracketScheduled = false;
+  var lastProgressRaw = "";
 
   function loadLiveSessionData() {
     try {
@@ -607,20 +608,32 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
   }
 
   /** Propagation vainqueurs/perdants dans le planning (bundle legacy, comme bracket). */
-  function isReactPlanningTable(table) {
+  function isPlanningTableForPatch(table) {
     if (table.closest("#export-capture-layer")) return false;
+    // Legacy : layout inject a deja marque le tableau planning V2.
+    if (table.classList.contains("ev2-planning-layout")) return true;
     if (
       table.classList.contains("live-planning-v2-table") &&
       table.closest("[data-planning-layout]")
     ) {
       return true;
     }
-    if (!table.closest("[data-planning-layout]")) return false;
+    if (table.closest("[data-planning-layout]")) {
+      var layoutThs = table.querySelectorAll("thead tr.bg-template-blue th");
+      if (layoutThs.length === 6) {
+        var layoutFirst = (layoutThs[0].textContent || "").trim().toLowerCase();
+        var layoutFourth = (layoutThs[3].textContent || "").trim().toLowerCase();
+        if (layoutFirst === "code" && layoutFourth.indexOf("quipe") !== -1) {
+          return true;
+        }
+      }
+    }
+    // Meme heuristique que layoutPlanning (Code + Terrain, 6 colonnes).
     var ths = table.querySelectorAll("thead tr.bg-template-blue th");
     if (ths.length !== 6) return false;
     var first = (ths[0].textContent || "").trim().toLowerCase();
-    var fourth = (ths[3].textContent || "").trim().toLowerCase();
-    return first === "code" && fourth.indexOf("quipe") !== -1;
+    var third = (ths[2].textContent || "").trim().toLowerCase();
+    return first === "code" && third === "terrain";
   }
 
   function patchPlanningTables() {
@@ -632,7 +645,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     var matchResults = loadBracketMatchResults(liveData.live_token);
 
     document.querySelectorAll("#root table").forEach(function (table) {
-      if (!isReactPlanningTable(table)) return;
+      if (!isPlanningTableForPatch(table)) return;
       table.querySelectorAll("tbody tr").forEach(function (row) {
         var cells = row.querySelectorAll("td");
         if (cells.length < 5) return;
@@ -658,6 +671,22 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
         }
       });
     });
+  }
+
+  function watchLiveProgressChanges() {
+    if (!isManagerRoute()) return;
+    var liveData = loadLiveSessionData();
+    if (!liveData) return;
+    var raw = "";
+    try {
+      raw = localStorage.getItem("live-progress-" + liveData.live_token) || "";
+    } catch (e) {
+      return;
+    }
+    if (raw !== lastProgressRaw) {
+      lastProgressRaw = raw;
+      scheduleBracketPatch();
+    }
   }
 
   function scheduleBracketPatch() {
@@ -699,8 +728,10 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     });
     window.addEventListener("storage", scheduleBracketPatch);
     window.setInterval(function () {
-      if (isManagerRoute()) scheduleBracketPatch();
-    }, 500);
+      if (!isManagerRoute()) return;
+      watchLiveProgressChanges();
+      scheduleBracketPatch();
+    }, 250);
   }
 
   if (document.readyState === "loading") {

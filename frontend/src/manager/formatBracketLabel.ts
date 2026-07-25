@@ -1,6 +1,7 @@
 /** Vérification déploiement bundle export (grep Docker / health). */
 export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260721-bracket-native";
 export const BRACKET_PROPAGATE_MARKER = "bracket-propagate-v2-20260725";
+export const PLANNING_PROPAGATE_MARKER = "planning-propagate-v2-20260725b";
 
 const EMOJI_GAP = "\u2009";
 const ICONE_VAINQUEUR = `🏆${EMOJI_GAP}`;

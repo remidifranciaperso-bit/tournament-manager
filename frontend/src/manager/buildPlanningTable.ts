@@ -4,9 +4,11 @@ import {
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
 import { buildPoolQualifierMap } from "./buildPoolStandings";
-import { formatBracketTeamDisplay } from "./formatBracketLabel";
+import { formatBracketTeamDisplay, PLANNING_PROPAGATE_MARKER } from "./formatBracketLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { formatMatchDurationMinutes } from "./useLiveProgress";
+
+export { PLANNING_PROPAGATE_MARKER };
 
 export interface PlanningRow {
   code: string;
