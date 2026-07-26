@@ -84,6 +84,73 @@ def _apply_label_replacement(snapshot: dict[str, Any], old_labels: set[str], new
                 fields[key] = new_label
 
 
+def _apply_label_map(snapshot: dict[str, Any], label_map: dict[str, str]) -> None:
+    if not label_map:
+        return
+    for match in snapshot.get("matches") or []:
+        for key in ("equipe1", "equipe2"):
+            value = str(match.get(key) or "")
+            if value in label_map:
+                match[key] = label_map[value]
+
+    fields = snapshot.get("fields")
+    if isinstance(fields, dict):
+        for key, value in list(fields.items()):
+            if isinstance(value, str) and value in label_map:
+                fields[key] = label_map[value]
+
+
+def _team_ts_signature(snapshot: dict[str, Any]) -> dict[tuple[str, str], int]:
+    signature: dict[tuple[str, str], int] = {}
+    for equipe in snapshot.get("equipes") or []:
+        key = (str(equipe.get("joueur1") or ""), str(equipe.get("joueur2") or ""))
+        signature[key] = int(equipe.get("ts") or 0)
+    return signature
+
+
+def _renumber_ts_by_poids(snapshot: dict[str, Any]) -> bool:
+    equipes = snapshot.get("equipes")
+    if not isinstance(equipes, list) or len(equipes) < 2:
+        return False
+
+    pending: list[dict[str, Any]] = []
+    for equipe in equipes:
+        pending.append(
+            {
+                "equipe": equipe,
+                "poids": int(equipe.get("poids") or 999_999),
+                "old_ts": int(equipe.get("ts") or 0),
+                "old_court": str(equipe.get("label_court") or ""),
+                "old_label": str(equipe.get("label") or ""),
+            }
+        )
+
+    pending.sort(key=lambda item: (item["poids"], item["old_ts"]))
+    label_map: dict[str, str] = {}
+    ts_changed = False
+
+    for new_ts, item in enumerate(pending, start=1):
+        equipe = item["equipe"]
+        if item["old_ts"] != new_ts:
+            ts_changed = True
+
+        j1 = str(equipe.get("joueur1") or "")
+        j2 = str(equipe.get("joueur2") or "")
+        label_court, label = _labels_equipe(j1, j2, new_ts)
+        equipe["ts"] = new_ts
+        equipe["numero"] = new_ts
+        equipe["label_court"] = label_court
+        equipe["label"] = label
+
+        if item["old_court"]:
+            label_map[item["old_court"]] = label_court
+        if item["old_label"]:
+            label_map[item["old_label"]] = label
+
+    _apply_label_map(snapshot, label_map)
+    return ts_changed
+
+
 def _find_equipe(snapshot: dict[str, Any], team_id: str) -> dict[str, Any] | None:
     ts = int(team_id.rsplit("-", 1)[-1])
     for item in snapshot.get("equipes") or []:
@@ -167,10 +234,18 @@ def _apply_team_replace(snapshot: dict[str, Any], payload: dict[str, Any]) -> di
     equipe["label"] = label
 
     _apply_label_replacement(snapshot, old_labels, label_court)
+    _renumber_ts_by_poids(snapshot)
     return snapshot
 
 
-def _impact_flags(mode: str, result: str, convocations_changed: int) -> dict[str, bool]:
+def _impact_flags(
+    mode: str,
+    result: str,
+    convocations_changed: int,
+    *,
+    ts_modified: bool = False,
+    bracket_modified: bool = False,
+) -> dict[str, bool]:
     if mode == "partner":
         return {
             "ts_modified": False,
@@ -178,10 +253,9 @@ def _impact_flags(mode: str, result: str, convocations_changed: int) -> dict[str
             "convocations_modified": result == "blocked" or convocations_changed > 0,
         }
     if mode == "replace":
-        needs_adjust = result == "adjust"
         return {
-            "ts_modified": needs_adjust,
-            "bracket_modified": needs_adjust,
+            "ts_modified": ts_modified,
+            "bracket_modified": bracket_modified,
             "convocations_modified": convocations_changed > 0,
         }
     return {
@@ -194,15 +268,40 @@ def _impact_flags(mode: str, result: str, convocations_changed: int) -> dict[str
 def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
     mode = payload.get("mode")
     if mode == "replace":
-        result = "adjust"
-        convocations_changed = 0
-        impact = _impact_flags(mode, result, convocations_changed)
+        before = copy.deepcopy(snapshot)
+        after = apply_team_change(copy.deepcopy(snapshot), payload)
+        before_hours = _convocation_hours(before)
+        after_hours = _convocation_hours(after)
+        ts_modified = _team_ts_signature(before) != _team_ts_signature(after)
+        bracket_modified = ts_modified
+        convocations_changed = sum(1 for ts, heure in before_hours.items() if after_hours.get(ts) != heure)
+
+        if ts_modified:
+            result = "adjust"
+            if convocations_changed > 0:
+                message = (
+                    f"Compatible avec renumérotation TS — {convocations_changed} convocation(s) "
+                    "seront modifiée(s) pour respecter le nouveau classement."
+                )
+            else:
+                message = (
+                    "Compatible avec ajustement interne du tirage — les têtes de série seront "
+                    "renumérotées selon le classement des équipes."
+                )
+        else:
+            result = "ok"
+            message = "Compatible — le classement TS reste inchangé."
+
+        impact = _impact_flags(
+            mode,
+            result,
+            convocations_changed,
+            ts_modified=ts_modified,
+            bracket_modified=bracket_modified,
+        )
         return {
             "result": result,
-            "message": (
-                "Compatible avec ajustement interne du tirage — proposition : permuter "
-                "les TS voisins non joués pour respecter le niveau sportif."
-            ),
+            "message": message,
             "convocations_changed": convocations_changed,
             **impact,
         }

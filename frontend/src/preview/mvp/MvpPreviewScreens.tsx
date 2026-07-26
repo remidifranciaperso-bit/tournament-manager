@@ -738,7 +738,7 @@ function CompactPlayerFields({
       />
       <input
         className="text-input lime-input text-sm"
-        placeholder="P100"
+        placeholder="Cl."
         value={values.classement}
         onChange={(event) => onChange({ ...values, classement: event.target.value })}
       />
