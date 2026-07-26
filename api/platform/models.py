@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, LargeBinary, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,7 +31,8 @@ class ClubProfile(Base):
     terrains: Mapped[list] = mapped_column(JSON, default=list)
     terrain_principal: Mapped[str] = mapped_column(String, default="TERRAIN 1")
     has_logo: Mapped[bool] = mapped_column(Boolean, default=False)
-    logo_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logo_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    logo_content_type: Mapped[str | None] = mapped_column(String, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

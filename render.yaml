@@ -72,15 +72,9 @@ services:
     dockerContext: .
     healthCheckPath: /api/platform/health
     autoDeploy: true
-    disk:
-      name: platform-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: DEPLOY_TARGET
         value: platform
-      - key: PLATFORM_DATA_DIR
-        value: /data/platform
       - key: ENGINE_V2_URL
         value: https://tournament-manager-engine-v2.onrender.com
       - key: JWT_SECRET

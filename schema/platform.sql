@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS club_profiles (
     terrains JSONB NOT NULL DEFAULT '["TERRAIN 1","TERRAIN 2","TERRAIN 3","TERRAIN 4"]'::jsonb,
     terrain_principal TEXT NOT NULL DEFAULT 'TERRAIN 1',
     has_logo BOOLEAN NOT NULL DEFAULT false,
-    logo_path TEXT,
+    logo_data BYTEA,
+    logo_content_type TEXT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

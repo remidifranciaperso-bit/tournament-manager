@@ -1,10 +1,10 @@
-from pathlib import Path
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from api.platform.config import ENGINE_V2_URL, LOGO_SUBDIR, PLATFORM_DATA_DIR
+from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES
 from api.platform.database import get_db
 from api.platform.models import ClubProfile, Tournament, User
 from api.platform.schemas import (
@@ -21,9 +21,26 @@ router = APIRouter(prefix="/api/platform", tags=["platform"])
 
 DEFAULT_TERRAINS = ["TERRAIN 1", "TERRAIN 2", "TERRAIN 3", "TERRAIN 4"]
 
+MIME_BY_SUFFIX = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
+
+
+def _guess_logo_content_type(filename: str | None, upload_type: str | None) -> str:
+    if upload_type and upload_type.startswith("image/"):
+        return upload_type.split(";", 1)[0].strip().lower()
+    suffix = (filename or "").rsplit(".", 1)[-1].lower() if filename and "." in filename else ""
+    if suffix:
+        return MIME_BY_SUFFIX.get(f".{suffix}", "image/png")
+    return "image/png"
+
 
 def _logo_url(user_id: UUID, profile: ClubProfile | None) -> str | None:
-    if profile and profile.has_logo and profile.logo_path:
+    if profile and profile.has_logo and profile.logo_data:
         return f"/api/platform/club/logo/{user_id}"
     return None
 
@@ -118,27 +135,33 @@ async def upload_club_logo(
     db: Session = Depends(get_db),
 ) -> ClubProfileOut:
     profile = _ensure_profile(db, user)
-    suffix = Path(file.filename or "logo.png").suffix or ".png"
-    logo_dir = Path(PLATFORM_DATA_DIR) / LOGO_SUBDIR
-    logo_dir.mkdir(parents=True, exist_ok=True)
-    dest = logo_dir / f"{user.id}{suffix}"
+    content_type = _guess_logo_content_type(file.filename, file.content_type)
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Le logo doit être une image")
+
     content = await file.read()
-    dest.write_bytes(content)
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Fichier vide")
+    if len(content) > LOGO_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Logo trop volumineux (max {LOGO_MAX_BYTES // 1024 // 1024} Mo)",
+        )
+
     profile.has_logo = True
-    profile.logo_path = str(dest)
+    profile.logo_data = content
+    profile.logo_content_type = content_type
     db.commit()
     db.refresh(profile)
     return _club_out(user.id, profile)  # type: ignore[return-value]
 
 
 @router.get("/club/logo/{user_id}")
-def get_club_logo(user_id: UUID, db: Session = Depends(get_db)):
-    from fastapi.responses import FileResponse
-
+def get_club_logo(user_id: UUID, db: Session = Depends(get_db)) -> Response:
     profile = db.get(ClubProfile, user_id)
-    if profile is None or not profile.logo_path or not Path(profile.logo_path).is_file():
+    if profile is None or not profile.logo_data:
         raise HTTPException(status_code=404, detail="Logo introuvable")
-    return FileResponse(profile.logo_path)
+    return Response(content=profile.logo_data, media_type=profile.logo_content_type or "image/png")
 
 
 @router.get("/tournaments", response_model=list[TournamentOut])

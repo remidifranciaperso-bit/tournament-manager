@@ -1,6 +1,5 @@
 """Entrée FastAPI — service Platform (comptes, club, tournois). Sans Engine V2 / Live."""
 
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -8,8 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from api.platform.config import DATABASE_URL, DEPLOY_TARGET, ENGINE_V2_URL, PLATFORM_DATA_DIR
-from api.platform.database import Base, engine
+from api.platform.config import DATABASE_URL, DEPLOY_TARGET, ENGINE_V2_URL
+from api.platform.database import Base, engine, migrate_schema
 from api.platform.router import router as platform_router
 from api.platform.schemas import HealthResponse
 
@@ -18,9 +17,9 @@ _FRONT_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    Path(PLATFORM_DATA_DIR).mkdir(parents=True, exist_ok=True)
     if DATABASE_URL:
         Base.metadata.create_all(bind=engine)
+        migrate_schema()
     yield
 
 

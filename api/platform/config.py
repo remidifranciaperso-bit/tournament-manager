@@ -10,6 +10,4 @@ ENGINE_V2_URL = os.environ.get(
     "ENGINE_V2_URL", "https://tournament-manager-engine-v2.onrender.com"
 ).rstrip("/")
 
-PLATFORM_DATA_DIR = os.environ.get("PLATFORM_DATA_DIR", "/data/platform")
-LOGO_SUBDIR = "logos"
-UPLOADS_SUBDIR = "uploads"
+LOGO_MAX_BYTES = int(os.environ.get("LOGO_MAX_BYTES", str(2 * 1024 * 1024)))

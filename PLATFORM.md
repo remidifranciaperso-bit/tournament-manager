@@ -28,7 +28,8 @@ render.yaml                  # Service + base Render
 | `DATABASE_URL` | (auto Render) | PostgreSQL |
 | `JWT_SECRET` | (auto généré) | Tokens login |
 | `ENGINE_V2_URL` | `https://tournament-manager-engine-v2.onrender.com` | Lien wizard / Live |
-| `PLATFORM_DATA_DIR` | `/data/platform` | Logos club (disque Render) |
+
+Pas de disque persistant requis : le **logo club** est stocké en PostgreSQL (`logo_data`).
 
 ## API (MVP)
 
@@ -38,21 +39,26 @@ POST /api/platform/auth/login      { email, password } → { access_token }
 GET  /api/platform/me              Authorization: Bearer …
 GET  /api/platform/club-profile
 PUT  /api/platform/club-profile
-POST /api/platform/club/logo       multipart file
+POST /api/platform/club/logo       multipart file (≤ 2 Mo, stocké en BDD)
+GET  /api/platform/club/logo/{user_id}
 GET  /api/platform/tournaments
 GET  /api/platform/engine-v2-url   → { url }
 GET  /api/platform/health
 ```
 
-## Déploiement Render
+## Déploiement Render (plan Free possible)
 
-1. Créer branche `feature/platform` depuis le repo
-2. Dashboard Render → **New Blueprint** ou ajouter manuellement :
-   - Web Service : `Dockerfile.platform`, branche `feature/platform`
-   - PostgreSQL : `tournament-platform-db`
-3. Lier `DATABASE_URL` au service platform
-4. Disque 1 Go monté sur `/data` (logos)
-5. Health check : `/api/platform/health`
+1. Branche `feature/platform` sur GitHub
+2. Web Service : `Dockerfile.platform`, branche `feature/platform`
+3. PostgreSQL : `tournament-platform-db` → lier `DATABASE_URL`
+4. Health check : `/api/platform/health`
+5. **Pas de disque** — logos en Postgres
+
+Si la base existait déjà avec l’ancien schéma (`logo_path`) :
+
+```bash
+psql $DATABASE_URL -f schema/platform_migrate_logo_db.sql
+```
 
 ## Local
 
