@@ -13,6 +13,7 @@ from api.platform.engine_regen import regenerate_pdf_via_engine
 from api.platform.live_pack import init_live_from_platform_pack
 from api.platform.pdf_convocations import extraire_pdf_convocations
 from api.platform.roster import roster_from_snapshot
+from api.platform.snapshot_bundle import tournament_snapshot_bundle
 from api.platform.team_change import (
     apply_team_change,
     check_team_change,
@@ -239,6 +240,8 @@ async def create_tournament(
     format_label: str = Form(""),
     teams: int = Form(0),
     live_snapshot_json: str = Form("{}"),
+    export_captures_json: str = Form("{}"),
+    crosspage_stubs_json: str = Form("{}"),
     pdf: UploadFile = File(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -251,8 +254,19 @@ async def create_tournament(
 
     try:
         live_snapshot = json.loads(live_snapshot_json)
+        export_captures = json.loads(export_captures_json)
+        crosspage_stubs = json.loads(crosspage_stubs_json)
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=400, detail="Snapshot Live invalide") from exc
+
+    if not isinstance(live_snapshot, dict):
+        raise HTTPException(status_code=400, detail="Snapshot Live invalide")
+    live_snapshot.pop("export_captures", None)
+    live_snapshot.pop("crosspage_stubs", None)
+    if not isinstance(export_captures, dict):
+        export_captures = {}
+    if not isinstance(crosspage_stubs, dict):
+        crosspage_stubs = {}
 
     row = Tournament(
         user_id=user.id,
@@ -264,6 +278,8 @@ async def create_tournament(
         pdf_filename=pdf.filename or "tournoi.pdf",
         pdf_data=pdf_bytes,
         live_snapshot=live_snapshot,
+        export_captures=export_captures or None,
+        crosspage_stubs=crosspage_stubs or None,
     )
     db.add(row)
     db.commit()
@@ -382,7 +398,7 @@ def get_tournament_roster(
     row = _get_user_tournament(db, user, tournament_id)
     if not row.live_snapshot:
         raise HTTPException(status_code=422, detail="Snapshot tournoi indisponible.")
-    return roster_from_snapshot(row.live_snapshot)
+    return roster_from_snapshot(tournament_snapshot_bundle(row))
 
 
 @router.post("/tournaments/{tournament_id}/team-changes/check", response_model=TeamChangeCheckResponse)
@@ -395,10 +411,11 @@ def check_tournament_team_change(
     row = _get_user_tournament(db, user, tournament_id)
     if not row.live_snapshot:
         raise HTTPException(status_code=422, detail="Snapshot tournoi indisponible.")
+    snapshot = tournament_snapshot_bundle(row)
     payload = _team_change_payload(body)
     try:
-        validate_team_change_payload(row.live_snapshot, payload)
-        result = check_team_change(row.live_snapshot, payload)
+        validate_team_change_payload(snapshot, payload)
+        result = check_team_change(snapshot, payload)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return TeamChangeCheckResponse(**result)
@@ -414,17 +431,14 @@ def apply_tournament_team_change(
     row = _get_user_tournament(db, user, tournament_id)
     if not row.live_snapshot:
         raise HTTPException(status_code=422, detail="Snapshot tournoi indisponible.")
+    snapshot = tournament_snapshot_bundle(row)
     payload = _team_change_payload(body)
     try:
-        validate_team_change_payload(row.live_snapshot, payload)
-        check = check_team_change(row.live_snapshot, payload)
+        validate_team_change_payload(snapshot, payload)
+        check = check_team_change(snapshot, payload)
         if check["result"] == "blocked":
             raise ValueError(check["message"])
-        updated = apply_team_change(row.live_snapshot, payload)
-        if updated.get("export_captures") is None and row.live_snapshot.get("export_captures"):
-            updated["export_captures"] = row.live_snapshot["export_captures"]
-        if updated.get("crosspage_stubs") is None and row.live_snapshot.get("crosspage_stubs"):
-            updated["crosspage_stubs"] = row.live_snapshot["crosspage_stubs"]
+        updated = apply_team_change(snapshot, payload)
         pdf_bytes, refreshed = regenerate_pdf_via_engine(updated)
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"Engine V2 indisponible: {exc}") from exc
@@ -435,9 +449,13 @@ def apply_tournament_team_change(
         raise HTTPException(status_code=400, detail="PDF regénéré trop volumineux.")
 
     row.pdf_data = pdf_bytes
-    row.live_snapshot = refreshed
-    if refreshed.get("export_captures"):
-        row.live_snapshot["export_captures"] = refreshed.get("export_captures") or updated.get("export_captures")
+    row.live_snapshot = {
+        key: value
+        for key, value in refreshed.items()
+        if key not in {"export_captures", "crosspage_stubs"}
+    }
+    row.export_captures = refreshed.get("export_captures") or row.export_captures
+    row.crosspage_stubs = refreshed.get("crosspage_stubs") or row.crosspage_stubs
     db.commit()
     return TeamChangeApplyResponse(
         message="Tournoi mis à jour — PDF et snapshot regénérés.",

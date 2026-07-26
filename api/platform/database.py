@@ -23,6 +23,8 @@ def migrate_schema() -> None:
         conn.execute(text("ALTER TABLE club_profiles DROP COLUMN IF EXISTS logo_path"))
         conn.execute(text("ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS pdf_filename TEXT"))
         conn.execute(text("ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS pdf_data BYTEA"))
+        conn.execute(text("ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS export_captures JSONB"))
+        conn.execute(text("ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS crosspage_stubs JSONB"))
 
 
 def get_db() -> Generator[Session, None, None]:

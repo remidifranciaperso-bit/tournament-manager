@@ -219,12 +219,20 @@ export async function platformCreateTournament(input: {
   pdf: Blob;
   pdfFilename: string;
 }): Promise<{ id: string; name: string }> {
+  const snapshotCore = { ...input.liveSnapshot };
+  const exportCaptures = (snapshotCore.export_captures as Record<string, string> | undefined) ?? {};
+  const crosspageStubs = (snapshotCore.crosspage_stubs as Record<string, unknown> | undefined) ?? {};
+  delete snapshotCore.export_captures;
+  delete snapshotCore.crosspage_stubs;
+
   const form = new FormData();
   form.append("name", input.name);
   form.append("date_label", input.dateLabel);
   form.append("format_label", input.formatLabel);
   form.append("teams", String(input.teams));
-  form.append("live_snapshot_json", JSON.stringify(input.liveSnapshot));
+  form.append("live_snapshot_json", JSON.stringify(snapshotCore));
+  form.append("export_captures_json", JSON.stringify(exportCaptures));
+  form.append("crosspage_stubs_json", JSON.stringify(crosspageStubs));
   form.append("pdf", input.pdf, input.pdfFilename);
   return platformFetch<{ id: string; name: string }>("/api/platform/tournaments", {
     method: "POST",

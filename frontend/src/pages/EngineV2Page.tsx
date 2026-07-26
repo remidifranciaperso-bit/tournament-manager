@@ -92,6 +92,12 @@ const GENERATE_PHASE_LABELS: Record<EngineV2GeneratePhase, string> = {
   export: "Assemblage du PDF final…",
 };
 
+function formatPlatformDateLabel(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+}
+
 export default function EngineV2Page() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -120,6 +126,13 @@ export default function EngineV2Page() {
   const prepareDataRef = useRef<EngineV2PrepareResult | null>(null);
   const [platformSaving, setPlatformSaving] = useState(false);
   const [platformSaveError, setPlatformSaveError] = useState<string | null>(null);
+  const pendingPlatformSaveRef = useRef<{
+    blob: Blob;
+    filename: string;
+    prepared: EngineV2PrepareResult;
+    captures: Record<string, string>;
+    crosspageStubs: Record<string, import("../manager/exportCapture").CrossPageStub>;
+  } | null>(null);
 
   const activeWizardSteps = isPlatformBuild ? PLATFORM_WIZARD_STEPS : WIZARD_STEPS;
   const stepperIndex = isPlatformBuild ? (PLATFORM_STEP_INDEX[step] ?? 0) : step - 1;
@@ -296,6 +309,45 @@ export default function EngineV2Page() {
     setStep((s) => (isPlatformBuild ? PLATFORM_PREV[s] ?? s : Math.max(s - 1, STEP_ENTRY)));
   const goHome = () => navigate(isPlatformBuild ? "/" : "/");
 
+  const savePlatformTournament = useCallback(
+    async (pending: NonNullable<typeof pendingPlatformSaveRef.current>) => {
+      const typeLabel = form.typeTournoi.toUpperCase();
+      const formatLabel = `${typeLabel} · ${pending.prepared.nb_equipes} équipes`;
+      await platformCreateTournament({
+        name: pending.prepared.meta.club
+          ? `${typeLabel} ${pending.prepared.meta.club}`
+          : typeLabel,
+        dateLabel: formatPlatformDateLabel(form.dateTournoi),
+        formatLabel,
+        teams: pending.prepared.nb_equipes,
+        liveSnapshot: buildPlatformLiveSnapshot(pending.prepared, {
+          captures: pending.captures,
+          crosspageStubs: pending.crosspageStubs,
+        }),
+        pdf: pending.blob,
+        pdfFilename: pending.filename,
+      });
+      setPlatformSaveError(null);
+    },
+    [form.dateTournoi, form.typeTournoi]
+  );
+
+  const retryPlatformSave = useCallback(async () => {
+    const pending = pendingPlatformSaveRef.current;
+    if (!pending) return;
+    setPlatformSaving(true);
+    setPlatformSaveError(null);
+    try {
+      await savePlatformTournament(pending);
+    } catch (saveErr) {
+      setPlatformSaveError(
+        saveErr instanceof Error ? saveErr.message : "Enregistrement Platform impossible"
+      );
+    } finally {
+      setPlatformSaving(false);
+    }
+  }, [savePlatformTournament]);
+
   const handleValidateSummary = () => {
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl);
@@ -344,21 +396,19 @@ export default function EngineV2Page() {
       notifyTokenRef.current = notifyToken;
       setLiveSnapshotAvailable(snapshot);
 
+      pendingPlatformSaveRef.current = {
+        blob,
+        filename,
+        prepared,
+        captures,
+        crosspageStubs,
+      };
+
       if (isPlatformBuild) {
         setPlatformSaving(true);
         setPlatformSaveError(null);
         try {
-          const typeLabel = form.typeTournoi.toUpperCase();
-          const formatLabel = `${typeLabel} · ${prepared.nb_equipes} équipes`;
-          await platformCreateTournament({
-            name: prepared.meta.club ? `${typeLabel} ${prepared.meta.club}` : typeLabel,
-            dateLabel: form.dateTournoi,
-            formatLabel,
-            teams: prepared.nb_equipes,
-            liveSnapshot: buildPlatformLiveSnapshot(prepared, { captures, crosspageStubs }),
-            pdf: blob,
-            pdfFilename: filename,
-          });
+          await savePlatformTournament(pendingPlatformSaveRef.current);
         } catch (saveErr) {
           setPlatformSaveError(
             saveErr instanceof Error ? saveErr.message : "Enregistrement Platform impossible"
@@ -376,7 +426,7 @@ export default function EngineV2Page() {
       setGenPhase(null);
       setExportCaptureTarget(null);
     }
-  }, [form, pdfUrl, captureExportPages]);
+  }, [form, pdfUrl, captureExportPages, savePlatformTournament]);
 
   useEffect(() => {
     if (step !== 8) {
@@ -573,6 +623,9 @@ export default function EngineV2Page() {
                     tournamentName={form.typeTournoi.toUpperCase()}
                     saving={false}
                     saveError={platformSaveError}
+                    onRetrySave={
+                      platformSaveError ? () => void retryPlatformSave() : undefined
+                    }
                     onBackToTournaments={() => navigate("/")}
                   />
                 )

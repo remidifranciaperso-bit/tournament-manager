@@ -55,6 +55,8 @@ class Tournament(Base):
     pdf_filename: Mapped[str | None] = mapped_column(String, nullable=True)
     pdf_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     live_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    export_captures: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    crosspage_stubs: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     engine_v2_pdf_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

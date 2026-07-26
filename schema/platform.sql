@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS tournaments (
     pdf_data BYTEA,
     engine_v2_pdf_path TEXT,
     live_snapshot JSONB,
+    export_captures JSONB,
+    crosspage_stubs JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

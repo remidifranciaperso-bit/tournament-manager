@@ -6,14 +6,18 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette import formparsers
 
-from api.platform.config import DATABASE_URL, DEPLOY_TARGET, ENGINE_V2_URL, PLATFORM_SEED_TEST_USERS
+from api.platform.config import DATABASE_URL, DEPLOY_TARGET, ENGINE_V2_URL, MULTIPART_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import Base, SessionLocal, engine, migrate_schema
 from api.platform.router import router as platform_router
 from api.platform.schemas import HealthResponse
 from api.platform.test_users import seed_test_users
 
 _FRONT_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+
+formparsers.MultiPartParser.max_part_size = MULTIPART_MAX_BYTES
+formparsers.MultiPartParser.max_file_size = MULTIPART_MAX_BYTES
 
 
 @asynccontextmanager
