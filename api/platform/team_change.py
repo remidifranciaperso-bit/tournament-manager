@@ -517,6 +517,8 @@ def _apply_partner_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> 
 
     ts = int(equipe.get("ts") or 0)
     old_poids = int(equipe.get("poids") or 0)
+    old_c1 = int(equipe.get("classement_j1") or 0)
+    old_c2 = int(equipe.get("classement_j2") or 0)
     old_labels = {
         label
         for label in (equipe.get("label_court"), equipe.get("label"))
@@ -536,12 +538,15 @@ def _apply_partner_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> 
     equipe["joueur2"] = j2
     equipe["poids"] = int(equipe.get("classement_j1") or 0) + int(equipe.get("classement_j2") or 0)
     new_poids = int(equipe.get("poids") or 0)
+    new_c1 = int(equipe.get("classement_j1") or 0)
+    new_c2 = int(equipe.get("classement_j2") or 0)
     label_court, label = _labels_equipe(j1, j2, ts)
     equipe["label_court"] = label_court
     equipe["label"] = label
 
     _apply_label_replacement(snapshot, old_labels, label_court)
-    if new_poids != old_poids:
+    ranking_changed = new_poids != old_poids or new_c1 != old_c1 or new_c2 != old_c2
+    if ranking_changed:
         _optimize_ts_assignment(snapshot)
     return snapshot
 

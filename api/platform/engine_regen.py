@@ -12,6 +12,28 @@ from api.platform.config import ENGINE_V2_URL
 
 _PATCH_KEYS = ("fields", "matches", "equipes", "meta", "page_map", "planning_layout", "logo_png")
 
+# Captures Live figées (tableau, planning…) — invalidées après changement d'équipe / TS.
+_STALE_CAPTURE_PREFIXES = ("main:", "classement:", "planning:", "composition:", "final:")
+
+
+def invalidate_team_content_captures(snapshot: dict) -> None:
+    """Force la regénération tableau / planning depuis le snapshot (pas les captures DOM)."""
+    captures = snapshot.get("export_captures")
+    if isinstance(captures, dict):
+        snapshot["export_captures"] = {
+            key: value
+            for key, value in captures.items()
+            if not key.startswith(_STALE_CAPTURE_PREFIXES)
+        }
+
+    stubs = snapshot.get("crosspage_stubs")
+    if isinstance(stubs, dict):
+        snapshot["crosspage_stubs"] = {
+            key: value
+            for key, value in stubs.items()
+            if not key.startswith(_STALE_CAPTURE_PREFIXES)
+        }
+
 
 def _extract_captures(snapshot: dict) -> dict[str, str]:
     captures = snapshot.get("export_captures")
