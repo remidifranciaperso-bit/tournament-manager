@@ -122,8 +122,8 @@ def regenerate_pdf_from_snapshot(
     *,
     base_dir: Path | None = None,
 ) -> tuple[bytes, dict]:
-    if not captures:
-        raise ValueError("Captures Live manquantes — regénération impossible.")
+    if not isinstance(snapshot.get("page_map"), dict):
+        raise ValueError("Snapshot incomplet (page_map manquant).")
 
     render_base = base_dir or Path(__file__).resolve().parent.parent
     tournoi = _tournoi_from_snapshot(snapshot)

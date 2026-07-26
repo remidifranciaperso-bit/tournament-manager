@@ -37,12 +37,9 @@ def invalidate_team_content_captures(snapshot: dict) -> None:
 
 def _extract_captures(snapshot: dict) -> dict[str, str]:
     captures = snapshot.get("export_captures")
-    if not isinstance(captures, dict) or not captures:
-        raise ValueError(
-            "Ce tournoi ne peut pas être regénéré (captures Live absentes). "
-            "Recréez-le depuis Nouveau tournoi."
-        )
-    return captures
+    if isinstance(captures, dict):
+        return captures
+    return {}
 
 
 def _slim_snapshot_for_remote(snapshot: dict) -> dict:
@@ -105,5 +102,10 @@ def _regenerate_pdf_remote(snapshot: dict, captures: dict[str, str]) -> tuple[by
 
 
 def regenerate_pdf_via_engine(snapshot: dict) -> tuple[bytes, dict]:
+    if not isinstance(snapshot.get("page_map"), dict):
+        raise ValueError(
+            "Ce tournoi ne peut pas être regénéré (structure snapshot incomplète). "
+            "Recréez-le depuis Nouveau tournoi."
+        )
     captures = _extract_captures(snapshot)
     return _regenerate_pdf_remote(snapshot, captures)
