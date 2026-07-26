@@ -9,13 +9,13 @@ export function ProductBrushHeadline({ product }: { product: string }) {
   return (
     <h1 className="flex shrink-0 flex-col items-center gap-0.5 font-brush leading-none text-lime sm:gap-1">
       <span
-        className="text-[clamp(2.25rem,6.5vw,4rem)] leading-[1.05]"
+        className="whitespace-nowrap text-[clamp(2.25rem,6.5vw,4rem)] leading-[1.05]"
         style={{ textShadow: BRUSH_GLOW }}
       >
         Padel Tournament
       </span>
       <span
-        className="text-[clamp(3.25rem,10vw,5.75rem)] leading-[0.95]"
+        className="whitespace-nowrap text-[clamp(3.25rem,10vw,5.75rem)] leading-[0.95]"
         style={{ textShadow: BRUSH_GLOW }}
       >
         {product}
@@ -40,11 +40,14 @@ export function ProductEntryLayout({
   children,
   compact = false,
   alignTop = false,
+  scrollable = false,
   dimContent = false,
 }: {
   children: ReactNode;
   compact?: boolean;
   alignTop?: boolean;
+  /** Permet le scroll vertical quand le contenu dépasse (preview MVP, petits écrans). */
+  scrollable?: boolean;
   /** Assombrit/floute le contenu et le fond photo quand une modale est ouverte. */
   dimContent?: boolean;
 }) {
@@ -59,7 +62,8 @@ export function ProductEntryLayout({
       >
         <main
           className={[
-            "flex min-h-0 flex-1 flex-col items-center overflow-hidden px-4 sm:px-6",
+            "flex min-h-0 flex-1 flex-col items-center px-4 sm:px-6",
+            scrollable ? "overflow-y-auto overscroll-y-contain" : "overflow-hidden",
             alignTop ? "justify-start" : "justify-center",
             compact ? "py-3 sm:py-4" : "py-8 sm:py-10",
           ].join(" ")}

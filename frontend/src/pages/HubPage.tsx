@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fetchDeployTarget, isEngineV2Deploy } from "../api";
 import { IconCheck } from "../components/Icons";
@@ -218,10 +218,10 @@ export default function HubPage() {
             className="flex shrink-0 flex-col items-center gap-0.5 font-brush leading-none text-lime sm:gap-1"
             style={{ textShadow: BRUSH_GLOW }}
           >
-            <span className="text-[clamp(2.25rem,6.5vw,4rem)] leading-[1.05]">
+            <span className="whitespace-nowrap text-[clamp(2.25rem,6.5vw,4rem)] leading-[1.05]">
               Padel Tournament
             </span>
-            <span className="text-[clamp(3.25rem,10vw,5.75rem)] leading-[0.95]">
+            <span className="whitespace-nowrap text-[clamp(3.25rem,10vw,5.75rem)] leading-[0.95]">
               Manager
             </span>
           </h1>
@@ -266,6 +266,14 @@ export default function HubPage() {
             )}
           </div>
         </div>
+        {import.meta.env.DEV ? (
+          <Link
+            to="/preview/mvp"
+            className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-lg border border-lime/35 bg-black/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-lime backdrop-blur-sm hover:bg-lime/10"
+          >
+            Preview MVP — Connexion
+          </Link>
+        ) : null}
       </ProductEntryLayout>
     </div>
   );

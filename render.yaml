@@ -8,6 +8,9 @@
 # 3) tournament-manager-engine-v2 → branche feature/engine-v2 → Engine V2 (render PDF)
 #    URL : https://tournament-manager-engine-v2.onrender.com
 #    PDF via PyMuPDF + rendu Live — pas de LibreOffice. N'affecte pas Engine prod ni preview Hub.
+# 4) tournament-manager-platform → branche feature/platform → Comptes + club + tournois
+#    URL : https://tournament-manager-platform.onrender.com (à créer)
+#    PostgreSQL dédié. Engine V2 reste sur tournament-manager-engine-v2 (inchangé).
 #
 services:
   - type: web
@@ -61,6 +64,33 @@ services:
         value: Padel Tournament Engine <onboarding@resend.dev>
 
   - type: web
+    name: tournament-manager-platform
+    runtime: docker
+    plan: starter
+    branch: feature/platform
+    dockerfilePath: ./Dockerfile.platform
+    dockerContext: .
+    healthCheckPath: /api/platform/health
+    autoDeploy: true
+    disk:
+      name: platform-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DEPLOY_TARGET
+        value: platform
+      - key: PLATFORM_DATA_DIR
+        value: /data/platform
+      - key: ENGINE_V2_URL
+        value: https://tournament-manager-engine-v2.onrender.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tournament-platform-db
+          property: connectionString
+
+  - type: web
     name: tournament-manager-preview
     runtime: docker
     plan: starter
@@ -86,3 +116,9 @@ services:
         value: remi.difrancia.perso@gmail.com
       - key: EMAIL_FROM
         value: Padel Tournament Engine <onboarding@resend.dev>
+
+databases:
+  - name: tournament-platform-db
+    plan: free
+    databaseName: platform
+    user: platform

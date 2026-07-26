@@ -11,6 +11,7 @@ export function FileDrop({
   icon,
   variant = "neon",
   disabled = false,
+  compact = false,
 }: {
   accept: string;
   file: File | null;
@@ -20,6 +21,7 @@ export function FileDrop({
   icon?: React.ReactNode;
   variant?: "neon" | "lime";
   disabled?: boolean;
+  compact?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -46,7 +48,8 @@ export function FileDrop({
         inputRef.current?.click();
       }}
       className={[
-        "group relative flex flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition",
+        "group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed text-center transition",
+        compact ? "gap-2 p-5" : "gap-4 p-10",
         disabled
           ? "cursor-wait border-white/10 bg-white/[0.02] opacity-70"
           : "cursor-pointer",
@@ -92,7 +95,8 @@ export function FileDrop({
         initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className={[
-          "relative flex h-16 w-16 items-center justify-center rounded-2xl transition",
+          "relative flex items-center justify-center rounded-2xl transition",
+          compact ? "h-12 w-12" : "h-16 w-16",
           file
             ? isLime
               ? "bg-lime/20 text-lime"
@@ -102,11 +106,11 @@ export function FileDrop({
               : "bg-white/5 text-white/40 group-hover:text-neon/70",
         ].join(" ")}
       >
-        {file ? <IconCheck className="h-7 w-7" /> : icon ?? <IconUpload className="h-7 w-7" />}
+        {file ? <IconCheck className={compact ? "h-5 w-5" : "h-7 w-7"} /> : icon ?? <IconUpload className={compact ? "h-5 w-5" : "h-7 w-7"} />}
       </motion.div>
 
       <div>
-        <div className="font-semibold text-white">
+        <div className={compact ? "text-sm font-semibold text-white" : "font-semibold text-white"}>
           {file ? file.name : title}
         </div>
         {hint ? (
