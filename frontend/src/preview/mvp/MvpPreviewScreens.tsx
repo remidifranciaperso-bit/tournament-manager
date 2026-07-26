@@ -586,6 +586,7 @@ export function MvpTournamentDashboardScreen({
   onExportConvocations,
   onModifyTeams,
   onLaunchLive,
+  onDelete,
   onBack,
   onLogout,
 }: {
@@ -595,6 +596,7 @@ export function MvpTournamentDashboardScreen({
   onExportConvocations: () => void;
   onModifyTeams: () => void;
   onLaunchLive: () => void;
+  onDelete?: () => void;
   onBack: () => void;
   onLogout: () => void;
 }) {
@@ -679,6 +681,18 @@ export function MvpTournamentDashboardScreen({
             </span>
           </button>
         </div>
+
+        {onDelete ? (
+          <div className="mt-8 flex justify-center border-t border-white/10 pt-6">
+            <button
+              type="button"
+              onClick={onDelete}
+              className="text-xs font-semibold uppercase tracking-wide text-red-300/80 transition hover:text-red-200"
+            >
+              Supprimer ce tournoi
+            </button>
+          </div>
+        ) : null}
       </div>
     </MvpPreviewShell>
   );

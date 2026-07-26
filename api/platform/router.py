@@ -271,6 +271,17 @@ async def create_tournament(
     return TournamentCreateResponse(id=row.id, name=row.name)
 
 
+@router.delete("/tournaments/{tournament_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_tournament(
+    tournament_id: UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    row = _get_user_tournament(db, user, tournament_id)
+    db.delete(row)
+    db.commit()
+
+
 @router.get("/tournaments/{tournament_id}/pdf")
 def get_tournament_pdf(
     tournament_id: UUID,

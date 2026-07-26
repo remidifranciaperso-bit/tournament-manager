@@ -23,6 +23,7 @@ import {
   platformLaunchManagerLive,
   platformLogin,
   platformLogout,
+  platformDeleteTournament,
   platformDownloadConvocationsPdf,
   platformDownloadTournamentPdf,
   platformUpdateClubProfile,
@@ -189,6 +190,29 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [apiEnabled]
   );
 
+  const handleDeleteTournament = useCallback(
+    async (tournamentId: string, tournamentName: string) => {
+      if (!apiEnabled) {
+        window.alert("Preview : supprimerait ce tournoi.");
+        return;
+      }
+      const confirmed = window.confirm(
+        `Supprimer « ${tournamentName} » ? Cette action est définitive (PDF et données Live).`
+      );
+      if (!confirmed) return;
+      try {
+        await platformDeleteTournament(tournamentId);
+        await refreshSession();
+        setActiveTournamentId(null);
+        setNavHistory([]);
+        setScreen("tournaments");
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : "Suppression impossible");
+      }
+    },
+    [apiEnabled, refreshSession]
+  );
+
   const handleNewTournament = useCallback(() => {
     if (apiEnabled) {
       navigate("/nouveau-tournoi");
@@ -342,6 +366,9 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
             onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}
             onModifyTeams={() => navigateTo("teams")}
             onLaunchLive={() => void handleLaunchLive(activeTournament.id)}
+            onDelete={() =>
+              void handleDeleteTournament(activeTournament.id, activeTournament.name)
+            }
             onBack={handleBack}
             onLogout={handleLogout}
           />

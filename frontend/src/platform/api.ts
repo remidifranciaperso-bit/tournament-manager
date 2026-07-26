@@ -404,3 +404,9 @@ export async function platformApplyTeamChange(
     }
   );
 }
+
+export async function platformDeleteTournament(tournamentId: string): Promise<void> {
+  await platformFetch<void>(`/api/platform/tournaments/${tournamentId}`, {
+    method: "DELETE",
+  });
+}
