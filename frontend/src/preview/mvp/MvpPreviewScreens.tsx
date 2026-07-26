@@ -341,7 +341,9 @@ export function MvpTournamentsScreen({
                   </div>
                   <StatusBadge status={tournament.status} />
                 </div>
-                <p className="mt-4 text-sm text-white/65">{tournament.formatLabel}</p>
+                <p className="mt-4 text-sm text-white/65">
+                  {tournament.genreLabel} · {tournament.formatLabel}
+                </p>
                 <p className="mt-1 text-xs text-white/40">Ouvrir la fiche tournoi</p>
               </button>
             ))}
@@ -611,7 +613,7 @@ export function MvpTournamentDashboardScreen({
             {tournament.name}
           </h2>
           <p className="mt-2 text-sm text-white/55">
-            {tournament.club} · {tournament.dateLabel} · {tournament.formatLabel}
+            {tournament.genreLabel} · {tournament.dateLabel} · {tournament.formatLabel}
           </p>
           {tournament.status === "convocations_sent" ? (
             <p className="mt-3 text-xs font-medium uppercase tracking-wide text-sky-200/80">
@@ -899,8 +901,8 @@ export function MvpTeamChangeScreen({
   const mockImpact = (nextResult: CompatibilityResult, nextMode: TeamChangeMode): TeamChangeImpact => {
     if (nextMode === "partner") {
       return {
-        ts_modified: false,
-        bracket_modified: false,
+        ts_modified: nextResult === "adjust",
+        bracket_modified: nextResult === "adjust",
         convocations_modified: nextResult === "blocked",
       };
     }

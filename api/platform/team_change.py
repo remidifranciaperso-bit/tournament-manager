@@ -75,18 +75,77 @@ def _team_ts_map(snapshot: dict[str, Any]) -> dict[tuple[str, str], int]:
     return {_team_identity(equipe): int(equipe.get("ts") or 0) for equipe in snapshot.get("equipes") or []}
 
 
+def _pair_changed_identities(
+    old_id: tuple[str, str],
+    added: set[tuple[str, str]],
+    paired_added: set[tuple[str, str]],
+) -> tuple[str, str] | None:
+    for new_id in added:
+        if new_id in paired_added:
+            continue
+        if old_id[0] in new_id or old_id[1] in new_id:
+            return new_id
+    if len(added) - len(paired_added) == 1:
+        remaining = [item for item in added if item not in paired_added]
+        if remaining:
+            return remaining[0]
+    return None
+
+
 def _team_convocation_changes(before: dict[str, Any], after: dict[str, Any]) -> int:
     hours = _convocation_hours(before)
+    after_hours = _convocation_hours(after)
     before_ts = _team_ts_map(before)
     after_ts = _team_ts_map(after)
+    before_ids = set(before_ts)
+    after_ids = set(after_ts)
     changed = 0
-    for identity, old_ts in before_ts.items():
-        new_ts = after_ts.get(identity)
-        if new_ts is None:
-            continue
-        if hours.get(old_ts) != hours.get(new_ts):
+    paired_added: set[tuple[str, str]] = set()
+
+    for identity in before_ids & after_ids:
+        old_ts = before_ts[identity]
+        new_ts = after_ts[identity]
+        if hours.get(old_ts) != after_hours.get(new_ts, hours.get(new_ts)):
             changed += 1
+
+    removed = list(before_ids - after_ids)
+    added = list(after_ids - before_ids)
+    for old_id in removed:
+        old_ts = before_ts[old_id]
+        old_hour = hours.get(old_ts)
+        paired = _pair_changed_identities(old_id, set(added), paired_added)
+        if paired is None:
+            continue
+        paired_added.add(paired)
+        new_ts = after_ts[paired]
+        if old_hour != after_hours.get(new_ts, hours.get(new_ts)):
+            changed += 1
+
     return changed
+
+
+def _ts_numbers_changed(before: dict[str, Any], after: dict[str, Any]) -> bool:
+    before_ts = _team_ts_map(before)
+    after_ts = _team_ts_map(after)
+    before_ids = set(before_ts)
+    after_ids = set(after_ts)
+    paired_added: set[tuple[str, str]] = set()
+
+    for identity in before_ids & after_ids:
+        if before_ts[identity] != after_ts[identity]:
+            return True
+
+    removed = list(before_ids - after_ids)
+    added = list(after_ids - before_ids)
+    for old_id in removed:
+        old_ts = before_ts[old_id]
+        paired = _pair_changed_identities(old_id, set(added), paired_added)
+        if paired is None:
+            continue
+        paired_added.add(paired)
+        if after_ts[paired] != old_ts:
+            return True
+    return False
 
 
 def _replace_label(value: str, old_labels: set[str], new_label: str) -> str:
@@ -168,59 +227,13 @@ def _build_sportif_assignments(teams: list[dict[str, Any]]) -> list[dict[tuple[s
         identities = [_team_identity(equipe) for equipe in group]
         if len(identities) == 1:
             slot_options.append([[(identities[0], slots[0])]])
-        else:
+        elif len(identities) <= _MAX_GROUP_PERM:
             perms: list[list[tuple[tuple[str, str], int]]] = []
             for perm in permutations(slots):
                 perms.append(list(zip(identities, perm, strict=True)))
             slot_options.append(perms)
-
-    assignments: list[dict[tuple[str, str], int]] = []
-    for combo in product(*slot_options):
-        assignment: dict[tuple[str, str], int] = {}
-        for group_pairs in combo:
-            for identity, ts in group_pairs:
-                assignment[identity] = ts
-        assignments.append(assignment)
-    return assignments
-
-
-def _rank_slot_range(equipe: dict[str, Any], teams: list[dict[str, Any]]) -> list[int]:
-    poids = int(equipe.get("poids") or 999_999)
-    ranked = sorted(
-        teams,
-        key=lambda item: (int(item.get("poids") or 999_999), int(item.get("ts") or 0)),
-    )
-    same = [item for item in ranked if int(item.get("poids") or 999_999) == poids]
-    first = ranked.index(same[0]) + 1
-    return list(range(first, first + len(same)))
-
-
-def _build_assignments_on_slots(
-    teams: list[dict[str, Any]],
-    slots: list[int],
-) -> list[dict[tuple[str, str], int]]:
-    if len(teams) != len(slots):
-        return []
-    ranked = sorted(
-        teams,
-        key=lambda equipe: (int(equipe.get("poids") or 999_999), int(equipe.get("ts") or 0)),
-    )
-    ordered_slots = sorted(slots)
-    groups = [list(group) for _, group in groupby(ranked, key=lambda equipe: int(equipe.get("poids") or 999_999))]
-
-    slot_options: list[list[list[tuple[tuple[str, str], int]]]] = []
-    cursor = 0
-    for group in groups:
-        group_slots = ordered_slots[cursor : cursor + len(group)]
-        cursor += len(group)
-        identities = [_team_identity(equipe) for equipe in group]
-        if len(identities) == 1:
-            slot_options.append([[(identities[0], group_slots[0])]])
         else:
-            perms: list[list[tuple[tuple[str, str], int]]] = []
-            for perm in permutations(group_slots):
-                perms.append(list(zip(identities, perm, strict=True)))
-            slot_options.append(perms)
+            slot_options.append([list(zip(identities, slots, strict=True))])
 
     assignments: list[dict[tuple[str, str], int]] = []
     for combo in product(*slot_options):
@@ -232,39 +245,140 @@ def _build_assignments_on_slots(
     return assignments
 
 
-def _build_assignments_with_focus(
-    teams: list[dict[str, Any]],
-    focus_identity: tuple[str, str],
-) -> list[dict[tuple[str, str], int]]:
-    focus_equipe = next((equipe for equipe in teams if _team_identity(equipe) == focus_identity), None)
-    if focus_equipe is None:
-        return []
+_MAX_EXHAUSTIVE_TEAMS = 9
+_MAX_GROUP_PERM = 8
+_SKIP_OPTIMIZE_TEAMS = 32
 
-    others = [equipe for equipe in teams if _team_identity(equipe) != focus_identity]
-    assignments: list[dict[tuple[str, str], int]] = []
-    for focus_ts in _rank_slot_range(focus_equipe, teams):
-        free_slots = [slot for slot in range(1, len(teams) + 1) if slot != focus_ts]
-        for other_assignment in _build_assignments_on_slots(others, free_slots):
-            assignments.append({focus_identity: focus_ts, **other_assignment})
+
+def _team_count(snapshot: dict[str, Any]) -> int:
+    equipes = snapshot.get("equipes")
+    if isinstance(equipes, list) and equipes:
+        return len(equipes)
+    meta = snapshot.get("meta") or {}
+    if isinstance(meta, dict):
+        return int(meta.get("nb_equipes") or 0)
+    return 0
+
+
+def _can_optimize_ts(snapshot: dict[str, Any]) -> bool:
+    count = _team_count(snapshot)
+    return count > 1 and count != _SKIP_OPTIMIZE_TEAMS
+
+
+def _hour_slot_groups(hours_by_ts: dict[int, str]) -> list[list[int]]:
+    by_hour: dict[str, list[int]] = {}
+    for ts, hour in sorted(hours_by_ts.items()):
+        by_hour.setdefault(hour, []).append(ts)
+    return [slots for slots in by_hour.values() if len(slots) > 1]
+
+
+def _assignments_zero_cost_permutations(
+    current_ts: dict[tuple[str, str], int],
+    hours_by_ts: dict[int, str],
+) -> list[dict[tuple[str, str], int]]:
+    """Permute les équipes entre TS partageant la même heure de convocation."""
+    assignments = [dict(current_ts)]
+    ts_to_team = {ts: identity for identity, ts in current_ts.items()}
+
+    for slots in _hour_slot_groups(hours_by_ts):
+        identities = [ts_to_team.get(slot) for slot in slots]
+        if any(identity is None for identity in identities):
+            continue
+        next_assignments: list[dict[tuple[str, str], int]] = []
+        for base in assignments:
+            for perm in permutations(slots):
+                candidate = dict(base)
+                for identity, ts in zip(identities, perm, strict=True):
+                    candidate[identity] = ts
+                next_assignments.append(candidate)
+        assignments = next_assignments
+
     return assignments
 
 
-def _swap_candidates(current: dict[tuple[str, str], int]) -> list[dict[tuple[str, str], int]]:
-    identities = list(current.keys())
-    candidates = [dict(current)]
-    for index_a, id_a in enumerate(identities):
-        for id_b in identities[index_a + 1 :]:
-            swapped = dict(current)
-            swapped[id_a], swapped[id_b] = swapped[id_b], swapped[id_a]
-            candidates.append(swapped)
-    return candidates
+def _all_slot_assignments(
+    current_ts: dict[tuple[str, str], int],
+) -> list[dict[tuple[str, str], int]]:
+    identities = list(current_ts.keys())
+    slots = sorted(current_ts.values())
+    if len(identities) != len(slots):
+        return []
+    return [dict(zip(identities, perm, strict=True)) for perm in permutations(slots)]
 
 
-def _collect_assignment_candidates(
+def _min_convocation_assignment(
+    current_ts: dict[tuple[str, str], int],
+    hours_by_ts: dict[int, str],
+) -> dict[tuple[str, str], int]:
+    """Assignation optimale (coût convocation minimal) via algorithme hongrois."""
+    identities = list(current_ts.keys())
+    slots = sorted(current_ts.values())
+    n = len(identities)
+    if n == 0 or len(slots) != n:
+        return dict(current_ts)
+
+    hour_of = {ts: hours_by_ts.get(ts, "") for ts in slots}
+    old_ts = {identity: current_ts[identity] for identity in identities}
+    old_hour = {identity: hour_of.get(old_ts[identity], "") for identity in identities}
+
+    size = n
+    cost = [[0] * size for _ in range(size)]
+    for row, identity in enumerate(identities):
+        for col, slot in enumerate(slots):
+            cost[row][col] = 0 if old_hour[identity] == hour_of.get(slot, "") else 1
+
+    # Kuhn-Munkres (minimisation)
+    u = [0] * (size + 1)
+    v = [0] * (size + 1)
+    p = [0] * (size + 1)
+    way = [0] * (size + 1)
+    for i in range(1, size + 1):
+        p[0] = i
+        j0 = 0
+        minv = [10**9] * (size + 1)
+        used = [False] * (size + 1)
+        while True:
+            used[j0] = True
+            i0 = p[j0]
+            delta = 10**9
+            j1 = 0
+            for j in range(1, size + 1):
+                if used[j]:
+                    continue
+                cur = cost[i0 - 1][j - 1] - u[i0] - v[j]
+                if cur < minv[j]:
+                    minv[j] = cur
+                    way[j] = j0
+                if minv[j] < delta:
+                    delta = minv[j]
+                    j1 = j
+            for j in range(size + 1):
+                if used[j]:
+                    u[p[j]] += delta
+                    v[j] -= delta
+                else:
+                    minv[j] -= delta
+            j0 = j1
+            if p[j0] == 0:
+                break
+        while True:
+            j1 = way[j0]
+            p[j0] = p[j1]
+            j0 = j1
+            if j0 == 0:
+                break
+
+    assignment: dict[tuple[str, str], int] = {}
+    for j in range(1, size + 1):
+        identity = identities[p[j] - 1]
+        assignment[identity] = slots[j - 1]
+    return assignment
+
+
+def _enumerate_assignment_candidates(
     teams: list[dict[str, Any]],
     current_ts: dict[tuple[str, str], int],
-    *,
-    focus_identity: tuple[str, str] | None = None,
+    hours_by_ts: dict[int, str],
 ) -> list[dict[tuple[str, str], int]]:
     seen: set[frozenset[tuple[tuple[str, str], int]]] = set()
     candidates: list[dict[tuple[str, str], int]] = []
@@ -277,14 +391,46 @@ def _collect_assignment_candidates(
         candidates.append(candidate)
 
     add(dict(current_ts))
-    for candidate in _swap_candidates(current_ts):
+    for candidate in _assignments_zero_cost_permutations(current_ts, hours_by_ts):
         add(candidate)
     for candidate in _build_sportif_assignments(teams):
         add(candidate)
-    if focus_identity is not None:
-        for candidate in _build_assignments_with_focus(teams, focus_identity):
+    add(_min_convocation_assignment(current_ts, hours_by_ts))
+    if len(teams) <= _MAX_EXHAUSTIVE_TEAMS:
+        for candidate in _all_slot_assignments(current_ts):
             add(candidate)
     return candidates
+
+
+def _choose_best_assignment(
+    teams: list[dict[str, Any]],
+    current_ts: dict[tuple[str, str], int],
+    hours_by_ts: dict[int, str],
+) -> tuple[dict[tuple[str, str], int], int, bool]:
+    poids_by_team = {_team_identity(equipe): int(equipe.get("poids") or 999_999) for equipe in teams}
+    candidates = _enumerate_assignment_candidates(teams, current_ts, hours_by_ts)
+    if not candidates:
+        return dict(current_ts), 0, _sportif_valid(current_ts, poids_by_team)
+
+    sportif_needed = not _sportif_valid(current_ts, poids_by_team)
+    if sportif_needed:
+        sportif_candidates = [candidate for candidate in candidates if _sportif_valid(candidate, poids_by_team)]
+        if sportif_candidates:
+            candidates = sportif_candidates
+
+    def conv_cost(candidate: dict[tuple[str, str], int]) -> int:
+        return _convocation_cost(current_ts, candidate, hours_by_ts)
+
+    def ts_moves(candidate: dict[tuple[str, str], int]) -> int:
+        return sum(1 for identity, ts in current_ts.items() if candidate.get(identity, ts) != ts)
+
+    def rank(candidate: dict[tuple[str, str], int]) -> tuple[int, int, int]:
+        cost = conv_cost(candidate)
+        sportif_penalty = 0 if _sportif_valid(candidate, poids_by_team) else 1
+        return (cost, sportif_penalty, ts_moves(candidate))
+
+    best = min(candidates, key=rank)
+    return best, conv_cost(best), _sportif_valid(best, poids_by_team)
 
 
 def _apply_ts_assignment(snapshot: dict[str, Any], assignment: dict[tuple[str, str], int]) -> bool:
@@ -322,36 +468,24 @@ def _apply_ts_assignment(snapshot: dict[str, Any], assignment: dict[tuple[str, s
     return ts_changed
 
 
-def _optimize_ts_assignment(
-    snapshot: dict[str, Any],
-    *,
-    focus_identity: tuple[str, str] | None = None,
-) -> bool:
+def _optimize_ts_assignment(snapshot: dict[str, Any]) -> tuple[bool, int, bool]:
+    if not _can_optimize_ts(snapshot):
+        equipes = snapshot.get("equipes") or []
+        current_ts = _team_ts_map(snapshot)
+        poids_by_team = {_team_identity(equipe): int(equipe.get("poids") or 999_999) for equipe in equipes}
+        return False, 0, _sportif_valid(current_ts, poids_by_team)
+
     equipes = snapshot.get("equipes")
     if not isinstance(equipes, list) or len(equipes) < 2:
-        return False
+        empty: dict[tuple[str, str], int] = {}
+        return False, 0, _sportif_valid(empty, {})
 
     hours_by_ts = _convocation_hours(snapshot)
     current_ts = _team_ts_map(snapshot)
-    poids_by_team = {_team_identity(equipe): int(equipe.get("poids") or 999_999) for equipe in equipes}
 
-    best: dict[tuple[str, str], int] | None = None
-    best_cost = 10**9
-    for candidate in _collect_assignment_candidates(
-        equipes,
-        current_ts,
-        focus_identity=focus_identity,
-    ):
-        if not _sportif_valid(candidate, poids_by_team):
-            continue
-        cost = _convocation_cost(current_ts, candidate, hours_by_ts)
-        if cost < best_cost:
-            best = candidate
-            best_cost = cost
-
-    if best is None:
-        return False
-    return _apply_ts_assignment(snapshot, best)
+    best, conv_cost, sportif_ok = _choose_best_assignment(equipes, current_ts, hours_by_ts)
+    ts_changed = _apply_ts_assignment(snapshot, best)
+    return ts_changed, conv_cost, sportif_ok
 
 
 def _find_equipe(snapshot: dict[str, Any], team_id: str) -> dict[str, Any] | None:
@@ -382,6 +516,7 @@ def _apply_partner_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> 
         raise ValueError("Joueur introuvable dans le tournoi.")
 
     ts = int(equipe.get("ts") or 0)
+    old_poids = int(equipe.get("poids") or 0)
     old_labels = {
         label
         for label in (equipe.get("label_court"), equipe.get("label"))
@@ -400,11 +535,14 @@ def _apply_partner_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> 
     equipe["joueur1"] = j1
     equipe["joueur2"] = j2
     equipe["poids"] = int(equipe.get("classement_j1") or 0) + int(equipe.get("classement_j2") or 0)
+    new_poids = int(equipe.get("poids") or 0)
     label_court, label = _labels_equipe(j1, j2, ts)
     equipe["label_court"] = label_court
     equipe["label"] = label
 
     _apply_label_replacement(snapshot, old_labels, label_court)
+    if new_poids != old_poids:
+        _optimize_ts_assignment(snapshot)
     return snapshot
 
 
@@ -437,7 +575,7 @@ def _apply_team_replace(snapshot: dict[str, Any], payload: dict[str, Any]) -> di
     equipe["label"] = label
 
     _apply_label_replacement(snapshot, old_labels, label_court)
-    _optimize_ts_assignment(snapshot, focus_identity=_team_identity(equipe))
+    _optimize_ts_assignment(snapshot)
     return snapshot
 
 
@@ -451,8 +589,8 @@ def _impact_flags(
 ) -> dict[str, bool]:
     if mode == "partner":
         return {
-            "ts_modified": False,
-            "bracket_modified": False,
+            "ts_modified": ts_modified,
+            "bracket_modified": bracket_modified,
             "convocations_modified": result == "blocked" or convocations_changed > 0,
         }
     if mode == "replace":
@@ -470,29 +608,17 @@ def _impact_flags(
 
 def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
     mode = payload.get("mode")
-    if mode == "replace":
-        before = copy.deepcopy(snapshot)
-        after = apply_team_change(copy.deepcopy(snapshot), payload)
-        ts_modified = _team_ts_signature(before) != _team_ts_signature(after)
-        bracket_modified = ts_modified
-        convocations_changed = _team_convocation_changes(before, after)
+    if mode not in {"partner", "replace"}:
+        raise ValueError("Mode de changement inconnu.")
 
-        if ts_modified:
-            result = "adjust"
-            if convocations_changed > 0:
-                message = (
-                    f"Compatible avec ajustement du tirage — {convocations_changed} convocation(s) "
-                    "modifiée(s) (solution la plus proche du classement sportif testée)."
-                )
-            else:
-                message = (
-                    "Compatible avec ajustement interne du tirage — le classement TS est corrigé "
-                    "sans modifier les convocations."
-                )
-        else:
-            result = "ok"
-            message = "Compatible — le classement TS reste inchangé."
+    before = copy.deepcopy(snapshot)
+    after = apply_team_change(copy.deepcopy(snapshot), payload)
+    ts_modified = _ts_numbers_changed(before, after)
+    bracket_modified = ts_modified
+    convocations_changed = _team_convocation_changes(before, after)
 
+    if mode == "partner" and convocations_changed > 0:
+        result = "blocked"
         impact = _impact_flags(
             mode,
             result,
@@ -502,37 +628,41 @@ def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict
         )
         return {
             "result": result,
-            "message": message,
+            "message": (
+                f"Incompatible — {convocations_changed} convocation(s) seraient décalée(s). "
+                "Choisissez un remplaçant avec un créneau équivalent ou remplacez l'équipe entière."
+            ),
             "convocations_changed": convocations_changed,
             **impact,
         }
 
-    if mode != "partner":
-        raise ValueError("Mode de changement inconnu.")
-
-    before = _convocation_hours(snapshot)
-    after = _convocation_hours(apply_team_change(copy.deepcopy(snapshot), payload))
-    if before == after:
+    if ts_modified:
+        result = "adjust"
+        if convocations_changed == 0:
+            message = (
+                "Compatible — aucune convocation ne change "
+                "(classement TS corrigé sans déplacer les créneaux)."
+            )
+        else:
+            message = (
+                f"Compatible avec ajustement du tirage — {convocations_changed} convocation(s) "
+                "modifiée(s) (meilleure solution sportive trouvée)."
+            )
+    else:
         result = "ok"
-        convocations_changed = 0
-        impact = _impact_flags(mode, result, convocations_changed)
-        return {
-            "result": result,
-            "message": "Compatible — aucune convocation ne change.",
-            "convocations_changed": convocations_changed,
-            **impact,
-        }
+        message = "Compatible — aucune convocation ne change."
 
-    changed = sum(1 for ts, heure in before.items() if after.get(ts) != heure)
-    result = "blocked"
-    impact = _impact_flags(mode, result, changed)
+    impact = _impact_flags(
+        mode,
+        result,
+        convocations_changed,
+        ts_modified=ts_modified,
+        bracket_modified=bracket_modified,
+    )
     return {
         "result": result,
-        "message": (
-            f"Incompatible — {changed} convocation(s) seraient décalée(s). "
-            "Choisissez un remplaçant avec un créneau équivalent ou remplacez l'équipe entière."
-        ),
-        "convocations_changed": changed,
+        "message": message,
+        "convocations_changed": convocations_changed,
         **impact,
     }
 

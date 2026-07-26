@@ -27,6 +27,7 @@ interface ApiTournament {
   id: string;
   name: string;
   club: string;
+  genre_label: string;
   date_label: string;
   format_label: string;
   teams: number;
@@ -136,6 +137,7 @@ function toMvpTournament(row: ApiTournament): MvpTournamentSummary {
     id: row.id,
     name: row.name,
     club: row.club,
+    genreLabel: row.genre_label || "Hommes",
     dateLabel: row.date_label,
     formatLabel: row.format_label,
     teams: row.teams,

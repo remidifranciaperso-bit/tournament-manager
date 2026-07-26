@@ -194,11 +194,22 @@ def get_club_logo(user_id: UUID, db: Session = Depends(get_db)) -> Response:
     return Response(content=profile.logo_data, media_type=profile.logo_content_type or "image/png")
 
 
+def _genre_label(row: Tournament) -> str:
+    meta = (row.live_snapshot or {}).get("meta") if isinstance(row.live_snapshot, dict) else {}
+    if not isinstance(meta, dict):
+        meta = {}
+    genre = str(meta.get("genre_tournoi") or meta.get("genre") or "").strip()
+    if genre in {"Hommes", "Femmes", "Mixte"}:
+        return genre
+    return "Hommes"
+
+
 def _tournament_out(row: Tournament, club_name: str) -> TournamentOut:
     return TournamentOut(
         id=row.id,
         name=row.name,
         club=club_name,
+        genre_label=_genre_label(row),
         date_label=row.date_label,
         format_label=row.format_label,
         teams=row.teams,

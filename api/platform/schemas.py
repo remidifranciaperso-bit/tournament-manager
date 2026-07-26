@@ -34,6 +34,7 @@ class TournamentOut(BaseModel):
     id: UUID
     name: str
     club: str
+    genre_label: str = "Hommes"
     date_label: str
     format_label: str
     teams: int
