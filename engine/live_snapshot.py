@@ -8,6 +8,7 @@ from pathlib import Path
 
 from engine.live_export import (
     _enrichir_planning_layout,
+    serialiser_equipe,
     serialiser_match,
     serialiser_tournoi,
 )
@@ -89,6 +90,7 @@ def construire_snapshot_engine(
         "version": SNAPSHOT_VERSION,
         "pdf_filename": pdf_filename,
         "meta": serialiser_tournoi(tournoi),
+        "equipes": [serialiser_equipe(equipe) for equipe in tournoi.equipes],
         "matches": [serialiser_match(match) for match in matchs],
         "fields": fields,
         "page_map": page_map,

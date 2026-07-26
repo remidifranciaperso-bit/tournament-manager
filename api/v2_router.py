@@ -248,6 +248,7 @@ async def prepare_v2(
                 "planning_layout": snapshot.get("planning_layout") or {},
                 "meta": meta,
                 "nb_equipes": meta.get("nb_equipes"),
+                "equipes": snapshot.get("equipes") or [],
             },
             headers={
                 "X-Notify-Token": notify_token,
@@ -267,6 +268,34 @@ async def prepare_v2(
         excel_path.unlink(missing_ok=True)
         if logo_path is not None:
             logo_path.unlink(missing_ok=True)
+
+
+@router.post("/regenerate-from-snapshot")
+async def regenerate_from_snapshot(body: dict):
+    """Regénère le PDF final depuis un snapshot Platform (+ captures stockées)."""
+    import base64
+
+    from engine_v2.snapshot_regen import regenerate_pdf_from_snapshot
+
+    snapshot = body.get("snapshot")
+    if not isinstance(snapshot, dict):
+        raise HTTPException(status_code=422, detail="Snapshot manquant.")
+
+    captures = body.get("captures") or snapshot.get("export_captures")
+    if not isinstance(captures, dict) or not captures:
+        raise HTTPException(status_code=422, detail="Captures Live manquantes.")
+
+    try:
+        pdf_bytes, refreshed = regenerate_pdf_from_snapshot(snapshot, captures)
+    except (ValueError, RuntimeError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Regénération impossible : {exc}") from exc
+
+    return {
+        "pdf_base64": base64.b64encode(pdf_bytes).decode("ascii"),
+        "snapshot": refreshed,
+    }
 
 
 @router.post("/export/{token}")
