@@ -292,9 +292,15 @@ async def regenerate_from_snapshot(body: dict):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Regénération impossible : {exc}") from exc
 
+    slim_snapshot = {
+        key: refreshed[key]
+        for key in ("fields", "matches", "equipes", "meta", "page_map", "planning_layout")
+        if key in refreshed
+    }
+
     return {
         "pdf_base64": base64.b64encode(pdf_bytes).decode("ascii"),
-        "snapshot": refreshed,
+        "snapshot": slim_snapshot,
     }
 
 
