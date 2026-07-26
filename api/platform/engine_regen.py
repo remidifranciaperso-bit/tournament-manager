@@ -1,16 +1,16 @@
-"""Regénération PDF depuis snapshot Platform (+ captures stockées)."""
+"""Appel Engine V2 pour regénérer un PDF depuis snapshot + captures."""
 
 from __future__ import annotations
 
 import base64
 import copy
-from pathlib import Path
+import time
 
 import httpx
 
 from api.platform.config import ENGINE_V2_URL
 
-_BASE_DIR = Path(__file__).resolve().parents[2]
+_PATCH_KEYS = ("fields", "matches", "equipes", "meta", "page_map", "planning_layout")
 
 
 def _extract_captures(snapshot: dict) -> dict[str, str]:
@@ -23,58 +23,66 @@ def _extract_captures(snapshot: dict) -> dict[str, str]:
     return captures
 
 
-def _regenerate_pdf_local(snapshot: dict, captures: dict[str, str]) -> tuple[bytes, dict]:
-    from engine_v2.snapshot_regen import regenerate_pdf_from_snapshot
+def _slim_snapshot_for_remote(snapshot: dict) -> dict:
+    slim = copy.deepcopy(snapshot)
+    slim.pop("export_captures", None)
+    slim.pop("crosspage_stubs", None)
+    slim.pop("logo_png", None)
+    return slim
 
-    return regenerate_pdf_from_snapshot(snapshot, captures, base_dir=_BASE_DIR)
+
+def _wake_engine(client: httpx.Client) -> None:
+    try:
+        client.get(f"{ENGINE_V2_URL.rstrip('/')}/api/v2/health")
+    except httpx.HTTPError:
+        pass
+
+
+def _merge_snapshot_patch(snapshot: dict, patch: dict) -> dict:
+    merged = copy.deepcopy(snapshot)
+    for key in _PATCH_KEYS:
+        if key in patch:
+            merged[key] = patch[key]
+    return merged
 
 
 def _regenerate_pdf_remote(snapshot: dict, captures: dict[str, str]) -> tuple[bytes, dict]:
-    slim_snapshot = copy.deepcopy(snapshot)
-    slim_snapshot.pop("export_captures", None)
-    slim_snapshot.pop("crosspage_stubs", None)
-
+    slim_snapshot = _slim_snapshot_for_remote(snapshot)
     url = f"{ENGINE_V2_URL.rstrip('/')}/api/v2/regenerate-from-snapshot"
-    timeout = httpx.Timeout(300.0, connect=60.0)
-    with httpx.Client(timeout=timeout) as client:
-        response = client.post(
-            url,
-            json={"snapshot": slim_snapshot, "captures": captures},
-        )
-        response.raise_for_status()
-        payload = response.json()
+    timeout = httpx.Timeout(300.0, connect=90.0)
+    payload = {"snapshot": slim_snapshot, "captures": captures}
+    last_error: Exception | None = None
 
-    pdf_b64 = payload.get("pdf_base64")
+    for attempt in range(2):
+        try:
+            with httpx.Client(timeout=timeout) as client:
+                if attempt == 0:
+                    _wake_engine(client)
+                response = client.post(url, json=payload)
+                response.raise_for_status()
+                body = response.json()
+            break
+        except (httpx.RemoteProtocolError, httpx.ReadError, httpx.WriteError) as exc:
+            last_error = exc
+            if attempt == 0:
+                time.sleep(2.0)
+                continue
+            raise
+    else:
+        assert last_error is not None
+        raise last_error
+
+    pdf_b64 = body.get("pdf_base64")
     if not pdf_b64:
         raise ValueError("Réponse Engine V2 invalide (PDF absent).")
 
-    refreshed = payload.get("snapshot")
-    if not isinstance(refreshed, dict):
-        refreshed = {}
-        for key in ("fields", "matches", "equipes", "meta"):
-            if key in payload:
-                refreshed[key] = payload[key]
+    patch = body.get("snapshot")
+    if not isinstance(patch, dict):
+        patch = {key: body[key] for key in _PATCH_KEYS if key in body}
 
-    merged = copy.deepcopy(snapshot)
-    for key in ("fields", "matches", "equipes", "meta"):
-        if key in refreshed:
-            merged[key] = refreshed[key]
-    if snapshot.get("export_captures"):
-        merged["export_captures"] = snapshot["export_captures"]
-    if snapshot.get("crosspage_stubs"):
-        merged["crosspage_stubs"] = snapshot["crosspage_stubs"]
-
-    return base64.b64decode(pdf_b64), merged
+    return base64.b64decode(pdf_b64), _merge_snapshot_patch(snapshot, patch)
 
 
 def regenerate_pdf_via_engine(snapshot: dict) -> tuple[bytes, dict]:
     captures = _extract_captures(snapshot)
-
-    try:
-        return _regenerate_pdf_local(snapshot, captures)
-    except ImportError:
-        pass
-    except (ValueError, RuntimeError, FileNotFoundError) as exc:
-        raise ValueError(str(exc)) from exc
-
     return _regenerate_pdf_remote(snapshot, captures)
