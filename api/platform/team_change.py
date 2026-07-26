@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import math
 import re
 from itertools import groupby, permutations, product
 from typing import Any
@@ -242,11 +243,14 @@ def _build_sportif_assignments(teams: list[dict[str, Any]]) -> list[dict[tuple[s
             for identity, ts in group_pairs:
                 assignment[identity] = ts
         assignments.append(assignment)
+        if len(assignments) >= _MAX_SPORTIF_CANDIDATES:
+            break
     return assignments
 
 
-_MAX_EXHAUSTIVE_TEAMS = 9
-_MAX_GROUP_PERM = 8
+_MAX_GROUP_PERM = 6
+_MAX_SPORTIF_CANDIDATES = 4096
+_MAX_HOUR_GROUP_PERM = 6
 _SKIP_OPTIMIZE_TEAMS = 32
 
 
@@ -276,13 +280,17 @@ def _assignments_zero_cost_permutations(
     current_ts: dict[tuple[str, str], int],
     hours_by_ts: dict[int, str],
 ) -> list[dict[tuple[str, str], int]]:
-    """Permute les équipes entre TS partageant la même heure de convocation."""
+    """Permute les équipes entre TS partageant la même heure (groupes petits uniquement)."""
     assignments = [dict(current_ts)]
     ts_to_team = {ts: identity for identity, ts in current_ts.items()}
 
     for slots in _hour_slot_groups(hours_by_ts):
+        if len(slots) > _MAX_HOUR_GROUP_PERM:
+            continue
         identities = [ts_to_team.get(slot) for slot in slots]
         if any(identity is None for identity in identities):
+            continue
+        if len(assignments) * math.factorial(len(slots)) > _MAX_SPORTIF_CANDIDATES:
             continue
         next_assignments: list[dict[tuple[str, str], int]] = []
         for base in assignments:
@@ -291,19 +299,14 @@ def _assignments_zero_cost_permutations(
                 for identity, ts in zip(identities, perm, strict=True):
                     candidate[identity] = ts
                 next_assignments.append(candidate)
-        assignments = next_assignments
+                if len(next_assignments) >= _MAX_SPORTIF_CANDIDATES:
+                    break
+            if len(next_assignments) >= _MAX_SPORTIF_CANDIDATES:
+                break
+        if next_assignments:
+            assignments = next_assignments[:_MAX_SPORTIF_CANDIDATES]
 
     return assignments
-
-
-def _all_slot_assignments(
-    current_ts: dict[tuple[str, str], int],
-) -> list[dict[tuple[str, str], int]]:
-    identities = list(current_ts.keys())
-    slots = sorted(current_ts.values())
-    if len(identities) != len(slots):
-        return []
-    return [dict(zip(identities, perm, strict=True)) for perm in permutations(slots)]
 
 
 def _min_convocation_assignment(
@@ -391,14 +394,11 @@ def _enumerate_assignment_candidates(
         candidates.append(candidate)
 
     add(dict(current_ts))
+    add(_min_convocation_assignment(current_ts, hours_by_ts))
     for candidate in _assignments_zero_cost_permutations(current_ts, hours_by_ts):
         add(candidate)
     for candidate in _build_sportif_assignments(teams):
         add(candidate)
-    add(_min_convocation_assignment(current_ts, hours_by_ts))
-    if len(teams) <= _MAX_EXHAUSTIVE_TEAMS:
-        for candidate in _all_slot_assignments(current_ts):
-            add(candidate)
     return candidates
 
 

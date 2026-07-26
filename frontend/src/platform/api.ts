@@ -49,13 +49,20 @@ function authHeaders(extra?: HeadersInit): HeadersInit {
 
 async function parseError(res: Response): Promise<string> {
   try {
-    const data = (await res.json()) as { detail?: string | { msg?: string }[] };
+    const data = (await res.json()) as {
+      detail?: string | { msg?: string; loc?: unknown[] }[];
+      message?: string;
+    };
     if (typeof data.detail === "string") return data.detail;
-    if (Array.isArray(data.detail) && data.detail[0]?.msg) return data.detail[0].msg;
+    if (Array.isArray(data.detail)) {
+      const first = data.detail[0];
+      if (first && typeof first.msg === "string") return first.msg;
+    }
+    if (typeof data.message === "string") return data.message;
   } catch {
     /* ignore */
   }
-  return "Requête impossible";
+  return `Requête impossible (${res.status}${res.statusText ? ` ${res.statusText}` : ""})`;
 }
 
 async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
