@@ -641,7 +641,7 @@ export function MvpTournamentDashboardScreen({
               Exporter les convocations
             </span>
             <span className="text-xs text-white/50">
-              Page convocations — à envoyer aux joueurs
+              Télécharger la page convocations — à envoyer aux joueurs
             </span>
           </button>
 

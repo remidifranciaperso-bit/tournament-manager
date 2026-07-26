@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PDF_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import get_db
 from api.platform.live_pack import init_live_from_platform_pack
+from api.platform.pdf_convocations import extraire_pdf_convocations
 from api.platform.models import ClubProfile, Tournament, User
 from api.platform.schemas import (
     ClubProfileOut,
@@ -276,6 +277,33 @@ def get_tournament_pdf(
         content=row.pdf_data,
         media_type="application/pdf",
         headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
+    )
+
+
+def _convocations_filename(pdf_filename: str | None) -> str:
+    base = (pdf_filename or "tournoi.pdf").rsplit(".", 1)[0]
+    return f"{base}-convocations.pdf"
+
+
+@router.get("/tournaments/{tournament_id}/convocations-pdf")
+def get_tournament_convocations_pdf(
+    tournament_id: UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    row = _get_user_tournament(db, user, tournament_id)
+    if not row.pdf_data:
+        raise HTTPException(status_code=404, detail="PDF introuvable")
+    try:
+        convocations_pdf = extraire_pdf_convocations(row.pdf_data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    filename = _convocations_filename(row.pdf_filename)
+    return Response(
+        content=convocations_pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

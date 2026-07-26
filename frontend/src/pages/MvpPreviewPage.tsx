@@ -23,6 +23,7 @@ import {
   platformLaunchManagerLive,
   platformLogin,
   platformLogout,
+  platformDownloadConvocationsPdf,
   platformDownloadTournamentPdf,
   platformUpdateClubProfile,
   platformUploadLogo,
@@ -225,7 +226,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     async (id: string) => {
       if (!apiEnabled) return;
       try {
-        await platformViewTournamentPdf(id);
+        await platformDownloadConvocationsPdf(id);
       } catch (err) {
         window.alert(err instanceof Error ? err.message : "Convocations indisponibles");
       }
