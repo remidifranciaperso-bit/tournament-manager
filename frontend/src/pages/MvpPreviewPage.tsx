@@ -159,6 +159,21 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     });
   }, [screen]);
 
+  const handleExitImpersonation = useCallback(() => {
+    platformClearActAsUser();
+    setActingAs(null);
+    setNavHistory([]);
+    void refreshSession().then(() => setScreen("owner"));
+  }, [refreshSession]);
+
+  const handleOwnerAwareBack = useCallback(() => {
+    if (actingAs && navHistory.length === 0) {
+      handleExitImpersonation();
+      return;
+    }
+    handleBack();
+  }, [actingAs, navHistory.length, handleBack, handleExitImpersonation]);
+
   const handleLogout = useCallback(() => {
     if (apiEnabled) {
       platformLogout();
@@ -200,13 +215,6 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     },
     [refreshSession]
   );
-
-  const handleExitImpersonation = useCallback(() => {
-    platformClearActAsUser();
-    setActingAs(null);
-    setNavHistory([]);
-    void refreshSession().then(() => setScreen("owner"));
-  }, [refreshSession]);
 
   const handleClubSave = useCallback(
     async (profile: MvpClubProfile, logoFile?: File | null) => {
@@ -337,9 +345,12 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
           email={actingAs.email}
           club={actingAs.club}
           onExit={handleExitImpersonation}
+          showExitButton={navHistory.length > 0}
         />
       </div>
     ) : null;
+
+  const accountBack = actingAs ? handleOwnerAwareBack : handleBack;
 
   return (
     <div className="fixed inset-0 flex h-dvh flex-col overflow-hidden bg-arena-950 text-white">
@@ -403,8 +414,9 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
               }}
               onNewTournament={() => void handleNewTournament()}
               onEditClub={() => navigateTo("club")}
-              onBack={handleBack}
+              onBack={accountBack}
               onLogout={handleLogout}
+              showBack={Boolean(actingAs)}
             />
           </>
         ) : null}
@@ -415,7 +427,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
             <MvpClubSettingsScreen
               profile={clubProfile}
               onSave={handleClubSave}
-              onBack={handleBack}
+              onBack={accountBack}
               onLogout={handleLogout}
             />
           </>
@@ -434,7 +446,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
               onDelete={() =>
                 void handleDeleteTournament(activeTournament.id, activeTournament.name)
               }
-              onBack={handleBack}
+              onBack={accountBack}
               onLogout={handleLogout}
             />
           </>
@@ -450,7 +462,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
                 await refreshSession();
                 navigateTo("tournament");
               }}
-              onBack={handleBack}
+              onBack={accountBack}
               onLogout={handleLogout}
             />
           </>

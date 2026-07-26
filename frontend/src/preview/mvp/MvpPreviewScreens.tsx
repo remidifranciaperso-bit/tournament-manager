@@ -349,10 +349,12 @@ export function MvpOwnerImpersonationBanner({
   email,
   club,
   onExit,
+  showExitButton = false,
 }: {
   email: string;
   club: string;
   onExit: () => void;
+  showExitButton?: boolean;
 }) {
   return (
     <div className="rounded-xl border border-amber-300/25 bg-amber-400/[0.08] px-4 py-3">
@@ -366,15 +368,17 @@ export function MvpOwnerImpersonationBanner({
           </>
         ) : null}
       </p>
-      <div className="mt-2 flex justify-center">
-        <button
-          type="button"
-          onClick={onExit}
-          className="text-xs font-semibold uppercase tracking-wide text-amber-200/90 transition hover:text-amber-100"
-        >
-          Retour à la liste utilisateurs
-        </button>
-      </div>
+      {showExitButton ? (
+        <div className="mt-2 flex justify-center">
+          <button
+            type="button"
+            onClick={onExit}
+            className="text-xs font-semibold uppercase tracking-wide text-amber-200/90 transition hover:text-amber-100"
+          >
+            Retour à la liste utilisateurs
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -460,9 +464,11 @@ export function MvpOwnerUsersScreen({
               className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-lime/25 hover:bg-white/[0.06] disabled:opacity-60"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-white">{user.email}</p>
-                  <p className="mt-1 text-sm text-white/50">{user.club || "Club non renseigné"}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-display text-2xl text-white">
+                    {user.club || "Club non renseigné"}
+                  </p>
+                  <p className="mt-2 truncate text-sm text-white/50">{user.email}</p>
                   <p className="mt-2 text-xs text-white/40">
                     {user.tournamentCount} tournoi{user.tournamentCount > 1 ? "s" : ""}
                   </p>
@@ -488,6 +494,7 @@ export function MvpTournamentsScreen({
   onEditClub,
   onBack,
   onLogout,
+  showBack = false,
 }: {
   profile: MvpClubProfile;
   tournaments: MvpTournamentSummary[];
@@ -497,9 +504,10 @@ export function MvpTournamentsScreen({
   onEditClub: () => void;
   onBack: () => void;
   onLogout: () => void;
+  showBack?: boolean;
 }) {
   return (
-    <MvpAccountPage onBack={onBack} onLogout={onLogout} showBack={false} scrollable className="gap-6">
+    <MvpAccountPage onBack={onBack} onLogout={onLogout} showBack={showBack} scrollable className="gap-6">
         {userEmail ? (
           <p className="-mt-4 text-center text-xs text-white/40">{userEmail}</p>
         ) : null}
