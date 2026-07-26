@@ -12,6 +12,7 @@ import { MVP_PREVIEW_BUILD, MvpLoginButton, MvpPreviewShell } from "./MvpPreview
 import { platformFetchTestAccounts, type PlatformTestAccount } from "../../platform/api";
 import {
   STATUS_LABELS,
+  mockRosterForTournament,
   resolveTerrainPrincipal,
   type MvpClubProfile,
   type MvpTournamentSummary,
@@ -651,27 +652,86 @@ export function MvpTournamentDashboardScreen({
               Modifier les équipes
             </span>
             <span className="text-xs text-white/50">
-              Partenaire, remplacement, désistement — vérif convocations
-            </span>
-          </button>
-
-          <button type="button" onClick={onLaunchLive} className={actionCardClass(true)}>
-            <span className="flex items-center gap-2 text-sm font-semibold text-lime">
-              <IconTrophy className="h-5 w-5" />
-              Lancer le Live V2
-            </span>
-            <span className="text-xs text-lime/70">
-              Suivi jour J — snapshot intégré, sans JSON
+              Partenaire, remplacement — vérif convocations
             </span>
           </button>
         </motion.div>
+
+        <div className="mt-3 flex justify-center">
+          <button
+            type="button"
+            onClick={onLaunchLive}
+            className={`${actionCardClass()} w-full max-w-sm text-left`}
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-white">
+              <IconTrophy className="h-5 w-5 text-lime" />
+              Lancer le Live V2
+            </span>
+            <span className="text-xs text-white/50">
+              Suivi jour J — snapshot intégré, sans JSON
+            </span>
+          </button>
+        </div>
       </div>
     </MvpPreviewShell>
   );
 }
 
-type TeamChangeMode = "delete" | "partner" | "replace" | null;
+type TeamChangeMode = "partner" | "replace" | null;
 type CompatibilityResult = "ok" | "adjust" | "blocked" | null;
+
+interface PlayerFields {
+  nom: string;
+  prenom: string;
+  classement: string;
+}
+
+const EMPTY_PLAYER: PlayerFields = { nom: "", prenom: "", classement: "" };
+
+function PlayerReplacementFields({
+  title,
+  values,
+  onChange,
+}: {
+  title: string;
+  values: PlayerFields;
+  onChange: (next: PlayerFields) => void;
+}) {
+  return (
+    <div className="mt-4">
+      <p className="field-label-tight">{title}</p>
+      <div className="mt-2 grid gap-3 sm:grid-cols-3">
+        <div>
+          <label className="field-label-tight">Nom</label>
+          <input
+            className="text-input lime-input mt-2 uppercase"
+            placeholder="NOM"
+            value={values.nom}
+            onChange={(event) => onChange({ ...values, nom: event.target.value.toUpperCase() })}
+          />
+        </div>
+        <div>
+          <label className="field-label-tight">Prénom</label>
+          <input
+            className="text-input lime-input mt-2"
+            placeholder="Prénom"
+            value={values.prenom}
+            onChange={(event) => onChange({ ...values, prenom: event.target.value })}
+          />
+        </div>
+        <div>
+          <label className="field-label-tight">Classement</label>
+          <input
+            className="text-input lime-input mt-2"
+            placeholder="P100"
+            value={values.classement}
+            onChange={(event) => onChange({ ...values, classement: event.target.value })}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function MvpTeamChangeScreen({
   tournament,
@@ -684,16 +744,45 @@ export function MvpTeamChangeScreen({
 }) {
   const [mode, setMode] = useState<TeamChangeMode>(null);
   const [result, setResult] = useState<CompatibilityResult>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const [replacementPlayer, setReplacementPlayer] = useState<PlayerFields>(EMPTY_PLAYER);
+  const [replacementTeam, setReplacementTeam] = useState<{
+    joueur1: PlayerFields;
+    joueur2: PlayerFields;
+  }>({ joueur1: EMPTY_PLAYER, joueur2: EMPTY_PLAYER });
+
+  const roster = useMemo(() => mockRosterForTournament(tournament), [tournament]);
 
   const options = useMemo(
     () =>
       [
-        { id: "delete" as const, title: "Supprimer une équipe", hint: "Bye ou retrait du tableau" },
-        { id: "partner" as const, title: "Changer un partenaire", hint: "Garder le slot, nouvelle paire" },
-        { id: "replace" as const, title: "Remplacer une équipe", hint: "Nouvelle équipe complète" },
+        {
+          id: "partner" as const,
+          title: "Remplacer un partenaire",
+          hint: "Garder le slot équipe, changer un joueur",
+        },
+        {
+          id: "replace" as const,
+          title: "Remplacer une équipe",
+          hint: "Nouvelle paire complète sur le même TS",
+        },
       ] as const,
     []
   );
+
+  const resetForm = () => {
+    setSelectedPlayerId("");
+    setSelectedTeamId("");
+    setReplacementPlayer(EMPTY_PLAYER);
+    setReplacementTeam({ joueur1: EMPTY_PLAYER, joueur2: EMPTY_PLAYER });
+    setResult(null);
+  };
+
+  const handleModeChange = (next: TeamChangeMode) => {
+    setMode(mode === next ? null : next);
+    resetForm();
+  };
 
   return (
     <MvpPreviewShell scrollable>
@@ -711,10 +800,7 @@ export function MvpTeamChangeScreen({
             <button
               key={option.id}
               type="button"
-              onClick={() => {
-                setMode(mode === option.id ? null : option.id);
-                setResult(null);
-              }}
+              onClick={() => handleModeChange(option.id)}
               className={[
                 "w-full rounded-2xl border px-5 py-4 text-left transition",
                 mode === option.id
@@ -728,42 +814,77 @@ export function MvpTeamChangeScreen({
           ))}
         </div>
 
-        {mode ? (
+        {mode === "partner" ? (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left"
           >
-            <p className="field-label-tight">Équipe concernée</p>
-            <select className="text-input lime-input mt-2">
-              <option>TS3 — BICREL / JOUAN</option>
-              <option>TS5 — MARTIN / DUPONT</option>
+            <p className="field-label-tight">Joueur à remplacer</p>
+            <select
+              className="text-input lime-input mt-2 w-full"
+              value={selectedPlayerId}
+              onChange={(event) => setSelectedPlayerId(event.target.value)}
+            >
+              <option value="">Sélectionner un joueur</option>
+              {roster.players.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.label}
+                </option>
+              ))}
             </select>
 
-            {mode !== "delete" ? (
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div>
-                  <label className="field-label-tight">Nom</label>
-                  <input className="text-input lime-input mt-2 uppercase" placeholder="NOM" />
-                </div>
-                <div>
-                  <label className="field-label-tight">Prénom</label>
-                  <input className="text-input lime-input mt-2" placeholder="Prénom" />
-                </div>
-                <div>
-                  <label className="field-label-tight">Classement</label>
-                  <input className="text-input lime-input mt-2" placeholder="P100" />
-                </div>
-              </div>
-            ) : null}
+            <PlayerReplacementFields
+              title="Remplacer par"
+              values={replacementPlayer}
+              onChange={setReplacementPlayer}
+            />
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton
-                onClick={() => setResult(mode === "replace" ? "adjust" : "ok")}
-              >
+              <PrimaryButton onClick={() => setResult("ok")}>
                 Vérifier compatibilité convocations
               </PrimaryButton>
-              <GhostButton onClick={() => setResult(null)}>Réinitialiser</GhostButton>
+              <GhostButton onClick={resetForm}>Réinitialiser</GhostButton>
+            </div>
+          </motion.div>
+        ) : null}
+
+        {mode === "replace" ? (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left"
+          >
+            <p className="field-label-tight">Équipe à remplacer</p>
+            <select
+              className="text-input lime-input mt-2 w-full"
+              value={selectedTeamId}
+              onChange={(event) => setSelectedTeamId(event.target.value)}
+            >
+              <option value="">Sélectionner une équipe</option>
+              {roster.teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.label}
+                </option>
+              ))}
+            </select>
+
+            <PlayerReplacementFields
+              title="Remplacer par — Joueur 1"
+              values={replacementTeam.joueur1}
+              onChange={(joueur1) => setReplacementTeam((prev) => ({ ...prev, joueur1 }))}
+            />
+            <PlayerReplacementFields
+              title="Remplacer par — Joueur 2"
+              values={replacementTeam.joueur2}
+              onChange={(joueur2) => setReplacementTeam((prev) => ({ ...prev, joueur2 }))}
+            />
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <PrimaryButton onClick={() => setResult("adjust")}>
+                Vérifier compatibilité convocations
+              </PrimaryButton>
+              <GhostButton onClick={resetForm}>Réinitialiser</GhostButton>
             </div>
           </motion.div>
         ) : null}
