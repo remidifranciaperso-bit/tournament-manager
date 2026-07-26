@@ -1,4 +1,4 @@
-"""Export PDF Engine V2 — même composite Live + pages statiques V2."""
+"""Export PDF Engine V2 — composite Live + pages statiques V2."""
 
 from __future__ import annotations
 
@@ -10,9 +10,15 @@ import fitz
 from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import (
     capture_key,
+    composer_page_bracket_native,
     composer_page_export,
+    composer_page_final_native,
+    composer_page_planning_native,
+    final_place_range,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
+from engine.live_render_pdf import charger_layout_slide
+
 _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
 
 
@@ -29,6 +35,235 @@ def trouver_indices_convocations(pdf_path: Path) -> list[int]:
     return indices
 
 
+def _snapshot_context(snapshot: dict | None) -> dict:
+    data = snapshot or {}
+    meta = data.get("meta") or {}
+    return {
+        "planning_layout": data.get("planning_layout") or {},
+        "matches": data.get("matches") or [],
+        "match_results": data.get("match_results") or {},
+        "fields": data.get("fields") or {},
+        "club_name": meta.get("club"),
+        "nb_equipes": int(data.get("nb_equipes") or meta.get("nb_equipes") or 16),
+        "template_id": meta.get("template_id") or data.get("template_id"),
+    }
+
+
+def _compose_printable_pages(
+    merged: fitz.Document,
+    *,
+    source: fitz.Document,
+    page_rect: fitz.Rect,
+    page_map: dict,
+    captures: dict[str, str],
+    crosspage_stubs: dict[str, dict] | None,
+    ctx: dict,
+    render_base: Path,
+    footer_reference: int | None,
+    logo_bytes: bytes | None,
+    logo_wh: tuple[int, int] | None,
+) -> None:
+    """PDF dossier tournoi Engine V2 : tableaux natifs imprimables (cases ☐, TERMINÉ)."""
+    planning_layout = ctx["planning_layout"]
+    matches = ctx["matches"]
+    match_results = ctx["match_results"]
+    fields = ctx["fields"]
+    club_name = ctx["club_name"]
+    nb_equipes = ctx["nb_equipes"]
+    template_id = ctx["template_id"]
+    final_entries = page_map.get("final", [])
+    final_page_count = max(1, len(final_entries))
+
+    for key, capture_data in captures.items():
+        if not key.startswith("composition:") or not capture_data:
+            continue
+        try:
+            comp_index = int(key.split(":", 1)[1])
+        except (ValueError, IndexError):
+            continue
+        if comp_index < 0 or comp_index >= source.page_count:
+            continue
+        page = merged.new_page(width=page_rect.width, height=page_rect.height)
+        composer_page_export(
+            page,
+            source,
+            comp_index,
+            capture_data,
+            section="main",
+            logo_bytes=logo_bytes,
+            logo_wh=logo_wh,
+            club_name=club_name,
+            base_dir=render_base,
+        )
+
+    for section in ("main", "classement", "planning", "final"):
+        for entry in page_map.get(section, []):
+            slide_index = int(entry["index"])
+            key = capture_key(section, slide_index)
+
+            if slide_index < 0 or slide_index >= source.page_count:
+                raise RuntimeError(f"Page coquille introuvable pour l'index {slide_index}.")
+
+            if section in ("main", "classement") and template_id and matches:
+                page = merged.new_page(width=page_rect.width, height=page_rect.height)
+                composer_page_bracket_native(
+                    page,
+                    source,
+                    slide_index,
+                    template_id=template_id,
+                    matches=matches,
+                    match_results=match_results,
+                    base_dir=render_base,
+                    footer_slide_index=footer_reference,
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                    club_name=club_name,
+                    crosspage_stub=(crosspage_stubs or {}).get(key),
+                    show_placement_labels=True,
+                )
+                continue
+
+            if section == "planning":
+                layout_fields = planning_layout.get(str(slide_index))
+                if not layout_fields and template_id:
+                    layout_fields = charger_layout_slide(template_id, slide_index, render_base)
+                if layout_fields:
+                    page = merged.new_page(width=page_rect.width, height=page_rect.height)
+                    composer_page_planning_native(
+                        page,
+                        source,
+                        slide_index,
+                        layout_fields,
+                        matches,
+                        match_results,
+                        base_dir=render_base,
+                        footer_slide_index=footer_reference,
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                        club_name=club_name,
+                    )
+                else:
+                    merged.insert_pdf(source, from_page=slide_index, to_page=slide_index)
+                continue
+
+            if section == "final":
+                page_index = next(
+                    (index for index, item in enumerate(final_entries) if int(item["index"]) == slide_index),
+                    0,
+                )
+                place_range = (
+                    final_place_range(nb_equipes, page_index, final_page_count)
+                    if final_page_count > 1
+                    else None
+                )
+                page = merged.new_page(width=page_rect.width, height=page_rect.height)
+                composer_page_final_native(
+                    page,
+                    source,
+                    slide_index,
+                    matches,
+                    match_results,
+                    fields,
+                    nb_equipes,
+                    place_range=place_range,
+                    base_dir=render_base,
+                    footer_slide_index=footer_reference,
+                    logo_bytes=logo_bytes,
+                    logo_wh=logo_wh,
+                    club_name=club_name,
+                )
+                continue
+
+            capture_data = captures.get(key)
+            if not capture_data:
+                merged.insert_pdf(source, from_page=slide_index, to_page=slide_index)
+                continue
+
+            page = merged.new_page(width=page_rect.width, height=page_rect.height)
+            composer_page_export(
+                page,
+                source,
+                slide_index,
+                capture_data,
+                section=section,
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
+                club_name=club_name,
+                base_dir=render_base,
+                crosspage_stub=(crosspage_stubs or {}).get(key),
+            )
+
+
+def _compose_live_export_pages(
+    merged: fitz.Document,
+    *,
+    source: fitz.Document,
+    page_rect: fitz.Rect,
+    page_map: dict,
+    captures: dict[str, str],
+    crosspage_stubs: dict[str, dict] | None,
+    ctx: dict,
+    render_base: Path,
+    footer_reference: int | None,
+    logo_bytes: bytes | None,
+    logo_wh: tuple[int, int] | None,
+) -> None:
+    """Export fin de tournoi Live V2 : captures DOM (Fait cochés, état à l'écran)."""
+    club_name = ctx["club_name"]
+
+    for key, capture_data in captures.items():
+        if not key.startswith("composition:") or not capture_data:
+            continue
+        try:
+            comp_index = int(key.split(":", 1)[1])
+        except (ValueError, IndexError):
+            continue
+        if comp_index < 0 or comp_index >= source.page_count:
+            continue
+        page = merged.new_page(width=page_rect.width, height=page_rect.height)
+        composer_page_export(
+            page,
+            source,
+            comp_index,
+            capture_data,
+            section="main",
+            logo_bytes=logo_bytes,
+            logo_wh=logo_wh,
+            club_name=club_name,
+            base_dir=render_base,
+        )
+
+    for section in ("main", "classement", "planning", "final"):
+        for entry in page_map.get(section, []):
+            slide_index = int(entry["index"])
+            key = capture_key(section, slide_index)
+            capture_data = captures.get(key)
+
+            if slide_index < 0 or slide_index >= source.page_count:
+                if not capture_data:
+                    continue
+                raise RuntimeError(f"Page coquille introuvable pour l'index {slide_index}.")
+
+            if not capture_data:
+                merged.insert_pdf(source, from_page=slide_index, to_page=slide_index)
+                continue
+
+            page = merged.new_page(width=page_rect.width, height=page_rect.height)
+            composer_page_export(
+                page,
+                source,
+                slide_index,
+                capture_data,
+                section=section,
+                footer_slide_index=footer_reference if section == "planning" else None,
+                logo_bytes=logo_bytes,
+                logo_wh=logo_wh,
+                club_name=club_name,
+                base_dir=render_base,
+                crosspage_stub=(crosspage_stubs or {}).get(key),
+            )
+
+
 def exporter_pdf_engine_v2(
     source_pdf: Path,
     output_pdf: Path,
@@ -39,12 +274,13 @@ def exporter_pdf_engine_v2(
     crosspage_stubs: dict[str, dict] | None = None,
     snapshot: dict | None = None,
     base_dir: Path | None = None,
+    printable_mode: bool = False,
 ) -> None:
     """
     Assemble le PDF final Engine V2.
 
-    Identique à l'export Manager Live (captures + composite), avec en plus
-    les pages convocations V2 insérées après les participants.
+    ``printable_mode=True`` : génération dossier tournoi (tableaux natifs, cases ☐).
+    ``printable_mode=False`` : export Live V2 en fin de tournoi (captures DOM).
     """
     source = fitz.open(str(source_pdf))
     merged = fitz.open()
@@ -56,8 +292,9 @@ def exporter_pdf_engine_v2(
 
         page_rect = source[0].rect
         render_base = base_dir or Path(__file__).resolve().parent.parent
+        ctx = _snapshot_context(snapshot)
+        footer_reference = _footer_reference_slide_index(page_map, source)
 
-        # Garde : page 0 de la coquille (méta complètes à la génération), comme export Live V1.
         merged.insert_pdf(source, from_page=0, to_page=0)
 
         for index in trouver_indices_participants(source_pdf):
@@ -68,69 +305,20 @@ def exporter_pdf_engine_v2(
             if 0 < index < source.page_count:
                 merged.insert_pdf(source, from_page=index, to_page=index)
 
-        footer_reference = _footer_reference_slide_index(page_map, source)
-        meta = (snapshot or {}).get("meta") or {}
-        club_name = meta.get("club")
-
-        for key, capture_data in captures.items():
-            if not key.startswith("composition:") or not capture_data:
-                continue
-            try:
-                comp_index = int(key.split(":", 1)[1])
-            except (ValueError, IndexError):
-                continue
-            if comp_index < 0 or comp_index >= source.page_count:
-                continue
-            page = merged.new_page(width=page_rect.width, height=page_rect.height)
-            composer_page_export(
-                page,
-                source,
-                comp_index,
-                capture_data,
-                section="main",
-                logo_bytes=logo_bytes,
-                logo_wh=logo_wh,
-                club_name=club_name,
-                base_dir=render_base,
-            )
-
-        for section in ("main", "classement", "planning", "final"):
-            for entry in page_map.get(section, []):
-                slide_index = int(entry["index"])
-                key = capture_key(section, slide_index)
-                capture_data = captures.get(key)
-
-                if slide_index < 0 or slide_index >= source.page_count:
-                    if not capture_data:
-                        continue
-                    raise RuntimeError(
-                        f"Page coquille introuvable pour l'index {slide_index}."
-                    )
-
-                if not capture_data:
-                    merged.insert_pdf(
-                        source, from_page=slide_index, to_page=slide_index
-                    )
-                    continue
-
-                page = merged.new_page(
-                    width=page_rect.width, height=page_rect.height
-                )
-                composer_page_export(
-                    page,
-                    source,
-                    slide_index,
-                    capture_data,
-                    section=section,
-                    footer_slide_index=(
-                        footer_reference if section == "planning" else None
-                    ),
-                    logo_bytes=logo_bytes,
-                    logo_wh=logo_wh,
-                    club_name=club_name,
-                    base_dir=render_base,
-                    crosspage_stub=(crosspage_stubs or {}).get(key),
-                )
+        compose = _compose_printable_pages if printable_mode else _compose_live_export_pages
+        compose(
+            merged,
+            source=source,
+            page_rect=page_rect,
+            page_map=page_map,
+            captures=captures,
+            crosspage_stubs=crosspage_stubs,
+            ctx=ctx,
+            render_base=render_base,
+            footer_reference=footer_reference,
+            logo_bytes=logo_bytes,
+            logo_wh=logo_wh,
+        )
 
         if merged.page_count == 0:
             raise RuntimeError("Aucune page dans l'export V2.")

@@ -158,5 +158,6 @@ def composite_tournament_v2_pdf(
         crosspage_stubs=crosspage_stubs,
         snapshot=snapshot,
         base_dir=Path(__file__).resolve().parent.parent,
+        printable_mode=True,
     )
     return output_pdf
