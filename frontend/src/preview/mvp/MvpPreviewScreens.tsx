@@ -12,8 +12,10 @@ import { MVP_PREVIEW_BUILD, MvpLoginButton, MvpPreviewShell } from "./MvpPreview
 import {
   platformApplyTeamChange,
   platformCheckTeamChange,
+  platformFetchOwnerUsers,
   platformFetchTestAccounts,
   platformFetchTournamentRoster,
+  type PlatformOwnerUser,
   type PlatformTestAccount,
   type TeamChangePayload,
 } from "../../platform/api";
@@ -27,6 +29,7 @@ import {
 
 export type MvpPreviewScreen =
   | "login"
+  | "owner"
   | "tournaments"
   | "club"
   | "tournament"
@@ -267,7 +270,7 @@ export function MvpLoginScreen({
           {useTestAccounts && testAccounts.length > 0 ? (
             <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
               <p className="text-center text-[11px] font-semibold uppercase tracking-wide text-white/45">
-                Comptes test · un espace par utilisateur
+                Comptes test · propriétaire ou organisateur
               </p>
               <div className="mt-2 flex flex-col gap-1.5">
                 {testAccounts.map((account) => (
@@ -339,6 +342,140 @@ export function MvpLoginScreen({
         ) : null}
       </div>
     </MvpPreviewShell>
+  );
+}
+
+export function MvpOwnerImpersonationBanner({
+  email,
+  club,
+  onExit,
+}: {
+  email: string;
+  club: string;
+  onExit: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-amber-300/25 bg-amber-400/[0.08] px-4 py-3">
+      <p className="text-center text-xs text-white/70">
+        Connecté en tant que{" "}
+        <span className="font-semibold text-white">{email}</span>
+        {club ? (
+          <>
+            {" "}
+            · <span className="text-white/85">{club}</span>
+          </>
+        ) : null}
+      </p>
+      <div className="mt-2 flex justify-center">
+        <button
+          type="button"
+          onClick={onExit}
+          className="text-xs font-semibold uppercase tracking-wide text-amber-200/90 transition hover:text-amber-100"
+        >
+          Retour à la liste utilisateurs
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function MvpOwnerUsersScreen({
+  ownerEmail,
+  onEnterUser,
+  onLogout,
+}: {
+  ownerEmail: string;
+  onEnterUser: (userId: string) => void | Promise<void>;
+  onLogout: () => void;
+}) {
+  const [users, setUsers] = useState<PlatformOwnerUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [enteringId, setEnteringId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    void platformFetchOwnerUsers()
+      .then((rows) => {
+        if (!cancelled) setUsers(rows);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Chargement impossible");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleEnter = async (userId: string) => {
+    setEnteringId(userId);
+    setError(null);
+    try {
+      await onEnterUser(userId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Accès impossible");
+      setEnteringId(null);
+    }
+  };
+
+  return (
+    <MvpAccountPage onBack={() => undefined} onLogout={onLogout} showBack={false} scrollable className="gap-6">
+      <p className="-mt-4 text-center text-xs text-white/40">{ownerEmail}</p>
+      <div className="text-center">
+        <h2 className="font-display text-2xl text-white">Comptes utilisateurs</h2>
+        <p className="mt-2 text-sm text-white/45">
+          Sélectionnez un organisateur pour accéder à son espace tournois et paramètres club.
+        </p>
+      </div>
+
+      {loading ? (
+        <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-center text-sm text-white/45">
+          Chargement des comptes…
+        </p>
+      ) : null}
+
+      {error ? <p className="text-center text-sm text-red-300/90">{error}</p> : null}
+
+      {!loading && users.length === 0 ? (
+        <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-center text-sm text-white/45">
+          Aucun compte organisateur enregistré.
+        </p>
+      ) : null}
+
+      {!loading && users.length > 0 ? (
+        <div className="grid gap-3">
+          {users.map((user) => (
+            <button
+              key={user.id}
+              type="button"
+              disabled={enteringId !== null}
+              onClick={() => void handleEnter(user.id)}
+              className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-lime/25 hover:bg-white/[0.06] disabled:opacity-60"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-white">{user.email}</p>
+                  <p className="mt-1 text-sm text-white/50">{user.club || "Club non renseigné"}</p>
+                  <p className="mt-2 text-xs text-white/40">
+                    {user.tournamentCount} tournoi{user.tournamentCount > 1 ? "s" : ""}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-lime/80">
+                  {enteringId === user.id ? "Ouverture…" : "Accéder"}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </MvpAccountPage>
   );
 }
 

@@ -57,9 +57,25 @@ class LiveInitResponse(BaseModel):
     live_data: dict
 
 
+class ActingAsOut(BaseModel):
+    user_id: UUID
+    email: str
+    club: str
+
+
 class MeResponse(BaseModel):
     email: str
+    role: str = "organizer"
     club_profile: ClubProfileOut | None
+    acting_as: ActingAsOut | None = None
+
+
+class OwnerUserOut(BaseModel):
+    id: UUID
+    email: str
+    club: str
+    tournament_count: int
+    created_at: datetime
 
 
 class HealthResponse(BaseModel):

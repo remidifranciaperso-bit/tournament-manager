@@ -21,11 +21,13 @@ from api.platform.team_change import (
 )
 from api.platform.models import ClubProfile, Tournament, User
 from api.platform.schemas import (
+    ActingAsOut,
     ClubProfileOut,
     ClubProfileUpdate,
     LiveInitResponse,
     LoginRequest,
     MeResponse,
+    OwnerUserOut,
     TeamChangeApplyResponse,
     TeamChangeCheckResponse,
     TeamChangeRequest,
@@ -35,7 +37,15 @@ from api.platform.schemas import (
     TournamentCreateResponse,
     TournamentOut,
 )
-from api.platform.security import create_access_token, get_current_user, hash_password, verify_password
+from api.platform.security import (
+    ROLE_ORGANIZER,
+    create_access_token,
+    get_acting_user,
+    get_current_user,
+    hash_password,
+    require_platform_owner,
+    verify_password,
+)
 from api.platform.test_users import test_account_hints
 
 router = APIRouter(prefix="/api/platform", tags=["platform"])
@@ -109,7 +119,7 @@ def register(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
     email = body.email.lower()
     if db.query(User).filter(User.email == email).one_or_none() is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Compte déjà existant")
-    user = User(email=email, password_hash=hash_password(body.password))
+    user = User(email=email, password_hash=hash_password(body.password), role=ROLE_ORGANIZER)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -127,12 +137,51 @@ def list_test_accounts() -> TestAccountsResponse:
 
 
 @router.get("/me", response_model=MeResponse)
-def me(user: User = Depends(get_current_user)) -> MeResponse:
-    return MeResponse(email=user.email, club_profile=_club_out(user.id, user.club_profile))
+def me(
+    current_user: User = Depends(get_current_user),
+    acting_user: User = Depends(get_acting_user),
+) -> MeResponse:
+    acting_as = None
+    if acting_user.id != current_user.id:
+        profile = acting_user.club_profile
+        acting_as = ActingAsOut(
+            user_id=acting_user.id,
+            email=acting_user.email,
+            club=profile.club if profile else "",
+        )
+    return MeResponse(
+        email=current_user.email,
+        role=current_user.role,
+        club_profile=_club_out(acting_user.id, acting_user.club_profile),
+        acting_as=acting_as,
+    )
+
+
+@router.get("/owner/users", response_model=list[OwnerUserOut])
+def list_owner_users(
+    _owner: User = Depends(require_platform_owner),
+    db: Session = Depends(get_db),
+) -> list[OwnerUserOut]:
+    rows = (
+        db.query(User)
+        .filter(User.role != "owner")
+        .order_by(User.email.asc())
+        .all()
+    )
+    return [
+        OwnerUserOut(
+            id=row.id,
+            email=row.email,
+            club=row.club_profile.club if row.club_profile else "",
+            tournament_count=len(row.tournaments),
+            created_at=row.created_at,
+        )
+        for row in rows
+    ]
 
 
 @router.get("/club-profile", response_model=ClubProfileOut)
-def get_club_profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> ClubProfileOut:
+def get_club_profile(user: User = Depends(get_acting_user), db: Session = Depends(get_db)) -> ClubProfileOut:
     profile = _ensure_profile(db, user)
     return _club_out(user.id, profile)  # type: ignore[return-value]
 
@@ -140,7 +189,7 @@ def get_club_profile(user: User = Depends(get_current_user), db: Session = Depen
 @router.put("/club-profile", response_model=ClubProfileOut)
 def update_club_profile(
     body: ClubProfileUpdate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> ClubProfileOut:
     profile = _ensure_profile(db, user)
@@ -161,7 +210,7 @@ def update_club_profile(
 @router.post("/club/logo")
 async def upload_club_logo(
     file: UploadFile = File(...),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> ClubProfileOut:
     profile = _ensure_profile(db, user)
@@ -272,7 +321,7 @@ def _get_user_tournament(db: Session, user: User, tournament_id: UUID) -> Tourna
 
 
 @router.get("/tournaments", response_model=list[TournamentOut])
-def list_tournaments(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[TournamentOut]:
+def list_tournaments(user: User = Depends(get_acting_user), db: Session = Depends(get_db)) -> list[TournamentOut]:
     profile = user.club_profile
     club_name = profile.club if profile else ""
     rows = (
@@ -294,7 +343,7 @@ async def create_tournament(
     export_captures_json: str = Form("{}"),
     crosspage_stubs_json: str = Form("{}"),
     pdf: UploadFile = File(...),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> TournamentCreateResponse:
     pdf_bytes = await pdf.read()
@@ -344,7 +393,7 @@ async def create_tournament(
 @router.delete("/tournaments/{tournament_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_tournament(
     tournament_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> None:
     row = _get_user_tournament(db, user, tournament_id)
@@ -356,7 +405,7 @@ def delete_tournament(
 def get_tournament_pdf(
     tournament_id: UUID,
     inline: bool = False,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> Response:
     row = _get_user_tournament(db, user, tournament_id)
@@ -379,7 +428,7 @@ def _convocations_filename(pdf_filename: str | None) -> str:
 @router.get("/tournaments/{tournament_id}/convocations-pdf")
 def get_tournament_convocations_pdf(
     tournament_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> Response:
     row = _get_user_tournament(db, user, tournament_id)
@@ -401,7 +450,7 @@ def get_tournament_convocations_pdf(
 @router.post("/tournaments/{tournament_id}/live-init", response_model=LiveInitResponse)
 def start_tournament_live(
     tournament_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> LiveInitResponse:
     row = _get_user_tournament(db, user, tournament_id)
@@ -446,7 +495,7 @@ def _team_change_payload(body: TeamChangeRequest) -> dict:
 @router.get("/tournaments/{tournament_id}/roster")
 def get_tournament_roster(
     tournament_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> dict:
     row = _get_user_tournament(db, user, tournament_id)
@@ -459,7 +508,7 @@ def get_tournament_roster(
 def check_tournament_team_change(
     tournament_id: UUID,
     body: TeamChangeRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> TeamChangeCheckResponse:
     row = _get_user_tournament(db, user, tournament_id)
@@ -484,7 +533,7 @@ def check_tournament_team_change(
 def apply_tournament_team_change(
     tournament_id: UUID,
     body: TeamChangeRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> TeamChangeApplyResponse:
     row = _get_user_tournament(db, user, tournament_id)

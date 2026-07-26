@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
   MvpClubSettingsScreen,
   MvpLoginScreen,
+  MvpOwnerImpersonationBanner,
+  MvpOwnerUsersScreen,
   MvpPreviewAccountNav,
   MvpTeamChangeScreen,
   MvpTournamentDashboardScreen,
@@ -18,11 +20,14 @@ import {
 import { MVP_PREVIEW_BUILD } from "../preview/mvp/MvpPreviewShell";
 import {
   hasPlatformSession,
+  platformClearActAsUser,
   platformFetchMe,
   platformFetchTournaments,
+  platformGetActAsUser,
   platformLaunchManagerLive,
   platformLogin,
   platformLogout,
+  platformSetActAsUser,
   platformDeleteTournament,
   platformDownloadConvocationsPdf,
   platformDownloadTournamentPdf,
@@ -34,6 +39,7 @@ import { defaultForm } from "../types";
 
 const PREVIEW_SCREENS: { id: MvpPreviewScreen; label: string }[] = [
   { id: "login", label: "Connexion" },
+  { id: "owner", label: "Propriétaire" },
   { id: "tournaments", label: "Mes tournois" },
   { id: "club", label: "Paramètres club" },
   { id: "tournament", label: "Fiche tournoi" },
@@ -63,6 +69,9 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
   const [loggedIn, setLoggedIn] = useState(false);
   const [devOpen, setDevOpen] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [actingAs, setActingAs] = useState<{ userId: string; email: string; club: string } | null>(
+    null
+  );
   const [clubProfile, setClubProfile] = useState<MvpClubProfile>(
     apiEnabled ? emptyClubProfile() : MOCK_CLUB
   );
@@ -87,6 +96,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     const me = await platformFetchMe();
     const rows = await platformFetchTournaments();
     setUserEmail(me.email);
+    setActingAs(me.actingAs);
     setClubProfile(me.clubProfile);
     setTournaments(rows);
     setActiveTournamentId((current) => {
@@ -94,7 +104,16 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
       return rows[0]?.id ?? null;
     });
     setLoggedIn(true);
+    return me;
   }, []);
+
+  const resolvePostLoginScreen = useCallback(
+    (me: { role: string }) => {
+      if (me.role === "owner" && !platformGetActAsUser()) return "owner" as const;
+      return "tournaments" as const;
+    },
+    []
+  );
 
   useEffect(() => {
     if (!apiEnabled) {
@@ -108,14 +127,14 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     }
 
     void refreshSession()
-      .then(() => setScreen("tournaments"))
+      .then((me) => setScreen(resolvePostLoginScreen(me)))
       .catch(() => {
         platformLogout();
         setLoggedIn(false);
         setScreen("login");
       })
       .finally(() => setBooting(false));
-  }, [apiEnabled, refreshSession]);
+  }, [apiEnabled, refreshSession, resolvePostLoginScreen]);
 
   const navigateTo = useCallback(
     (next: MvpPreviewScreen) => {
@@ -146,6 +165,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     }
     setLoggedIn(false);
     setUserEmail("");
+    setActingAs(null);
     setClubProfile(apiEnabled ? emptyClubProfile() : MOCK_CLUB);
     setTournaments(apiEnabled ? [] : MOCK_TOURNAMENTS);
     setActiveTournamentId(apiEnabled ? null : MOCK_TOURNAMENTS[0]?.id ?? null);
@@ -156,10 +176,11 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
   const handleLogin = useCallback(
     async (email: string, password: string) => {
       if (apiEnabled) {
+        platformClearActAsUser();
         await platformLogin(email, password);
-        await refreshSession();
+        const me = await refreshSession();
         setNavHistory([]);
-        setScreen("tournaments");
+        setScreen(resolvePostLoginScreen(me));
         return;
       }
 
@@ -167,8 +188,25 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
       setNavHistory([]);
       setScreen("tournaments");
     },
-    [apiEnabled, refreshSession]
+    [apiEnabled, refreshSession, resolvePostLoginScreen]
   );
+
+  const handleEnterUserAsOwner = useCallback(
+    async (userId: string) => {
+      platformSetActAsUser(userId);
+      await refreshSession();
+      setNavHistory([]);
+      setScreen("tournaments");
+    },
+    [refreshSession]
+  );
+
+  const handleExitImpersonation = useCallback(() => {
+    platformClearActAsUser();
+    setActingAs(null);
+    setNavHistory([]);
+    void refreshSession().then(() => setScreen("owner"));
+  }, [refreshSession]);
 
   const handleClubSave = useCallback(
     async (profile: MvpClubProfile, logoFile?: File | null) => {
@@ -292,6 +330,17 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     );
   }
 
+  const impersonationBanner =
+    apiEnabled && actingAs ? (
+      <div className="mx-auto mb-4 w-full max-w-4xl px-4 pt-2">
+        <MvpOwnerImpersonationBanner
+          email={actingAs.email}
+          club={actingAs.club}
+          onExit={handleExitImpersonation}
+        />
+      </div>
+    ) : null;
+
   return (
     <div className="fixed inset-0 flex h-dvh flex-col overflow-hidden bg-arena-950 text-white">
       {!isLogin && !production && devOpen ? (
@@ -333,58 +382,78 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
           <MvpLoginScreen onLogin={handleLogin} useTestAccounts={apiEnabled} />
         ) : null}
 
-        {screen === "tournaments" ? (
-          <MvpTournamentsScreen
-            profile={clubProfile}
-            tournaments={tournaments}
-            userEmail={apiEnabled ? userEmail : undefined}
-            onOpenTournament={(id) => {
-              setActiveTournamentId(id);
-              navigateTo("tournament");
-            }}
-            onNewTournament={() => void handleNewTournament()}
-            onEditClub={() => navigateTo("club")}
-            onBack={handleBack}
+        {screen === "owner" ? (
+          <MvpOwnerUsersScreen
+            ownerEmail={userEmail}
+            onEnterUser={handleEnterUserAsOwner}
             onLogout={handleLogout}
           />
+        ) : null}
+
+        {screen === "tournaments" ? (
+          <>
+            {impersonationBanner}
+            <MvpTournamentsScreen
+              profile={clubProfile}
+              tournaments={tournaments}
+              userEmail={apiEnabled ? (actingAs?.email ?? userEmail) : undefined}
+              onOpenTournament={(id) => {
+                setActiveTournamentId(id);
+                navigateTo("tournament");
+              }}
+              onNewTournament={() => void handleNewTournament()}
+              onEditClub={() => navigateTo("club")}
+              onBack={handleBack}
+              onLogout={handleLogout}
+            />
+          </>
         ) : null}
 
         {screen === "club" ? (
-          <MvpClubSettingsScreen
-            profile={clubProfile}
-            onSave={handleClubSave}
-            onBack={handleBack}
-            onLogout={handleLogout}
-          />
+          <>
+            {impersonationBanner}
+            <MvpClubSettingsScreen
+              profile={clubProfile}
+              onSave={handleClubSave}
+              onBack={handleBack}
+              onLogout={handleLogout}
+            />
+          </>
         ) : null}
 
         {screen === "tournament" && activeTournament ? (
-          <MvpTournamentDashboardScreen
-            tournament={activeTournament}
-            onExportConvocations={() => void handleExportConvocations(activeTournament.id)}
-            onViewPdf={() => void handleViewPdf(activeTournament.id)}
-            onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}
-            onModifyTeams={() => navigateTo("teams")}
-            onLaunchLive={() => void handleLaunchLive(activeTournament.id)}
-            onDelete={() =>
-              void handleDeleteTournament(activeTournament.id, activeTournament.name)
-            }
-            onBack={handleBack}
-            onLogout={handleLogout}
-          />
+          <>
+            {impersonationBanner}
+            <MvpTournamentDashboardScreen
+              tournament={activeTournament}
+              onExportConvocations={() => void handleExportConvocations(activeTournament.id)}
+              onViewPdf={() => void handleViewPdf(activeTournament.id)}
+              onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}
+              onModifyTeams={() => navigateTo("teams")}
+              onLaunchLive={() => void handleLaunchLive(activeTournament.id)}
+              onDelete={() =>
+                void handleDeleteTournament(activeTournament.id, activeTournament.name)
+              }
+              onBack={handleBack}
+              onLogout={handleLogout}
+            />
+          </>
         ) : null}
 
         {screen === "teams" && activeTournament ? (
-          <MvpTeamChangeScreen
-            tournament={activeTournament}
-            apiEnabled={apiEnabled}
-            onApplied={async () => {
-              await refreshSession();
-              navigateTo("tournament");
-            }}
-            onBack={handleBack}
-            onLogout={handleLogout}
-          />
+          <>
+            {impersonationBanner}
+            <MvpTeamChangeScreen
+              tournament={activeTournament}
+              apiEnabled={apiEnabled}
+              onApplied={async () => {
+                await refreshSession();
+                navigateTo("tournament");
+              }}
+              onBack={handleBack}
+              onLogout={handleLogout}
+            />
+          </>
         ) : null}
       </div>
 

@@ -1,6 +1,7 @@
 import type { MvpClubProfile, MvpTournamentSummary } from "../preview/mvp/mockMvpData";
 
 const TOKEN_KEY = "platform_access_token";
+const ACT_AS_KEY = "platform_act_as_user_id";
 
 export class PlatformAuthError extends Error {
   constructor(message: string) {
@@ -18,9 +19,17 @@ interface ApiClubProfile {
   logo_url: string | null;
 }
 
+interface ApiActingAs {
+  user_id: string;
+  email: string;
+  club: string;
+}
+
 interface ApiMeResponse {
   email: string;
+  role: string;
   club_profile: ApiClubProfile | null;
+  acting_as: ApiActingAs | null;
 }
 
 interface ApiTournament {
@@ -42,12 +51,30 @@ function readToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-function authHeaders(extra?: HeadersInit): HeadersInit {
+export function platformGetActAsUser(): string | null {
+  return sessionStorage.getItem(ACT_AS_KEY);
+}
+
+export function platformSetActAsUser(userId: string | null): void {
+  if (userId) sessionStorage.setItem(ACT_AS_KEY, userId);
+  else sessionStorage.removeItem(ACT_AS_KEY);
+}
+
+export function platformClearActAsUser(): void {
+  sessionStorage.removeItem(ACT_AS_KEY);
+}
+
+function applyPlatformAuthHeaders(headers: Headers): void {
   const token = readToken();
-  return {
-    ...(extra ?? {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const actAs = platformGetActAsUser();
+  if (actAs) headers.set("X-Platform-Act-As", actAs);
+}
+
+function authHeaders(extra?: HeadersInit): HeadersInit {
+  const headers = new Headers(extra);
+  applyPlatformAuthHeaders(headers);
+  return headers;
 }
 
 async function parseError(res: Response): Promise<string> {
@@ -70,8 +97,7 @@ async function parseError(res: Response): Promise<string> {
 
 async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
-  const token = readToken();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  applyPlatformAuthHeaders(headers);
   if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -103,6 +129,7 @@ export function hasPlatformSession(): boolean {
 
 export function platformLogout(): void {
   localStorage.removeItem(TOKEN_KEY);
+  platformClearActAsUser();
 }
 
 export async function platformLogin(email: string, password: string): Promise<void> {
@@ -158,12 +185,52 @@ function toMvpTournament(row: ApiTournament): MvpTournamentSummary {
   };
 }
 
-export async function platformFetchMe(): Promise<{ email: string; clubProfile: MvpClubProfile }> {
+export async function platformFetchMe(): Promise<{
+  email: string;
+  role: string;
+  clubProfile: MvpClubProfile;
+  actingAs: { userId: string; email: string; club: string } | null;
+}> {
   const data = await platformFetch<ApiMeResponse>("/api/platform/me");
   return {
     email: data.email,
+    role: data.role || "organizer",
     clubProfile: toMvpClubProfile(data.club_profile),
+    actingAs: data.acting_as
+      ? {
+          userId: data.acting_as.user_id,
+          email: data.acting_as.email,
+          club: data.acting_as.club,
+        }
+      : null,
   };
+}
+
+export interface PlatformOwnerUser {
+  id: string;
+  email: string;
+  club: string;
+  tournamentCount: number;
+  createdAt: string;
+}
+
+export async function platformFetchOwnerUsers(): Promise<PlatformOwnerUser[]> {
+  const rows = await platformFetch<
+    {
+      id: string;
+      email: string;
+      club: string;
+      tournament_count: number;
+      created_at: string;
+    }[]
+  >("/api/platform/owner/users");
+  return rows.map((row) => ({
+    id: row.id,
+    email: row.email,
+    club: row.club,
+    tournamentCount: row.tournament_count,
+    createdAt: row.created_at,
+  }));
 }
 
 export async function platformFetchTournaments(): Promise<MvpTournamentSummary[]> {
@@ -215,9 +282,8 @@ export async function platformFetchTestAccounts(): Promise<PlatformTestAccount[]
 
 export async function platformFetchClubLogoFile(logoUrl: string | null): Promise<File | null> {
   if (!logoUrl) return null;
-  const token = readToken();
   const res = await fetch(logoUrl, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: authHeaders(),
   });
   if (!res.ok) return null;
   const blob = await res.blob();
@@ -264,9 +330,8 @@ export function platformTournamentConvocationsPdfUrl(id: string): string {
 }
 
 async function fetchTournamentPdfBlob(id: string, inline: boolean): Promise<{ blob: Blob; filename: string }> {
-  const token = readToken();
   const res = await fetch(platformTournamentPdfUrl(id, inline), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: authHeaders(),
   });
   if (res.status === 401) {
     platformLogout();
@@ -299,9 +364,8 @@ export async function platformDownloadTournamentPdf(id: string): Promise<void> {
 }
 
 export async function platformDownloadConvocationsPdf(id: string): Promise<void> {
-  const token = readToken();
   const res = await fetch(platformTournamentConvocationsPdfUrl(id), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: authHeaders(),
   });
   if (res.status === 401) {
     platformLogout();
