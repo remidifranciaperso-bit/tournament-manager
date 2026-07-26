@@ -10,7 +10,7 @@ import httpx
 
 from api.platform.config import ENGINE_V2_URL
 
-_PATCH_KEYS = ("fields", "matches", "equipes", "meta", "page_map", "planning_layout")
+_PATCH_KEYS = ("fields", "matches", "equipes", "meta", "page_map", "planning_layout", "logo_png")
 
 
 def _extract_captures(snapshot: dict) -> dict[str, str]:
@@ -27,7 +27,6 @@ def _slim_snapshot_for_remote(snapshot: dict) -> dict:
     slim = copy.deepcopy(snapshot)
     slim.pop("export_captures", None)
     slim.pop("crosspage_stubs", None)
-    slim.pop("logo_png", None)
     return slim
 
 

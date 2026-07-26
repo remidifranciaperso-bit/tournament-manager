@@ -281,6 +281,10 @@ async def regenerate_from_snapshot(body: dict):
     if not isinstance(snapshot, dict):
         raise HTTPException(status_code=422, detail="Snapshot manquant.")
 
+    logo_png = body.get("logo_png")
+    if isinstance(logo_png, str) and logo_png.strip():
+        snapshot = {**snapshot, "logo_png": logo_png}
+
     captures = body.get("captures") or snapshot.get("export_captures")
     if not isinstance(captures, dict) or not captures:
         raise HTTPException(status_code=422, detail="Captures Live manquantes.")
