@@ -7,6 +7,7 @@ export interface MvpTournamentSummary {
   genreLabel: string;
   typeLabel: string;
   heureLabel: string;
+  nbJours: number;
   dateLabel: string;
   formatLabel: string;
   teams: number;
@@ -39,6 +40,7 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     genreLabel: "Hommes",
     typeLabel: "P100",
     heureLabel: "18:00",
+    nbJours: 1,
     dateLabel: "26 juillet 2026",
     formatLabel: "P100 · 8 équipes",
     teams: 8,
@@ -51,6 +53,7 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     genreLabel: "Hommes",
     typeLabel: "P500",
     heureLabel: "09:00",
+    nbJours: 2,
     dateLabel: "12 septembre 2026",
     formatLabel: "P500 · 16 équipes",
     teams: 16,
@@ -63,6 +66,7 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     genreLabel: "Femmes",
     typeLabel: "P250",
     heureLabel: "14:00",
+    nbJours: 1,
     dateLabel: "15 juin 2026",
     formatLabel: "P250 · 12 équipes",
     teams: 12,

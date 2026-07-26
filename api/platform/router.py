@@ -229,6 +229,18 @@ def _heure_label(row: Tournament) -> str:
     return str(meta.get("heure_debut") or "").strip()
 
 
+def _nb_jours(row: Tournament) -> int:
+    meta = (row.live_snapshot or {}).get("meta") if isinstance(row.live_snapshot, dict) else {}
+    if isinstance(meta, dict):
+        try:
+            nb = int(meta.get("nb_jours") or 0)
+            if nb >= 1:
+                return nb
+        except (TypeError, ValueError):
+            pass
+    return 1
+
+
 def _tournament_out(row: Tournament, club_name: str) -> TournamentOut:
     return TournamentOut(
         id=row.id,
@@ -237,6 +249,7 @@ def _tournament_out(row: Tournament, club_name: str) -> TournamentOut:
         genre_label=_genre_label(row),
         type_label=_type_label(row),
         heure_label=_heure_label(row),
+        nb_jours=_nb_jours(row),
         date_label=row.date_label,
         format_label=row.format_label,
         teams=row.teams,

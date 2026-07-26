@@ -37,6 +37,7 @@ class TournamentOut(BaseModel):
     genre_label: str = "Hommes"
     type_label: str = ""
     heure_label: str = ""
+    nb_jours: int = 1
     date_label: str
     format_label: str
     teams: int

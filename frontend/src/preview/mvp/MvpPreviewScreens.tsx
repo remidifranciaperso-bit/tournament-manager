@@ -152,9 +152,31 @@ function MvpAccountPage({
   );
 }
 
-function tournamentMetaLine(tournament: MvpTournamentSummary): string {
-  const teams = `${tournament.teams} équipe${tournament.teams > 1 ? "s" : ""}`;
-  return tournament.heureLabel ? `${teams} · ${tournament.heureLabel}` : teams;
+function tournamentDateHeureLine(tournament: MvpTournamentSummary): string {
+  return tournament.heureLabel
+    ? `${tournament.dateLabel} · ${tournament.heureLabel}`
+    : tournament.dateLabel;
+}
+
+function TournamentListCard({ tournament }: { tournament: MvpTournamentSummary }) {
+  const jours = tournament.nbJours;
+  return (
+    <div className="min-w-0 flex-1">
+      <p
+        className="font-brush text-[clamp(1.35rem,3.5vw,1.85rem)] leading-[1.05] text-lime"
+        style={{ textShadow: "0 0 40px rgba(212,255,74,0.12)" }}
+      >
+        {tournament.typeLabel} · {tournament.genreLabel}
+      </p>
+      <p className="mt-2 text-sm text-white/55">{tournamentDateHeureLine(tournament)}</p>
+      <p className="mt-1 text-sm text-white/45">
+        {tournament.teams} équipe{tournament.teams > 1 ? "s" : ""}
+      </p>
+      <p className="mt-1 text-sm text-white/45">
+        {jours} jour{jours > 1 ? "s" : ""}
+      </p>
+    </div>
+  );
 }
 
 function MvpClubSummaryCard({
@@ -366,14 +388,7 @@ export function MvpTournamentsScreen({
                 className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-lime/25 hover:bg-white/[0.06]"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-display text-lg text-white">{tournament.name}</p>
-                    <p className="mt-1 text-sm text-white/50">{tournament.dateLabel}</p>
-                    <p className="mt-2 text-sm text-white/65">
-                      {tournament.typeLabel} · {tournament.genreLabel}
-                    </p>
-                    <p className="mt-1 text-sm text-white/45">{tournamentMetaLine(tournament)}</p>
-                  </div>
+                  <TournamentListCard tournament={tournament} />
                   <StatusBadge status={tournament.status} />
                 </div>
               </button>
@@ -638,11 +653,14 @@ export function MvpTournamentDashboardScreen({
           <h2 className="mt-3 font-display text-[clamp(1.5rem,4vw,2.25rem)] text-white">
             {tournament.name}
           </h2>
-          <p className="mt-2 text-sm text-white/55">{tournament.dateLabel}</p>
+          <p className="mt-2 text-sm text-white/55">{tournamentDateHeureLine(tournament)}</p>
           <p className="mt-1 text-sm text-white/55">
             {tournament.typeLabel} · {tournament.genreLabel}
           </p>
-          <p className="mt-1 text-sm text-white/45">{tournamentMetaLine(tournament)}</p>
+          <p className="mt-1 text-sm text-white/45">
+            {tournament.teams} équipe{tournament.teams > 1 ? "s" : ""} · {tournament.nbJours} jour
+            {tournament.nbJours > 1 ? "s" : ""}
+          </p>
           {tournament.status === "convocations_sent" ? (
             <p className="mt-3 text-xs font-medium uppercase tracking-wide text-sky-200/80">
               Convocations verrouillées — modifications sans décalage horaire
