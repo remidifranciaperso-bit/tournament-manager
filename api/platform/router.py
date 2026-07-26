@@ -9,8 +9,15 @@ from sqlalchemy.orm import Session
 
 from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PDF_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import get_db
+from api.platform.engine_regen import regenerate_pdf_via_engine
 from api.platform.live_pack import init_live_from_platform_pack
 from api.platform.pdf_convocations import extraire_pdf_convocations
+from api.platform.roster import roster_from_snapshot
+from api.platform.team_change import (
+    apply_team_change,
+    check_team_change,
+    validate_team_change_payload,
+)
 from api.platform.models import ClubProfile, Tournament, User
 from api.platform.schemas import (
     ClubProfileOut,
@@ -18,6 +25,9 @@ from api.platform.schemas import (
     LiveInitResponse,
     LoginRequest,
     MeResponse,
+    TeamChangeApplyResponse,
+    TeamChangeCheckResponse,
+    TeamChangeRequest,
     TestAccountsResponse,
     TestAccountHint,
     TokenResponse,
@@ -339,6 +349,89 @@ def start_tournament_live(
     row.status = "live_active"
     db.commit()
     return LiveInitResponse(live_token=str(token), live_data=payload)
+
+
+def _team_change_payload(body: TeamChangeRequest) -> dict:
+    payload: dict = {"mode": body.mode}
+    if body.player_id:
+        payload["player_id"] = body.player_id
+    if body.team_id:
+        payload["team_id"] = body.team_id
+    if body.replacement is not None:
+        payload["replacement"] = body.replacement
+    return payload
+
+
+@router.get("/tournaments/{tournament_id}/roster")
+def get_tournament_roster(
+    tournament_id: UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    row = _get_user_tournament(db, user, tournament_id)
+    if not row.live_snapshot:
+        raise HTTPException(status_code=422, detail="Snapshot tournoi indisponible.")
+    return roster_from_snapshot(row.live_snapshot)
+
+
+@router.post("/tournaments/{tournament_id}/team-changes/check", response_model=TeamChangeCheckResponse)
+def check_tournament_team_change(
+    tournament_id: UUID,
+    body: TeamChangeRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TeamChangeCheckResponse:
+    row = _get_user_tournament(db, user, tournament_id)
+    if not row.live_snapshot:
+        raise HTTPException(status_code=422, detail="Snapshot tournoi indisponible.")
+    payload = _team_change_payload(body)
+    try:
+        validate_team_change_payload(row.live_snapshot, payload)
+        result = check_team_change(row.live_snapshot, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return TeamChangeCheckResponse(**result)
+
+
+@router.post("/tournaments/{tournament_id}/team-changes/apply", response_model=TeamChangeApplyResponse)
+def apply_tournament_team_change(
+    tournament_id: UUID,
+    body: TeamChangeRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TeamChangeApplyResponse:
+    row = _get_user_tournament(db, user, tournament_id)
+    if not row.live_snapshot:
+        raise HTTPException(status_code=422, detail="Snapshot tournoi indisponible.")
+    payload = _team_change_payload(body)
+    try:
+        validate_team_change_payload(row.live_snapshot, payload)
+        check = check_team_change(row.live_snapshot, payload)
+        if check["result"] == "blocked":
+            raise ValueError(check["message"])
+        updated = apply_team_change(row.live_snapshot, payload)
+        if updated.get("export_captures") is None and row.live_snapshot.get("export_captures"):
+            updated["export_captures"] = row.live_snapshot["export_captures"]
+        if updated.get("crosspage_stubs") is None and row.live_snapshot.get("crosspage_stubs"):
+            updated["crosspage_stubs"] = row.live_snapshot["crosspage_stubs"]
+        pdf_bytes, refreshed = regenerate_pdf_via_engine(updated)
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Engine V2 indisponible: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if len(pdf_bytes) > PDF_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="PDF regénéré trop volumineux.")
+
+    row.pdf_data = pdf_bytes
+    row.live_snapshot = refreshed
+    if refreshed.get("export_captures"):
+        row.live_snapshot["export_captures"] = refreshed.get("export_captures") or updated.get("export_captures")
+    db.commit()
+    return TeamChangeApplyResponse(
+        message="Tournoi mis à jour — PDF et snapshot regénérés.",
+        tournament_id=row.id,
+    )
 
 
 @router.get("/engine-v2-url")

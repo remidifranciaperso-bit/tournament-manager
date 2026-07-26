@@ -326,7 +326,7 @@ export default function EngineV2Page() {
     prepareDataRef.current = null;
     setExportCaptureTarget(null);
     try {
-      const { blob, filename, notifyToken, liveSnapshotAvailable: snapshot, prepared } =
+      const { blob, filename, notifyToken, liveSnapshotAvailable: snapshot, prepared, captures, crosspageStubs } =
         await generateTournamentV2(
           form,
           captureExportPages,
@@ -355,7 +355,7 @@ export default function EngineV2Page() {
             dateLabel: form.dateTournoi,
             formatLabel,
             teams: prepared.nb_equipes,
-            liveSnapshot: buildPlatformLiveSnapshot(prepared),
+            liveSnapshot: buildPlatformLiveSnapshot(prepared, { captures, crosspageStubs }),
             pdf: blob,
             pdfFilename: filename,
           });

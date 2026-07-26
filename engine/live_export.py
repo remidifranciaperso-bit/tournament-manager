@@ -2,6 +2,21 @@ from pathlib import Path
 
 from engine.live_valeurs import construire_champs_live
 from engine.models.match import Match
+from engine.models.team import Team
+
+
+def serialiser_equipe(team: Team) -> dict:
+    return {
+        "numero": team.numero,
+        "ts": team.ts,
+        "joueur1": team.joueur1,
+        "joueur2": team.joueur2,
+        "classement_j1": team.classement_j1,
+        "classement_j2": team.classement_j2,
+        "poids": team.poids,
+        "label_court": team.nom_complet_court(),
+        "label": team.nom_complet(),
+    }
 
 
 def serialiser_match(match: Match) -> dict:

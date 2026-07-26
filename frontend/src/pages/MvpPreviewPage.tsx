@@ -350,6 +350,11 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         {screen === "teams" && activeTournament ? (
           <MvpTeamChangeScreen
             tournament={activeTournament}
+            apiEnabled={apiEnabled}
+            onApplied={async () => {
+              await refreshSession();
+              navigateTo("tournament");
+            }}
             onBack={handleBack}
             onLogout={handleLogout}
           />

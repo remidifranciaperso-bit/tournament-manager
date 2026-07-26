@@ -83,6 +83,7 @@ export interface EngineV2PrepareResult {
   planning_layout: Record<string, LiveLayoutField[]>;
   meta: LiveTournamentMeta;
   nb_equipes: number;
+  equipes?: Record<string, unknown>[];
 }
 
 export type EngineV2GeneratePhase = "prepare" | "capture" | "export";
@@ -198,6 +199,8 @@ export async function generateTournamentV2(
   notifyToken: string | null;
   liveSnapshotAvailable: boolean;
   prepared: EngineV2PrepareResult;
+  captures: Record<string, string>;
+  crosspageStubs: Record<string, import("./manager/exportCapture").CrossPageStub>;
 }> {
   onPhase?.("prepare");
   await ensureEngineV2Ready();
@@ -235,6 +238,8 @@ export async function generateTournamentV2(
     notifyToken: prepared.token,
     liveSnapshotAvailable: true,
     prepared,
+    captures,
+    crosspageStubs,
   };
 }
 

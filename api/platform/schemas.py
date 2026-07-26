@@ -72,3 +72,33 @@ class TestAccountHint(BaseModel):
 
 class TestAccountsResponse(BaseModel):
     accounts: list[TestAccountHint]
+
+
+class PlayerReplacementIn(BaseModel):
+    nom: str = ""
+    prenom: str = ""
+    classement: str = ""
+
+
+class TeamReplacementIn(BaseModel):
+    joueur1: PlayerReplacementIn = Field(default_factory=PlayerReplacementIn)
+    joueur2: PlayerReplacementIn = Field(default_factory=PlayerReplacementIn)
+
+
+class TeamChangeRequest(BaseModel):
+    mode: str
+    player_id: str | None = None
+    team_id: str | None = None
+    replacement: dict | None = None
+
+
+class TeamChangeCheckResponse(BaseModel):
+    result: str
+    message: str
+    convocations_changed: int = 0
+
+
+class TeamChangeApplyResponse(BaseModel):
+    ok: bool = True
+    message: str
+    tournament_id: UUID

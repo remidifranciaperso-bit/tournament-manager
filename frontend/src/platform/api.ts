@@ -316,3 +316,91 @@ export async function platformLaunchManagerLive(
   const result = await platformInitLive(tournamentId);
   saveLiveSession(normalizeLiveTournamentData(result.live_data), form, nbEquipes);
 }
+
+export interface PlatformRosterPlayer {
+  id: string;
+  teamId: string;
+  label: string;
+  nom: string;
+  prenom: string;
+  classement: string;
+}
+
+export interface PlatformRosterTeam {
+  id: string;
+  label: string;
+  ts: number;
+  joueur1: { nom: string; prenom: string; classement: string };
+  joueur2: { nom: string; prenom: string; classement: string };
+}
+
+export interface TeamChangePayload {
+  mode: "partner" | "replace";
+  player_id?: string;
+  team_id?: string;
+  replacement?: Record<string, unknown>;
+}
+
+export interface TeamChangeCheckResult {
+  result: "ok" | "adjust" | "blocked";
+  message: string;
+  convocations_changed: number;
+}
+
+function toMvpRoster(data: {
+  teams: PlatformRosterTeam[];
+  players: PlatformRosterPlayer[];
+}) {
+  return {
+    teams: data.teams.map((team) => ({
+      id: team.id,
+      label: team.label,
+      ts: team.ts,
+      joueur1: team.joueur1,
+      joueur2: team.joueur2,
+    })),
+    players: data.players.map((player) => ({
+      id: player.id,
+      teamId: player.team_id,
+      label: player.label,
+      nom: player.nom,
+      prenom: player.prenom,
+      classement: player.classement,
+    })),
+  };
+}
+
+export async function platformFetchTournamentRoster(tournamentId: string) {
+  const data = await platformFetch<{ teams: PlatformRosterTeam[]; players: PlatformRosterPlayer[] }>(
+    `/api/platform/tournaments/${tournamentId}/roster`
+  );
+  return toMvpRoster(data);
+}
+
+export async function platformCheckTeamChange(
+  tournamentId: string,
+  payload: TeamChangePayload
+): Promise<TeamChangeCheckResult> {
+  return platformFetch<TeamChangeCheckResult>(
+    `/api/platform/tournaments/${tournamentId}/team-changes/check`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function platformApplyTeamChange(
+  tournamentId: string,
+  payload: TeamChangePayload
+): Promise<{ message: string }> {
+  return platformFetch<{ message: string }>(
+    `/api/platform/tournaments/${tournamentId}/team-changes/apply`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+}

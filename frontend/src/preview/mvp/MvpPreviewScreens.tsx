@@ -9,7 +9,14 @@ import { defaultForm, type TournamentForm } from "../../types";
 import { trimLogoFile } from "../../utils/trimLogoImage";
 import { syncTerrains } from "../../wizard/helpers";
 import { MVP_PREVIEW_BUILD, MvpLoginButton, MvpPreviewShell } from "./MvpPreviewShell";
-import { platformFetchTestAccounts, type PlatformTestAccount } from "../../platform/api";
+import {
+  platformApplyTeamChange,
+  platformCheckTeamChange,
+  platformFetchTestAccounts,
+  platformFetchTournamentRoster,
+  type PlatformTestAccount,
+  type TeamChangePayload,
+} from "../../platform/api";
 import {
   STATUS_LABELS,
   mockRosterForTournament,
@@ -735,15 +742,23 @@ function PlayerReplacementFields({
 
 export function MvpTeamChangeScreen({
   tournament,
+  apiEnabled = false,
+  onApplied,
   onBack,
   onLogout,
 }: {
   tournament: MvpTournamentSummary;
+  apiEnabled?: boolean;
+  onApplied?: () => void | Promise<void>;
   onBack: () => void;
   onLogout: () => void;
 }) {
   const [mode, setMode] = useState<TeamChangeMode>(null);
   const [result, setResult] = useState<CompatibilityResult>(null);
+  const [checkMessage, setCheckMessage] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [replacementPlayer, setReplacementPlayer] = useState<PlayerFields>(EMPTY_PLAYER);
@@ -751,8 +766,17 @@ export function MvpTeamChangeScreen({
     joueur1: PlayerFields;
     joueur2: PlayerFields;
   }>({ joueur1: EMPTY_PLAYER, joueur2: EMPTY_PLAYER });
+  const [roster, setRoster] = useState(() => mockRosterForTournament(tournament));
 
-  const roster = useMemo(() => mockRosterForTournament(tournament), [tournament]);
+  useEffect(() => {
+    if (!apiEnabled) {
+      setRoster(mockRosterForTournament(tournament));
+      return;
+    }
+    void platformFetchTournamentRoster(tournament.id)
+      .then(setRoster)
+      .catch(() => setRoster(mockRosterForTournament(tournament)));
+  }, [apiEnabled, tournament]);
 
   const options = useMemo(
     () =>
@@ -777,6 +801,77 @@ export function MvpTeamChangeScreen({
     setReplacementPlayer(EMPTY_PLAYER);
     setReplacementTeam({ joueur1: EMPTY_PLAYER, joueur2: EMPTY_PLAYER });
     setResult(null);
+    setCheckMessage(null);
+    setActionError(null);
+  };
+
+  const buildPayload = (): TeamChangePayload | null => {
+    if (mode === "partner") {
+      if (!selectedPlayerId) return null;
+      return {
+        mode: "partner",
+        player_id: selectedPlayerId,
+        replacement: { ...replacementPlayer },
+      };
+    }
+    if (mode === "replace") {
+      if (!selectedTeamId) return null;
+      return {
+        mode: "replace",
+        team_id: selectedTeamId,
+        replacement: { ...replacementTeam },
+      };
+    }
+    return null;
+  };
+
+  const handleCheck = async () => {
+    setActionError(null);
+    const payload = buildPayload();
+    if (!payload) {
+      setActionError("Complétez la sélection avant de vérifier.");
+      return;
+    }
+    if (!apiEnabled) {
+      setResult(mode === "replace" ? "adjust" : "ok");
+      setCheckMessage(
+        mode === "replace"
+          ? "Compatible avec ajustement interne du tirage."
+          : "Compatible — aucune convocation ne change."
+      );
+      return;
+    }
+    setChecking(true);
+    try {
+      const response = await platformCheckTeamChange(tournament.id, payload);
+      setResult(response.result);
+      setCheckMessage(response.message);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Vérification impossible");
+      setResult(null);
+      setCheckMessage(null);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleApply = async () => {
+    setActionError(null);
+    const payload = buildPayload();
+    if (!payload || !result) return;
+    if (!apiEnabled) {
+      window.alert("Preview : regénérerait le PDF et mettrait à jour le tournoi.");
+      return;
+    }
+    setApplying(true);
+    try {
+      await platformApplyTeamChange(tournament.id, payload);
+      await onApplied?.();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Application impossible");
+    } finally {
+      setApplying(false);
+    }
   };
 
   const handleModeChange = (next: TeamChangeMode) => {
@@ -841,8 +936,8 @@ export function MvpTeamChangeScreen({
             />
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton onClick={() => setResult("ok")}>
-                Vérifier compatibilité convocations
+              <PrimaryButton onClick={() => void handleCheck()} disabled={checking || applying}>
+                {checking ? "Vérification…" : "Vérifier compatibilité convocations"}
               </PrimaryButton>
               <GhostButton onClick={resetForm}>Réinitialiser</GhostButton>
             </div>
@@ -881,37 +976,51 @@ export function MvpTeamChangeScreen({
             />
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton onClick={() => setResult("adjust")}>
-                Vérifier compatibilité convocations
+              <PrimaryButton onClick={() => void handleCheck()} disabled={checking || applying}>
+                {checking ? "Vérification…" : "Vérifier compatibilité convocations"}
               </PrimaryButton>
               <GhostButton onClick={resetForm}>Réinitialiser</GhostButton>
             </div>
           </motion.div>
         ) : null}
 
-        {result === "ok" ? (
+        {actionError ? (
+          <p className="mt-4 text-sm text-red-300/90">{actionError}</p>
+        ) : null}
+
+        {mode === "partner" && result === "ok" ? (
           <div className="mt-6 rounded-2xl border border-lime/30 bg-lime/10 p-4 text-left">
             <p className="flex items-center gap-2 font-semibold text-lime">
               <IconCheck className="h-4 w-4" />
-              Compatible — aucune convocation ne change
+              {checkMessage ?? "Compatible — aucune convocation ne change"}
             </p>
             <p className="mt-2 text-sm text-lime/75">
-              Le moteur peut appliquer ce changement et regénérer Engine V2 sans décaler les heures.
+              Le moteur peut appliquer ce changement et regénérer le PDF sans décaler les heures.
             </p>
-            <PrimaryButton onClick={() => undefined}>Appliquer et regénérer</PrimaryButton>
+            <PrimaryButton onClick={() => void handleApply()} disabled={applying}>
+              {applying ? "Regénération…" : "Appliquer et regénérer"}
+            </PrimaryButton>
           </div>
         ) : null}
 
-        {result === "adjust" ? (
+        {mode === "partner" && result === "blocked" ? (
+          <div className="mt-6 rounded-2xl border border-red-400/25 bg-red-500/10 p-4 text-left">
+            <p className="font-semibold text-red-100">{checkMessage}</p>
+          </div>
+        ) : null}
+
+        {mode === "replace" && result === "adjust" ? (
           <div className="mt-6 rounded-2xl border border-sky-400/25 bg-sky-500/10 p-4 text-left">
             <p className="font-semibold text-sky-100">
               Compatible avec ajustement interne du tirage
             </p>
             <p className="mt-2 text-sm text-sky-100/75">
-              Proposition : permuter TS5 au match M4 (non joué) pour respecter le niveau sportif —
-              0 convocation modifiée.
+              {checkMessage ??
+                "Proposition : permuter les TS voisins non joués pour respecter le niveau sportif — 0 convocation modifiée."}
             </p>
-            <PrimaryButton onClick={() => undefined}>Appliquer la solution recommandée</PrimaryButton>
+            <PrimaryButton onClick={() => void handleApply()} disabled={applying}>
+              {applying ? "Regénération…" : "Appliquer la solution recommandée"}
+            </PrimaryButton>
           </div>
         ) : null}
         </div>
