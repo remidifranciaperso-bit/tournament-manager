@@ -181,3 +181,15 @@ export async function platformFetchEngineV2Url(): Promise<string> {
   const data = await platformFetch<{ url: string }>("/api/platform/engine-v2-url");
   return data.url;
 }
+
+export interface PlatformTestAccount {
+  email: string;
+  password: string;
+}
+
+export async function platformFetchTestAccounts(): Promise<PlatformTestAccount[]> {
+  const res = await fetch("/api/platform/auth/test-accounts");
+  if (!res.ok) return [];
+  const data = (await res.json()) as { accounts: PlatformTestAccount[] };
+  return data.accounts ?? [];
+}

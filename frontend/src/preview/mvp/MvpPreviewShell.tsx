@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { LiveNightCourtBackground } from "../../manager/LiveNightCourtBackground";
 
-export const MVP_PREVIEW_BUILD = "v20260726n";
+export const MVP_PREVIEW_BUILD = "v20260726o";
 
 /** Coque preview : fond nuit, pas de bandeau bas. */
 export function MvpPreviewShell({

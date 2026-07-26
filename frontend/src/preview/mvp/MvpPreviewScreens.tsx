@@ -9,6 +9,7 @@ import { defaultForm, type TournamentForm } from "../../types";
 import { trimLogoFile } from "../../utils/trimLogoImage";
 import { syncTerrains } from "../../wizard/helpers";
 import { MVP_PREVIEW_BUILD, MvpLoginButton, MvpPreviewShell } from "./MvpPreviewShell";
+import { platformFetchTestAccounts, type PlatformTestAccount } from "../../platform/api";
 import {
   STATUS_LABELS,
   resolveTerrainPrincipal,
@@ -165,15 +166,21 @@ function MvpClubSummaryCard({
 
 export function MvpLoginScreen({
   onLogin,
-  production = false,
+  useTestAccounts = false,
 }: {
   onLogin: (email: string, password: string) => Promise<void>;
-  production?: boolean;
+  useTestAccounts?: boolean;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [testAccounts, setTestAccounts] = useState<PlatformTestAccount[]>([]);
+
+  useEffect(() => {
+    if (!useTestAccounts) return;
+    void platformFetchTestAccounts().then(setTestAccounts);
+  }, [useTestAccounts]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -193,10 +200,31 @@ export function MvpLoginScreen({
         <ProductBrushHeadline product="Manager" />
         <div className="w-full shrink-0 rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
           <p className="text-center font-display text-lg tracking-wide text-white">Connexion</p>
-          {!production ? (
-            <p className="mt-1 text-center text-xs text-white/45">
-              Compte réel — email valide requis (ex. admin1@club.fr)
-            </p>
+          {useTestAccounts && testAccounts.length > 0 ? (
+            <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+              <p className="text-center text-[11px] font-semibold uppercase tracking-wide text-white/45">
+                Comptes test · un espace par utilisateur
+              </p>
+              <div className="mt-2 flex flex-col gap-1.5">
+                {testAccounts.map((account) => (
+                  <button
+                    key={account.email}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      setEmail(account.email);
+                      setPassword(account.password);
+                      setError(null);
+                    }}
+                    className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-white/65 transition hover:border-lime/25 hover:bg-lime/[0.04] hover:text-white disabled:opacity-50"
+                  >
+                    <span className="font-semibold text-white/85">{account.email}</span>
+                    <span className="text-white/40"> · mot de passe </span>
+                    <span className="font-mono text-lime/80">{account.password}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : null}
           <div className="mt-4 space-y-3">
             <div>
@@ -240,7 +268,7 @@ export function MvpLoginScreen({
             </MvpLoginButton>
           </div>
         </div>
-        {!production ? (
+        {!useTestAccounts ? (
           <p className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-lime/70">
             Preview MVP · {MVP_PREVIEW_BUILD}
           </p>

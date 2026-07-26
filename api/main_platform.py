@@ -7,10 +7,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from api.platform.config import DATABASE_URL, DEPLOY_TARGET, ENGINE_V2_URL
-from api.platform.database import Base, engine, migrate_schema
+from api.platform.config import DATABASE_URL, DEPLOY_TARGET, ENGINE_V2_URL, PLATFORM_SEED_TEST_USERS
+from api.platform.database import Base, SessionLocal, engine, migrate_schema
 from api.platform.router import router as platform_router
 from api.platform.schemas import HealthResponse
+from api.platform.test_users import seed_test_users
 
 _FRONT_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
 
@@ -20,6 +21,12 @@ async def lifespan(_app: FastAPI):
     if DATABASE_URL:
         Base.metadata.create_all(bind=engine)
         migrate_schema()
+        if PLATFORM_SEED_TEST_USERS:
+            db = SessionLocal()
+            try:
+                seed_test_users(db)
+            finally:
+                db.close()
     yield
 
 

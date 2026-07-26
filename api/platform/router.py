@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES
+from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import get_db
 from api.platform.models import ClubProfile, Tournament, User
 from api.platform.schemas import (
@@ -12,10 +12,13 @@ from api.platform.schemas import (
     ClubProfileUpdate,
     LoginRequest,
     MeResponse,
+    TestAccountsResponse,
+    TestAccountHint,
     TokenResponse,
     TournamentOut,
 )
 from api.platform.security import create_access_token, get_current_user, hash_password, verify_password
+from api.platform.test_users import test_account_hints
 
 router = APIRouter(prefix="/api/platform", tags=["platform"])
 
@@ -94,6 +97,15 @@ def register(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
     db.refresh(user)
     _ensure_profile(db, user)
     return TokenResponse(access_token=create_access_token(user.id))
+
+
+@router.get("/auth/test-accounts", response_model=TestAccountsResponse)
+def list_test_accounts() -> TestAccountsResponse:
+    if not PLATFORM_SEED_TEST_USERS:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comptes test désactivés")
+    return TestAccountsResponse(
+        accounts=[TestAccountHint(email=item["email"], password=item["password"]) for item in test_account_hints()]
+    )
 
 
 @router.get("/me", response_model=MeResponse)

@@ -28,8 +28,25 @@ render.yaml                  # Service + base Render
 | `DATABASE_URL` | (auto Render) | PostgreSQL |
 | `JWT_SECRET` | (auto généré) | Tokens login |
 | `ENGINE_V2_URL` | `https://tournament-manager-engine-v2.onrender.com` | Lien wizard / Live |
+| `PLATFORM_SEED_TEST_USERS` | `true` | Phase test : crée les comptes fictifs au démarrage |
 
 Pas de disque persistant requis : le **logo club** est stocké en PostgreSQL (`logo_data`).
+
+## Comptes test (phase actuelle)
+
+Domaine fictif `@padel-test.fr` — authentification réelle, **un espace par compte** :
+
+| Email | Mot de passe | Club par défaut |
+|-------|--------------|-----------------|
+| `admin@padel-test.fr` | `admin` | CLUB ADMIN |
+| `admin1@padel-test.fr` | `admin1` | CLUB TEST 1 |
+| `admin2@padel-test.fr` | `admin2` | CLUB TEST 2 |
+| `admin3@padel-test.fr` | `admin3` | CLUB TEST 3 |
+
+Créés automatiquement au 1er démarrage si `PLATFORM_SEED_TEST_USERS=true`.  
+Liste aussi via `GET /api/platform/auth/test-accounts` (écran de connexion).
+
+Pour la prod réelle : mettre `PLATFORM_SEED_TEST_USERS=false` et supprimer la route test.
 
 ## API (MVP)
 

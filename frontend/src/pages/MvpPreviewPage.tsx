@@ -243,7 +243,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
 
       <div className="min-h-0 flex-1 overflow-hidden">
         {screen === "login" ? (
-          <MvpLoginScreen onLogin={handleLogin} production={production} />
+          <MvpLoginScreen onLogin={handleLogin} useTestAccounts={apiEnabled} />
         ) : null}
 
         {screen === "tournaments" ? (

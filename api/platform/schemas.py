@@ -51,3 +51,12 @@ class HealthResponse(BaseModel):
     deploy: str
     engine_v2_url: str
     database_configured: bool
+
+
+class TestAccountHint(BaseModel):
+    email: str
+    password: str
+
+
+class TestAccountsResponse(BaseModel):
+    accounts: list[TestAccountHint]
