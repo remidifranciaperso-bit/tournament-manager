@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { previewExcel, generateLiveTournament } from "../api";
+import { previewExcel, generateLiveTournament, fetchDeployTarget } from "../api";
 import { CourtBackground } from "../components/CourtBackground";
 import { PadelBall } from "../components/PadelBall";
 import { RacketProgress } from "../components/RacketProgress";
@@ -71,6 +71,10 @@ export default function ManagerPage() {
   useEffect(() => {
     setResumeSession(loadLiveSession());
     setResumeChecked(true);
+  }, []);
+
+  useEffect(() => {
+    void fetchDeployTarget();
   }, []);
 
   const enterLivePhase = useCallback(

@@ -67,6 +67,11 @@ export function isEngineV2Deploy(target: string | null): boolean {
   return target === "engine-v2";
 }
 
+/** Cible déployée déjà connue (après ``fetchDeployTarget``). */
+export function getCachedDeployTarget(): string | null | undefined {
+  return deployTargetCache;
+}
+
 export interface EngineV2PrepareResult {
   token: string;
   pdf_filename: string;

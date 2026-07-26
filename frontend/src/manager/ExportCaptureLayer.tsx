@@ -12,7 +12,7 @@ import type {
   LiveMatch,
 } from "./liveTypes";
 import type { StoredMatchResult } from "./useLiveProgress";
-import { LiveTableTypographyProvider, resolveV2TableHeaders } from "./liveTableTypography";
+import { LiveTableTypographyProvider } from "./liveTableTypography";
 
 interface ExportCaptureLayerProps {
   target: ExportCaptureTarget | null;
@@ -41,8 +41,6 @@ export function ExportCaptureLayer({
 }: ExportCaptureLayerProps) {
   if (!target) return null;
 
-  const v2TableHeaders = resolveV2TableHeaders(meta, packVersion);
-
   const { section, subPage } = target;
 
   if (section === "pools") {
@@ -66,7 +64,6 @@ export function ExportCaptureLayer({
             matches={matches}
             matchResults={matchResults}
             fields={fields}
-            v2TableHeaders={v2TableHeaders}
             capture
           />
         </LiveManagerDocumentPage>
@@ -103,7 +100,6 @@ export function ExportCaptureLayer({
             matches={matches}
             matchResults={matchResults}
             fields={fields}
-            v2TableHeaders={v2TableHeaders}
             capture
             placeRange={finalPageCount > 1 ? placeRange : undefined}
           />
@@ -144,7 +140,6 @@ export function ExportCaptureLayer({
             matchResults={matchResults}
             onToggleDone={() => {}}
             exportMode
-            v2TableHeaders={v2TableHeaders}
             capture
           />
         </LiveManagerDocumentPage>

@@ -7,7 +7,11 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { fetchDeployTarget, isEngineV2Deploy } from "../api";
+import {
+  fetchDeployTarget,
+  getCachedDeployTarget,
+  isEngineV2Deploy,
+} from "../api";
 import type { LiveTournamentMeta } from "./liveTypes";
 import {
   LIVE_TABLE_HEAD_CLASSIC,
@@ -43,6 +47,7 @@ export function resolveV2TableHeaders(
   packVersion?: string | null
 ): boolean {
   if (import.meta.env.VITE_DEPLOY_TARGET === "engine-v2") return true;
+  if (isEngineV2Deploy(getCachedDeployTarget() ?? null)) return true;
   return isEngineV2LiveSession(meta, packVersion);
 }
 

@@ -24,7 +24,7 @@ import {
   slideIndexAt,
 } from "./liveTabs";
 import { useLiveProgress } from "./useLiveProgress";
-import { LiveTableTypographyProvider, resolveV2TableHeaders } from "./liveTableTypography";
+import { LiveTableTypographyProvider } from "./liveTableTypography";
 
 interface LiveBroadcastContentProps {
   liveData: LiveTournamentData;
@@ -68,10 +68,6 @@ export function LiveBroadcastContent({
     pollMs: 1500,
   });
   const templateId = useMemo(() => resolveTemplateId(meta), [meta]);
-  const v2TableHeaders = useMemo(
-    () => resolveV2TableHeaders(meta, pack_version),
-    [meta, pack_version]
-  );
 
   // Reflète les matchs forcés sur un terrain libre dans les onglets terrains.
   const courtMatches = useMemo(() => {
@@ -221,7 +217,6 @@ export function LiveBroadcastContent({
               matches={matches}
               matchResults={progress.matchResults}
               fields={fields}
-              v2TableHeaders={v2TableHeaders}
             />
           </LiveManagerDocumentPage>
         </div>
@@ -330,7 +325,6 @@ export function LiveBroadcastContent({
                 matchResults={progress.matchResults}
                 onToggleDone={() => {}}
                 exportMode
-                v2TableHeaders={v2TableHeaders}
                 planningReferenceHeight={planningReferenceHeight}
                 planningSlideKey={planningSlideIndex ?? planningPage}
               />
@@ -345,7 +339,6 @@ export function LiveBroadcastContent({
               matches={matches}
               matchResults={progress.matchResults}
               fields={fields}
-              v2TableHeaders={v2TableHeaders}
             />
           </LiveManagerDocumentPage>
         </div>
