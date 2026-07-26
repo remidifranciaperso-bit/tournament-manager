@@ -33,3 +33,4 @@ app/
 
 # Scripts locaux
 scripts/
+!scripts/bake_emoji_assets.py

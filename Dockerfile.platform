@@ -45,11 +45,11 @@ COPY engine/ ./engine/
 COPY engine_v2/ ./engine_v2/
 COPY fonts/ ./fonts/
 COPY "templates bleus/" "./templates bleus/"
-COPY scripts/bake_emoji_assets.py ./scripts/
 
 RUN cp /usr/share/fonts/truetype/noto/NotoColorEmoji.ttf /app/fonts/NotoColorEmoji.ttf \
     && test -f /app/fonts/NotoColorEmoji.ttf \
-    && python3 scripts/bake_emoji_assets.py \
+    && test -d "templates bleus" \
+    && test -f engine_v2/assets/emoji_baked/trophy.png \
     && fc-cache -f -v > /dev/null
 
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
