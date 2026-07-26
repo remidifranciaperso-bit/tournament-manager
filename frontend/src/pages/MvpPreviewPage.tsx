@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MvpClubSettingsScreen,
   MvpLoginScreen,
@@ -17,14 +18,17 @@ import {
 import { MVP_PREVIEW_BUILD } from "../preview/mvp/MvpPreviewShell";
 import {
   hasPlatformSession,
-  platformFetchEngineV2Url,
   platformFetchMe,
   platformFetchTournaments,
+  platformLaunchManagerLive,
   platformLogin,
   platformLogout,
+  platformDownloadTournamentPdf,
   platformUpdateClubProfile,
   platformUploadLogo,
+  platformViewTournamentPdf,
 } from "../platform/api";
+import { defaultForm } from "../types";
 
 const PREVIEW_SCREENS: { id: MvpPreviewScreen; label: string }[] = [
   { id: "login", label: "Connexion" },
@@ -50,6 +54,7 @@ function emptyClubProfile(): MvpClubProfile {
 }
 
 export default function MvpPreviewPage({ production = false }: { production?: boolean }) {
+  const navigate = useNavigate();
   const apiEnabled = production || usePlatformApi;
 
   const [screen, setScreen] = useState<MvpPreviewScreen>("login");
@@ -183,19 +188,76 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [apiEnabled]
   );
 
-  const handleNewTournament = useCallback(async () => {
+  const handleNewTournament = useCallback(() => {
     if (apiEnabled) {
-      try {
-        const engineUrl = await platformFetchEngineV2Url();
-        window.location.href = `${engineUrl}/#/engine-v2`;
-      } catch {
-        window.alert("Engine V2 indisponible pour le moment.");
-      }
+      navigate("/nouveau-tournoi");
       return;
     }
 
-    window.alert("Preview : ouvrirait Engine V2 wizard pré-rempli avec le profil club.");
-  }, [apiEnabled]);
+    window.alert("Preview : ouvrirait le wizard Platform pré-rempli avec le profil club.");
+  }, [apiEnabled, navigate]);
+
+  const handleViewPdf = useCallback(
+    async (id: string) => {
+      if (!apiEnabled) return;
+      try {
+        await platformViewTournamentPdf(id);
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : "PDF indisponible");
+      }
+    },
+    [apiEnabled]
+  );
+
+  const handleDownloadPdf = useCallback(
+    async (id: string) => {
+      if (!apiEnabled) return;
+      try {
+        await platformDownloadTournamentPdf(id);
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : "PDF indisponible");
+      }
+    },
+    [apiEnabled]
+  );
+
+  const handleExportConvocations = useCallback(
+    async (id: string) => {
+      if (!apiEnabled) return;
+      try {
+        await platformViewTournamentPdf(id);
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : "Convocations indisponibles");
+      }
+    },
+    [apiEnabled]
+  );
+
+  const handleLaunchLive = useCallback(
+    async (tournamentId: string) => {
+      if (!apiEnabled) {
+        window.alert("Preview : ouvrirait Live V2 avec le snapshot de ce tournoi.");
+        return;
+      }
+      try {
+        const form = {
+          ...defaultForm(),
+          club: clubProfile.club,
+          nbTerrains: clubProfile.nbTerrains,
+          terrains: [...clubProfile.terrains],
+          terrainPrincipal: clubProfile.terrainPrincipal,
+          pasDeLogo: !clubProfile.hasLogo,
+        };
+        const teams =
+          tournaments.find((item) => item.id === tournamentId)?.teams ?? 0;
+        await platformLaunchManagerLive(tournamentId, form, teams);
+        navigate("/manager");
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : "Live indisponible");
+      }
+    },
+    [apiEnabled, clubProfile, navigate, tournaments]
+  );
 
   if (booting) {
     return (
@@ -274,10 +336,11 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         {screen === "tournament" && activeTournament ? (
           <MvpTournamentDashboardScreen
             tournament={activeTournament}
+            onExportConvocations={() => void handleExportConvocations(activeTournament.id)}
+            onViewPdf={() => void handleViewPdf(activeTournament.id)}
+            onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}
             onModifyTeams={() => navigateTo("teams")}
-            onLaunchLive={() => {
-              window.alert("Preview : ouvrirait Live V2 avec le snapshot de ce tournoi.");
-            }}
+            onLaunchLive={() => void handleLaunchLive(activeTournament.id)}
             onBack={handleBack}
             onLogout={handleLogout}
           />

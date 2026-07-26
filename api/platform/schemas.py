@@ -38,7 +38,19 @@ class TournamentOut(BaseModel):
     format_label: str
     teams: int
     status: str
+    has_pdf: bool = False
+    has_live: bool = False
     created_at: datetime
+
+
+class TournamentCreateResponse(BaseModel):
+    id: UUID
+    name: str
+
+
+class LiveInitResponse(BaseModel):
+    live_token: str
+    live_data: dict
 
 
 class MeResponse(BaseModel):

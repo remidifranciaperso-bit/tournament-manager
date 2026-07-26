@@ -15,6 +15,10 @@ function PlatformApp() {
     <HashRouter>
       <DocumentTitle />
       <Routes>
+        <Route path="/nouveau-tournoi" element={<EngineV2Page />} />
+        <Route path="/manager/affichage/:token" element={<LiveAffichagePage />} />
+        <Route path="/manager" element={<ManagerPage />} />
+        <Route path="/manager/*" element={<ManagerPage />} />
         <Route path="/*" element={<MvpPreviewPage production />} />
       </Routes>
     </HashRouter>

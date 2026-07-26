@@ -909,6 +909,7 @@ export function GenerationStep({
   managerPackDownloaded = false,
   hasTelecharge = false,
   generatingMessage,
+  hideDownloads = false,
   onDownloadPdf,
   onDownloadManagerLive,
   onRegenerateSame,
@@ -923,6 +924,7 @@ export function GenerationStep({
   managerPackDownloaded?: boolean;
   hasTelecharge?: boolean;
   generatingMessage?: string;
+  hideDownloads?: boolean;
   onDownloadPdf: () => void;
   onDownloadManagerLive?: () => void;
   onRegenerateSame?: () => void;
@@ -993,7 +995,7 @@ export function GenerationStep({
         <p className="mt-6 text-center text-sm text-red-400">{genError}</p>
       )}
 
-      {done && (
+      {done && !hideDownloads && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

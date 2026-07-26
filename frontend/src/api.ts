@@ -9,8 +9,9 @@ import type {
 import type { CrossPageStub, ManagerExportCapture } from "./manager/captureExportPages";
 import { buildExportFormData } from "./manager/captureExportPages";
 import { EXPORT_CAPTURE_BUILD_MARKER } from "./manager/formatBracketLabel";
+import { engineV2ApiUrl } from "./platform/engineV2ApiBase";
 
-function normalizeLiveTournamentData(data: LiveTournamentData): LiveTournamentData {
+export function normalizeLiveTournamentData(data: LiveTournamentData): LiveTournamentData {
   const meta = { ...data.meta };
   if (!meta.logo_url && data.logo_data_url) {
     meta.logo_url = data.logo_data_url;
@@ -117,8 +118,8 @@ async function ensureEngineV2Ready(): Promise<void> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const [healthRes, bundleRes] = await Promise.all([
-        fetch("/api/v2/health"),
-        fetch("/api/v2/frontend-check"),
+        fetch(engineV2ApiUrl("/api/v2/health")),
+        fetch(engineV2ApiUrl("/api/v2/frontend-check")),
       ]);
       if (!healthRes.ok) continue;
       if (bundleRes.ok) {
@@ -143,7 +144,7 @@ export async function prepareTournamentV2(
 ): Promise<EngineV2PrepareResult> {
   if (!form.excelFile) throw new Error("Fichier Excel manquant.");
 
-  const res = await fetchWithRetry("/api/v2/prepare", () => {
+  const res = await fetchWithRetry(engineV2ApiUrl("/api/v2/prepare"), () => {
     const body = new FormData();
     appendTournamentFormFields(body, form);
     return { method: "POST", body };
@@ -170,7 +171,7 @@ async function exportTournamentV2WithCaptures(
   },
   captures: Record<string, string>
 ): Promise<Blob> {
-  const res = await fetchWithRetry(`/api/v2/export/${token}`, () => {
+  const res = await fetchWithRetry(engineV2ApiUrl(`/api/v2/export/${token}`), () => {
     const form = buildExportFormData(
       {
         ...payload,
@@ -329,7 +330,7 @@ export async function previewExcel(file: File): Promise<PreviewResult> {
   const body = new FormData();
   body.append("excel", file);
 
-  const res = await fetch("/api/preview", { method: "POST", body });
+  const res = await fetch(engineV2ApiUrl("/api/preview"), { method: "POST", body });
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
 }

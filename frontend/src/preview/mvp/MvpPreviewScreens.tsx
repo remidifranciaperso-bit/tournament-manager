@@ -573,12 +573,18 @@ export function MvpClubSettingsScreen({
 
 export function MvpTournamentDashboardScreen({
   tournament,
+  onViewPdf,
+  onDownloadPdf,
+  onExportConvocations,
   onModifyTeams,
   onLaunchLive,
   onBack,
   onLogout,
 }: {
   tournament: MvpTournamentSummary;
+  onViewPdf: () => void;
+  onDownloadPdf: () => void;
+  onExportConvocations: () => void;
   onModifyTeams: () => void;
   onLaunchLive: () => void;
   onBack: () => void;
@@ -609,23 +615,33 @@ export function MvpTournamentDashboardScreen({
           animate={{ opacity: 1, y: 0 }}
           className="mt-8 grid gap-3 sm:grid-cols-2"
         >
-          <button type="button" className={actionCardClass()}>
+          <button type="button" onClick={onViewPdf} className={actionCardClass()}>
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconTable className="h-5 w-5 text-lime" />
-              Imprimer le PDF
+              Visualiser le PDF
             </span>
             <span className="text-xs text-white/50">
-              Dossier complet Engine V2 — tableaux, planning, classement
+              Ouvrir le dossier complet dans un nouvel onglet
             </span>
           </button>
 
-          <button type="button" className={actionCardClass()}>
+          <button type="button" onClick={onDownloadPdf} className={actionCardClass()}>
+            <span className="flex items-center gap-2 text-sm font-semibold text-white">
+              <IconCheck className="h-5 w-5 text-lime" />
+              Télécharger le PDF
+            </span>
+            <span className="text-xs text-white/50">
+              Tableaux, planning, convocations, classement final
+            </span>
+          </button>
+
+          <button type="button" onClick={onExportConvocations} className={actionCardClass()}>
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconClock className="h-5 w-5 text-lime" />
               Exporter les convocations
             </span>
             <span className="text-xs text-white/50">
-              Page convocations uniquement — à envoyer aux joueurs
+              Page convocations — à envoyer aux joueurs
             </span>
           </button>
 
@@ -645,7 +661,7 @@ export function MvpTournamentDashboardScreen({
               Lancer le Live V2
             </span>
             <span className="text-xs text-lime/70">
-              Suivi jour J — matchs en cours, planning, export live
+              Suivi jour J — snapshot intégré, sans JSON
             </span>
           </button>
         </motion.div>

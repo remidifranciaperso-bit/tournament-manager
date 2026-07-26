@@ -58,12 +58,16 @@ async function parseError(res: Response): Promise<string> {
 }
 
 async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  const token = readToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const res = await fetch(path, {
     ...init,
-    headers: {
-      ...authHeaders(init?.headers),
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 
   if (res.status === 401) {
@@ -192,4 +196,95 @@ export async function platformFetchTestAccounts(): Promise<PlatformTestAccount[]
   if (!res.ok) return [];
   const data = (await res.json()) as { accounts: PlatformTestAccount[] };
   return data.accounts ?? [];
+}
+
+export async function platformFetchClubLogoFile(logoUrl: string | null): Promise<File | null> {
+  if (!logoUrl) return null;
+  const token = readToken();
+  const res = await fetch(logoUrl, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) return null;
+  const blob = await res.blob();
+  const type = blob.type || "image/png";
+  return new File([blob], "club-logo.png", { type });
+}
+
+export async function platformCreateTournament(input: {
+  name: string;
+  dateLabel: string;
+  formatLabel: string;
+  teams: number;
+  liveSnapshot: Record<string, unknown>;
+  pdf: Blob;
+  pdfFilename: string;
+}): Promise<{ id: string; name: string }> {
+  const form = new FormData();
+  form.append("name", input.name);
+  form.append("date_label", input.dateLabel);
+  form.append("format_label", input.formatLabel);
+  form.append("teams", String(input.teams));
+  form.append("live_snapshot_json", JSON.stringify(input.liveSnapshot));
+  form.append("pdf", input.pdf, input.pdfFilename);
+  return platformFetch<{ id: string; name: string }>("/api/platform/tournaments", {
+    method: "POST",
+    body: form,
+  });
+}
+
+export function platformTournamentPdfUrl(id: string, inline = false): string {
+  return `/api/platform/tournaments/${id}/pdf${inline ? "?inline=1" : ""}`;
+}
+
+async function fetchTournamentPdfBlob(id: string, inline: boolean): Promise<{ blob: Blob; filename: string }> {
+  const token = readToken();
+  const res = await fetch(platformTournamentPdfUrl(id, inline), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (res.status === 401) {
+    platformLogout();
+    throw new PlatformAuthError("Session expirée");
+  }
+  if (!res.ok) {
+    throw new Error(await parseError(res));
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/i);
+  return { blob, filename: match?.[1] ?? "tournoi.pdf" };
+}
+
+export async function platformViewTournamentPdf(id: string): Promise<void> {
+  const { blob } = await fetchTournamentPdfBlob(id, true);
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+export async function platformDownloadTournamentPdf(id: string): Promise<void> {
+  const { blob, filename } = await fetchTournamentPdfBlob(id, false);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function platformInitLive(tournamentId: string): Promise<{ live_token: string; live_data: import("../manager/liveTypes").LiveTournamentData }> {
+  return platformFetch<{ live_token: string; live_data: import("../manager/liveTypes").LiveTournamentData }>(
+    `/api/platform/tournaments/${tournamentId}/live-init`,
+    { method: "POST" }
+  );
+}
+
+export async function platformLaunchManagerLive(
+  tournamentId: string,
+  form: import("../types").TournamentForm,
+  nbEquipes: number
+): Promise<void> {
+  const { saveLiveSession } = await import("../manager/liveSessionStore");
+  const { normalizeLiveTournamentData } = await import("../api");
+  const result = await platformInitLive(tournamentId);
+  saveLiveSession(normalizeLiveTournamentData(result.live_data), form, nbEquipes);
 }

@@ -1,20 +1,26 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+import json
+
+import httpx
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PLATFORM_SEED_TEST_USERS
+from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PDF_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import get_db
+from api.platform.live_pack import init_live_from_platform_pack
 from api.platform.models import ClubProfile, Tournament, User
 from api.platform.schemas import (
     ClubProfileOut,
     ClubProfileUpdate,
+    LiveInitResponse,
     LoginRequest,
     MeResponse,
     TestAccountsResponse,
     TestAccountHint,
     TokenResponse,
+    TournamentCreateResponse,
     TournamentOut,
 )
 from api.platform.security import create_access_token, get_current_user, hash_password, verify_password
@@ -176,6 +182,32 @@ def get_club_logo(user_id: UUID, db: Session = Depends(get_db)) -> Response:
     return Response(content=profile.logo_data, media_type=profile.logo_content_type or "image/png")
 
 
+def _tournament_out(row: Tournament, club_name: str) -> TournamentOut:
+    return TournamentOut(
+        id=row.id,
+        name=row.name,
+        club=club_name,
+        date_label=row.date_label,
+        format_label=row.format_label,
+        teams=row.teams,
+        status=row.status,
+        has_pdf=bool(row.pdf_data),
+        has_live=bool(row.live_snapshot),
+        created_at=row.created_at,
+    )
+
+
+def _get_user_tournament(db: Session, user: User, tournament_id: UUID) -> Tournament:
+    row = (
+        db.query(Tournament)
+        .filter(Tournament.id == tournament_id, Tournament.user_id == user.id)
+        .one_or_none()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Tournoi introuvable")
+    return row
+
+
 @router.get("/tournaments", response_model=list[TournamentOut])
 def list_tournaments(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[TournamentOut]:
     profile = user.club_profile
@@ -186,19 +218,99 @@ def list_tournaments(user: User = Depends(get_current_user), db: Session = Depen
         .order_by(Tournament.created_at.desc())
         .all()
     )
-    return [
-        TournamentOut(
-            id=row.id,
-            name=row.name,
-            club=club_name,
-            date_label=row.date_label,
-            format_label=row.format_label,
-            teams=row.teams,
-            status=row.status,
-            created_at=row.created_at,
+    return [_tournament_out(row, club_name) for row in rows]
+
+
+@router.post("/tournaments", response_model=TournamentCreateResponse, status_code=status.HTTP_201_CREATED)
+async def create_tournament(
+    name: str = Form(...),
+    date_label: str = Form(""),
+    format_label: str = Form(""),
+    teams: int = Form(0),
+    live_snapshot_json: str = Form("{}"),
+    pdf: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TournamentCreateResponse:
+    pdf_bytes = await pdf.read()
+    if not pdf_bytes:
+        raise HTTPException(status_code=400, detail="PDF vide")
+    if len(pdf_bytes) > PDF_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="PDF trop volumineux")
+
+    try:
+        live_snapshot = json.loads(live_snapshot_json)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="Snapshot Live invalide") from exc
+
+    row = Tournament(
+        user_id=user.id,
+        name=name.strip().upper() or "TOURNOI",
+        date_label=date_label.strip(),
+        format_label=format_label.strip(),
+        teams=max(0, teams),
+        status="generated",
+        pdf_filename=pdf.filename or "tournoi.pdf",
+        pdf_data=pdf_bytes,
+        live_snapshot=live_snapshot,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return TournamentCreateResponse(id=row.id, name=row.name)
+
+
+@router.get("/tournaments/{tournament_id}/pdf")
+def get_tournament_pdf(
+    tournament_id: UUID,
+    inline: bool = False,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    row = _get_user_tournament(db, user, tournament_id)
+    if not row.pdf_data:
+        raise HTTPException(status_code=404, detail="PDF introuvable")
+    disposition = "inline" if inline else "attachment"
+    filename = row.pdf_filename or "tournoi.pdf"
+    return Response(
+        content=row.pdf_data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
+    )
+
+
+@router.post("/tournaments/{tournament_id}/live-init", response_model=LiveInitResponse)
+def start_tournament_live(
+    tournament_id: UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> LiveInitResponse:
+    row = _get_user_tournament(db, user, tournament_id)
+    if not row.pdf_data or not row.live_snapshot:
+        raise HTTPException(status_code=422, detail="Tournoi incomplet (PDF ou snapshot manquant)")
+
+    profile = user.club_profile
+    logo_bytes = profile.logo_data if profile and profile.has_logo else None
+    logo_type = profile.logo_content_type if profile else None
+
+    try:
+        payload = init_live_from_platform_pack(
+            pdf_bytes=row.pdf_data,
+            pdf_filename=row.pdf_filename or "tournoi.pdf",
+            live_snapshot=row.live_snapshot,
+            logo_bytes=logo_bytes,
+            logo_content_type=logo_type,
         )
-        for row in rows
-    ]
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Engine V2 Live indisponible: {exc}") from exc
+
+    token = payload.get("live_token")
+    if not token:
+        raise HTTPException(status_code=502, detail="Réponse Live V2 invalide")
+
+    row.status = "live_active"
+    db.commit()
+    return LiveInitResponse(live_token=str(token), live_data=payload)
 
 
 @router.get("/engine-v2-url")

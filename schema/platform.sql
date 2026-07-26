@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS tournaments (
     format_label TEXT NOT NULL DEFAULT '',
     teams INT NOT NULL DEFAULT 0,
     status tournament_status NOT NULL DEFAULT 'generated',
+    pdf_filename TEXT,
+    pdf_data BYTEA,
     engine_v2_pdf_path TEXT,
     live_snapshot JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

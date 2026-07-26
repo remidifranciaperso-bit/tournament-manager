@@ -22,6 +22,14 @@ import { Stepper, StepperMobile } from "../components/Stepper";
 import { GhostButton, PrimaryButton } from "../components/ui";
 import { defaultForm, type PreviewResult, type TournamentForm } from "../types";
 import { poulesDisponibleFrom, syncHeures, normalizeUppercaseFields } from "../wizard/helpers";
+import { isPlatformBuild } from "../platform/engineV2ApiBase";
+import {
+  platformCreateTournament,
+  platformFetchClubLogoFile,
+  platformFetchMe,
+} from "../platform/api";
+import { buildPlatformLiveSnapshot } from "../platform/liveSnapshot";
+import { PlatformGenerationSuccess } from "../platform/PlatformGenerationSuccess";
 import {
   ClubStep,
   FormatStep,
@@ -46,6 +54,33 @@ const STEPS = [
 ];
 
 const WIZARD_STEPS = STEPS.slice(1);
+const PLATFORM_WIZARD_STEPS = WIZARD_STEPS.filter(
+  (step) => step.key !== "club" && step.key !== "terrains"
+);
+const PLATFORM_NEXT: Record<number, number> = {
+  1: 3,
+  3: 4,
+  4: 5,
+  5: 7,
+  7: 8,
+  8: 8,
+};
+const PLATFORM_PREV: Record<number, number> = {
+  1: 1,
+  3: 1,
+  4: 3,
+  5: 4,
+  7: 5,
+  8: 7,
+};
+const PLATFORM_STEP_INDEX: Record<number, number> = {
+  1: 0,
+  3: 1,
+  4: 2,
+  5: 3,
+  7: 4,
+  8: 5,
+};
 
 /** 1 = Participants (accueil Engine supprimé, entrée directe depuis le Hub). */
 const STEP_ENTRY = 1;
@@ -83,6 +118,11 @@ export default function EngineV2Page() {
     null
   );
   const prepareDataRef = useRef<EngineV2PrepareResult | null>(null);
+  const [platformSaving, setPlatformSaving] = useState(false);
+  const [platformSaveError, setPlatformSaveError] = useState<string | null>(null);
+
+  const activeWizardSteps = isPlatformBuild ? PLATFORM_WIZARD_STEPS : WIZARD_STEPS;
+  const stepperIndex = isPlatformBuild ? (PLATFORM_STEP_INDEX[step] ?? 0) : step - 1;
 
   const captureExportPages = useCallback(
     (prepared: EngineV2PrepareResult) =>
@@ -150,6 +190,33 @@ export default function EngineV2Page() {
   const patch = useCallback((partial: Partial<TournamentForm>) => {
     setForm((prev) => ({ ...prev, ...normalizeUppercaseFields(partial) }));
   }, []);
+
+  useEffect(() => {
+    if (!isPlatformBuild) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const me = await platformFetchMe();
+        const profile = me.clubProfile;
+        patch({
+          club: profile.club,
+          nbTerrains: profile.nbTerrains,
+          terrains: [...profile.terrains],
+          terrainPrincipal: profile.terrainPrincipal,
+          pasDeLogo: !profile.hasLogo,
+        });
+        const logoFile = await platformFetchClubLogoFile(profile.logoPreviewUrl);
+        if (logoFile && !cancelled) {
+          patch({ logoFile, pasDeLogo: false });
+        }
+      } catch {
+        /* profil indisponible */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [patch]);
 
   useEffect(() => {
     if (!form.excelFile) {
@@ -223,9 +290,11 @@ export default function EngineV2Page() {
     }
   }, [step, form, preview, previewLoading, previewError]);
 
-  const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const goBack = () => setStep((s) => Math.max(s - 1, STEP_ENTRY));
-  const goHome = () => navigate("/");
+  const goNext = () =>
+    setStep((s) => (isPlatformBuild ? PLATFORM_NEXT[s] ?? s : Math.min(s + 1, STEPS.length - 1)));
+  const goBack = () =>
+    setStep((s) => (isPlatformBuild ? PLATFORM_PREV[s] ?? s : Math.max(s - 1, STEP_ENTRY)));
+  const goHome = () => navigate(isPlatformBuild ? "/" : "/");
 
   const handleValidateSummary = () => {
     if (pdfUrl) {
@@ -274,6 +343,31 @@ export default function EngineV2Page() {
       setPdfFilename(filename);
       notifyTokenRef.current = notifyToken;
       setLiveSnapshotAvailable(snapshot);
+
+      if (isPlatformBuild) {
+        setPlatformSaving(true);
+        setPlatformSaveError(null);
+        try {
+          const typeLabel = form.typeTournoi.toUpperCase();
+          const formatLabel = `${typeLabel} · ${prepared.nb_equipes} équipes`;
+          await platformCreateTournament({
+            name: prepared.meta.club ? `${typeLabel} ${prepared.meta.club}` : typeLabel,
+            dateLabel: form.dateTournoi,
+            formatLabel,
+            teams: prepared.nb_equipes,
+            liveSnapshot: buildPlatformLiveSnapshot(prepared),
+            pdf: blob,
+            pdfFilename: filename,
+          });
+        } catch (saveErr) {
+          setPlatformSaveError(
+            saveErr instanceof Error ? saveErr.message : "Enregistrement Platform impossible"
+          );
+        } finally {
+          setPlatformSaving(false);
+        }
+      }
+
       notifySentRef.current = false;
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -380,9 +474,24 @@ export default function EngineV2Page() {
           </p>
         </div>
         <Stepper
-          steps={WIZARD_STEPS}
-          current={step - 1}
-          onGo={(i) => i < step - 1 && setStep(i + 1)}
+          steps={activeWizardSteps}
+          current={stepperIndex}
+          onGo={(i) => {
+            if (isPlatformBuild) {
+              const target = activeWizardSteps[i]?.key;
+              const map: Record<string, number> = {
+                participants: 1,
+                identity: 3,
+                format: 4,
+                planning: 5,
+                summary: 7,
+                generate: 8,
+              };
+              if (target && map[target] < step) setStep(map[target]);
+              return;
+            }
+            if (i < step - 1) setStep(i + 1);
+          }}
           className="min-h-0 flex-1 overflow-y-auto"
         />
         <div className="shrink-0 pt-3">
@@ -397,7 +506,7 @@ export default function EngineV2Page() {
                 </div>
               </div>
               <div className="flex min-h-[4rem] min-w-0 flex-1 items-center justify-center overflow-visible">
-                <RacketProgress step={step} total={WIZARD_STEPS.length} />
+                <RacketProgress step={stepperIndex + 1} total={activeWizardSteps.length} />
               </div>
             </div>
           </div>
@@ -407,7 +516,7 @@ export default function EngineV2Page() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Header mobile */}
         <header className="border-b border-white/[0.06] bg-arena-900/40 px-4 py-4 backdrop-blur-xl lg:hidden">
-          <StepperMobile steps={WIZARD_STEPS} current={step - 1} />
+          <StepperMobile steps={activeWizardSteps} current={stepperIndex} />
         </header>
 
         <main
@@ -429,6 +538,65 @@ export default function EngineV2Page() {
               exit="exit"
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             >
+              {step === 8 && isPlatformBuild ? (
+                generating || platformSaving ? (
+                  <GenerationStep
+                    generating={generating || platformSaving}
+                    generatingMessage={
+                      platformSaving
+                        ? "Enregistrement dans votre espace…"
+                        : genPhase
+                          ? GENERATE_PHASE_LABELS[genPhase]
+                          : undefined
+                    }
+                    genError={genError}
+                    pdfUrl={null}
+                    pdfFilename={pdfFilename}
+                    genreTournoi={form.genreTournoi}
+                    hideDownloads
+                    onDownloadPdf={() => {}}
+                  />
+                ) : genError ? (
+                  <GenerationStep
+                    generating={false}
+                    genError={genError}
+                    pdfUrl={null}
+                    pdfFilename={pdfFilename}
+                    genreTournoi={form.genreTournoi}
+                    hideDownloads
+                    hasTelecharge
+                    onDownloadPdf={() => {}}
+                    onRegenerateSame={handleRegenerateSame}
+                  />
+                ) : (
+                  <PlatformGenerationSuccess
+                    tournamentName={form.typeTournoi.toUpperCase()}
+                    saving={false}
+                    saveError={platformSaveError}
+                    onBackToTournaments={() => navigate("/")}
+                  />
+                )
+              ) : step === 8 ? (
+                <GenerationStep
+                  generating={generating}
+                  generatingMessage={
+                    genPhase ? GENERATE_PHASE_LABELS[genPhase] : undefined
+                  }
+                  genError={genError}
+                  pdfUrl={pdfUrl}
+                  pdfFilename={pdfFilename}
+                  genreTournoi={form.genreTournoi}
+                  liveSnapshotAvailable={liveSnapshotAvailable}
+                  pdfDownloaded={pdfDownloaded}
+                  managerPackDownloaded={managerPackDownloaded}
+                  hasTelecharge={hasTelecharge}
+                  onDownloadPdf={handleDownloadNotify}
+                  onDownloadManagerLive={handleDownloadManagerLive}
+                  onRegenerateSame={handleRegenerateSame}
+                />
+              ) : null}
+              {step !== 8 ? (
+                <>
               {step === 1 && (
                 <ParticipantsStep
                   form={form}
@@ -455,25 +623,8 @@ export default function EngineV2Page() {
               {step === 7 && (
                 <SummaryStep form={form} preview={preview} />
               )}
-              {step === 8 && (
-                <GenerationStep
-                  generating={generating}
-                  generatingMessage={
-                    genPhase ? GENERATE_PHASE_LABELS[genPhase] : undefined
-                  }
-                  genError={genError}
-                  pdfUrl={pdfUrl}
-                  pdfFilename={pdfFilename}
-                  genreTournoi={form.genreTournoi}
-                  liveSnapshotAvailable={liveSnapshotAvailable}
-                  pdfDownloaded={pdfDownloaded}
-                  managerPackDownloaded={managerPackDownloaded}
-                  hasTelecharge={hasTelecharge}
-                  onDownloadPdf={handleDownloadNotify}
-                  onDownloadManagerLive={handleDownloadManagerLive}
-                  onRegenerateSame={handleRegenerateSame}
-                />
-              )}
+                </>
+              ) : null}
             </motion.div>
           </AnimatePresence>
         </main>

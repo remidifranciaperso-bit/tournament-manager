@@ -11,6 +11,7 @@ ENGINE_V2_URL = os.environ.get(
 ).rstrip("/")
 
 LOGO_MAX_BYTES = int(os.environ.get("LOGO_MAX_BYTES", str(2 * 1024 * 1024)))
+PDF_MAX_BYTES = int(os.environ.get("PDF_MAX_BYTES", str(20 * 1024 * 1024)))
 
 # Phase test : crée admin@padel-test.fr, admin1@… avec profils club distincts.
 PLATFORM_SEED_TEST_USERS = os.environ.get("PLATFORM_SEED_TEST_USERS", "").lower() in (
