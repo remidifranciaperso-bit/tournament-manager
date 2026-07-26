@@ -286,8 +286,8 @@ async def regenerate_from_snapshot(body: dict):
         snapshot = {**snapshot, "logo_png": logo_png}
 
     captures = body.get("captures") or snapshot.get("export_captures")
-    if not isinstance(captures, dict):
-        captures = {}
+    if not isinstance(captures, dict) or not captures:
+        raise HTTPException(status_code=422, detail="Captures Live manquantes.")
 
     try:
         pdf_bytes, refreshed = regenerate_pdf_from_snapshot(snapshot, captures)
