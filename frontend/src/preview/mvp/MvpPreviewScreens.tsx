@@ -168,7 +168,7 @@ function TournamentListCard({ tournament }: { tournament: MvpTournamentSummary }
       >
         {tournament.typeLabel} · {tournament.genreLabel}
       </p>
-      <p className="mt-2 text-sm text-white/55">{tournamentDateHeureLine(tournament)}</p>
+      <p className="mt-2 text-sm text-white">{tournamentDateHeureLine(tournament)}</p>
       <p className="mt-1 text-sm text-white/45">
         {tournament.teams} équipe{tournament.teams > 1 ? "s" : ""}
       </p>
@@ -653,7 +653,7 @@ export function MvpTournamentDashboardScreen({
           <h2 className="mt-3 font-display text-[clamp(1.5rem,4vw,2.25rem)] text-white">
             {tournament.name}
           </h2>
-          <p className="mt-2 text-sm text-white/55">{tournamentDateHeureLine(tournament)}</p>
+          <p className="mt-2 text-sm text-white">{tournamentDateHeureLine(tournament)}</p>
           <p className="mt-1 text-sm text-white/55">
             {tournament.typeLabel} · {tournament.genreLabel}
           </p>
