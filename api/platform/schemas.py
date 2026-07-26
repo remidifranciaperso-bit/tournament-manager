@@ -96,6 +96,9 @@ class TeamChangeCheckResponse(BaseModel):
     result: str
     message: str
     convocations_changed: int = 0
+    ts_modified: bool = False
+    bracket_modified: bool = False
+    convocations_modified: bool = False
 
 
 class TeamChangeApplyResponse(BaseModel):

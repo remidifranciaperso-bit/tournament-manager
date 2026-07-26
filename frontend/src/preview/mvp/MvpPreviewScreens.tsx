@@ -709,50 +709,105 @@ interface PlayerFields {
 
 const EMPTY_PLAYER: PlayerFields = { nom: "", prenom: "", classement: "" };
 
-function PlayerReplacementFields({
-  title,
+function CompactPlayerFields({
+  label,
   values,
   onChange,
 }: {
-  title: string;
+  label?: string;
   values: PlayerFields;
   onChange: (next: PlayerFields) => void;
 }) {
+  const gridClass = label
+    ? "grid-cols-[3.5rem_1fr_1fr_4.5rem]"
+    : "grid-cols-[1fr_1fr_4.5rem]";
   return (
-    <div className="mt-4">
-      <p className="field-label-tight">{title}</p>
-      <div className="mt-2 grid gap-3 sm:grid-cols-3">
-        <div>
-          <label className="field-label-tight">Nom</label>
-          <input
-            className="text-input lime-input mt-2 uppercase"
-            placeholder="NOM"
-            value={values.nom}
-            onChange={(event) => onChange({ ...values, nom: event.target.value.toUpperCase() })}
-          />
-        </div>
-        <div>
-          <label className="field-label-tight">Prénom</label>
-          <input
-            className="text-input lime-input mt-2"
-            placeholder="Prénom"
-            value={values.prenom}
-            onChange={(event) => onChange({ ...values, prenom: event.target.value })}
-          />
-        </div>
-        <div>
-          <label className="field-label-tight">Classement</label>
-          <input
-            className="text-input lime-input mt-2"
-            placeholder="P100"
-            value={values.classement}
-            onChange={(event) => onChange({ ...values, classement: event.target.value })}
-          />
-        </div>
-      </div>
+    <div className={["grid items-end gap-2", gridClass].join(" ")}>
+      {label ? <span className="pb-2 text-[10px] font-semibold uppercase text-white/45">{label}</span> : null}
+      <input
+        className="text-input lime-input text-sm uppercase"
+        placeholder="Nom"
+        value={values.nom}
+        onChange={(event) => onChange({ ...values, nom: event.target.value.toUpperCase() })}
+      />
+      <input
+        className="text-input lime-input text-sm"
+        placeholder="Prénom"
+        value={values.prenom}
+        onChange={(event) => onChange({ ...values, prenom: event.target.value })}
+      />
+      <input
+        className="text-input lime-input text-sm"
+        placeholder="P100"
+        value={values.classement}
+        onChange={(event) => onChange({ ...values, classement: event.target.value })}
+      />
     </div>
   );
 }
+
+function TeamChangeImpactRow({ label, modified }: { label: string; modified: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+      <span className="text-sm text-white/75">{label}</span>
+      <span
+        className={[
+          "shrink-0 rounded-md px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide",
+          modified ? "bg-amber-400/20 text-amber-200 ring-1 ring-amber-300/35" : "bg-emerald-400/15 text-emerald-200 ring-1 ring-emerald-300/30",
+        ].join(" ")}
+      >
+        {modified ? "Oui" : "Non"}
+      </span>
+    </div>
+  );
+}
+
+function TeamChangeImpactGrid({
+  tsModified,
+  bracketModified,
+  convocationsModified,
+}: {
+  tsModified: boolean;
+  bracketModified: boolean;
+  convocationsModified: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <TeamChangeImpactRow label="Modification des TS" modified={tsModified} />
+      <TeamChangeImpactRow label="Modification du tableau" modified={bracketModified} />
+      <TeamChangeImpactRow label="Modification des convocations" modified={convocationsModified} />
+    </div>
+  );
+}
+
+function TeamChangeProgressView({ message }: { message: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+      <p className="text-sm font-semibold text-white/85">{message}</p>
+      <div className="mt-5 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/10">
+        <motion.div
+          className="h-full rounded-full bg-lime shadow-lime"
+          initial={{ width: "8%" }}
+          animate={{ width: "92%" }}
+          transition={{ duration: 12, ease: "easeInOut" }}
+        />
+      </div>
+      <p className="mt-3 text-xs text-white/45">Ne fermez pas cette page.</p>
+    </div>
+  );
+}
+
+interface TeamChangeImpact {
+  ts_modified: boolean;
+  bracket_modified: boolean;
+  convocations_modified: boolean;
+}
+
+const DEFAULT_IMPACT: TeamChangeImpact = {
+  ts_modified: false,
+  bracket_modified: false,
+  convocations_modified: false,
+};
 
 export function MvpTeamChangeScreen({
   tournament,
@@ -770,6 +825,7 @@ export function MvpTeamChangeScreen({
   const [mode, setMode] = useState<TeamChangeMode>(null);
   const [result, setResult] = useState<CompatibilityResult>(null);
   const [checkMessage, setCheckMessage] = useState<string | null>(null);
+  const [impact, setImpact] = useState<TeamChangeImpact>(DEFAULT_IMPACT);
   const [checking, setChecking] = useState(false);
   const [applying, setApplying] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -798,12 +854,12 @@ export function MvpTeamChangeScreen({
         {
           id: "partner" as const,
           title: "Remplacer un partenaire",
-          hint: "Garder le slot équipe, changer un joueur",
+          hint: "Même équipe, un joueur",
         },
         {
           id: "replace" as const,
           title: "Remplacer une équipe",
-          hint: "Nouvelle paire complète sur le même TS",
+          hint: "Nouvelle paire, même TS",
         },
       ] as const,
     []
@@ -816,6 +872,7 @@ export function MvpTeamChangeScreen({
     setReplacementTeam({ joueur1: EMPTY_PLAYER, joueur2: EMPTY_PLAYER });
     setResult(null);
     setCheckMessage(null);
+    setImpact(DEFAULT_IMPACT);
     setActionError(null);
   };
 
@@ -839,6 +896,21 @@ export function MvpTeamChangeScreen({
     return null;
   };
 
+  const mockImpact = (nextResult: CompatibilityResult, nextMode: TeamChangeMode): TeamChangeImpact => {
+    if (nextMode === "partner") {
+      return {
+        ts_modified: false,
+        bracket_modified: false,
+        convocations_modified: nextResult === "blocked",
+      };
+    }
+    return {
+      ts_modified: true,
+      bracket_modified: true,
+      convocations_modified: false,
+    };
+  };
+
   const handleCheck = async () => {
     setActionError(null);
     const payload = buildPayload();
@@ -847,12 +919,14 @@ export function MvpTeamChangeScreen({
       return;
     }
     if (!apiEnabled) {
-      setResult(mode === "replace" ? "adjust" : "ok");
+      const nextResult = mode === "replace" ? "adjust" : "ok";
+      setResult(nextResult);
       setCheckMessage(
         mode === "replace"
           ? "Compatible avec ajustement interne du tirage."
           : "Compatible — aucune convocation ne change."
       );
+      setImpact(mockImpact(nextResult, mode));
       return;
     }
     setChecking(true);
@@ -860,10 +934,16 @@ export function MvpTeamChangeScreen({
       const response = await platformCheckTeamChange(tournament.id, payload);
       setResult(response.result);
       setCheckMessage(response.message);
+      setImpact({
+        ts_modified: response.ts_modified,
+        bracket_modified: response.bracket_modified,
+        convocations_modified: response.convocations_modified,
+      });
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Vérification impossible");
       setResult(null);
       setCheckMessage(null);
+      setImpact(DEFAULT_IMPACT);
     } finally {
       setChecking(false);
     }
@@ -872,7 +952,7 @@ export function MvpTeamChangeScreen({
   const handleApply = async () => {
     setActionError(null);
     const payload = buildPayload();
-    if (!payload || !result) return;
+    if (!payload || !result || result === "blocked") return;
     if (!apiEnabled) {
       window.alert("Preview : regénérerait le PDF et mettrait à jour le tournoi.");
       return;
@@ -893,151 +973,168 @@ export function MvpTeamChangeScreen({
     resetForm();
   };
 
+  const handleBackFromReview = () => {
+    setResult(null);
+    setCheckMessage(null);
+    setImpact(DEFAULT_IMPACT);
+    setActionError(null);
+  };
+
+  const canAuthorize = result === "ok" || result === "adjust";
+  const reviewTone =
+    result === "blocked"
+      ? "border-red-400/25 bg-red-500/10"
+      : result === "adjust"
+        ? "border-sky-400/25 bg-sky-500/10"
+        : "border-lime/30 bg-lime/10";
+
   return (
-    <MvpPreviewShell scrollable>
-      <div className="mx-auto w-full max-w-2xl pb-8 pt-2">
+    <MvpPreviewShell center={false}>
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl flex-col">
         <MvpAccountTopBar onBack={onBack} onLogout={onLogout} />
 
-        <div className="pt-3">
-        <WizardPageTitle
-          title="Modifier les équipes"
-          subtitle={`${tournament.name} — saisie manuelle puis vérification compatibilité convocations.`}
-        />
-
-        <div className="mt-8 space-y-3">
-          {options.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => handleModeChange(option.id)}
-              className={[
-                "w-full rounded-2xl border px-5 py-4 text-left transition",
-                mode === option.id
-                  ? "border-lime/35 bg-lime/[0.06]"
-                  : "border-white/10 bg-white/[0.03] hover:border-white/20",
-              ].join(" ")}
-            >
-              <p className="font-semibold text-white">{option.title}</p>
-              <p className="mt-1 text-xs text-white/45">{option.hint}</p>
-            </button>
-          ))}
-        </div>
-
-        {mode === "partner" ? (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left"
-          >
-            <p className="field-label-tight">Joueur à remplacer</p>
-            <select
-              className="text-input lime-input mt-2 w-full"
-              value={selectedPlayerId}
-              onChange={(event) => setSelectedPlayerId(event.target.value)}
-            >
-              <option value="">Sélectionner un joueur</option>
-              {roster.players.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.label}
-                </option>
-              ))}
-            </select>
-
-            <PlayerReplacementFields
-              title="Remplacer par"
-              values={replacementPlayer}
-              onChange={setReplacementPlayer}
+        {applying ? (
+          <TeamChangeProgressView message="Regénération du PDF en cours…" />
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col justify-center py-2">
+            <WizardPageTitle
+              title="Modifier les équipes"
+              subtitle={result ? "Impact de la modification" : tournament.name}
             />
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton onClick={() => void handleCheck()} disabled={checking || applying}>
-                {checking ? "Vérification…" : "Vérifier compatibilité convocations"}
-              </PrimaryButton>
-              <GhostButton onClick={resetForm}>Réinitialiser</GhostButton>
-            </div>
-          </motion.div>
-        ) : null}
+            {result ? (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={["mt-4 rounded-2xl border p-4 text-left", reviewTone].join(" ")}
+              >
+                {result !== "blocked" ? (
+                  <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+                    <IconCheck className="h-4 w-4 shrink-0 text-lime" />
+                    {checkMessage}
+                  </p>
+                ) : (
+                  <p className="mb-3 text-sm font-semibold text-red-100">{checkMessage}</p>
+                )}
 
-        {mode === "replace" ? (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left"
-          >
-            <p className="field-label-tight">Équipe à remplacer</p>
-            <select
-              className="text-input lime-input mt-2 w-full"
-              value={selectedTeamId}
-              onChange={(event) => setSelectedTeamId(event.target.value)}
-            >
-              <option value="">Sélectionner une équipe</option>
-              {roster.teams.map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.label}
-                </option>
-              ))}
-            </select>
+                <TeamChangeImpactGrid
+                  tsModified={impact.ts_modified}
+                  bracketModified={impact.bracket_modified}
+                  convocationsModified={impact.convocations_modified}
+                />
 
-            <PlayerReplacementFields
-              title="Remplacer par — Joueur 1"
-              values={replacementTeam.joueur1}
-              onChange={(joueur1) => setReplacementTeam((prev) => ({ ...prev, joueur1 }))}
-            />
-            <PlayerReplacementFields
-              title="Remplacer par — Joueur 2"
-              values={replacementTeam.joueur2}
-              onChange={(joueur2) => setReplacementTeam((prev) => ({ ...prev, joueur2 }))}
-            />
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  {canAuthorize ? (
+                    <PrimaryButton onClick={() => void handleApply()} disabled={applying}>
+                      Autoriser la modification
+                    </PrimaryButton>
+                  ) : null}
+                  <GhostButton onClick={handleBackFromReview}>Retour</GhostButton>
+                </div>
+              </motion.div>
+            ) : (
+              <>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {options.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => handleModeChange(option.id)}
+                      className={[
+                        "rounded-xl border px-3 py-2.5 text-left transition",
+                        mode === option.id
+                          ? "border-lime/35 bg-lime/[0.06]"
+                          : "border-white/10 bg-white/[0.03] hover:border-white/20",
+                      ].join(" ")}
+                    >
+                      <p className="text-sm font-semibold leading-tight text-white">{option.title}</p>
+                      <p className="mt-0.5 text-[10px] text-white/45">{option.hint}</p>
+                    </button>
+                  ))}
+                </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton onClick={() => void handleCheck()} disabled={checking || applying}>
-                {checking ? "Vérification…" : "Vérifier compatibilité convocations"}
-              </PrimaryButton>
-              <GhostButton onClick={resetForm}>Réinitialiser</GhostButton>
-            </div>
-          </motion.div>
-        ) : null}
+                {mode === "partner" ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left"
+                  >
+                    <p className="field-label-tight text-xs">Joueur à remplacer</p>
+                    <select
+                      className="text-input lime-input mt-1.5 w-full text-sm"
+                      value={selectedPlayerId}
+                      onChange={(event) => setSelectedPlayerId(event.target.value)}
+                    >
+                      <option value="">Sélectionner un joueur</option>
+                      {roster.players.map((player) => (
+                        <option key={player.id} value={player.id}>
+                          {player.label}
+                        </option>
+                      ))}
+                    </select>
 
-        {actionError ? (
-          <p className="mt-4 text-sm text-red-300/90">{actionError}</p>
-        ) : null}
+                    <p className="field-label-tight mt-3 text-xs">Remplacer par</p>
+                    <div className="mt-1.5 grid grid-cols-[1fr_1fr_4.5rem] gap-2 px-0">
+                      <span className="text-[10px] text-white/40">Nom</span>
+                      <span className="text-[10px] text-white/40">Prénom</span>
+                      <span className="text-[10px] text-white/40">Cl.</span>
+                    </div>
+                    <CompactPlayerFields values={replacementPlayer} onChange={setReplacementPlayer} />
+                  </motion.div>
+                ) : null}
 
-        {mode === "partner" && result === "ok" ? (
-          <div className="mt-6 rounded-2xl border border-lime/30 bg-lime/10 p-4 text-left">
-            <p className="flex items-center gap-2 font-semibold text-lime">
-              <IconCheck className="h-4 w-4" />
-              {checkMessage ?? "Compatible — aucune convocation ne change"}
-            </p>
-            <p className="mt-2 text-sm text-lime/75">
-              Le moteur peut appliquer ce changement et regénérer le PDF sans décaler les heures.
-            </p>
-            <PrimaryButton onClick={() => void handleApply()} disabled={applying}>
-              {applying ? "Regénération…" : "Appliquer et regénérer"}
-            </PrimaryButton>
+                {mode === "replace" ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left"
+                  >
+                    <p className="field-label-tight text-xs">Équipe à remplacer</p>
+                    <select
+                      className="text-input lime-input mt-1.5 w-full text-sm"
+                      value={selectedTeamId}
+                      onChange={(event) => setSelectedTeamId(event.target.value)}
+                    >
+                      <option value="">Sélectionner une équipe</option>
+                      {roster.teams.map((team) => (
+                        <option key={team.id} value={team.id}>
+                          {team.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <p className="field-label-tight mt-3 text-xs">Remplacer par</p>
+                    <div className="mt-1.5 space-y-2">
+                      <CompactPlayerFields
+                        label="J1"
+                        values={replacementTeam.joueur1}
+                        onChange={(joueur1) => setReplacementTeam((prev) => ({ ...prev, joueur1 }))}
+                      />
+                      <CompactPlayerFields
+                        label="J2"
+                        values={replacementTeam.joueur2}
+                        onChange={(joueur2) => setReplacementTeam((prev) => ({ ...prev, joueur2 }))}
+                      />
+                    </div>
+                  </motion.div>
+                ) : null}
+
+                {mode ? (
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <PrimaryButton onClick={() => void handleCheck()} disabled={checking}>
+                      {checking ? "Vérification…" : "Vérifier l'impact"}
+                    </PrimaryButton>
+                    <GhostButton onClick={resetForm}>Réinitialiser</GhostButton>
+                  </div>
+                ) : null}
+              </>
+            )}
+
+            {actionError ? (
+              <p className="mt-3 text-center text-sm text-red-300/90">{actionError}</p>
+            ) : null}
           </div>
-        ) : null}
-
-        {mode === "partner" && result === "blocked" ? (
-          <div className="mt-6 rounded-2xl border border-red-400/25 bg-red-500/10 p-4 text-left">
-            <p className="font-semibold text-red-100">{checkMessage}</p>
-          </div>
-        ) : null}
-
-        {mode === "replace" && result === "adjust" ? (
-          <div className="mt-6 rounded-2xl border border-sky-400/25 bg-sky-500/10 p-4 text-left">
-            <p className="font-semibold text-sky-100">
-              Compatible avec ajustement interne du tirage
-            </p>
-            <p className="mt-2 text-sm text-sky-100/75">
-              {checkMessage ??
-                "Proposition : permuter les TS voisins non joués pour respecter le niveau sportif — 0 convocation modifiée."}
-            </p>
-            <PrimaryButton onClick={() => void handleApply()} disabled={applying}>
-              {applying ? "Regénération…" : "Appliquer la solution recommandée"}
-            </PrimaryButton>
-          </div>
-        ) : null}
-        </div>
+        )}
       </div>
     </MvpPreviewShell>
   );

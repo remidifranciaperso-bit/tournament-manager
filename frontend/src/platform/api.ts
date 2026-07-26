@@ -353,6 +353,9 @@ export interface TeamChangeCheckResult {
   result: "ok" | "adjust" | "blocked";
   message: string;
   convocations_changed: number;
+  ts_modified: boolean;
+  bracket_modified: boolean;
+  convocations_modified: boolean;
 }
 
 function toMvpRoster(data: {

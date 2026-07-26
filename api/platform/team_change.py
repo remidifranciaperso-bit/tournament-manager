@@ -170,16 +170,41 @@ def _apply_team_replace(snapshot: dict[str, Any], payload: dict[str, Any]) -> di
     return snapshot
 
 
+def _impact_flags(mode: str, result: str, convocations_changed: int) -> dict[str, bool]:
+    if mode == "partner":
+        return {
+            "ts_modified": False,
+            "bracket_modified": False,
+            "convocations_modified": result == "blocked" or convocations_changed > 0,
+        }
+    if mode == "replace":
+        needs_adjust = result == "adjust"
+        return {
+            "ts_modified": needs_adjust,
+            "bracket_modified": needs_adjust,
+            "convocations_modified": convocations_changed > 0,
+        }
+    return {
+        "ts_modified": False,
+        "bracket_modified": False,
+        "convocations_modified": False,
+    }
+
+
 def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
     mode = payload.get("mode")
     if mode == "replace":
+        result = "adjust"
+        convocations_changed = 0
+        impact = _impact_flags(mode, result, convocations_changed)
         return {
-            "result": "adjust",
+            "result": result,
             "message": (
                 "Compatible avec ajustement interne du tirage — proposition : permuter "
                 "les TS voisins non joués pour respecter le niveau sportif."
             ),
-            "convocations_changed": 0,
+            "convocations_changed": convocations_changed,
+            **impact,
         }
 
     if mode != "partner":
@@ -188,20 +213,27 @@ def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict
     before = _convocation_hours(snapshot)
     after = _convocation_hours(apply_team_change(copy.deepcopy(snapshot), payload))
     if before == after:
+        result = "ok"
+        convocations_changed = 0
+        impact = _impact_flags(mode, result, convocations_changed)
         return {
-            "result": "ok",
+            "result": result,
             "message": "Compatible — aucune convocation ne change.",
-            "convocations_changed": 0,
+            "convocations_changed": convocations_changed,
+            **impact,
         }
 
     changed = sum(1 for ts, heure in before.items() if after.get(ts) != heure)
+    result = "blocked"
+    impact = _impact_flags(mode, result, changed)
     return {
-        "result": "blocked",
+        "result": result,
         "message": (
             f"Incompatible — {changed} convocation(s) seraient décalée(s). "
             "Choisissez un remplaçant avec un créneau équivalent ou remplacez l'équipe entière."
         ),
         "convocations_changed": changed,
+        **impact,
     }
 
 
