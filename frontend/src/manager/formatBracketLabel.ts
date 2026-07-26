@@ -126,6 +126,21 @@ export function isBracketPlaceholder(text: string): boolean {
   return PLACEHOLDER_PREFIX.test(text.trim());
 }
 
+/** Placeholder avec emoji en tête (🏆 H3:, ❌ M2:, …) — trait manuscrit au export PDF. */
+export function isEmojiPlaceholderLabel(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  const first = trimmed.codePointAt(0);
+  if (first === undefined) return false;
+  return (
+    first === 0x1f3c6 || // 🏆
+    first === 0x274c || // ❌
+    first === 0x1f947 || // 🥇
+    first === 0x1f948 || // 🥈
+    first === 0x1f949
+  ); // 🥉
+}
+
 function isUnresolvedPlaceholder(text: string): boolean {
   const trimmed = text.trim();
   return (

@@ -22,6 +22,7 @@ import {
   formatTeamSlot,
   formatTeamWithInitials,
   isBracketPlaceholder,
+  isEmojiPlaceholderLabel,
 } from "./formatBracketLabel";
 import {
   buildMatchesByCode,
@@ -84,6 +85,16 @@ function teamFontSize(text: string, scaleH: number): number {
     ? TEMPLATE_PT.teamPlaceholder
     : TEMPLATE_PT.team;
   return ptOnSlide(pt, scaleH);
+}
+
+function TeamPlaceholderRule() {
+  return (
+    <div
+      className="mx-[2mm] mt-[1mm] shrink-0 border-b border-dashed border-arena-600"
+      style={{ borderBottomWidth: "0.5px" }}
+      aria-hidden
+    />
+  );
 }
 
 export function TemplateMatchBox({
@@ -196,12 +207,15 @@ export function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-visible">
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
+          className={`flex flex-1 flex-col justify-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
           style={{ fontSize: team1Px, ...teamRowCaptureStyle }}
         >
-          <span className={team1BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
-            {team1Display}
-          </span>
+          <div className={`flex w-full items-center ${team1Align}`}>
+            <span className={team1BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
+              {team1Display}
+            </span>
+          </div>
+          {isEmojiPlaceholderLabel(team1Display) ? <TeamPlaceholderRule /> : null}
         </div>
         <div
           className="flex shrink-0 items-center justify-center font-noto font-normal text-arena-600"
@@ -210,12 +224,15 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
+          className={`flex flex-1 flex-col justify-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
           style={{ fontSize: team2Px, ...teamRowCaptureStyle }}
         >
-          <span className={team2BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
-            {team2Display}
-          </span>
+          <div className={`flex w-full items-center ${team2Align}`}>
+            <span className={team2BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
+              {team2Display}
+            </span>
+          </div>
+          {isEmojiPlaceholderLabel(team2Display) ? <TeamPlaceholderRule /> : null}
         </div>
       </div>
 
