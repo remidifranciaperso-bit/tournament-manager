@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { FileDrop } from "../../components/FileDrop";
 import { IconCheck, IconClock, IconGrid, IconLogo, IconTable, IconTrophy, WizardPageTitle } from "../../components/Icons";
@@ -100,27 +100,61 @@ export function MvpAccountTopBar({
   showBack?: boolean;
 }) {
   return (
-    <div className="flex w-full max-w-4xl items-center justify-between gap-3 pb-1">
-      {showBack ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-xs font-semibold uppercase tracking-wide text-white/45 transition hover:text-lime"
-        >
-          Retour
-        </button>
-      ) : (
-        <span aria-hidden className="w-12" />
-      )}
+    <div className="grid h-10 w-full grid-cols-[minmax(5rem,1fr)_auto] items-center gap-3">
+      <div className="flex min-w-0 justify-start">
+        {showBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="text-xs font-semibold uppercase tracking-wide text-white/45 transition hover:text-lime"
+          >
+            Retour
+          </button>
+        ) : (
+          <span className="invisible text-xs font-semibold uppercase tracking-wide" aria-hidden>
+            Retour
+          </span>
+        )}
+      </div>
       <button
         type="button"
         onClick={onLogout}
-        className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/55 transition hover:border-white/25 hover:text-white"
+        className="shrink-0 rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/55 transition hover:border-white/25 hover:text-white"
       >
         Se déconnecter
       </button>
     </div>
   );
+}
+
+function MvpAccountPage({
+  children,
+  onBack,
+  onLogout,
+  showBack = true,
+  scrollable = false,
+  className = "",
+}: {
+  children: ReactNode;
+  onBack: () => void;
+  onLogout: () => void;
+  showBack?: boolean;
+  scrollable?: boolean;
+  className?: string;
+}) {
+  return (
+    <MvpPreviewShell scrollable={scrollable} center={false}>
+      <div className={["mx-auto flex w-full max-w-4xl flex-col pb-8 pt-2", className].join(" ")}>
+        <MvpAccountTopBar onBack={onBack} onLogout={onLogout} showBack={showBack} />
+        {children}
+      </div>
+    </MvpPreviewShell>
+  );
+}
+
+function tournamentMetaLine(tournament: MvpTournamentSummary): string {
+  const teams = `${tournament.teams} équipe${tournament.teams > 1 ? "s" : ""}`;
+  return tournament.heureLabel ? `${teams} · ${tournament.heureLabel}` : teams;
 }
 
 function MvpClubSummaryCard({
@@ -306,12 +340,9 @@ export function MvpTournamentsScreen({
   onLogout: () => void;
 }) {
   return (
-    <MvpPreviewShell scrollable>
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 pb-8 pt-2">
-        <MvpAccountTopBar onBack={onBack} onLogout={onLogout} showBack={false} />
-
+    <MvpAccountPage onBack={onBack} onLogout={onLogout} showBack={false} scrollable className="gap-6">
         {userEmail ? (
-          <p className="-mt-2 text-center text-xs text-white/40">{userEmail}</p>
+          <p className="-mt-4 text-center text-xs text-white/40">{userEmail}</p>
         ) : null}
 
         <MvpClubSummaryCard profile={profile} onEdit={onEditClub} />
@@ -338,19 +369,18 @@ export function MvpTournamentsScreen({
                   <div>
                     <p className="font-display text-lg text-white">{tournament.name}</p>
                     <p className="mt-1 text-sm text-white/50">{tournament.dateLabel}</p>
+                    <p className="mt-2 text-sm text-white/65">
+                      {tournament.typeLabel} · {tournament.genreLabel}
+                    </p>
+                    <p className="mt-1 text-sm text-white/45">{tournamentMetaLine(tournament)}</p>
                   </div>
                   <StatusBadge status={tournament.status} />
                 </div>
-                <p className="mt-4 text-sm text-white/65">
-                  {tournament.genreLabel} · {tournament.formatLabel}
-                </p>
-                <p className="mt-1 text-xs text-white/40">Ouvrir la fiche tournoi</p>
               </button>
             ))}
           </div>
         )}
-      </div>
-    </MvpPreviewShell>
+    </MvpAccountPage>
   );
 }
 
@@ -425,11 +455,9 @@ export function MvpClubSettingsScreen({
   }, [form.logoFile, form.pasDeLogo]);
 
   return (
-    <MvpPreviewShell center={false}>
-      <div className="mx-auto flex h-full w-full max-w-2xl flex-col overflow-hidden pt-1">
-        <MvpAccountTopBar onBack={onBack} onLogout={onLogout} />
-
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-1">
+    <MvpAccountPage onBack={onBack} onLogout={onLogout} className="h-full min-h-0 overflow-hidden pb-2">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="mb-3 shrink-0 text-center">
             <h2
               className="font-brush text-[clamp(1.75rem,5vw,2.35rem)] leading-[1.05] text-lime"
@@ -577,7 +605,7 @@ export function MvpClubSettingsScreen({
           </div>
         </div>
       </div>
-    </MvpPreviewShell>
+    </MvpAccountPage>
   );
 }
 
@@ -603,18 +631,18 @@ export function MvpTournamentDashboardScreen({
   onLogout: () => void;
 }) {
   return (
-    <MvpPreviewShell scrollable>
-      <div className="mx-auto w-full max-w-3xl pb-8 pt-2">
-        <MvpAccountTopBar onBack={onBack} onLogout={onLogout} />
-
-        <div className="pt-3 text-center">
+    <MvpAccountPage onBack={onBack} onLogout={onLogout} scrollable className="gap-6">
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="pt-1 text-center">
           <StatusBadge status={tournament.status} />
           <h2 className="mt-3 font-display text-[clamp(1.5rem,4vw,2.25rem)] text-white">
             {tournament.name}
           </h2>
-          <p className="mt-2 text-sm text-white/55">
-            {tournament.genreLabel} · {tournament.dateLabel} · {tournament.formatLabel}
+          <p className="mt-2 text-sm text-white/55">{tournament.dateLabel}</p>
+          <p className="mt-1 text-sm text-white/55">
+            {tournament.typeLabel} · {tournament.genreLabel}
           </p>
+          <p className="mt-1 text-sm text-white/45">{tournamentMetaLine(tournament)}</p>
           {tournament.status === "convocations_sent" ? (
             <p className="mt-3 text-xs font-medium uppercase tracking-wide text-sky-200/80">
               Convocations verrouillées — modifications sans décalage horaire
@@ -696,7 +724,7 @@ export function MvpTournamentDashboardScreen({
           </div>
         ) : null}
       </div>
-    </MvpPreviewShell>
+    </MvpAccountPage>
   );
 }
 
@@ -991,10 +1019,8 @@ export function MvpTeamChangeScreen({
         : "border-lime/30 bg-lime/10";
 
   return (
-    <MvpPreviewShell center={false}>
+    <MvpAccountPage onBack={onBack} onLogout={onLogout} className="h-full min-h-0 overflow-hidden pb-2">
       <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl flex-col">
-        <MvpAccountTopBar onBack={onBack} onLogout={onLogout} />
-
         {applying ? (
           <TeamChangeProgressView message="Regénération du PDF en cours…" />
         ) : (
@@ -1138,7 +1164,7 @@ export function MvpTeamChangeScreen({
           </div>
         )}
       </div>
-    </MvpPreviewShell>
+    </MvpAccountPage>
   );
 }
 

@@ -204,12 +204,39 @@ def _genre_label(row: Tournament) -> str:
     return "Hommes"
 
 
+def _type_label(row: Tournament) -> str:
+    meta = (row.live_snapshot or {}).get("meta") if isinstance(row.live_snapshot, dict) else {}
+    if isinstance(meta, dict):
+        type_tournoi = str(meta.get("type_tournoi") or "").strip()
+        if type_tournoi:
+            return type_tournoi
+    format_label = str(row.format_label or "").strip()
+    if "·" in format_label:
+        return format_label.split("·", 1)[0].strip()
+    name = str(row.name or "").strip()
+    if name:
+        return name.split(" ", 1)[0]
+    return format_label
+
+
+def _heure_label(row: Tournament) -> str:
+    meta = (row.live_snapshot or {}).get("meta") if isinstance(row.live_snapshot, dict) else {}
+    if not isinstance(meta, dict):
+        meta = {}
+    heures = meta.get("heures_debut_jours")
+    if isinstance(heures, list) and heures:
+        return str(heures[0] or "").strip()
+    return str(meta.get("heure_debut") or "").strip()
+
+
 def _tournament_out(row: Tournament, club_name: str) -> TournamentOut:
     return TournamentOut(
         id=row.id,
         name=row.name,
         club=club_name,
         genre_label=_genre_label(row),
+        type_label=_type_label(row),
+        heure_label=_heure_label(row),
         date_label=row.date_label,
         format_label=row.format_label,
         teams=row.teams,

@@ -28,6 +28,8 @@ interface ApiTournament {
   name: string;
   club: string;
   genre_label: string;
+  type_label: string;
+  heure_label: string;
   date_label: string;
   format_label: string;
   teams: number;
@@ -145,6 +147,8 @@ function toMvpTournament(row: ApiTournament): MvpTournamentSummary {
     name: row.name,
     club: row.club,
     genreLabel: row.genre_label || "Hommes",
+    typeLabel: row.type_label || row.format_label.split("·")[0]?.trim() || row.name.split(" ")[0] || "",
+    heureLabel: row.heure_label || "",
     dateLabel: row.date_label,
     formatLabel: row.format_label,
     teams: row.teams,

@@ -5,6 +5,8 @@ export interface MvpTournamentSummary {
   name: string;
   club: string;
   genreLabel: string;
+  typeLabel: string;
+  heureLabel: string;
   dateLabel: string;
   formatLabel: string;
   teams: number;
@@ -35,6 +37,8 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     name: "P100 DZZD",
     club: "TC DZZD",
     genreLabel: "Hommes",
+    typeLabel: "P100",
+    heureLabel: "18:00",
     dateLabel: "26 juillet 2026",
     formatLabel: "P100 · 8 équipes",
     teams: 8,
@@ -45,6 +49,8 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     name: "P500 Club Test",
     club: "TC DZZD",
     genreLabel: "Hommes",
+    typeLabel: "P500",
+    heureLabel: "09:00",
     dateLabel: "12 septembre 2026",
     formatLabel: "P500 · 16 équipes",
     teams: 16,
@@ -55,6 +61,8 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     name: "P250 Été",
     club: "TC DZZD",
     genreLabel: "Femmes",
+    typeLabel: "P250",
+    heureLabel: "14:00",
     dateLabel: "15 juin 2026",
     formatLabel: "P250 · 12 équipes",
     teams: 12,
