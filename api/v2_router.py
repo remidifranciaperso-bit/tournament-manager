@@ -308,6 +308,67 @@ async def regenerate_from_snapshot(body: dict):
     }
 
 
+@router.post("/live-init-from-snapshot")
+async def live_init_from_snapshot(body: dict):
+    """Session Manager Live depuis snapshot Platform (JSON seul + PDF récupéré côté Engine)."""
+    import asyncio
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    import httpx
+    from engine.live_init import init_live_from_snapshot
+    from engine.live_pack import valider_snapshot
+
+    snapshot = body.get("snapshot")
+    pdf_url = body.get("pdf_url")
+    if not isinstance(snapshot, dict):
+        raise HTTPException(status_code=422, detail="Snapshot manquant.")
+    if not isinstance(pdf_url, str) or not pdf_url.strip():
+        raise HTTPException(status_code=422, detail="URL PDF Platform manquante.")
+
+    logo_png = body.get("logo_png")
+    if isinstance(logo_png, str) and logo_png.strip():
+        snapshot = {**snapshot, "logo_png": logo_png}
+
+    try:
+        valider_snapshot(snapshot)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    timeout = httpx.Timeout(300.0, connect=90.0)
+    try:
+        with httpx.Client(timeout=timeout, follow_redirects=True) as client:
+            pdf_resp = client.get(pdf_url.strip())
+            pdf_resp.raise_for_status()
+            pdf_bytes = pdf_resp.content
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"PDF Platform introuvable: {exc}") from exc
+
+    if len(pdf_bytes) < 1024:
+        raise HTTPException(status_code=422, detail="PDF Platform vide ou invalide.")
+
+    temp_dir = Path(tempfile.mkdtemp(prefix="platform-live-"))
+    pdf_path = temp_dir / (snapshot.get("pdf_filename") or "tournoi.pdf")
+    pdf_path.write_bytes(pdf_bytes)
+
+    try:
+        payload = await asyncio.to_thread(
+            init_live_from_snapshot,
+            pdf_path,
+            snapshot,
+            None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Live init impossible : {exc}") from exc
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    return payload
+
+
 @router.post("/export/{token}")
 async def export_v2(token: str, request: Request):
     """Composite captures Live + coquille Engine → PDF final (identique export Manager)."""
