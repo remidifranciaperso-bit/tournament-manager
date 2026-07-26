@@ -77,6 +77,8 @@ services:
         value: platform
       - key: ENGINE_V2_URL
         value: https://tournament-manager-engine-v2.onrender.com
+      - key: PLATFORM_PUBLIC_URL
+        value: https://tournament-manager-platform.onrender.com
       - key: PLATFORM_SEED_TEST_USERS
         value: "true"
       - key: JWT_SECRET

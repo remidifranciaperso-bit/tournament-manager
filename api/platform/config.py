@@ -10,6 +10,8 @@ ENGINE_V2_URL = os.environ.get(
     "ENGINE_V2_URL", "https://tournament-manager-engine-v2.onrender.com"
 ).rstrip("/")
 
+PLATFORM_PUBLIC_URL = os.environ.get("PLATFORM_PUBLIC_URL", "").rstrip("/")
+
 LOGO_MAX_BYTES = int(os.environ.get("LOGO_MAX_BYTES", str(2 * 1024 * 1024)))
 PDF_MAX_BYTES = int(os.environ.get("PDF_MAX_BYTES", str(20 * 1024 * 1024)))
 # Starlette limite par défaut à 1 Mo — insuffisant pour PDF + captures Live.
