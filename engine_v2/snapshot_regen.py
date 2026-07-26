@@ -111,6 +111,8 @@ def _refresh_snapshot(snapshot: dict, tournoi: Tournament, matchs: list[Match]) 
         refreshed["export_captures"] = snapshot["export_captures"]
     if snapshot.get("crosspage_stubs"):
         refreshed["crosspage_stubs"] = snapshot["crosspage_stubs"]
+    if snapshot.get("logo_png"):
+        refreshed["logo_png"] = snapshot["logo_png"]
     return refreshed
 
 
