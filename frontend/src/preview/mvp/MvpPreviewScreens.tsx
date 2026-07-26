@@ -10,7 +10,6 @@ import { trimLogoFile } from "../../utils/trimLogoImage";
 import { syncTerrains } from "../../wizard/helpers";
 import { MVP_PREVIEW_BUILD, MvpLoginButton, MvpPreviewShell } from "./MvpPreviewShell";
 import {
-  MOCK_TOURNAMENTS,
   STATUS_LABELS,
   resolveTerrainPrincipal,
   type MvpClubProfile,
@@ -164,14 +163,41 @@ function MvpClubSummaryCard({
   );
 }
 
-export function MvpLoginScreen({ onLogin }: { onLogin: () => void }) {
+export function MvpLoginScreen({
+  onLogin,
+  production = false,
+}: {
+  onLogin: (email: string, password: string) => Promise<void>;
+  production?: boolean;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await onLogin(email.trim(), password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Connexion impossible");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <MvpPreviewShell center>
       <div className="flex w-full max-w-md flex-col items-center gap-5">
         <ProductBrushHeadline product="Manager" />
         <div className="w-full shrink-0 rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
           <p className="text-center font-display text-lg tracking-wide text-white">Connexion</p>
-          <p className="mt-1 text-center text-xs text-white/45">admin / admin</p>
+          {!production ? (
+            <p className="mt-1 text-center text-xs text-white/45">
+              Compte réel — email valide requis (ex. admin1@club.fr)
+            </p>
+          ) : null}
           <div className="mt-4 space-y-3">
             <div>
               <label className="field-label" htmlFor="mvp-email">
@@ -179,9 +205,12 @@ export function MvpLoginScreen({ onLogin }: { onLogin: () => void }) {
               </label>
               <input
                 id="mvp-email"
+                type="email"
                 className="text-input lime-input"
-                defaultValue="admin"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 autoComplete="username"
+                disabled={loading}
               />
             </div>
             <div>
@@ -192,18 +221,30 @@ export function MvpLoginScreen({ onLogin }: { onLogin: () => void }) {
                 id="mvp-password"
                 type="password"
                 className="text-input lime-input"
-                defaultValue="admin"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                disabled={loading}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleSubmit();
+                }}
               />
             </div>
           </div>
+          {error ? (
+            <p className="mt-3 text-center text-sm text-red-300/90">{error}</p>
+          ) : null}
           <div className="mt-5">
-            <MvpLoginButton onClick={onLogin}>Se connecter</MvpLoginButton>
+            <MvpLoginButton onClick={() => void handleSubmit()} disabled={loading}>
+              {loading ? "Connexion…" : "Se connecter"}
+            </MvpLoginButton>
           </div>
         </div>
-        <p className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-lime/70">
-          Preview MVP · {MVP_PREVIEW_BUILD}
-        </p>
+        {!production ? (
+          <p className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-lime/70">
+            Preview MVP · {MVP_PREVIEW_BUILD}
+          </p>
+        ) : null}
       </div>
     </MvpPreviewShell>
   );
@@ -211,6 +252,8 @@ export function MvpLoginScreen({ onLogin }: { onLogin: () => void }) {
 
 export function MvpTournamentsScreen({
   profile,
+  tournaments,
+  userEmail,
   onOpenTournament,
   onNewTournament,
   onEditClub,
@@ -218,6 +261,8 @@ export function MvpTournamentsScreen({
   onLogout,
 }: {
   profile: MvpClubProfile;
+  tournaments: MvpTournamentSummary[];
+  userEmail?: string;
   onOpenTournament: (id: string) => void;
   onNewTournament: () => void;
   onEditClub: () => void;
@@ -229,6 +274,10 @@ export function MvpTournamentsScreen({
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 pb-8 pt-2">
         <MvpAccountTopBar onBack={onBack} onLogout={onLogout} showBack={false} />
 
+        {userEmail ? (
+          <p className="-mt-2 text-center text-xs text-white/40">{userEmail}</p>
+        ) : null}
+
         <MvpClubSummaryCard profile={profile} onEdit={onEditClub} />
 
         <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
@@ -236,26 +285,32 @@ export function MvpTournamentsScreen({
           <PrimaryButton onClick={onNewTournament}>Nouveau tournoi</PrimaryButton>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {MOCK_TOURNAMENTS.map((tournament) => (
-            <button
-              key={tournament.id}
-              type="button"
-              onClick={() => onOpenTournament(tournament.id)}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-lime/25 hover:bg-white/[0.06]"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-display text-lg text-white">{tournament.name}</p>
-                  <p className="mt-1 text-sm text-white/50">{tournament.dateLabel}</p>
+        {tournaments.length === 0 ? (
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-center text-sm text-white/45">
+            Aucun tournoi enregistré. Créez votre premier tournoi via Engine V2.
+          </p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {tournaments.map((tournament) => (
+              <button
+                key={tournament.id}
+                type="button"
+                onClick={() => onOpenTournament(tournament.id)}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-lime/25 hover:bg-white/[0.06]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-display text-lg text-white">{tournament.name}</p>
+                    <p className="mt-1 text-sm text-white/50">{tournament.dateLabel}</p>
+                  </div>
+                  <StatusBadge status={tournament.status} />
                 </div>
-                <StatusBadge status={tournament.status} />
-              </div>
-              <p className="mt-4 text-sm text-white/65">{tournament.formatLabel}</p>
-              <p className="mt-1 text-xs text-white/40">Ouvrir la fiche tournoi</p>
-            </button>
-          ))}
-        </div>
+                <p className="mt-4 text-sm text-white/65">{tournament.formatLabel}</p>
+                <p className="mt-1 text-xs text-white/40">Ouvrir la fiche tournoi</p>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </MvpPreviewShell>
   );
@@ -268,7 +323,7 @@ export function MvpClubSettingsScreen({
   onLogout,
 }: {
   profile: MvpClubProfile;
-  onSave: (profile: MvpClubProfile) => void;
+  onSave: (profile: MvpClubProfile, logoFile?: File | null) => void | Promise<void>;
   onBack: () => void;
   onLogout: () => void;
 }) {
@@ -280,31 +335,50 @@ export function MvpClubSettingsScreen({
     terrainPrincipal: profile.terrainPrincipal,
     pasDeLogo: false,
   }));
-  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(
+    profile.logoPreviewUrl ?? null
+  );
   const [logoTrimming, setLogoTrimming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const patch = (partial: Partial<TournamentForm>) => {
     setForm((prev) => ({ ...prev, ...partial }));
   };
 
-  const handleSave = () => {
-    const hasNewLogo = Boolean(form.logoFile) && Boolean(logoPreviewUrl);
+  const handleSave = async () => {
+    const hasNewLogo = Boolean(form.logoFile);
     const terrains = form.terrains.map((terrain) => terrain.toUpperCase());
     const terrainPrincipal = resolveTerrainPrincipal(terrains, form.terrainPrincipal);
-    onSave({
-      club: form.club,
-      nbTerrains: form.nbTerrains,
-      terrains,
-      terrainPrincipal,
-      hasLogo: hasNewLogo || profile.hasLogo,
-      logoPreviewUrl: hasNewLogo ? logoPreviewUrl : profile.logoPreviewUrl ?? null,
-    });
-    onBack();
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(
+        {
+          club: form.club,
+          nbTerrains: form.nbTerrains,
+          terrains,
+          terrainPrincipal,
+          hasLogo: hasNewLogo || profile.hasLogo,
+          logoPreviewUrl: hasNewLogo ? logoPreviewUrl : profile.logoPreviewUrl ?? null,
+        },
+        form.logoFile
+      );
+      onBack();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Enregistrement impossible");
+    } finally {
+      setSaving(false);
+    }
   };
 
   useEffect(() => {
+    if (form.logoFile) return;
+    setLogoPreviewUrl(profile.logoPreviewUrl ?? null);
+  }, [profile.logoPreviewUrl, form.logoFile]);
+
+  useEffect(() => {
     if (!form.logoFile || form.pasDeLogo) {
-      setLogoPreviewUrl(null);
       return;
     }
     const url = URL.createObjectURL(form.logoFile);
@@ -346,7 +420,7 @@ export function MvpClubSettingsScreen({
             {!form.pasDeLogo ? (
               <div className="mx-auto max-w-md">
                 <label className="field-label text-[11px]">Logo du club</label>
-                {form.logoFile && logoPreviewUrl ? (
+                {(form.logoFile && logoPreviewUrl) || (profile.hasLogo && logoPreviewUrl && !form.logoFile) ? (
                   <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -359,8 +433,15 @@ export function MvpClubSettingsScreen({
                         className={`${LIVE_LOGO_HEIGHT_CLASS} w-auto max-w-full object-contain object-center`}
                       />
                     </div>
-                    <p className="text-sm text-white/50">{form.logoFile.name}</p>
-                    <GhostButton onClick={() => patch({ logoFile: null })}>
+                    {form.logoFile ? (
+                      <p className="text-sm text-white/50">{form.logoFile.name}</p>
+                    ) : null}
+                    <GhostButton
+                      onClick={() => {
+                        patch({ logoFile: null });
+                        setLogoPreviewUrl(null);
+                      }}
+                    >
                       Changer de logo
                     </GhostButton>
                   </motion.div>
@@ -448,9 +529,12 @@ export function MvpClubSettingsScreen({
             </div>
           </div>
 
-          <div className="mt-3 flex shrink-0 flex-col items-center pb-2">
-            <PrimaryButton onClick={handleSave}>
-              Enregistrer le profil club
+          <div className="mt-3 flex shrink-0 flex-col items-center gap-2 pb-2">
+            {saveError ? (
+              <p className="text-center text-sm text-red-300/90">{saveError}</p>
+            ) : null}
+            <PrimaryButton onClick={() => void handleSave()} disabled={saving}>
+              {saving ? "Enregistrement…" : "Enregistrer le profil club"}
             </PrimaryButton>
           </div>
         </div>

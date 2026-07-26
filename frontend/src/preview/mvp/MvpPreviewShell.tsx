@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { LiveNightCourtBackground } from "../../manager/LiveNightCourtBackground";
 
-export const MVP_PREVIEW_BUILD = "v20260726m";
+export const MVP_PREVIEW_BUILD = "v20260726n";
 
 /** Coque preview : fond nuit, pas de bandeau bas. */
 export function MvpPreviewShell({
@@ -32,15 +32,18 @@ export function MvpPreviewShell({
 export function MvpLoginButton({
   children,
   onClick,
+  disabled = false,
 }: {
   children: ReactNode;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-xl px-6 py-3.5 text-base font-bold text-arena-950"
+      disabled={disabled}
+      className="w-full rounded-xl px-6 py-3.5 text-base font-bold text-arena-950 disabled:cursor-wait disabled:opacity-60"
       style={{
         background: "linear-gradient(135deg, #d4ff4a 0%, #a8e020 100%)",
         boxShadow: "0 0 28px -2px rgba(212,255,74,0.55)",

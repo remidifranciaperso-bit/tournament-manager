@@ -1,8 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// En developpement, on proxifie /api vers le backend FastAPI (port 8000)
-// pour rester en same-origin cote navigateur.
+// En developpement, on proxifie /api vers le backend FastAPI.
+const apiProxyTarget =
+  process.env.VITE_DEPLOY_TARGET === "platform"
+    ? "http://localhost:8001"
+    : "http://localhost:8000";
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -12,7 +16,7 @@ export default defineConfig({
     open: "/#/manager",
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },
