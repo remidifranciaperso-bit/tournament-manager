@@ -5,12 +5,31 @@ from __future__ import annotations
 import base64
 import copy
 import time
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
 from api.platform.config import ENGINE_V2_URL
 
+if TYPE_CHECKING:
+    from api.platform.models import ClubProfile
+
 _PATCH_KEYS = ("fields", "matches", "equipes", "meta", "page_map", "planning_layout", "logo_png")
+
+
+def club_logo_png_b64(profile: ClubProfile | None) -> str | None:
+    if profile is None or not profile.logo_data or len(profile.logo_data) < 64:
+        return None
+    return base64.b64encode(profile.logo_data).decode("ascii")
+
+
+def attach_club_logo_to_snapshot(snapshot: dict[str, Any], profile: ClubProfile | None) -> None:
+    existing = snapshot.get("logo_png")
+    if isinstance(existing, str) and existing.strip():
+        return
+    encoded = club_logo_png_b64(profile)
+    if encoded:
+        snapshot["logo_png"] = encoded
 
 
 def _extract_captures(snapshot: dict) -> dict[str, str]:
@@ -49,7 +68,10 @@ def _regenerate_pdf_remote(snapshot: dict, captures: dict[str, str]) -> tuple[by
     slim_snapshot = _slim_snapshot_for_remote(snapshot)
     url = f"{ENGINE_V2_URL.rstrip('/')}/api/v2/regenerate-from-snapshot"
     timeout = httpx.Timeout(300.0, connect=90.0)
-    payload = {"snapshot": slim_snapshot, "captures": captures}
+    payload: dict[str, Any] = {"snapshot": slim_snapshot, "captures": captures}
+    logo_png = snapshot.get("logo_png")
+    if isinstance(logo_png, str) and logo_png.strip():
+        payload["logo_png"] = logo_png
     last_error: Exception | None = None
 
     for attempt in range(2):
@@ -79,7 +101,10 @@ def _regenerate_pdf_remote(snapshot: dict, captures: dict[str, str]) -> tuple[by
     if not isinstance(patch, dict):
         patch = {key: body[key] for key in _PATCH_KEYS if key in body}
 
-    return base64.b64decode(pdf_b64), _merge_snapshot_patch(snapshot, patch)
+    merged = _merge_snapshot_patch(snapshot, patch)
+    if isinstance(snapshot.get("logo_png"), str) and snapshot["logo_png"].strip():
+        merged["logo_png"] = snapshot["logo_png"]
+    return base64.b64decode(pdf_b64), merged
 
 
 def regenerate_pdf_via_engine(snapshot: dict) -> tuple[bytes, dict]:

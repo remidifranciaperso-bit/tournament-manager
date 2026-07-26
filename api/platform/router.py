@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PDF_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import get_db
-from api.platform.engine_regen import regenerate_pdf_via_engine
+from api.platform.engine_regen import attach_club_logo_to_snapshot, regenerate_pdf_via_engine
 from api.platform.live_pack import init_live_from_platform_pack
 from api.platform.pdf_convocations import extraire_pdf_convocations
 from api.platform.roster import roster_from_snapshot
@@ -279,6 +279,9 @@ async def create_tournament(
     if not isinstance(crosspage_stubs, dict):
         crosspage_stubs = {}
 
+    profile = user.club_profile
+    attach_club_logo_to_snapshot(live_snapshot, profile)
+
     row = Tournament(
         user_id=user.id,
         name=name.strip().upper() or "TOURNOI",
@@ -455,6 +458,7 @@ def apply_tournament_team_change(
         if check["result"] == "blocked":
             raise ValueError(check["message"])
         updated = apply_team_change(snapshot, payload)
+        attach_club_logo_to_snapshot(updated, user.club_profile)
         pdf_bytes, refreshed = regenerate_pdf_via_engine(updated)
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"Engine V2 indisponible: {exc}") from exc
