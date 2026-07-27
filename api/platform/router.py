@@ -565,9 +565,6 @@ def apply_tournament_team_change(
         if check["result"] == "blocked":
             raise ValueError(check["message"])
         updated = apply_team_change(snapshot, payload)
-        meta = updated.setdefault("meta", {})
-        if isinstance(meta, dict):
-            meta["bracket_pages_native"] = True
         attach_club_logo_to_snapshot(updated, user.club_profile)
         pdf_bytes, refreshed = regenerate_pdf_via_engine(updated)
     except httpx.HTTPError as exc:
