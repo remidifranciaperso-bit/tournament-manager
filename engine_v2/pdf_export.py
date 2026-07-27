@@ -10,6 +10,7 @@ import fitz
 from engine.live_participants import trouver_indices_participants
 from engine.live_pdf_composite import (
     capture_key,
+    composer_page_bracket_native,
     composer_page_export,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
@@ -39,6 +40,9 @@ def exporter_pdf_engine_v2(
     crosspage_stubs: dict[str, dict] | None = None,
     snapshot: dict | None = None,
     base_dir: Path | None = None,
+    native_bracket_sections: frozenset[str] | None = None,
+    match_dicts: list[dict] | None = None,
+    template_id: str | None = None,
 ) -> None:
     """
     Assemble le PDF final Engine V2.
@@ -99,6 +103,31 @@ def exporter_pdf_engine_v2(
                 slide_index = int(entry["index"])
                 key = capture_key(section, slide_index)
                 capture_data = captures.get(key)
+
+                if (
+                    native_bracket_sections
+                    and section in native_bracket_sections
+                    and section in ("main", "classement")
+                    and match_dicts is not None
+                    and template_id
+                ):
+                    page = merged.new_page(
+                        width=page_rect.width, height=page_rect.height
+                    )
+                    composer_page_bracket_native(
+                        page,
+                        source,
+                        slide_index,
+                        template_id=template_id,
+                        matches=match_dicts,
+                        match_results={},
+                        base_dir=render_base,
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                        club_name=club_name,
+                        crosspage_stub=(crosspage_stubs or {}).get(key),
+                    )
+                    continue
 
                 if slide_index < 0 or slide_index >= source.page_count:
                     if not capture_data:

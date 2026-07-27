@@ -12,6 +12,7 @@ from engine.models.team import Team
 from engine.models.tournament import Tournament
 from engine_v2.pdf_export import exporter_pdf_engine_v2
 from engine_v2.shell import _load_logo, build_v2_composite_shell_pdf
+from engine_v2.template_registry import resolve_template_bundle
 
 
 def _tournoi_from_snapshot(snapshot: dict) -> Tournament:
@@ -86,6 +87,31 @@ def _matchs_from_snapshot(snapshot: dict, equipes: list[Team]) -> list[Match]:
     return matchs
 
 
+def _match_dicts(matchs: list[Match]) -> list[dict]:
+    return [
+        {
+            "ordre": match.ordre,
+            "code": match.code,
+            "tour": match.tour,
+            "equipe1": match.equipe1_label(),
+            "equipe2": match.equipe2_label(),
+            "terrain": match.terrain,
+            "heure": match.heure,
+            "jour": getattr(match, "jour", 1),
+            "ordre_planning": getattr(match, "ordre_planning", match.ordre),
+            "parents": list(match.parents),
+        }
+        for match in matchs
+    ]
+
+
+def _native_bracket_sections(snapshot: dict) -> frozenset[str]:
+    meta = snapshot.get("meta") or {}
+    if isinstance(meta, dict) and meta.get("bracket_pages_native"):
+        return frozenset({"main", "classement"})
+    return frozenset()
+
+
 def _refresh_snapshot(snapshot: dict, tournoi: Tournament, matchs: list[Match]) -> dict:
     refreshed = copy.deepcopy(snapshot)
     refreshed["matches"] = [
@@ -150,6 +176,9 @@ def regenerate_pdf_from_snapshot(
         logo_wh=logo_wh,
     )
 
+    _, template_id, _ = resolve_template_bundle(tournoi, render_base)
+    native_sections = _native_bracket_sections(refreshed)
+
     export_path = shell_path.parent / f"{shell_path.stem}.regen.pdf"
     try:
         exporter_pdf_engine_v2(
@@ -161,6 +190,9 @@ def regenerate_pdf_from_snapshot(
             crosspage_stubs=refreshed.get("crosspage_stubs") or {},
             snapshot=refreshed,
             base_dir=render_base,
+            native_bracket_sections=native_sections,
+            match_dicts=_match_dicts(matchs) if native_sections else None,
+            template_id=template_id if native_sections else None,
         )
         pdf_bytes = export_path.read_bytes()
         return pdf_bytes, refreshed

@@ -746,6 +746,7 @@ def _maybe_rebuild_after_ts_change(snapshot: dict[str, Any], ts_changed: bool) -
         meta = snapshot.setdefault("meta", {})
         if isinstance(meta, dict):
             meta["bracket_seed"] = _bracket_draw_seed(snapshot)
+            meta["bracket_pages_native"] = True
     return rebuilt
 
 
