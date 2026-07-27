@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from engine.live_template_cache import charger_cache_live
-from engine.tournament_build import chemin_template, construire_nom_export
+from engine.tournament_paths import chemin_template, construire_nom_export
 
 
 def template_id_from_path(template_path: Path) -> str:

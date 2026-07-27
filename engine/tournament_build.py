@@ -1,6 +1,4 @@
 from pathlib import Path
-import re
-from datetime import datetime
 
 from engine.excel_reader import lire_excel
 from engine.team_builder import construire_paires
@@ -9,35 +7,15 @@ from engine.models.converter import dataframe_to_teams
 from engine.models.tournament import Tournament
 from engine.bracket_generator import generer_tableau
 from engine.schedule_engine import ajouter_planning
+from engine.tournament_paths import (
+    chemin_template,
+    construire_nom_export,
+    format_date_fichier,
+    nettoyer_nom_fichier,
+    verifier_template_existe,
+)
 
 FORMATS_DISPONIBLES = [8, 12, 16, 20, 24]
-
-
-def nettoyer_nom_fichier(texte):
-    texte = str(texte).strip()
-    texte = texte.replace("/", "-")
-    texte = re.sub(r"[^A-Za-z0-9À-ÿ_-]+", "-", texte)
-    return texte.strip("-")
-
-
-def format_date_fichier(date_tournoi):
-    try:
-        return datetime.strptime(str(date_tournoi), "%Y-%m-%d").strftime("%d-%m-%y")
-    except Exception:
-        return nettoyer_nom_fichier(date_tournoi)
-
-
-def construire_nom_export(type_tournoi, club, date_tournoi):
-    return (
-        f"{nettoyer_nom_fichier(type_tournoi)}-"
-        f"{nettoyer_nom_fichier(club)}-"
-        f"{format_date_fichier(date_tournoi)}"
-    )
-
-
-def verifier_template_existe(template_path):
-    if not template_path.exists():
-        raise FileNotFoundError(f"Template introuvable : {template_path}")
 
 
 def construire_tournoi_et_matchs(
@@ -130,14 +108,3 @@ def construire_tournoi_et_matchs(
         heures_debut_jours=tournoi.heures_debut_jours,
     )
     return tournoi, matchs
-
-
-def chemin_template(tournoi, base_dir):
-    if tournoi.mode_tournoi == "Poules + tableau final":
-        template_nom = f"Template_{tournoi.nb_equipes}_poules_{tournoi.nb_jours}J.pptx"
-    else:
-        template_nom = f"Template_{tournoi.nb_equipes}_{tournoi.nb_jours}J.pptx"
-
-    template_path = Path(base_dir) / "templates bleus" / template_nom
-    verifier_template_existe(template_path)
-    return template_path

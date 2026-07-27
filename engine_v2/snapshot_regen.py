@@ -10,7 +10,7 @@ from engine.live_valeurs import construire_champs_live
 from engine.models.match import Match
 from engine.models.team import Team
 from engine.models.tournament import Tournament
-from engine_v2.generate import composite_tournament_v2_pdf
+from engine_v2.pdf_export import exporter_pdf_engine_v2
 from engine_v2.shell import _load_logo, build_v2_composite_shell_pdf
 
 
@@ -152,13 +152,15 @@ def regenerate_pdf_from_snapshot(
 
     export_path = shell_path.parent / f"{shell_path.stem}.regen.pdf"
     try:
-        composite_tournament_v2_pdf(
-            shell_pdf=shell_path,
-            output_pdf=export_path,
-            snapshot=refreshed,
+        exporter_pdf_engine_v2(
+            shell_path,
+            export_path,
+            page_map=refreshed["page_map"],
             captures=captures,
             logo_path=logo_path,
             crosspage_stubs=refreshed.get("crosspage_stubs") or {},
+            snapshot=refreshed,
+            base_dir=render_base,
         )
         pdf_bytes = export_path.read_bytes()
         return pdf_bytes, refreshed

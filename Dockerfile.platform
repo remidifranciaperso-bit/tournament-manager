@@ -48,7 +48,7 @@ RUN mkdir -p /tmp/_live exports && chmod 777 /tmp/_live exports
 RUN test -f frontend/dist/index.html \
     && test -f "templates bleus/Template_8_1J.pptx" \
     && test -f "templates bleus/Template_12_1J.pptx"
-RUN python3 -c "from api.platform.engine_regen import _can_regenerate_locally; assert _can_regenerate_locally()"
+RUN python3 -c "from api.platform.engine_regen import _can_regenerate_locally; from engine_v2.snapshot_regen import regenerate_pdf_from_snapshot; assert _can_regenerate_locally()"
 
 EXPOSE 8000
 
