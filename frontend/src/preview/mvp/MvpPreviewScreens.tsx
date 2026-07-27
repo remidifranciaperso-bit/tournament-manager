@@ -994,6 +994,19 @@ function TeamChangeImpactRow({ label, modified }: { label: string; modified: boo
   );
 }
 
+function TeamChangeSummaryList({ lines }: { lines: string[] }) {
+  if (!lines.length) return null;
+  return (
+    <ul className="mt-2 space-y-1.5 text-left text-xs leading-snug text-white/80">
+      {lines.map((line) => (
+        <li key={line} className="rounded-lg border border-white/10 bg-black/15 px-2.5 py-1.5">
+          {line}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function TeamChangeImpactGrid({
   tsModified,
   bracketModified,
@@ -1057,6 +1070,7 @@ export function MvpTeamChangeScreen({
   const [mode, setMode] = useState<TeamChangeMode>(null);
   const [result, setResult] = useState<CompatibilityResult>(null);
   const [checkMessage, setCheckMessage] = useState<string | null>(null);
+  const [summaryLines, setSummaryLines] = useState<string[]>([]);
   const [impact, setImpact] = useState<TeamChangeImpact>(DEFAULT_IMPACT);
   const [checking, setChecking] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -1104,6 +1118,7 @@ export function MvpTeamChangeScreen({
     setReplacementTeam({ joueur1: EMPTY_PLAYER, joueur2: EMPTY_PLAYER });
     setResult(null);
     setCheckMessage(null);
+    setSummaryLines([]);
     setImpact(DEFAULT_IMPACT);
     setActionError(null);
   };
@@ -1158,6 +1173,11 @@ export function MvpTeamChangeScreen({
           ? "Compatible avec ajustement interne du tirage."
           : "Compatible — aucune convocation ne change."
       );
+      setSummaryLines(
+        mode === "replace"
+          ? ["Équipe remplacée — aperçu sans API."]
+          : []
+      );
       setImpact(mockImpact(nextResult, mode));
       return;
     }
@@ -1166,6 +1186,7 @@ export function MvpTeamChangeScreen({
       const response = await platformCheckTeamChange(tournament.id, payload);
       setResult(response.result);
       setCheckMessage(response.message);
+      setSummaryLines(response.summary ?? []);
       setImpact({
         ts_modified: response.ts_modified,
         bracket_modified: response.bracket_modified,
@@ -1175,6 +1196,7 @@ export function MvpTeamChangeScreen({
       setActionError(err instanceof Error ? err.message : "Vérification impossible");
       setResult(null);
       setCheckMessage(null);
+      setSummaryLines([]);
       setImpact(DEFAULT_IMPACT);
     } finally {
       setChecking(false);
@@ -1208,9 +1230,12 @@ export function MvpTeamChangeScreen({
   const handleBackFromReview = () => {
     setResult(null);
     setCheckMessage(null);
+    setSummaryLines([]);
     setImpact(DEFAULT_IMPACT);
     setActionError(null);
   };
+
+  const tournamentSubtitle = `${tournament.typeLabel} · ${tournament.genreLabel}`;
 
   const canAuthorize = result === "ok" || result === "adjust";
   const reviewTone =
@@ -1226,34 +1251,39 @@ export function MvpTeamChangeScreen({
         {applying ? (
           <TeamChangeProgressView message="Regénération du PDF en cours…" />
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col justify-center py-2">
+          <div className="flex min-h-0 flex-1 flex-col justify-start">
             <WizardPageTitle
               title="Modifier les équipes"
-              subtitle={result ? "Impact de la modification" : tournament.name}
+              subtitle={tournamentSubtitle}
+              compact
             />
 
             {result ? (
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={["mt-4 rounded-2xl border p-4 text-left", reviewTone].join(" ")}
+                className={["mt-2 rounded-2xl border p-3 text-left", reviewTone].join(" ")}
               >
                 {result !== "blocked" ? (
-                  <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                    <IconCheck className="h-4 w-4 shrink-0 text-lime" />
+                  <p className="flex items-start gap-2 text-sm font-semibold leading-snug text-white">
+                    <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-lime" />
                     {checkMessage}
                   </p>
                 ) : (
-                  <p className="mb-3 text-sm font-semibold text-red-100">{checkMessage}</p>
+                  <p className="text-sm font-semibold leading-snug text-red-100">{checkMessage}</p>
                 )}
 
-                <TeamChangeImpactGrid
-                  tsModified={impact.ts_modified}
-                  bracketModified={impact.bracket_modified}
-                  convocationsModified={impact.convocations_modified}
-                />
+                <TeamChangeSummaryList lines={summaryLines} />
 
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <div className="mt-2">
+                  <TeamChangeImpactGrid
+                    tsModified={impact.ts_modified}
+                    bracketModified={impact.bracket_modified}
+                    convocationsModified={impact.convocations_modified}
+                  />
+                </div>
+
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   {canAuthorize ? (
                     <PrimaryButton onClick={() => void handleApply()} disabled={applying}>
                       Autoriser la modification
@@ -1264,7 +1294,7 @@ export function MvpTeamChangeScreen({
               </motion.div>
             ) : (
               <>
-                <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="mt-2 grid grid-cols-2 gap-2">
                   {options.map((option) => (
                     <button
                       key={option.id}
@@ -1287,7 +1317,7 @@ export function MvpTeamChangeScreen({
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left"
+                    className="mt-2 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left"
                   >
                     <p className="field-label-tight text-xs">Joueur à remplacer</p>
                     <select
@@ -1317,7 +1347,7 @@ export function MvpTeamChangeScreen({
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left"
+                    className="mt-2 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left"
                   >
                     <p className="field-label-tight text-xs">Équipe à remplacer</p>
                     <select
@@ -1350,7 +1380,7 @@ export function MvpTeamChangeScreen({
                 ) : null}
 
                 {mode ? (
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                     <PrimaryButton onClick={() => void handleCheck()} disabled={checking}>
                       {checking ? "Vérification…" : "Vérifier l'impact"}
                     </PrimaryButton>
@@ -1361,7 +1391,7 @@ export function MvpTeamChangeScreen({
             )}
 
             {actionError ? (
-              <p className="mt-3 text-center text-sm text-red-300/90">{actionError}</p>
+              <p className="mt-2 text-center text-sm text-red-300/90">{actionError}</p>
             ) : null}
           </div>
         )}

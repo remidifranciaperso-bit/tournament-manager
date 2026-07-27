@@ -94,35 +94,195 @@ def _pair_changed_identities(
 
 
 def _team_convocation_changes(before: dict[str, Any], after: dict[str, Any]) -> int:
+    return len(_convocation_change_details(before, after))
+
+
+def _equipe_label(snapshot: dict[str, Any], identity: tuple[str, str]) -> str:
+    for equipe in snapshot.get("equipes") or []:
+        if _team_identity(equipe) == identity:
+            label = str(equipe.get("label_court") or equipe.get("label") or "").strip()
+            if label:
+                return label
+    j1, j2 = identity
+    if j1 and j2:
+        return f"{j1} / {j2}"
+    return j1 or j2 or "Équipe"
+
+
+def _convocation_change_details(
+    before: dict[str, Any],
+    after: dict[str, Any],
+) -> list[tuple[str, str, str]]:
     hours = _convocation_hours(before)
     after_hours = _convocation_hours(after)
     before_ts = _team_ts_map(before)
     after_ts = _team_ts_map(after)
     before_ids = set(before_ts)
     after_ids = set(after_ts)
-    changed = 0
+    details: list[tuple[str, str, str]] = []
     paired_added: set[tuple[str, str]] = set()
 
+    def append_detail(identity: tuple[str, str], old_ts: int, new_ts: int) -> None:
+        old_hour = hours.get(old_ts, "")
+        new_hour = after_hours.get(new_ts, hours.get(new_ts, ""))
+        if old_hour == new_hour:
+            return
+        details.append((_equipe_label(after, identity), old_hour, new_hour))
+
     for identity in before_ids & after_ids:
-        old_ts = before_ts[identity]
-        new_ts = after_ts[identity]
-        if hours.get(old_ts) != after_hours.get(new_ts, hours.get(new_ts)):
-            changed += 1
+        append_detail(identity, before_ts[identity], after_ts[identity])
 
     removed = list(before_ids - after_ids)
     added = list(after_ids - before_ids)
     for old_id in removed:
-        old_ts = before_ts[old_id]
-        old_hour = hours.get(old_ts)
         paired = _pair_changed_identities(old_id, set(added), paired_added)
         if paired is None:
             continue
         paired_added.add(paired)
-        new_ts = after_ts[paired]
-        if old_hour != after_hours.get(new_ts, hours.get(new_ts)):
-            changed += 1
+        append_detail(paired, before_ts[old_id], after_ts[paired])
 
-    return changed
+    return details
+
+
+def _summary_focus_identities(
+    before: dict[str, Any],
+    after: dict[str, Any],
+    payload: dict[str, Any],
+) -> set[tuple[str, str]]:
+    before_ts = _team_ts_map(before)
+    after_ts = _team_ts_map(after)
+    focus: set[tuple[str, str]] = set()
+    mode = payload.get("mode")
+
+    if mode == "partner":
+        player_id = str(payload.get("player_id") or "")
+        team_id = player_id.rsplit("-", 1)[0] if player_id else ""
+        equipe_before = _find_equipe(before, team_id)
+        if equipe_before is not None:
+            old_id = _team_identity(equipe_before)
+            focus.add(old_id)
+            if old_id in after_ts:
+                focus.add(old_id)
+            removed = {old_id}
+            added = set(after_ts) - set(before_ts)
+            paired = _pair_changed_identities(old_id, added, set())
+            if paired is not None:
+                focus.add(paired)
+    elif mode == "replace":
+        team_id = str(payload.get("team_id") or "")
+        equipe_before = _find_equipe(before, team_id)
+        equipe_after = _find_equipe(after, team_id)
+        if equipe_before is not None:
+            focus.add(_team_identity(equipe_before))
+        if equipe_after is not None:
+            focus.add(_team_identity(equipe_after))
+
+    for label, _, _ in _convocation_change_details(before, after):
+        for identity in set(before_ts) | set(after_ts):
+            if _equipe_label(after, identity) == label or _equipe_label(before, identity) == label:
+                focus.add(identity)
+
+    return focus
+
+
+def _ts_change_details(
+    before: dict[str, Any],
+    after: dict[str, Any],
+    payload: dict[str, Any],
+) -> list[str]:
+    before_ts = _team_ts_map(before)
+    after_ts = _team_ts_map(after)
+    focus = _summary_focus_identities(before, after, payload)
+    lines: list[str] = []
+    paired_added: set[tuple[str, str]] = set()
+    seen: set[tuple[int, int, str]] = set()
+
+    def append_line(identity: tuple[str, str], old_ts: int, new_ts: int) -> None:
+        if old_ts == new_ts or identity not in focus:
+            return
+        label = _equipe_label(after, identity)
+        key = (old_ts, new_ts, label)
+        if key in seen:
+            return
+        seen.add(key)
+        lines.append(f"{label} : TS{old_ts} devient TS{new_ts}")
+
+    for identity in set(before_ts) & set(after_ts):
+        append_line(identity, before_ts[identity], after_ts[identity])
+
+    removed = list(set(before_ts) - set(after_ts))
+    added = list(set(after_ts) - set(before_ts))
+    for old_id in removed:
+        paired = _pair_changed_identities(old_id, set(added), paired_added)
+        if paired is None:
+            continue
+        paired_added.add(paired)
+        append_line(paired, before_ts[old_id], after_ts[paired])
+
+    return lines
+
+
+def _describe_replacement(
+    before: dict[str, Any],
+    after: dict[str, Any],
+    payload: dict[str, Any],
+) -> str | None:
+    mode = payload.get("mode")
+    if mode == "partner":
+        player_id = str(payload.get("player_id") or "")
+        if not player_id:
+            return None
+        slot = "j2" if player_id.endswith("-j2") else "j1"
+        team_id = player_id.rsplit("-", 1)[0] if player_id else ""
+        equipe_before = _find_equipe(before, team_id)
+        equipe_after = _find_equipe(after, team_id)
+        if equipe_before is None or equipe_after is None:
+            return None
+        old_name = str(equipe_before.get("joueur1" if slot == "j1" else "joueur2") or "")
+        replacement = payload.get("replacement") or {}
+        new_name = _joueur_complet(
+            str(replacement.get("nom") or ""),
+            str(replacement.get("prenom") or ""),
+        )
+        team_label = str(equipe_before.get("label_court") or equipe_before.get("label") or "")
+        return f"Partenaire remplacé ({team_label}) : {old_name} → {new_name}"
+
+    if mode == "replace":
+        team_id = str(payload.get("team_id") or "")
+        equipe_before = _find_equipe(before, team_id)
+        if equipe_before is None:
+            return None
+        replacement = payload.get("replacement") or {}
+        j1 = _joueur_complet(
+            str((replacement.get("joueur1") or {}).get("nom") or ""),
+            str((replacement.get("joueur1") or {}).get("prenom") or ""),
+        )
+        j2 = _joueur_complet(
+            str((replacement.get("joueur2") or {}).get("nom") or ""),
+            str((replacement.get("joueur2") or {}).get("prenom") or ""),
+        )
+        old_label = str(equipe_before.get("label_court") or equipe_before.get("label") or "")
+        new_label = f"{_nom_court(j1)} / {_nom_court(j2)}"
+        return f"{old_label} remplacée par {new_label}"
+
+    return None
+
+
+def _build_change_summary(
+    before: dict[str, Any],
+    after: dict[str, Any],
+    payload: dict[str, Any],
+) -> list[str]:
+    summary: list[str] = []
+    replacement = _describe_replacement(before, after, payload)
+    if replacement:
+        summary.append(replacement)
+    summary.extend(_ts_change_details(before, after, payload))
+    conv_details = _convocation_change_details(before, after)
+    if conv_details:
+        parts = "; ".join(f"{label} : {old} → {new}" for label, old, new in conv_details)
+        summary.append(f"{len(conv_details)} convocation(s) modifiée(s) : {parts}")
+    return summary
 
 
 def _ts_numbers_changed(before: dict[str, Any], after: dict[str, Any]) -> bool:
@@ -760,6 +920,7 @@ def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict
     bracket_rebuilt = ts_modified and _can_rebuild_bracket(before)
     bracket_modified = bracket_rebuilt
     convocations_changed = _team_convocation_changes(before, after)
+    summary = _build_change_summary(before, after, payload)
 
     if mode == "partner" and convocations_changed > 0 and not ts_modified:
         result = "blocked"
@@ -777,6 +938,7 @@ def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict
                 "Choisissez un remplaçant avec un créneau équivalent ou remplacez l'équipe entière."
             ),
             "convocations_changed": convocations_changed,
+            "summary": summary,
             **impact,
         }
 
@@ -807,6 +969,7 @@ def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict
         "result": result,
         "message": message,
         "convocations_changed": convocations_changed,
+        "summary": summary,
         **impact,
     }
 

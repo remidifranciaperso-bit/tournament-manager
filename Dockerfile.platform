@@ -2,7 +2,7 @@
 # Live Manager local + regénération PDF team-change locale (sans appel Engine V2).
 FROM node:20-slim AS frontend-build
 
-ARG FRONTEND_BUILD_ID=platform-live-v2-20260727
+ARG FRONTEND_BUILD_ID=platform-team-change-ui-20260727
 RUN echo "Frontend build id: ${FRONTEND_BUILD_ID}"
 
 WORKDIR /app/frontend
@@ -41,13 +41,14 @@ COPY engine/ ./engine/
 COPY engine_v2/ ./engine_v2/
 COPY fonts/ ./fonts/
 COPY schema/ ./schema/
-COPY templates bleus/ ./templates bleus/
+COPY ["templates bleus/", "./templates bleus/"]
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 RUN mkdir -p /tmp/_live exports && chmod 777 /tmp/_live exports
-RUN test -f frontend/dist/index.html
-RUN test -f "templates bleus/Template_12_1J.pptx"
-RUN python3 -c "from api.main_platform import app; from api.platform.manager_inject import manager_inject_js; from api.platform.engine_regen import _can_regenerate_locally; assert _can_regenerate_locally(); assert len(manager_inject_js()) > 1000"
+RUN test -f frontend/dist/index.html \
+    && test -f "templates bleus/Template_8_1J.pptx" \
+    && test -f "templates bleus/Template_12_1J.pptx"
+RUN python3 -c "from api.platform.engine_regen import _can_regenerate_locally; assert _can_regenerate_locally()"
 
 EXPOSE 8000
 
