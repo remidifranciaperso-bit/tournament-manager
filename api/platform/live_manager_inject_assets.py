@@ -385,7 +385,50 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     return bracketShortPlayer(body) + seed;
   }
 
-  function bracketFormatDisplay(label, resolved) {
+  function stripTeamTsSuffix(display) {
+    return String(display || "").replace(/\s*\(TS\d+\)\s*$/i, "").trim();
+  }
+
+  function isDirectTeamSlot(label) {
+    var raw = String(label || "").trim();
+    if (!raw) return false;
+    return !bracketUnresolved(raw);
+  }
+
+  function teamIdentity(label) {
+    return stripTeamTsSuffix(String(label || "").trim())
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+  }
+
+  function buildTeamTsSeedSlots(matches) {
+    var seen = {};
+    var slots = {};
+    var sorted = matches.slice().sort(function (a, b) {
+      return (a.ordre_planning - b.ordre_planning) || (a.ordre - b.ordre);
+    });
+    for (var i = 0; i < sorted.length; i++) {
+      var match = sorted[i];
+      var sides = ["equipe1", "equipe2"];
+      for (var j = 0; j < sides.length; j++) {
+        var side = sides[j];
+        var raw = String(match[side] || "").trim();
+        if (!raw || !isDirectTeamSlot(raw)) continue;
+        var identity = teamIdentity(raw);
+        if (!identity || seen[identity]) continue;
+        seen[identity] = true;
+        slots[match.code + ":" + side] = true;
+      }
+    }
+    return slots;
+  }
+
+  function shouldShowTeamTs(matchCode, side, tsSeedSlots) {
+    return !!tsSeedSlots[matchCode + ":" + side];
+  }
+
+  function bracketFormatDisplay(label, resolved, showTs) {
+    if (showTs === undefined) showTs = true;
     var raw = String(label || "").trim();
     if (!raw) return "—";
     if (
@@ -393,10 +436,12 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
       String(resolved || "").trim() &&
       !bracketUnresolved(resolved)
     ) {
-      return bracketFormatInitials(resolved);
+      var propagated = bracketFormatInitials(resolved);
+      return showTs ? propagated : stripTeamTsSuffix(propagated);
     }
     if (bracketUnresolved(raw)) return bracketFormatTeamSlot(raw);
-    return bracketFormatInitials(String(resolved || raw).trim());
+    var direct = bracketFormatInitials(String(resolved || raw).trim());
+    return showTs ? direct : stripTeamTsSuffix(direct);
   }
 
   function resolveBracketLabelOnce(label, matchesByCode, matchResults) {
@@ -442,11 +487,21 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     );
   }
 
-  function resolveBracketTeamDisplay(label, matchesByCode, matchResults) {
+  function resolveBracketTeamDisplay(
+    label,
+    matchesByCode,
+    matchResults,
+    matchCode,
+    side,
+    tsSeedSlots
+  ) {
     var raw = String(label || "").trim();
     if (!raw) return "—";
     var resolved = resolveBracketLabelDeep(raw, matchesByCode, matchResults);
-    return bracketFormatDisplay(raw, resolved);
+    var showTs = tsSeedSlots
+      ? shouldShowTeamTs(matchCode, side, tsSeedSlots)
+      : true;
+    return bracketFormatDisplay(raw, resolved, showTs);
   }
 
   var BRACKET_SLIDE_H_IN = 6858000 / 914400;
@@ -518,6 +573,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 
     var matchesByCode = buildBracketMatchesByCode(liveData.matches);
     var matchResults = loadBracketMatchResults(liveData.live_token);
+    var tsSeedSlots = buildTeamTsSeedSlots(liveData.matches);
     var slides = document.querySelectorAll("[data-bracket-slide]");
     if (!slides.length) return;
 
@@ -548,12 +604,18 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
         var next1 = resolveBracketTeamDisplay(
           match.equipe1,
           matchesByCode,
-          matchResults
+          matchResults,
+          match.code,
+          "equipe1",
+          tsSeedSlots
         );
         var next2 = resolveBracketTeamDisplay(
           match.equipe2,
           matchesByCode,
-          matchResults
+          matchResults,
+          match.code,
+          "equipe2",
+          tsSeedSlots
         );
         var result = lookupCaseMap(matchResults, code);
         var winnerSide = result && result.winner ? result.winner : null;
@@ -601,6 +663,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 
     var matchesByCode = buildBracketMatchesByCode(liveData.matches);
     var matchResults = loadBracketMatchResults(liveData.live_token);
+    var tsSeedSlots = buildTeamTsSeedSlots(liveData.matches);
 
     document.querySelectorAll("#root table").forEach(function (table) {
       if (!isPlanningTableForPatch(table)) return;
@@ -614,12 +677,18 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
         var next1 = resolveBracketTeamDisplay(
           match.equipe1,
           matchesByCode,
-          matchResults
+          matchResults,
+          match.code,
+          "equipe1",
+          tsSeedSlots
         );
         var next2 = resolveBracketTeamDisplay(
           match.equipe2,
           matchesByCode,
-          matchResults
+          matchResults,
+          match.code,
+          "equipe2",
+          tsSeedSlots
         );
         if ((cells[3].textContent || "").trim() !== next1) {
           cells[3].textContent = next1;

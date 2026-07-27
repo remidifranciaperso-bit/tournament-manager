@@ -1,3 +1,5 @@
+import type { LiveMatch } from "./liveTypes";
+
 /** Vérification déploiement bundle export (grep Docker / health). */
 export const EXPORT_CAPTURE_BUILD_MARKER = "export-capture-v2-20260725-planning-done";
 export const BRACKET_PROPAGATE_MARKER = "bracket-propagate-v2-20260725";
@@ -150,16 +152,43 @@ export function stripTeamTsSuffix(display: string): string {
   return display.replace(/\s*\(TS\d+\)\s*$/i, "").trim();
 }
 
+/** Premier emplacement direct de chaque équipe (ordre planning). */
+export function buildTeamTsSeedSlots(matches: LiveMatch[]): Set<string> {
+  const seen = new Set<string>();
+  const slots = new Set<string>();
+  const sorted = [...matches].sort(
+    (a, b) => a.ordre_planning - b.ordre_planning || a.ordre - b.ordre
+  );
+  for (const match of sorted) {
+    for (const side of ["equipe1", "equipe2"] as const) {
+      const raw = (match[side] ?? "").trim();
+      if (!raw || !isDirectTeamSlot(raw)) continue;
+      const identity = stripTeamTsSuffix(raw).replace(/\s+/g, " ").toLowerCase();
+      if (!identity || seen.has(identity)) continue;
+      seen.add(identity);
+      slots.add(`${match.code}:${side}`);
+    }
+  }
+  return slots;
+}
+
+export function shouldShowTeamTs(
+  matchCode: string,
+  side: "equipe1" | "equipe2",
+  tsSeedSlots: Set<string>
+): boolean {
+  return tsSeedSlots.has(`${matchCode}:${side}`);
+}
+
 /** Affichage boîte match / planning — initiales ou placeholder V1 (🏆 H3:). */
 export function formatBracketTeamDisplay(
   label: string,
   resolved: string,
-  options?: { tsInSeedSlotOnly?: boolean }
+  options?: { showTs?: boolean }
 ): string {
   const raw = label.trim();
   if (!raw) return "—";
-  const showTs =
-    !options?.tsInSeedSlotOnly || isDirectTeamSlot(raw);
+  const showTs = options?.showTs ?? true;
 
   if (
     resolved !== raw &&

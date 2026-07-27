@@ -22,6 +22,8 @@ import {
   formatTeamSlot,
   formatTeamWithInitials,
   stripTeamTsSuffix,
+  buildTeamTsSeedSlots,
+  shouldShowTeamTs,
   isBracketPlaceholder,
 } from "./formatBracketLabel";
 import {
@@ -71,7 +73,9 @@ function resolveTeamDisplay(
   matchesByCode: Map<string, LiveMatch>,
   matchResults: Record<string, StoredMatchResult>,
   poolQualifiers: Map<string, string>,
-  tsInSeedSlotOnly = false
+  matchCode: string,
+  side: "equipe1" | "equipe2",
+  tsSeedSlots: Set<string> | null
 ): string {
   const raw = label.trim();
   if (!raw) return "—";
@@ -81,7 +85,10 @@ function resolveTeamDisplay(
     matchResults,
     poolQualifiers
   );
-  return formatBracketTeamDisplay(label, resolved, { tsInSeedSlotOnly });
+  const showTs = tsSeedSlots
+    ? shouldShowTeamTs(matchCode, side, tsSeedSlots)
+    : true;
+  return formatBracketTeamDisplay(label, resolved, { showTs });
 }
 
 function teamFontSize(text: string, scaleH: number): number {
@@ -421,6 +428,10 @@ export function LiveBracketSlide({
     () => buildPoolQualifierMap(matches, matchResults),
     [matches, matchResults]
   );
+  const tsSeedSlots = useMemo(
+    () => (tsInSeedSlotOnly ? buildTeamTsSeedSlots(matches) : null),
+    [matches, tsInSeedSlotOnly]
+  );
 
   const renderHeight = Math.round(renderWidth / SLIDE_ASPECT);
   const consumedFeeds = useMemo(() => {
@@ -509,14 +520,18 @@ export function LiveBracketSlide({
               matchesByCode,
               matchResults,
               poolQualifiers,
-              tsInSeedSlotOnly
+              match.code,
+              "equipe1",
+              tsSeedSlots
             )}
             team2={resolveTeamDisplay(
               match.equipe2,
               matchesByCode,
               matchResults,
               poolQualifiers,
-              tsInSeedSlotOnly
+              match.code,
+              "equipe2",
+              tsSeedSlots
             )}
             score={result?.display ?? null}
             winnerSide={result?.winner ?? null}

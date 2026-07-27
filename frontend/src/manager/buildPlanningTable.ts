@@ -4,7 +4,7 @@ import {
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
 import { buildPoolQualifierMap } from "./buildPoolStandings";
-import { formatBracketTeamDisplay, PLANNING_PROPAGATE_MARKER } from "./formatBracketLabel";
+import { formatBracketTeamDisplay, PLANNING_PROPAGATE_MARKER, buildTeamTsSeedSlots, shouldShowTeamTs } from "./formatBracketLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
 import { formatMatchDurationMinutes } from "./useLiveProgress";
 
@@ -57,7 +57,9 @@ function resolvePlanningTeam(
   matchesByCode: Map<string, LiveMatch>,
   matchResults: Record<string, StoredMatchResult>,
   poolQualifiers: Map<string, string>,
-  tsInSeedSlotOnly = false
+  matchCode: string,
+  side: "equipe1" | "equipe2",
+  tsSeedSlots: Set<string> | null
 ): string {
   const raw = label.trim();
   if (!raw) return "—";
@@ -67,7 +69,10 @@ function resolvePlanningTeam(
     matchResults,
     poolQualifiers
   ).trim();
-  return formatBracketTeamDisplay(label, resolved, { tsInSeedSlotOnly });
+  const showTs = tsSeedSlots
+    ? shouldShowTeamTs(matchCode, side, tsSeedSlots)
+    : true;
+  return formatBracketTeamDisplay(label, resolved, { showTs });
 }
 
 export function buildPlanningRows(
@@ -94,6 +99,7 @@ export function buildPlanningRows(
   }
 
   const tsInSeedSlotOnly = options?.tsInSeedSlotOnly ?? false;
+  const tsSeedSlots = tsInSeedSlotOnly ? buildTeamTsSeedSlots(matches) : null;
 
   return planningSlots(layoutFields)
     .map((slot) => {
@@ -110,14 +116,18 @@ export function buildPlanningRows(
           matchesByCode,
           matchResults,
           poolQualifiers,
-          tsInSeedSlotOnly
+          match.code,
+          "equipe1",
+          tsSeedSlots
         ),
         equipe2: resolvePlanningTeam(
           match.equipe2,
           matchesByCode,
           matchResults,
           poolQualifiers,
-          tsInSeedSlotOnly
+          match.code,
+          "equipe2",
+          tsSeedSlots
         ),
         done: completed.has(match.code),
         duration: formatMatchDurationMinutes(
