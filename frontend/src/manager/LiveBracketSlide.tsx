@@ -25,6 +25,7 @@ import {
 } from "./formatBracketLabel";
 import {
   buildMatchesByCode,
+  lookupMatchResult,
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
 import { buildPoolQualifierMap } from "./buildPoolStandings";
@@ -196,7 +197,7 @@ export function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-visible">
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
+          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
           style={{ fontSize: team1Px, ...teamRowCaptureStyle }}
         >
           <span className={team1BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
@@ -210,7 +211,7 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center px-1.5 font-normal leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
+          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
           style={{ fontSize: team2Px, ...teamRowCaptureStyle }}
         >
           <span className={team2BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
@@ -449,7 +450,7 @@ export function LiveBracketSlide({
         const box = boxLayouts.get(slot.code);
         if (!box) return null;
 
-        const result = matchResults[match.code];
+        const result = lookupMatchResult(matchResults, match.code);
 
         return (
           <TemplateMatchBox

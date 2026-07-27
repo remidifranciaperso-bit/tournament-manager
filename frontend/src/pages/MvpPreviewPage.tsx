@@ -41,6 +41,7 @@ import { defaultForm } from "../types";
 import {
   clearLiveSession,
   LIVE_SESSION_STORAGE_KEY,
+  loadLiveSession,
   platformAnyLiveSessionForTournament,
 } from "../manager/liveSessionStore";
 
@@ -98,33 +99,52 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [activeTournamentId, tournaments]
   );
 
-  const refreshLiveSessionState = useCallback(async (tournamentId: string | null) => {
+  const refreshLiveSessionState = useCallback(
+    async (
+      tournamentId: string | null,
+      freshTournaments?: MvpTournamentSummary[]
+    ) => {
     if (!tournamentId || !apiEnabled) {
       setCanResumeLive(false);
       setLiveActive(false);
       return;
     }
-    const session = platformAnyLiveSessionForTournament(tournamentId);
-    if (!session) {
+    const list = freshTournaments ?? tournaments;
+    const tournament = list.find((item) => item.id === tournamentId);
+    const stored = loadLiveSession();
+    const localSession =
+      stored?.tournamentId === tournamentId ? stored : null;
+    const dbLive = tournament?.status === "live_active";
+
+    if (!dbLive && !localSession) {
       setCanResumeLive(false);
       setLiveActive(false);
       return;
     }
+
+    if (!localSession) {
+      setLiveActive(dbLive);
+      setCanResumeLive(false);
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/live/${session.liveData.live_token}/status`);
+      const res = await fetch(`/api/live/${localSession.liveData.live_token}/status`);
       if (!res.ok) {
-        clearLiveSession(session.liveData.live_token);
+        clearLiveSession(localSession.liveData.live_token);
         setCanResumeLive(false);
-        setLiveActive(false);
+        setLiveActive(dbLive);
         return;
       }
-      setLiveActive(true);
-      setCanResumeLive(session.formatsConfirmed === true);
+      setLiveActive(dbLive || true);
+      setCanResumeLive(localSession.formatsConfirmed === true);
     } catch {
-      setLiveActive(true);
-      setCanResumeLive(session.formatsConfirmed === true);
+      setLiveActive(dbLive || true);
+      setCanResumeLive(localSession.formatsConfirmed === true);
     }
-  }, [apiEnabled]);
+  },
+    [apiEnabled, tournaments]
+  );
 
   useEffect(() => {
     if (screen !== "tournament" || !activeTournamentId) {
@@ -169,7 +189,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
       return rows[0]?.id ?? null;
     });
     setLoggedIn(true);
-    return me;
+    return { me, rows };
   }, []);
 
   const resolvePostLoginScreen = useCallback(
@@ -258,7 +278,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
       if (apiEnabled) {
         platformClearActAsUser();
         await platformLogin(email, password);
-        const me = await refreshSession();
+        const { me } = await refreshSession();
         setNavHistory([]);
         setScreen(resolvePostLoginScreen(me));
         return;
@@ -369,6 +389,17 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [apiEnabled]
   );
 
+  const patchTournamentStatus = useCallback(
+    (tournamentId: string, status: MvpTournamentSummary["status"]) => {
+      setTournaments((prev) =>
+        prev.map((item) =>
+          item.id === tournamentId ? { ...item, status } : item
+        )
+      );
+    },
+    []
+  );
+
   const openLiveWindow = useCallback(
     async (prepare: () => Promise<void>, tournamentId?: string) => {
       const liveUrl = `${window.location.href.split("#")[0]}#/manager`;
@@ -381,14 +412,17 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         await prepare();
         liveWindow.location.href = liveUrl;
         if (tournamentId) {
-          void refreshLiveSessionState(tournamentId);
+          patchTournamentStatus(tournamentId, "live_active");
+          setLiveActive(true);
+          const { rows } = await refreshSession();
+          await refreshLiveSessionState(tournamentId, rows);
         }
       } catch (err) {
         liveWindow.close();
         window.alert(err instanceof Error ? err.message : "Live indisponible");
       }
     },
-    [refreshLiveSessionState]
+    [patchTournamentStatus, refreshLiveSessionState, refreshSession]
   );
 
   const handleLaunchLive = useCallback(
@@ -439,13 +473,18 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         return;
       }
       try {
+        patchTournamentStatus(tournamentId, "convocations_sent");
+        setLiveActive(false);
+        setCanResumeLive(false);
         await platformCancelManagerLive(tournamentId);
-        await refreshLiveSessionState(tournamentId);
+        const { rows } = await refreshSession();
+        await refreshLiveSessionState(tournamentId, rows);
       } catch (err) {
+        await refreshSession();
         window.alert(err instanceof Error ? err.message : "Impossible d'annuler le live.");
       }
     },
-    [apiEnabled, refreshLiveSessionState]
+    [apiEnabled, patchTournamentStatus, refreshLiveSessionState, refreshSession]
   );
 
   useEffect(() => {

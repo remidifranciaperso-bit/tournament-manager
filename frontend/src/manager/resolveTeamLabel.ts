@@ -22,7 +22,7 @@ function lookupByCode<T>(map: Map<string, T>, code: string): T | undefined {
   return undefined;
 }
 
-function lookupResult(
+export function lookupMatchResult(
   matchResults: Record<string, StoredMatchResult>,
   code: string
 ): StoredMatchResult | undefined {
@@ -73,7 +73,7 @@ export function resolveTeamLabel(
   if (!parentCode) return label;
 
   const parent = lookupByCode(matchesByCode, parentCode);
-  const result = lookupResult(matchResults, parentCode);
+  const result = lookupMatchResult(matchResults, parentCode);
   if (!parent || !result) return label;
 
   const side = role === "winner" ? result.winner : result.loser;
