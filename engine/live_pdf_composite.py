@@ -586,8 +586,7 @@ def composer_page_export(
         if section in ("planning", "main", "classement", "pools")
         else 0.0
     )
-    placement_rect = content_rect
-    if section == "final":
+    if section in ("final", "planning"):
         placement_rect = fitz.Rect(
             content_rect.x0,
             content_rect.y0 + FINAL_TABLE_VERTICAL_MARGIN_PT,

@@ -499,6 +499,27 @@ def cancel_tournament_live(
     return {"ok": True}
 
 
+@router.post("/tournaments/{tournament_id}/live-finish")
+async def finish_tournament_live(
+    tournament_id: UUID,
+    pdf: UploadFile = File(...),
+    user: User = Depends(get_acting_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    row = _get_user_tournament(db, user, tournament_id)
+    pdf_bytes = await pdf.read()
+    if not pdf_bytes:
+        raise HTTPException(status_code=400, detail="PDF vide")
+    if len(pdf_bytes) > PDF_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="PDF trop volumineux")
+    row.pdf_data = pdf_bytes
+    if pdf.filename:
+        row.pdf_filename = pdf.filename
+    row.status = "finished"
+    db.commit()
+    return {"ok": True}
+
+
 def _team_change_payload(body: TeamChangeRequest) -> dict:
     payload: dict = {"mode": body.mode}
     if body.player_id:

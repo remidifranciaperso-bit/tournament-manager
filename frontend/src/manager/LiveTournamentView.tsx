@@ -90,9 +90,14 @@ interface LiveTournamentViewProps {
   nbEquipes: number;
   liveData: LiveTournamentData;
   onPdfExported?: () => void;
+  platformFinish?: {
+    tournamentId: string;
+    onFinished: () => void;
+    uploadPdf: (pdf: Blob, filename: string) => Promise<void>;
+  };
 }
 
-export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentViewProps) {
+export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: LiveTournamentViewProps) {
   const {
     page_map,
     live_token,
@@ -472,6 +477,7 @@ export function LiveTournamentView({ liveData, onPdfExported }: LiveTournamentVi
                   activeDay={progress.activeDay}
                   onAdvanceDay={progress.advanceToDay}
                   onPdfExported={onPdfExported}
+                  platformFinish={platformFinish}
                   onStart={(initialMatchCodes) =>
                     progress.startTournament(initialMatchCodes)
                   }

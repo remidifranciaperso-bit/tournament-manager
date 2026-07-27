@@ -176,13 +176,14 @@ body {
     text-transform: uppercase !important;
   }
 
-  /* Export PDF — une ligne par nom d'équipe (html-to-image). */
+  /* Export PDF — deux lignes max par nom d'équipe (aligné onglet Live). */
   #export-capture-layer [data-export-team-label] {
-    white-space: nowrap !important;
-    overflow: visible !important;
-    word-break: keep-all !important;
-    display: inline-block !important;
-    -webkit-line-clamp: unset !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    word-break: break-word !important;
+    white-space: normal !important;
   }
 }
 

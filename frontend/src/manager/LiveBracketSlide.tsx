@@ -124,30 +124,16 @@ export function TemplateMatchBox({
   const team2Align = isBracketPlaceholder(team2)
     ? "justify-start text-left overflow-visible"
     : "justify-center text-center";
-  const team1BodyClass = capture
-    ? "whitespace-nowrap overflow-visible shrink-0"
-    : isBracketPlaceholder(team1)
-      ? "shrink-0 whitespace-nowrap"
-      : "line-clamp-2 break-words";
-  const team2BodyClass = capture
-    ? "whitespace-nowrap overflow-visible shrink-0"
-    : isBracketPlaceholder(team2)
-      ? "shrink-0 whitespace-nowrap"
-      : "line-clamp-2 break-words";
+  const team1BodyClass = isBracketPlaceholder(team1)
+    ? "shrink-0 whitespace-nowrap"
+    : "line-clamp-2 break-words";
+  const team2BodyClass = isBracketPlaceholder(team2)
+    ? "shrink-0 whitespace-nowrap"
+    : "line-clamp-2 break-words";
   const team1Weight = winnerSide === 1 ? "font-semibold" : "font-normal";
   const team2Weight = winnerSide === 2 ? "font-semibold" : "font-normal";
-  const team1Display = capture ? formatTeamSingleLineForCapture(team1) : team1;
-  const team2Display = capture ? formatTeamSingleLineForCapture(team2) : team2;
-  const teamRowCaptureStyle = capture
-    ? ({ whiteSpace: "nowrap" as const, overflow: "visible" as const })
-    : undefined;
-  const teamSpanCaptureStyle = capture
-    ? ({
-        whiteSpace: "nowrap" as const,
-        display: "inline-block" as const,
-        wordBreak: "keep-all" as const,
-      })
-    : undefined;
+  const team1Display = team1;
+  const team2Display = team2;
 
   return (
     <div
@@ -174,7 +160,7 @@ export function TemplateMatchBox({
         </p>
       )}
 
-      <div className={`flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm ${capture ? "overflow-visible" : ""}`}>
+      <div className="flex h-full flex-col overflow-hidden rounded-lg border border-template-blue/40 bg-white shadow-sm">
       <div
         className="relative shrink-0 rounded-t-lg bg-template-blue px-[0.4em] font-tsl leading-none text-white"
         style={{
@@ -197,10 +183,10 @@ export function TemplateMatchBox({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-visible">
         <div
-          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team1Font} ${team1Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
-          style={{ fontSize: team1Px, ...teamRowCaptureStyle }}
+          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team1Font} ${team1Align} ${isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
+          style={{ fontSize: team1Px }}
         >
-          <span className={team1BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
+          <span className={team1BodyClass} data-export-team-label={capture ? "" : undefined}>
             {team1Display}
           </span>
         </div>
@@ -211,10 +197,10 @@ export function TemplateMatchBox({
           vs
         </div>
         <div
-          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team2Font} ${team2Align} ${capture ? "overflow-visible" : isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
-          style={{ fontSize: team2Px, ...teamRowCaptureStyle }}
+          className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team2Font} ${team2Align} ${isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
+          style={{ fontSize: team2Px }}
         >
-          <span className={team2BodyClass} data-export-team-label={capture ? "" : undefined} style={teamSpanCaptureStyle}>
+          <span className={team2BodyClass} data-export-team-label={capture ? "" : undefined}>
             {team2Display}
           </span>
         </div>

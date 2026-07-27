@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MatchFormatCode } from "./matchFormats";
 import {
   CourtFooterSlot,
@@ -12,7 +12,7 @@ import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
 import type { ExportPhase } from "./exportCapture";
-import { downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
+import { buildTournamentExportPdfBlob, downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
 import type { ManagerExportCapture } from "./captureExportPages";
 import { LiveProjectionPage } from "./LiveProjectionPage";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -112,6 +112,12 @@ interface LiveMatchsEnCoursTabProps {
   assignMatchTerrain: (code: string, terrain: string) => void;
   /** Mode affichage public (retransmission) : sans saisie ni actions organisateur. */
   broadcast?: boolean;
+  /** Platform : export auto + retour Mes tournois (sans bouton export manuel). */
+  platformFinish?: {
+    tournamentId: string;
+    onFinished: () => void;
+    uploadPdf: (pdf: Blob, filename: string) => Promise<void>;
+  };
 }
 
 export function LiveMatchsEnCoursTab({
@@ -139,10 +145,12 @@ export function LiveMatchsEnCoursTab({
   clearForcedForTerrain,
   assignMatchTerrain,
   broadcast = false,
+  platformFinish,
 }: LiveMatchsEnCoursTabProps) {
   const scoreForm = useScoreFormToggle();
   const exportingPdf = exportPhase !== "idle";
   const [exportError, setExportError] = useState<string | null>(null);
+  const platformFinishStarted = useRef(false);
   const [launchBlockedMessage, setLaunchBlockedMessage] = useState<
     Map<string, string>
   >(() => new Map());
@@ -315,6 +323,38 @@ export function LiveMatchsEnCoursTab({
 
   const finished =
     started && matches.length > 0 && completed.size >= matches.length;
+
+  useEffect(() => {
+    if (!platformFinish || !finished || platformFinishStarted.current) return;
+    platformFinishStarted.current = true;
+    setExportError(null);
+    void (async () => {
+      try {
+        const blob = await buildTournamentExportPdfBlob(
+          liveToken,
+          exportPayload,
+          captureExportPages,
+          onExportPhaseChange
+        );
+        await platformFinish.uploadPdf(blob, pdfFilename);
+        onPdfExported?.();
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Export PDF impossible.";
+        setExportError(message);
+        platformFinishStarted.current = false;
+      }
+    })();
+  }, [
+    platformFinish,
+    finished,
+    liveToken,
+    exportPayload,
+    captureExportPages,
+    onExportPhaseChange,
+    pdfFilename,
+    onPdfExported,
+  ]);
 
   const dayMatches = useMemo(
     () =>
@@ -528,7 +568,34 @@ export function LiveMatchsEnCoursTab({
             >
               Tournoi terminé
             </span>
-            {exportingPdf ? (
+            {platformFinish ? (
+              <>
+                {exportingPdf ? (
+                  <div className="w-72 max-w-full">
+                    <p className="mb-2 text-center text-sm font-semibold text-template-blue">
+                      {exportPhase === "download"
+                        ? "Enregistrement du PDF…"
+                        : "Préparation du PDF…"}
+                    </p>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-template-blue/15">
+                      <div
+                        className="h-full rounded-full bg-template-blue transition-[width] duration-500 ease-out"
+                        style={{ width: EXPORT_PROGRESS_WIDTH[exportPhase] }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={platformFinish.onFinished}
+                    disabled={Boolean(exportError) && exportingPdf}
+                    className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15 disabled:opacity-50"
+                  >
+                    Retour à Mes tournois
+                  </button>
+                )}
+              </>
+            ) : exportingPdf ? (
               <div className="w-72 max-w-full">
                 <p className="mb-2 text-center text-sm font-semibold text-template-blue">
                   {exportPhase === "download"

@@ -101,13 +101,10 @@ function PlanningDoneCell({
   if (exportMode) {
     return (
       <div className="flex w-full justify-center">
-        <input
-          type="checkbox"
-          checked={done}
-          readOnly
-          tabIndex={-1}
+        <span
+          className="inline-block shrink-0 border border-template-blue/60 bg-white"
+          style={{ width: 11, height: 11 }}
           aria-hidden
-          className="pointer-events-none h-4 w-4 accent-template-blue"
         />
       </div>
     );
@@ -359,6 +356,7 @@ export function LivePlanningTab({
   );
 
   if (capture) {
+    const captureVerticalPad = v2TableHeaders ? verticalMargin : 0;
     return (
       <div
         className="flex w-full items-center justify-center bg-white"
@@ -367,6 +365,8 @@ export function LivePlanningTab({
           boxSizing: "border-box",
           paddingLeft: sideMargin,
           paddingRight: sideMargin,
+          paddingTop: captureVerticalPad,
+          paddingBottom: captureVerticalPad,
           ["--live-display-scale" as string]: 1,
         }}
       >

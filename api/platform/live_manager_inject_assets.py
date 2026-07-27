@@ -148,12 +148,12 @@ _LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
   text-overflow: clip !important;
 }
 #export-capture-layer [data-export-capture="bracket"] [data-export-team-label] {
-  white-space: nowrap !important;
-  overflow: visible !important;
-  word-break: keep-all !important;
-  display: inline-block !important;
-  -webkit-line-clamp: unset !important;
-  -webkit-box-orient: unset !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  word-break: break-word !important;
+  white-space: normal !important;
 }
 """.strip()
 
@@ -502,12 +502,17 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     );
     spanEl.classList.remove("shrink-0", "whitespace-nowrap", "line-clamp-2", "break-words");
     if (isExportCapture) {
-      rowEl.classList.add("justify-center", "text-center", "overflow-visible", "whitespace-nowrap");
-      spanEl.classList.add("shrink-0", "whitespace-nowrap");
-      spanEl.style.whiteSpace = "nowrap";
-      spanEl.style.display = "inline-block";
-      spanEl.style.wordBreak = "keep-all";
-      spanEl.style.webkitLineClamp = "unset";
+      if (isPh) {
+        rowEl.classList.add("justify-start", "text-left", "overflow-visible", "whitespace-nowrap");
+        spanEl.classList.add("shrink-0", "whitespace-nowrap");
+      } else {
+        rowEl.classList.add("justify-center", "text-center", "overflow-hidden");
+        spanEl.classList.add("line-clamp-2", "break-words");
+      }
+      spanEl.style.whiteSpace = "";
+      spanEl.style.display = "";
+      spanEl.style.wordBreak = "";
+      spanEl.style.webkitLineClamp = "";
       return;
     }
     if (isPh) {

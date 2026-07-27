@@ -43,6 +43,7 @@ function actionCardClass(primary = false) {
 
 function StatusBadge({ status }: { status: MvpTournamentSummary["status"] }) {
   const live = status === "live_active";
+  const finished = status === "finished";
   const sent = status === "convocations_sent";
   return (
     <span
@@ -50,9 +51,11 @@ function StatusBadge({ status }: { status: MvpTournamentSummary["status"] }) {
         "inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ring-1",
         live
           ? "bg-lime/15 text-lime ring-lime/35"
-          : sent
-            ? "bg-template-blue/15 text-sky-200 ring-template-blue/30"
-            : "bg-white/[0.06] text-white/55 ring-white/10",
+          : finished
+            ? "bg-emerald-500/15 text-emerald-200 ring-emerald-400/35"
+            : sent
+              ? "bg-template-blue/15 text-sky-200 ring-template-blue/30"
+              : "bg-white/[0.06] text-white/55 ring-white/10",
       ].join(" ")}
     >
       {STATUS_LABELS[status]}
@@ -830,6 +833,11 @@ export function MvpTournamentDashboardScreen({
               Convocations verrouillées — modifications sans décalage horaire
             </p>
           ) : null}
+          {tournament.status === "finished" ? (
+            <p className="mt-3 text-xs font-medium uppercase tracking-wide text-emerald-200/80">
+              Tournoi terminé — PDF final disponible
+            </p>
+          ) : null}
         </div>
 
         <motion.div
@@ -847,15 +855,27 @@ export function MvpTournamentDashboardScreen({
             </span>
           </button>
 
-          <button type="button" onClick={onDownloadPdf} className={actionCardClass()}>
-            <span className="flex items-center gap-2 text-sm font-semibold text-white">
-              <IconCheck className="h-5 w-5 text-lime" />
-              Télécharger le PDF
-            </span>
-            <span className="text-xs text-white/50">
-              Tableaux, planning, convocations, classement final
-            </span>
-          </button>
+          {tournament.status === "finished" ? (
+            <button type="button" onClick={onDownloadPdf} className={actionCardClass()}>
+              <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                <IconCheck className="h-5 w-5 text-lime" />
+                Télécharger le PDF du tournoi terminé
+              </span>
+              <span className="text-xs text-white/50">
+                Tableaux, planning et classement final à jour
+              </span>
+            </button>
+          ) : (
+            <button type="button" onClick={onDownloadPdf} className={actionCardClass()}>
+              <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                <IconCheck className="h-5 w-5 text-lime" />
+                Télécharger le PDF
+              </span>
+              <span className="text-xs text-white/50">
+                Tableaux, planning, convocations, classement final
+              </span>
+            </button>
+          )}
 
           <button type="button" onClick={onExportConvocations} className={actionCardClass()}>
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -869,12 +889,12 @@ export function MvpTournamentDashboardScreen({
 
           <button
             type="button"
-            onClick={liveActive ? undefined : onModifyTeams}
-            disabled={liveActive}
-            aria-disabled={liveActive}
+            onClick={liveActive || tournament.status === "finished" ? undefined : onModifyTeams}
+            disabled={liveActive || tournament.status === "finished"}
+            aria-disabled={liveActive || tournament.status === "finished"}
             className={[
               actionCardClass(),
-              liveActive
+              liveActive || tournament.status === "finished"
                 ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
                 : "",
             ].join(" ")}
@@ -886,11 +906,14 @@ export function MvpTournamentDashboardScreen({
             <span className="text-xs text-white/50">
               {liveActive
                 ? "Live lancé, changements impossibles"
-                : "Partenaire, remplacement — vérif convocations"}
+                : tournament.status === "finished"
+                  ? "Tournoi terminé"
+                  : "Partenaire, remplacement — vérif convocations"}
             </span>
           </button>
         </motion.div>
 
+        {tournament.status !== "finished" ? (
         <div className="mt-3 flex flex-col items-center gap-2">
           <button
             type="button"
@@ -913,6 +936,7 @@ export function MvpTournamentDashboardScreen({
             </button>
           ) : null}
         </div>
+        ) : null}
 
         {onDelete ? (
           <div className="mt-8 flex justify-center border-t border-white/10 pt-6">

@@ -443,6 +443,19 @@ export async function platformCancelManagerLive(tournamentId: string): Promise<v
   });
 }
 
+export async function platformFinishLive(
+  tournamentId: string,
+  pdf: Blob,
+  filename: string
+): Promise<void> {
+  const form = new FormData();
+  form.append("pdf", pdf, filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
+  await platformFetch(`/api/platform/tournaments/${tournamentId}/live-finish`, {
+    method: "POST",
+    body: form,
+  });
+}
+
 export interface PlatformRosterPlayer {
   id: string;
   teamId: string;

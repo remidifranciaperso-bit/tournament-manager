@@ -160,6 +160,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
 
     const syncLiveState = () => {
       void refreshLiveSessionState(activeTournamentId);
+      void refreshSession().catch(() => {});
     };
 
     const onStorage = (event: StorageEvent) => {
@@ -172,7 +173,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", syncLiveState);
     };
-  }, [apiEnabled, screen, activeTournamentId, refreshLiveSessionState]);
+  }, [apiEnabled, screen, activeTournamentId, refreshLiveSessionState, refreshSession]);
 
   const showAccountNav = loggedIn && screen !== "login" && devOpen;
   const isLogin = screen === "login";

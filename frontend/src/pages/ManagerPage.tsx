@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { previewExcel, generateLiveTournament, fetchDeployTarget } from "../api";
 import { isPlatformBuild } from "../platform/engineV2ApiBase";
+import { platformFinishLive } from "../platform/api";
 import { CourtBackground } from "../components/CourtBackground";
 import { PadelBall } from "../components/PadelBall";
 import { RacketProgress } from "../components/RacketProgress";
@@ -177,6 +178,22 @@ export default function ManagerPage() {
     setResumeSession(null);
   }, [liveData]);
 
+  const platformFinish = useMemo(() => {
+    if (!isPlatformBuild) return undefined;
+    const session = loadLiveSession();
+    const tournamentId = session?.tournamentId;
+    if (!tournamentId) return undefined;
+    return {
+      tournamentId,
+      onFinished: () => {
+        handlePdfExported();
+        window.close();
+      },
+      uploadPdf: (pdf: Blob, filename: string) =>
+        platformFinishLive(tournamentId, pdf, filename),
+    };
+  }, [handlePdfExported]);
+
   const nbEquipes = preview?.nb_equipes ?? 0;
   const poulesDisponibles = nbEquipes === 20 || nbEquipes === 24;
   const multiJoursDisponible = nbEquipes >= 20;
@@ -344,6 +361,7 @@ export default function ManagerPage() {
         nbEquipes={preview?.nb_equipes ?? liveData.meta.nb_equipes}
         liveData={liveData}
         onPdfExported={handlePdfExported}
+        platformFinish={platformFinish}
       />
     );
   }
