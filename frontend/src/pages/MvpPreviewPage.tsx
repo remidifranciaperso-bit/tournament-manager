@@ -146,6 +146,21 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [apiEnabled, tournaments]
   );
 
+  const refreshSession = useCallback(async () => {
+    const me = await platformFetchMe();
+    const rows = await platformFetchTournaments();
+    setUserEmail(me.email);
+    setActingAs(me.actingAs);
+    setClubProfile(me.clubProfile);
+    setTournaments(rows);
+    setActiveTournamentId((current) => {
+      if (current && rows.some((row) => row.id === current)) return current;
+      return rows[0]?.id ?? null;
+    });
+    setLoggedIn(true);
+    return { me, rows };
+  }, []);
+
   useEffect(() => {
     if (screen !== "tournament" || !activeTournamentId) {
       setCanResumeLive(false);
@@ -177,21 +192,6 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
 
   const showAccountNav = loggedIn && screen !== "login" && devOpen;
   const isLogin = screen === "login";
-
-  const refreshSession = useCallback(async () => {
-    const me = await platformFetchMe();
-    const rows = await platformFetchTournaments();
-    setUserEmail(me.email);
-    setActingAs(me.actingAs);
-    setClubProfile(me.clubProfile);
-    setTournaments(rows);
-    setActiveTournamentId((current) => {
-      if (current && rows.some((row) => row.id === current)) return current;
-      return rows[0]?.id ?? null;
-    });
-    setLoggedIn(true);
-    return { me, rows };
-  }, []);
 
   const resolvePostLoginScreen = useCallback(
     (me: { role: string }) => {

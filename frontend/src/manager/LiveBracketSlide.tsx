@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { LiveLayoutField, LiveMatch } from "./liveTypes";
 import {
   parseBracketSlide,
@@ -87,6 +87,52 @@ function teamFontSize(text: string, scaleH: number): number {
   return ptOnSlide(pt, scaleH);
 }
 
+function BracketTeamLabel({
+  text,
+  capture = false,
+}: {
+  text: string;
+  capture?: boolean;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [wrap, setWrap] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!capture) {
+      setWrap(false);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+
+    el.classList.remove("line-clamp-2");
+    el.style.whiteSpace = "nowrap";
+    el.style.webkitLineClamp = "";
+    el.style.display = "";
+
+    const overflows = el.scrollWidth > el.clientWidth + 1;
+    setWrap(overflows);
+  }, [text, capture]);
+
+  if (!capture) {
+    return <span className="line-clamp-2 break-words">{text}</span>;
+  }
+
+  return (
+    <span
+      ref={ref}
+      data-export-team-label=""
+      className={
+        wrap
+          ? "block w-full overflow-hidden line-clamp-2 leading-tight"
+          : "block w-full overflow-hidden whitespace-nowrap"
+      }
+    >
+      {text}
+    </span>
+  );
+}
+
 export function TemplateMatchBox({
   match,
   box,
@@ -126,10 +172,14 @@ export function TemplateMatchBox({
     : "justify-center text-center";
   const team1BodyClass = isBracketPlaceholder(team1)
     ? "shrink-0 whitespace-nowrap"
-    : "line-clamp-2 break-words";
+    : capture
+      ? ""
+      : "line-clamp-2 break-words";
   const team2BodyClass = isBracketPlaceholder(team2)
     ? "shrink-0 whitespace-nowrap"
-    : "line-clamp-2 break-words";
+    : capture
+      ? ""
+      : "line-clamp-2 break-words";
   const team1Weight = winnerSide === 1 ? "font-semibold" : "font-normal";
   const team2Weight = winnerSide === 2 ? "font-semibold" : "font-normal";
   const team1Display = team1;
@@ -186,9 +236,11 @@ export function TemplateMatchBox({
           className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team1Font} ${team1Align} ${isBracketPlaceholder(team1) ? "" : "overflow-hidden"} ${team1Weight}`}
           style={{ fontSize: team1Px }}
         >
-          <span className={team1BodyClass} data-export-team-label={capture ? "" : undefined}>
-            {team1Display}
-          </span>
+          {capture && !isBracketPlaceholder(team1) ? (
+            <BracketTeamLabel text={team1Display} capture />
+          ) : (
+            <span className={team1BodyClass}>{team1Display}</span>
+          )}
         </div>
         <div
           className="flex shrink-0 items-center justify-center font-noto font-normal text-arena-600"
@@ -200,9 +252,11 @@ export function TemplateMatchBox({
           className={`flex flex-1 items-center px-1.5 leading-tight text-arena-800 ${team2Font} ${team2Align} ${isBracketPlaceholder(team2) ? "" : "overflow-hidden"} ${team2Weight}`}
           style={{ fontSize: team2Px }}
         >
-          <span className={team2BodyClass} data-export-team-label={capture ? "" : undefined}>
-            {team2Display}
-          </span>
+          {capture && !isBracketPlaceholder(team2) ? (
+            <BracketTeamLabel text={team2Display} capture />
+          ) : (
+            <span className={team2BodyClass}>{team2Display}</span>
+          )}
         </div>
       </div>
 

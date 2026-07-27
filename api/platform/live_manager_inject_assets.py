@@ -147,14 +147,6 @@ _LIVE_MANAGER_INJECT_CSS_TEMPLATE = """
   overflow: visible !important;
   text-overflow: clip !important;
 }
-#export-capture-layer [data-export-capture="bracket"] [data-export-team-label] {
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
-  -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
-  word-break: break-word !important;
-  white-space: normal !important;
-}
 """.strip()
 
 _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
@@ -507,12 +499,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
         spanEl.classList.add("shrink-0", "whitespace-nowrap");
       } else {
         rowEl.classList.add("justify-center", "text-center", "overflow-hidden");
-        spanEl.classList.add("line-clamp-2", "break-words");
       }
-      spanEl.style.whiteSpace = "";
-      spanEl.style.display = "";
-      spanEl.style.wordBreak = "";
-      spanEl.style.webkitLineClamp = "";
       return;
     }
     if (isPh) {

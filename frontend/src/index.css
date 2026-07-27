@@ -176,15 +176,6 @@ body {
     text-transform: uppercase !important;
   }
 
-  /* Export PDF — deux lignes max par nom d'équipe (aligné onglet Live). */
-  #export-capture-layer [data-export-team-label] {
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    word-break: break-word !important;
-    white-space: normal !important;
-  }
 }
 
 /* Scrollbar discrète */
