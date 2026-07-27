@@ -8,4 +8,5 @@ bcrypt==4.2.1
 python-jose[cryptography]==3.3.0
 pydantic[email]==2.10.3
 Pillow==12.2.0
+python-pptx==1.0.2
 pymupdf==1.25.5
