@@ -15,6 +15,7 @@ export function buildPlatformLiveSnapshot(
     fields: prepared.fields,
     page_map: prepared.page_map,
     planning_layout: prepared.planning_layout,
+    page_sizes: prepared.page_sizes ?? {},
     nb_equipes: prepared.nb_equipes,
     template_id: prepared.template_id,
     equipes: prepared.equipes ?? [],

@@ -84,6 +84,7 @@ export interface EngineV2PrepareResult {
   meta: LiveTournamentMeta;
   nb_equipes: number;
   equipes?: Record<string, unknown>[];
+  page_sizes?: Record<string, { width: number; height: number }>;
 }
 
 export type EngineV2GeneratePhase = "prepare" | "capture" | "export";

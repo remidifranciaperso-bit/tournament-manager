@@ -33,6 +33,7 @@ import {
   useLiveTableHeadPresentation,
   LiveTableDisplayScaleProvider,
   useLiveTableShellClass,
+  useLiveTableV2Typography,
 } from "./liveTableTypography";
 
 function planningLayoutMetrics(v2TableHeaders: boolean) {
@@ -130,11 +131,12 @@ export function LivePlanningTab({
   matchResults,
   onToggleDone,
   exportMode = false,
-  v2TableHeaders = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2",
+  v2TableHeaders: v2TableHeadersProp,
   capture = false,
   planningReferenceHeight,
   planningSlideKey = 0,
 }: LivePlanningTabProps) {
+  const v2TableHeaders = useLiveTableV2Typography(v2TableHeadersProp);
   const pageRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);

@@ -25,6 +25,7 @@ import {
   useLiveTableHeadPresentation,
   LiveTableDisplayScaleProvider,
   useLiveTableShellClass,
+  useLiveTableV2Typography,
 } from "./liveTableTypography";
 
 /** Largeur de référence de la page poule (avant mise à l'échelle). */
@@ -393,9 +394,10 @@ export function LivePoolsTab({
   matches,
   matchResults,
   fields,
-  v2TableHeaders = import.meta.env.VITE_DEPLOY_TARGET === "engine-v2",
+  v2TableHeaders: v2TableHeadersProp,
   capture = false,
 }: LivePoolsTabProps) {
+  const v2TableHeaders = useLiveTableV2Typography(v2TableHeadersProp);
   if (view === "composition") {
     return (
       <CompositionView
