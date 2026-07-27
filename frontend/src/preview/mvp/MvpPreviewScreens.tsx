@@ -994,33 +994,44 @@ function TeamChangeImpactRow({ label, modified }: { label: string; modified: boo
   );
 }
 
-function TeamChangeSummaryList({ lines }: { lines: string[] }) {
-  if (!lines.length) return null;
-  return (
-    <ul className="mt-2 space-y-1.5 text-left text-xs leading-snug text-white/80">
-      {lines.map((line) => (
-        <li key={line} className="rounded-lg border border-white/10 bg-black/15 px-2.5 py-1.5">
-          {line}
-        </li>
-      ))}
-    </ul>
-  );
+function TeamChangeImpactDetail({ children }: { children: ReactNode }) {
+  return <p className="mt-1 pl-1 text-xs leading-snug text-white/65">{children}</p>;
 }
 
-function TeamChangeImpactGrid({
-  tsModified,
+function TeamChangeImpactSection({
   bracketModified,
-  convocationsModified,
+  tsDetail,
+  convocationDetails,
+  replacementDetail,
 }: {
-  tsModified: boolean;
   bracketModified: boolean;
-  convocationsModified: boolean;
+  tsDetail: string | null;
+  convocationDetails: string[];
+  replacementDetail: string | null;
 }) {
+  const tsChanged = Boolean(tsDetail);
+  const convChanged = convocationDetails.length > 0;
+
   return (
-    <div className="space-y-2">
-      <TeamChangeImpactRow label="Modification des TS" modified={tsModified} />
+    <div className="mt-2 space-y-2">
+      {replacementDetail ? (
+        <TeamChangeImpactDetail>{replacementDetail}</TeamChangeImpactDetail>
+      ) : null}
       <TeamChangeImpactRow label="Modification du tableau" modified={bracketModified} />
-      <TeamChangeImpactRow label="Modification des convocations" modified={convocationsModified} />
+      <div>
+        <TeamChangeImpactRow label="Modification des TS" modified={tsChanged} />
+        {tsChanged && tsDetail ? <TeamChangeImpactDetail>{tsDetail}</TeamChangeImpactDetail> : null}
+      </div>
+      <div>
+        <TeamChangeImpactRow label="Modification des convocations" modified={convChanged} />
+        {convChanged ? (
+          <div className="space-y-1">
+            {convocationDetails.map((line) => (
+              <TeamChangeImpactDetail key={line}>{line}</TeamChangeImpactDetail>
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -1041,6 +1052,18 @@ function TeamChangeProgressView({ message }: { message: string }) {
     </div>
   );
 }
+
+interface TeamChangeDetails {
+  replacement_detail: string | null;
+  ts_detail: string | null;
+  convocation_details: string[];
+}
+
+const DEFAULT_CHANGE_DETAILS: TeamChangeDetails = {
+  replacement_detail: null,
+  ts_detail: null,
+  convocation_details: [],
+};
 
 interface TeamChangeImpact {
   ts_modified: boolean;
@@ -1070,7 +1093,7 @@ export function MvpTeamChangeScreen({
   const [mode, setMode] = useState<TeamChangeMode>(null);
   const [result, setResult] = useState<CompatibilityResult>(null);
   const [checkMessage, setCheckMessage] = useState<string | null>(null);
-  const [summaryLines, setSummaryLines] = useState<string[]>([]);
+  const [changeDetails, setChangeDetails] = useState<TeamChangeDetails>(DEFAULT_CHANGE_DETAILS);
   const [impact, setImpact] = useState<TeamChangeImpact>(DEFAULT_IMPACT);
   const [checking, setChecking] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -1118,7 +1141,7 @@ export function MvpTeamChangeScreen({
     setReplacementTeam({ joueur1: EMPTY_PLAYER, joueur2: EMPTY_PLAYER });
     setResult(null);
     setCheckMessage(null);
-    setSummaryLines([]);
+    setChangeDetails(DEFAULT_CHANGE_DETAILS);
     setImpact(DEFAULT_IMPACT);
     setActionError(null);
   };
@@ -1173,10 +1196,14 @@ export function MvpTeamChangeScreen({
           ? "Compatible avec ajustement interne du tirage."
           : "Compatible — aucune convocation ne change."
       );
-      setSummaryLines(
+      setChangeDetails(
         mode === "replace"
-          ? ["Équipe remplacée — aperçu sans API."]
-          : []
+          ? {
+              replacement_detail: "Équipe remplacée — aperçu sans API.",
+              ts_detail: null,
+              convocation_details: [],
+            }
+          : DEFAULT_CHANGE_DETAILS
       );
       setImpact(mockImpact(nextResult, mode));
       return;
@@ -1186,7 +1213,11 @@ export function MvpTeamChangeScreen({
       const response = await platformCheckTeamChange(tournament.id, payload);
       setResult(response.result);
       setCheckMessage(response.message);
-      setSummaryLines(response.summary ?? []);
+      setChangeDetails({
+        replacement_detail: response.replacement_detail,
+        ts_detail: response.ts_detail,
+        convocation_details: response.convocation_details ?? [],
+      });
       setImpact({
         ts_modified: response.ts_modified,
         bracket_modified: response.bracket_modified,
@@ -1196,7 +1227,7 @@ export function MvpTeamChangeScreen({
       setActionError(err instanceof Error ? err.message : "Vérification impossible");
       setResult(null);
       setCheckMessage(null);
-      setSummaryLines([]);
+      setChangeDetails(DEFAULT_CHANGE_DETAILS);
       setImpact(DEFAULT_IMPACT);
     } finally {
       setChecking(false);
@@ -1230,7 +1261,7 @@ export function MvpTeamChangeScreen({
   const handleBackFromReview = () => {
     setResult(null);
     setCheckMessage(null);
-    setSummaryLines([]);
+    setChangeDetails(DEFAULT_CHANGE_DETAILS);
     setImpact(DEFAULT_IMPACT);
     setActionError(null);
   };
@@ -1273,15 +1304,12 @@ export function MvpTeamChangeScreen({
                   <p className="text-sm font-semibold leading-snug text-red-100">{checkMessage}</p>
                 )}
 
-                <TeamChangeSummaryList lines={summaryLines} />
-
-                <div className="mt-2">
-                  <TeamChangeImpactGrid
-                    tsModified={impact.ts_modified}
-                    bracketModified={impact.bracket_modified}
-                    convocationsModified={impact.convocations_modified}
-                  />
-                </div>
+                <TeamChangeImpactSection
+                  bracketModified={impact.bracket_modified}
+                  tsDetail={changeDetails.ts_detail}
+                  convocationDetails={changeDetails.convocation_details}
+                  replacementDetail={changeDetails.replacement_detail}
+                />
 
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   {canAuthorize ? (

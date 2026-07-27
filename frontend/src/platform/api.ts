@@ -474,7 +474,9 @@ export interface TeamChangeCheckResult {
   ts_modified: boolean;
   bracket_modified: boolean;
   convocations_modified: boolean;
-  summary: string[];
+  replacement_detail: string | null;
+  ts_detail: string | null;
+  convocation_details: string[];
 }
 
 function toMvpRoster(data: {

@@ -119,7 +119,9 @@ class TeamChangeCheckResponse(BaseModel):
     ts_modified: bool = False
     bracket_modified: bool = False
     convocations_modified: bool = False
-    summary: list[str] = Field(default_factory=list)
+    replacement_detail: str | None = None
+    ts_detail: str | None = None
+    convocation_details: list[str] = Field(default_factory=list)
 
 
 class TeamChangeApplyResponse(BaseModel):
