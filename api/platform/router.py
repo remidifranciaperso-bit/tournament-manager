@@ -3,15 +3,14 @@ from uuid import UUID
 import json
 
 import httpx
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PDF_MAX_BYTES, PLATFORM_PUBLIC_URL, PLATFORM_SEED_TEST_USERS
+from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PDF_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import get_db
-from api.platform.engine_access import verify_live_pdf_token
 from api.platform.engine_regen import attach_club_logo_to_snapshot, regenerate_pdf_via_engine
-from api.platform.live_pack import init_live_from_platform_snapshot
+from api.platform.live_pack import init_live_from_platform_pack
 from api.platform.pdf_convocations import extraire_pdf_convocations
 from api.platform.roster import roster_from_snapshot
 from api.platform.snapshot_bundle import live_snapshot_for_init, tournament_snapshot_bundle
@@ -448,30 +447,9 @@ def get_tournament_convocations_pdf(
     )
 
 
-@router.get("/engine/tournaments/{tournament_id}/pdf")
-def engine_fetch_tournament_pdf(
-    tournament_id: UUID,
-    token: str,
-    db: Session = Depends(get_db),
-) -> Response:
-    """PDF tournoi pour Engine V2 (jeton signé, sans session utilisateur)."""
-    if not verify_live_pdf_token(token, tournament_id):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Jeton invalide ou expiré")
-    row = db.get(Tournament, tournament_id)
-    if row is None or not row.pdf_data:
-        raise HTTPException(status_code=404, detail="PDF introuvable")
-    filename = row.pdf_filename or "tournoi.pdf"
-    return Response(
-        content=row.pdf_data,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
-    )
-
-
 @router.post("/tournaments/{tournament_id}/live-init", response_model=LiveInitResponse)
 def start_tournament_live(
     tournament_id: UUID,
-    request: Request,
     user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
 ) -> LiveInitResponse:
@@ -479,15 +457,18 @@ def start_tournament_live(
     if not row.pdf_data or not row.live_snapshot:
         raise HTTPException(status_code=422, detail="Tournoi incomplet (PDF ou snapshot manquant)")
 
-    snapshot = live_snapshot_for_init(row, user.club_profile)
-    platform_base = PLATFORM_PUBLIC_URL or str(request.base_url).rstrip("/")
+    profile = user.club_profile
+    logo_bytes = profile.logo_data if profile and profile.has_logo else None
+    logo_type = profile.logo_content_type if profile else None
+    snapshot = live_snapshot_for_init(row, profile)
 
     try:
-        payload = init_live_from_platform_snapshot(
-            platform_base_url=platform_base,
-            tournament_id=row.id,
-            snapshot=snapshot,
+        payload = init_live_from_platform_pack(
+            pdf_bytes=row.pdf_data,
             pdf_filename=row.pdf_filename or "tournoi.pdf",
+            live_snapshot=snapshot,
+            logo_bytes=logo_bytes,
+            logo_content_type=logo_type,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
