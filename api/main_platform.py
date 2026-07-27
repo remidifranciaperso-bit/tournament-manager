@@ -3,13 +3,14 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette import formparsers
 
 from api.platform.config import DATABASE_URL, DEPLOY_TARGET, ENGINE_V2_URL, MULTIPART_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import Base, SessionLocal, engine, migrate_schema
+from api.platform.live_proxy import _LIVE_PROXY_METHODS, proxy_live_request
 from api.platform.router import router as platform_router
 from api.platform.schemas import HealthResponse
 from api.platform.test_users import seed_test_users
@@ -36,6 +37,13 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Padel Tournament Platform", lifespan=lifespan)
 app.include_router(platform_router)
+
+
+@app.api_route("/api/live/{path:path}", methods=_LIVE_PROXY_METHODS)
+async def platform_live_proxy(path: str, request: Request):
+    """Manager Live : même origine Platform, session hébergée sur Engine V2."""
+    return await proxy_live_request(path, request)
+
 
 app.add_middleware(
     CORSMiddleware,

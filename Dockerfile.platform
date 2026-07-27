@@ -35,4 +35,4 @@ RUN python3 -c "from api.main_platform import app"
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn api.main_platform:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 120"]
+CMD ["sh", "-c", "uvicorn api.main_platform:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 300"]

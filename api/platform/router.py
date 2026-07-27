@@ -481,7 +481,9 @@ def start_tournament_live(
 
     row.status = "live_active"
     db.commit()
-    return LiveInitResponse(live_token=str(token), live_data=payload)
+    live_data = dict(payload)
+    live_data.pop("logo_png", None)
+    return LiveInitResponse(live_token=str(token), live_data=live_data)
 
 
 def _team_change_payload(body: TeamChangeRequest) -> dict:
