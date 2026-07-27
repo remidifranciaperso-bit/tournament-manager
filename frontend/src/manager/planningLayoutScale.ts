@@ -8,12 +8,13 @@ export function computePlanningReferenceHeight(
   planningLayout: Record<string, LiveLayoutField[]>,
   matches: LiveMatch[],
   completed: Set<string>,
-  matchResults: Record<string, StoredMatchResult>
+  matchResults: Record<string, StoredMatchResult>,
+  options?: { tsInSeedSlotOnly?: boolean }
 ): number {
   let maxRows = 0;
   for (const fields of Object.values(planningLayout)) {
     if (!fields?.length) continue;
-    const rows = buildPlanningRows(fields, matches, completed, matchResults);
+    const rows = buildPlanningRows(fields, matches, completed, matchResults, options);
     maxRows = Math.max(maxRows, rows.length);
   }
   return estimatePlanningTableHeight(maxRows);

@@ -139,27 +139,47 @@ export function isUnresolvedTeamLabel(text: string): boolean {
   return isUnresolvedPlaceholder(text);
 }
 
+/** Emplacement initial (nom direct) vs slot alimenté par Vainqueur/Perdant/poule. */
+export function isDirectTeamSlot(label: string): boolean {
+  const raw = label.trim();
+  if (!raw) return false;
+  return !isUnresolvedPlaceholder(raw);
+}
+
+export function stripTeamTsSuffix(display: string): string {
+  return display.replace(/\s*\(TS\d+\)\s*$/i, "").trim();
+}
+
 /** Affichage boîte match / planning — initiales ou placeholder V1 (🏆 H3:). */
-export function formatBracketTeamDisplay(label: string, resolved: string): string {
+export function formatBracketTeamDisplay(
+  label: string,
+  resolved: string,
+  options?: { tsInSeedSlotOnly?: boolean }
+): string {
   const raw = label.trim();
   if (!raw) return "—";
+  const showTs =
+    !options?.tsInSeedSlotOnly || isDirectTeamSlot(raw);
+
   if (
     resolved !== raw &&
     resolved.trim() &&
     !isUnresolvedPlaceholder(resolved)
   ) {
-    return ensureTeamTsSuffix(formatTeamWithInitials(resolved), [
-      raw,
-      resolved,
-    ]);
+    const display = formatTeamWithInitials(resolved);
+    if (showTs) {
+      return ensureTeamTsSuffix(display, [raw, resolved]);
+    }
+    return stripTeamTsSuffix(display);
   }
   if (isUnresolvedPlaceholder(raw)) {
     return formatTeamSlot(raw);
   }
-  return ensureTeamTsSuffix(formatTeamWithInitials(resolved.trim() || raw), [
-    raw,
-    resolved,
-  ]);
+  const display = formatTeamWithInitials(resolved.trim() || raw);
+  if (showTs) {
+    return ensureTeamTsSuffix(display, [raw, resolved]);
+  }
+  return stripTeamTsSuffix(display);
 }
 
 /** Réinjecte (TSn) si le libellé source l'avait mais l'affichage boîte l'a perdu (truncate). */

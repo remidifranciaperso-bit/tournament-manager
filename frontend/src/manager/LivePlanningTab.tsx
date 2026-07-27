@@ -69,6 +69,8 @@ interface LivePlanningTabProps {
   planningReferenceHeight?: number;
   /** Clé de slide (ex. index) — force remise à l’échelle à chaque sous-onglet planning. */
   planningSlideKey?: string | number;
+  /** Platform : (TSn) uniquement sur l'emplacement initial, pas après propagation. */
+  tsInSeedSlotOnly?: boolean;
 }
 
 const PLANNING_V2_TABLE_CLASS = "live-planning-v2-table";
@@ -132,6 +134,7 @@ export function LivePlanningTab({
   capture = false,
   planningReferenceHeight,
   planningSlideKey = 0,
+  tsInSeedSlotOnly = false,
 }: LivePlanningTabProps) {
   const v2TableHeaders = useLiveTableV2Typography(v2TableHeadersProp);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -151,9 +154,10 @@ export function LivePlanningTab({
         layoutFields,
         matches,
         completed,
-        matchResults
+        matchResults,
+        { tsInSeedSlotOnly }
       ),
-    [layoutFields, matches, completed, matchResults]
+    [layoutFields, matches, completed, matchResults, tsInSeedSlotOnly]
   );
 
   const matchByCode = useMemo(() => {

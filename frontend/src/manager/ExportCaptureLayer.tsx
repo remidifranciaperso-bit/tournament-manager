@@ -25,6 +25,7 @@ interface ExportCaptureLayerProps {
   meta: LiveTournamentMeta;
   fields: Record<string, string>;
   packVersion?: string | null;
+  tsInSeedSlotOnly?: boolean;
 }
 
 export function ExportCaptureLayer({
@@ -38,6 +39,7 @@ export function ExportCaptureLayer({
   meta,
   fields,
   packVersion = null,
+  tsInSeedSlotOnly = false,
 }: ExportCaptureLayerProps) {
   if (!target) return null;
 
@@ -141,6 +143,7 @@ export function ExportCaptureLayer({
             onToggleDone={() => {}}
             exportMode
             capture
+            tsInSeedSlotOnly={tsInSeedSlotOnly}
           />
         </LiveManagerDocumentPage>
         </LiveTableTypographyProvider>
@@ -175,6 +178,7 @@ export function ExportCaptureLayer({
             matchResults={matchResults}
             fixedRenderWidth={bracketCaptureWidth}
             capture
+            tsInSeedSlotOnly={tsInSeedSlotOnly}
           />
         </LiveManagerDocumentPage>
       </LiveTableTypographyProvider>

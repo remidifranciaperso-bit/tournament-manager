@@ -21,6 +21,7 @@ import {
   formatTeamSingleLineForCapture,
   formatTeamSlot,
   formatTeamWithInitials,
+  stripTeamTsSuffix,
   isBracketPlaceholder,
 } from "./formatBracketLabel";
 import {
@@ -37,7 +38,8 @@ function resolveFeedContent(
   key: string,
   matchesByCode: Map<string, LiveMatch>,
   matchResults: Record<string, StoredMatchResult>,
-  poolQualifiers: Map<string, string>
+  poolQualifiers: Map<string, string>,
+  tsInSeedSlotOnly = false
 ): string {
   const win = key.match(/^WIN_(.+)$/);
   const lose = key.match(/^LOSE_(.+)$/);
@@ -60,14 +62,16 @@ function resolveFeedContent(
   if (isBracketPlaceholder(text) || /^Vainqueur\s+/i.test(text) || /^Perdant\s+/i.test(text)) {
     return formatTeamSlot(text);
   }
-  return formatTeamWithInitials(text);
+  const formatted = formatTeamWithInitials(text);
+  return tsInSeedSlotOnly ? stripTeamTsSuffix(formatted) : formatted;
 }
 
 function resolveTeamDisplay(
   label: string,
   matchesByCode: Map<string, LiveMatch>,
   matchResults: Record<string, StoredMatchResult>,
-  poolQualifiers: Map<string, string>
+  poolQualifiers: Map<string, string>,
+  tsInSeedSlotOnly = false
 ): string {
   const raw = label.trim();
   if (!raw) return "—";
@@ -77,7 +81,7 @@ function resolveTeamDisplay(
     matchResults,
     poolQualifiers
   );
-  return formatBracketTeamDisplay(label, resolved);
+  return formatBracketTeamDisplay(label, resolved, { tsInSeedSlotOnly });
 }
 
 function teamFontSize(text: string, scaleH: number): number {
@@ -399,6 +403,8 @@ interface LiveBracketSlideProps {
   matchResults: Record<string, StoredMatchResult>;
   renderWidth: number;
   capture?: boolean;
+  /** Platform : (TSn) uniquement sur l'emplacement initial, pas après propagation. */
+  tsInSeedSlotOnly?: boolean;
 }
 
 export function LiveBracketSlide({
@@ -407,6 +413,7 @@ export function LiveBracketSlide({
   matchResults,
   renderWidth,
   capture = false,
+  tsInSeedSlotOnly = false,
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
@@ -501,13 +508,15 @@ export function LiveBracketSlide({
               match.equipe1,
               matchesByCode,
               matchResults,
-              poolQualifiers
+              poolQualifiers,
+              tsInSeedSlotOnly
             )}
             team2={resolveTeamDisplay(
               match.equipe2,
               matchesByCode,
               matchResults,
-              poolQualifiers
+              poolQualifiers,
+              tsInSeedSlotOnly
             )}
             score={result?.display ?? null}
             winnerSide={result?.winner ?? null}
@@ -529,7 +538,8 @@ export function LiveBracketSlide({
               field.key,
               matchesByCode,
               matchResults,
-              poolQualifiers
+              poolQualifiers,
+              tsInSeedSlotOnly
             )}
             scaleH={renderHeight}
             capture={capture}

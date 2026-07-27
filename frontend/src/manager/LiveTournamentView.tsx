@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isPlatformBuild } from "../platform/engineV2ApiBase";
 import { CourtBackground } from "../components/CourtBackground";
 import type { TournamentForm } from "../types";
 import { fetchTemplateLayout } from "./bracketSlideLayout";
@@ -110,6 +111,7 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
   } = liveData;
 
   const progress = useLiveProgress(live_token, matches.length, meta);
+  const tsInSeedSlotOnly = isPlatformBuild;
   const v2TableHeaders = useMemo(
     () => resolveV2TableHeaders(meta, pack_version),
     [meta, pack_version]
@@ -336,9 +338,10 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
         planning_layout,
         matches,
         progress.completed,
-        progress.matchResults
+        progress.matchResults,
+        { tsInSeedSlotOnly }
       ),
-    [planning_layout, matches, progress.completed, progress.matchResults]
+    [planning_layout, matches, progress.completed, progress.matchResults, tsInSeedSlotOnly]
   );
 
   const isBracketTab =
@@ -547,6 +550,7 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
                       slideIndex={mainSlideIndex}
                       matches={matches}
                       matchResults={progress.matchResults}
+                      tsInSeedSlotOnly={tsInSeedSlotOnly}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -566,6 +570,7 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
                       slideIndex={classementSlideIndex}
                       matches={matches}
                       matchResults={progress.matchResults}
+                      tsInSeedSlotOnly={tsInSeedSlotOnly}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -594,6 +599,7 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
                       planningReferenceHeight={planningReferenceHeight}
                       planningSlideKey={planningSlideIndex ?? planningPage}
                       v2TableHeaders={v2TableHeaders}
+                      tsInSeedSlotOnly={tsInSeedSlotOnly}
                     />
                   </LiveManagerDocumentPage>
                 ) : (
@@ -649,6 +655,7 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
         meta={meta}
         fields={fields}
         packVersion={pack_version}
+        tsInSeedSlotOnly={tsInSeedSlotOnly}
       />
     </div>
   );

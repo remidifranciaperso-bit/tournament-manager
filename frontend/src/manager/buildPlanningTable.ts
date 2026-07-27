@@ -56,7 +56,8 @@ function resolvePlanningTeam(
   label: string,
   matchesByCode: Map<string, LiveMatch>,
   matchResults: Record<string, StoredMatchResult>,
-  poolQualifiers: Map<string, string>
+  poolQualifiers: Map<string, string>,
+  tsInSeedSlotOnly = false
 ): string {
   const raw = label.trim();
   if (!raw) return "—";
@@ -66,14 +67,15 @@ function resolvePlanningTeam(
     matchResults,
     poolQualifiers
   ).trim();
-  return formatBracketTeamDisplay(label, resolved);
+  return formatBracketTeamDisplay(label, resolved, { tsInSeedSlotOnly });
 }
 
 export function buildPlanningRows(
   layoutFields: LiveLayoutField[],
   matches: LiveMatch[],
   completed: Set<string>,
-  matchResults: Record<string, StoredMatchResult>
+  matchResults: Record<string, StoredMatchResult>,
+  options?: { tsInSeedSlotOnly?: boolean }
 ): PlanningRow[] {
   const matchesByCode = buildMatchesByCode(matches);
   const poolQualifiers = buildPoolQualifierMap(matches, matchResults);
@@ -91,6 +93,8 @@ export function buildPlanningRows(
     else byDay.set(match.jour, [match]);
   }
 
+  const tsInSeedSlotOnly = options?.tsInSeedSlotOnly ?? false;
+
   return planningSlots(layoutFields)
     .map((slot) => {
       const source = slot.day != null ? byDay.get(slot.day) ?? [] : ordered;
@@ -105,13 +109,15 @@ export function buildPlanningRows(
           match.equipe1,
           matchesByCode,
           matchResults,
-          poolQualifiers
+          poolQualifiers,
+          tsInSeedSlotOnly
         ),
         equipe2: resolvePlanningTeam(
           match.equipe2,
           matchesByCode,
           matchResults,
-          poolQualifiers
+          poolQualifiers,
+          tsInSeedSlotOnly
         ),
         done: completed.has(match.code),
         duration: formatMatchDurationMinutes(
