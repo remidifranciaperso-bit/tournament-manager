@@ -1,8 +1,9 @@
 # Platform : comptes organisateurs + profil club + tournois persistants.
-# Regénération PDF team-change via Engine V2 (ENGINE_V2_URL).
+# Live Manager local (même code que Engine V2, sessions sur Platform).
+# Regénération PDF team-change via Engine V2 distant (ENGINE_V2_URL).
 FROM node:20-slim AS frontend-build
 
-ARG FRONTEND_BUILD_ID=platform-20260726
+ARG FRONTEND_BUILD_ID=platform-20260727
 RUN echo "Frontend build id: ${FRONTEND_BUILD_ID}"
 
 WORKDIR /app/frontend
@@ -19,7 +20,17 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     DEPLOY_TARGET=platform \
-    HOME=/tmp
+    LIVE_DATA_DIR=/tmp/_live \
+    HOME=/tmp \
+    MALLOC_ARENA_MAX=2
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        fonts-dejavu \
+        fonts-liberation \
+        fonts-noto \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -27,9 +38,13 @@ COPY requirements-platform.txt .
 RUN pip install --no-cache-dir -r requirements-platform.txt
 
 COPY api/ ./api/
+COPY engine/ ./engine/
+COPY engine_v2/ ./engine_v2/
+COPY fonts/ ./fonts/
 COPY schema/ ./schema/
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
+RUN mkdir -p /tmp/_live && chmod 777 /tmp/_live
 RUN test -f frontend/dist/index.html
 RUN python3 -c "from api.main_platform import app"
 

@@ -75,6 +75,8 @@ services:
     envVars:
       - key: DEPLOY_TARGET
         value: platform
+      - key: LIVE_DATA_DIR
+        value: /tmp/_live
       - key: ENGINE_V2_URL
         value: https://tournament-manager-engine-v2.onrender.com
       - key: PLATFORM_SEED_TEST_USERS

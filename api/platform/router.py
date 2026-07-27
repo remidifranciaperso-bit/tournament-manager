@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PDF_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import get_db
 from api.platform.engine_regen import attach_club_logo_to_snapshot, regenerate_pdf_via_engine
-from api.platform.live_pack import init_live_from_platform_pack
+from api.platform.live_local import init_platform_live_session
 from api.platform.pdf_convocations import extraire_pdf_convocations
 from api.platform.roster import roster_from_snapshot
 from api.platform.snapshot_bundle import live_snapshot_for_init, tournament_snapshot_bundle
@@ -463,7 +463,7 @@ def start_tournament_live(
     snapshot = live_snapshot_for_init(row, profile)
 
     try:
-        payload = init_live_from_platform_pack(
+        payload = init_platform_live_session(
             pdf_bytes=row.pdf_data,
             pdf_filename=row.pdf_filename or "tournoi.pdf",
             live_snapshot=snapshot,
@@ -472,8 +472,8 @@ def start_tournament_live(
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"Engine V2 Live indisponible: {exc}") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Live indisponible: {exc}") from exc
 
     token = payload.get("live_token")
     if not token:
