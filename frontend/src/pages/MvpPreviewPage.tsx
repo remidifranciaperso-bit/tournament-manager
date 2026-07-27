@@ -42,6 +42,7 @@ import {
   clearLiveSession,
   LIVE_SESSION_STORAGE_KEY,
   loadLiveSession,
+  PLATFORM_TOURNAMENT_FINISHED_KEY,
   platformAnyLiveSessionForTournament,
 } from "../manager/liveSessionStore";
 
@@ -111,6 +112,15 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     }
     const list = freshTournaments ?? tournaments;
     const tournament = list.find((item) => item.id === tournamentId);
+    if (tournament?.status === "finished") {
+      const stored = loadLiveSession();
+      if (stored?.tournamentId === tournamentId) {
+        clearLiveSession(stored.liveData.live_token);
+      }
+      setCanResumeLive(false);
+      setLiveActive(false);
+      return;
+    }
     const stored = loadLiveSession();
     const localSession =
       stored?.tournamentId === tournamentId ? stored : null;
@@ -180,6 +190,12 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
 
     const onStorage = (event: StorageEvent) => {
       if (event.key === LIVE_SESSION_STORAGE_KEY) syncLiveState();
+      if (event.key === PLATFORM_TOURNAMENT_FINISHED_KEY && event.newValue) {
+        void refreshSession().then(({ rows }) => {
+          void refreshLiveSessionState(event.newValue, rows);
+          localStorage.removeItem(PLATFORM_TOURNAMENT_FINISHED_KEY);
+        });
+      }
     };
 
     window.addEventListener("storage", onStorage);
@@ -189,6 +205,37 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
       window.removeEventListener("focus", syncLiveState);
     };
   }, [apiEnabled, screen, activeTournamentId, refreshLiveSessionState, refreshSession]);
+
+  useEffect(() => {
+    if (!apiEnabled || !loggedIn) return;
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== PLATFORM_TOURNAMENT_FINISHED_KEY || !event.newValue) return;
+      void refreshSession().then(({ rows }) => {
+        if (activeTournamentId === event.newValue) {
+          void refreshLiveSessionState(event.newValue, rows);
+        }
+        localStorage.removeItem(PLATFORM_TOURNAMENT_FINISHED_KEY);
+      });
+    };
+
+    const onFocus = () => {
+      void refreshSession().catch(() => {});
+    };
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [
+    apiEnabled,
+    loggedIn,
+    activeTournamentId,
+    refreshLiveSessionState,
+    refreshSession,
+  ]);
 
   const showAccountNav = loggedIn && screen !== "login" && devOpen;
   const isLogin = screen === "login";

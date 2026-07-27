@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { previewExcel, generateLiveTournament, fetchDeployTarget } from "../api";
 import { isPlatformBuild } from "../platform/engineV2ApiBase";
-import { platformFinishLive } from "../platform/api";
+import {
+  platformFinishLive,
+  platformMarkTournamentFinished,
+  platformNotifyTournamentFinished,
+} from "../platform/api";
 import { CourtBackground } from "../components/CourtBackground";
 import { PadelBall } from "../components/PadelBall";
 import { RacketProgress } from "../components/RacketProgress";
@@ -185,14 +189,21 @@ export default function ManagerPage() {
     if (!tournamentId) return undefined;
     return {
       tournamentId,
-      onFinished: () => {
+      complete: async (pdf?: Blob) => {
+        if (pdf && pdf.size > 0) {
+          const filename = liveData?.pdf_filename || "tournoi.pdf";
+          await platformFinishLive(tournamentId, pdf, filename);
+        } else {
+          await platformMarkTournamentFinished(tournamentId);
+        }
+      },
+      exit: () => {
         handlePdfExported();
+        platformNotifyTournamentFinished(tournamentId);
         window.close();
       },
-      uploadPdf: (pdf: Blob, filename: string) =>
-        platformFinishLive(tournamentId, pdf, filename),
     };
-  }, [handlePdfExported]);
+  }, [handlePdfExported, liveData?.pdf_filename]);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
   const poulesDisponibles = nbEquipes === 20 || nbEquipes === 24;

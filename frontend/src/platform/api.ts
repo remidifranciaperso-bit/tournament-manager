@@ -456,6 +456,18 @@ export async function platformFinishLive(
   });
 }
 
+export async function platformMarkTournamentFinished(tournamentId: string): Promise<void> {
+  await platformFetch(`/api/platform/tournaments/${tournamentId}/live-finish`, {
+    method: "POST",
+  });
+}
+
+import { PLATFORM_TOURNAMENT_FINISHED_KEY } from "../manager/liveSessionStore";
+
+export function platformNotifyTournamentFinished(tournamentId: string): void {
+  localStorage.setItem(PLATFORM_TOURNAMENT_FINISHED_KEY, tournamentId);
+}
+
 export interface PlatformRosterPlayer {
   id: string;
   teamId: string;

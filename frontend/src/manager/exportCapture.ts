@@ -81,7 +81,7 @@ export const NARROW_TABLE_RATIO = 820 / 1024;
 export const FINAL_TABLE_WIDTH_PT = 820;
 export const FINAL_EXPORT_CAPTURE_WIDTH = FINAL_TABLE_WIDTH_PT;
 
-export type ExportPhase = "idle" | "capture" | "upload" | "download";
+export type ExportPhase = "idle" | "capture" | "upload" | "finalize" | "download";
 
 /** Vue de poule capturée pour l'export (composition ou une poule donnée). */
 export type ExportPoolView = "composition" | { letter: string };

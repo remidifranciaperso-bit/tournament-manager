@@ -92,8 +92,8 @@ interface LiveTournamentViewProps {
   onPdfExported?: () => void;
   platformFinish?: {
     tournamentId: string;
-    onFinished: () => void;
-    uploadPdf: (pdf: Blob, filename: string) => Promise<void>;
+    complete: (pdf?: Blob) => Promise<void>;
+    exit: () => void;
   };
 }
 

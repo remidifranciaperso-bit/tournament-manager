@@ -6,6 +6,8 @@ import { clearBroadcastSession } from "./liveBroadcastStore";
 
 const SESSION_STORAGE_KEY = "manager-live-session-v1";
 export const LIVE_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
+/** Signal parent Platform : tournoi passé en statut terminé. */
+export const PLATFORM_TOURNAMENT_FINISHED_KEY = "platform-tournament-finished";
 /** @deprecated use PLATFORM_LIVE_SETUP_KEY */
 export const PLATFORM_LIVE_AUTO_ENTER_KEY = "platform-live-auto-enter";
 export const PLATFORM_LIVE_SETUP_KEY = "platform-live-setup";

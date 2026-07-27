@@ -267,14 +267,6 @@ export function downloadEnginePdf(liveToken: string, filename: string): void {
   anchor.click();
 }
 
-function downloadViaHiddenFrame(url: string): void {
-  const frame = document.createElement("iframe");
-  frame.style.cssText = "display:none;width:0;height:0;border:0";
-  frame.src = url;
-  document.body.appendChild(frame);
-  window.setTimeout(() => frame.remove(), 120_000);
-}
-
 export async function buildTournamentExportPdfBlob(
   liveToken: string,
   payload: LivePdfExportPayload,
@@ -323,7 +315,7 @@ export async function buildTournamentExportPdfBlob(
     );
   }
 
-  onPhase?.("download");
+  onPhase?.("finalize");
   const pdfRes = await fetch(`/api/live/${liveToken}/pdf/export`);
   if (!pdfRes.ok) {
     onPhase?.("idle");
@@ -335,58 +327,23 @@ export async function buildTournamentExportPdfBlob(
 
 export async function downloadTournamentExportPdf(
   liveToken: string,
-  _filename: string,
+  filename: string,
   payload: LivePdfExportPayload,
   capturePages: () => Promise<ManagerExportCapture>,
   onPhase?: (phase: ExportPhase) => void
 ): Promise<void> {
-  onPhase?.("capture");
-  let captures: Record<string, string>;
-  let crosspageStubs: Record<string, CrossPageStub>;
-  try {
-    ({ captures, crosspageStubs } = await capturePages());
-  } catch (error) {
-    onPhase?.("idle");
-    throw error;
-  }
-
-  if (Object.keys(captures).length === 0) {
-    onPhase?.("idle");
-    throw new Error("Aucune capture Manager n'a pu être générée.");
-  }
-
-  onPhase?.("upload");
-
-  const { captures: _omit, ...payloadWithoutCaptures } = payload;
-  const form = buildExportFormData(
-    { ...payloadWithoutCaptures, crosspage_stubs: crosspageStubs },
-    captures
-  );
-
-  const res = await fetch(`/api/live/${liveToken}/pdf/export`, {
-    method: "POST",
-    body: form,
-  });
-
-  if (!res.ok) {
-    let detail = "";
-    try {
-      const json = (await res.json()) as { detail?: string };
-      detail = json.detail ?? "";
-    } catch {
-      detail = await res.text().catch(() => "");
-    }
-    throw new Error(
-      detail || "Impossible de générer le PDF export du tournoi."
-    );
-  }
-
-  const result = (await res.json()) as { download_url?: string };
-  const downloadUrl = result.download_url ?? `/api/live/${liveToken}/pdf/export`;
   onPhase?.("download");
-  downloadViaHiddenFrame(downloadUrl);
-  // Laisse la barre afficher « Téléchargement du PDF » un instant avant de
-  // refermer l'overlay (le téléchargement via iframe est fire-and-forget).
-  await new Promise((resolve) => window.setTimeout(resolve, 1400));
+  const blob = await buildTournamentExportPdfBlob(
+    liveToken,
+    payload,
+    capturePages,
+    onPhase
+  );
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+  link.click();
+  URL.revokeObjectURL(url);
   onPhase?.("idle");
 }

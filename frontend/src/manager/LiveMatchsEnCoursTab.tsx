@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MatchFormatCode } from "./matchFormats";
 import {
   CourtFooterSlot,
@@ -24,6 +24,7 @@ const EXPORT_PROGRESS_WIDTH: Record<ExportPhase, string> = {
   idle: "0%",
   capture: "40%",
   upload: "75%",
+  finalize: "92%",
   download: "100%",
 };
 
@@ -112,11 +113,11 @@ interface LiveMatchsEnCoursTabProps {
   assignMatchTerrain: (code: string, terrain: string) => void;
   /** Mode affichage public (retransmission) : sans saisie ni actions organisateur. */
   broadcast?: boolean;
-  /** Platform : export auto + retour Mes tournois (sans bouton export manuel). */
+  /** Platform : finalisation au clic Retour (sans export auto ni téléchargement). */
   platformFinish?: {
     tournamentId: string;
-    onFinished: () => void;
-    uploadPdf: (pdf: Blob, filename: string) => Promise<void>;
+    complete: (pdf?: Blob) => Promise<void>;
+    exit: () => void;
   };
 }
 
@@ -150,7 +151,7 @@ export function LiveMatchsEnCoursTab({
   const scoreForm = useScoreFormToggle();
   const exportingPdf = exportPhase !== "idle";
   const [exportError, setExportError] = useState<string | null>(null);
-  const platformFinishStarted = useRef(false);
+  const [platformReturning, setPlatformReturning] = useState(false);
   const [launchBlockedMessage, setLaunchBlockedMessage] = useState<
     Map<string, string>
   >(() => new Map());
@@ -324,11 +325,12 @@ export function LiveMatchsEnCoursTab({
   const finished =
     started && matches.length > 0 && completed.size >= matches.length;
 
-  useEffect(() => {
-    if (!platformFinish || !finished || platformFinishStarted.current) return;
-    platformFinishStarted.current = true;
+  const handlePlatformReturn = useCallback(async () => {
+    if (!platformFinish || platformReturning) return;
+    setPlatformReturning(true);
     setExportError(null);
-    void (async () => {
+    let pdfWarning: string | null = null;
+    try {
       try {
         const blob = await buildTournamentExportPdfBlob(
           liveToken,
@@ -336,24 +338,35 @@ export function LiveMatchsEnCoursTab({
           captureExportPages,
           onExportPhaseChange
         );
-        await platformFinish.uploadPdf(blob, pdfFilename);
-        onPdfExported?.();
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Export PDF impossible.";
-        setExportError(message);
-        platformFinishStarted.current = false;
+        await platformFinish.complete(blob);
+      } catch (pdfError) {
+        pdfWarning =
+          pdfError instanceof Error
+            ? pdfError.message
+            : "Enregistrement PDF impossible.";
+        await platformFinish.complete();
       }
-    })();
+      if (pdfWarning) {
+        setExportError(
+          `${pdfWarning} — le tournoi est marqué terminé ; le PDF d'origine reste disponible.`
+        );
+        await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      }
+      platformFinish.exit();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Finalisation impossible.";
+      setExportError(message);
+      setPlatformReturning(false);
+      onExportPhaseChange("idle");
+    }
   }, [
     platformFinish,
-    finished,
+    platformReturning,
     liveToken,
     exportPayload,
     captureExportPages,
     onExportPhaseChange,
-    pdfFilename,
-    onPdfExported,
   ]);
 
   const dayMatches = useMemo(
@@ -570,12 +583,10 @@ export function LiveMatchsEnCoursTab({
             </span>
             {platformFinish ? (
               <>
-                {exportingPdf ? (
+                {platformReturning || exportingPdf ? (
                   <div className="w-72 max-w-full">
                     <p className="mb-2 text-center text-sm font-semibold text-template-blue">
-                      {exportPhase === "download"
-                        ? "Enregistrement du PDF…"
-                        : "Préparation du PDF…"}
+                      Finalisation du tournoi…
                     </p>
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-template-blue/15">
                       <div
@@ -587,9 +598,8 @@ export function LiveMatchsEnCoursTab({
                 ) : (
                   <button
                     type="button"
-                    onClick={platformFinish.onFinished}
-                    disabled={Boolean(exportError) && exportingPdf}
-                    className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15 disabled:opacity-50"
+                    onClick={() => void handlePlatformReturn()}
+                    className="rounded-xl border border-arena-600/35 bg-arena-600/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-arena-700 transition hover:bg-arena-600/15"
                   >
                     Retour à Mes tournois
                   </button>
