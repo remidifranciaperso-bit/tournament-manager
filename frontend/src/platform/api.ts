@@ -1,5 +1,4 @@
 import type { MvpClubProfile, MvpTournamentSummary } from "../preview/mvp/mockMvpData";
-import { buildExportFormData } from "../manager/captureExportPages";
 
 const TOKEN_KEY = "platform_access_token";
 const ACT_AS_KEY = "platform_act_as_user_id";
@@ -454,30 +453,6 @@ export async function platformFinishLive(
   await platformFetch(`/api/platform/tournaments/${tournamentId}/live-finish`, {
     method: "POST",
     body: form,
-  });
-}
-
-export interface PlatformFinishExportInput {
-  liveToken: string;
-  payload: Record<string, unknown>;
-  captures: Record<string, string>;
-}
-
-export async function platformFinishLiveWithExport(
-  tournamentId: string,
-  input: PlatformFinishExportInput
-): Promise<void> {
-  const form = buildExportFormData(input.payload, input.captures);
-  form.append("live_token", input.liveToken);
-  await platformFetch(`/api/platform/tournaments/${tournamentId}/live-finish`, {
-    method: "POST",
-    body: form,
-  });
-}
-
-export async function platformMarkTournamentFinished(tournamentId: string): Promise<void> {
-  await platformFetch(`/api/platform/tournaments/${tournamentId}/live-finish`, {
-    method: "POST",
   });
 }
 

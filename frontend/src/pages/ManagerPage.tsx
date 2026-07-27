@@ -4,9 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { previewExcel, generateLiveTournament, fetchDeployTarget } from "../api";
 import { isPlatformBuild } from "../platform/engineV2ApiBase";
 import {
-  platformFinishLiveWithExport,
-  type PlatformFinishExportInput,
-  platformMarkTournamentFinished,
+  platformFinishLive,
   platformNotifyTournamentFinished,
 } from "../platform/api";
 import { CourtBackground } from "../components/CourtBackground";
@@ -190,12 +188,11 @@ export default function ManagerPage() {
     if (!tournamentId) return undefined;
     return {
       tournamentId,
-      complete: async (exportInput?: PlatformFinishExportInput) => {
-        if (exportInput) {
-          await platformFinishLiveWithExport(tournamentId, exportInput);
-        } else {
-          await platformMarkTournamentFinished(tournamentId);
+      complete: async (pdf: Blob, filename: string) => {
+        if (!pdf || pdf.size === 0) {
+          throw new Error("PDF export vide.");
         }
+        await platformFinishLive(tournamentId, pdf, filename);
       },
       exit: () => {
         handlePdfExported();

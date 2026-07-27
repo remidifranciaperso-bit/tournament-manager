@@ -12,7 +12,11 @@ import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
 import type { ExportPhase } from "./exportCapture";
-import { downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
+import {
+  buildTournamentExportPdfBlob,
+  downloadTournamentExportPdf,
+  type LivePdfExportPayload,
+} from "./LivePdfViewer";
 import type { ManagerExportCapture } from "./captureExportPages";
 import { LiveProjectionPage } from "./LiveProjectionPage";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -116,11 +120,7 @@ interface LiveMatchsEnCoursTabProps {
   /** Platform : finalisation au clic Retour (sans export auto ni téléchargement). */
   platformFinish?: {
     tournamentId: string;
-    complete: (exportInput?: {
-      liveToken: string;
-      payload: Record<string, unknown>;
-      captures: Record<string, string>;
-    }) => Promise<void>;
+    complete: (pdf: Blob, filename: string) => Promise<void>;
     exit: () => void;
   };
 }
@@ -334,19 +334,13 @@ export function LiveMatchsEnCoursTab({
     setPlatformReturning(true);
     setExportError(null);
     try {
-      onExportPhaseChange("capture");
-      const { captures, crosspageStubs } = await captureExportPages();
-      if (Object.keys(captures).length === 0) {
-        throw new Error("Aucune capture Manager n'a pu être générée.");
-      }
-      onExportPhaseChange("upload");
-      const { captures: _omit, ...payloadWithoutCaptures } = exportPayload;
-      await platformFinish.complete({
+      const blob = await buildTournamentExportPdfBlob(
         liveToken,
-        payload: { ...payloadWithoutCaptures, crosspage_stubs: crosspageStubs },
-        captures,
-      });
-      onExportPhaseChange("idle");
+        exportPayload,
+        captureExportPages,
+        onExportPhaseChange
+      );
+      await platformFinish.complete(blob, pdfFilename);
       platformFinish.exit();
     } catch (error) {
       const message =
@@ -362,6 +356,7 @@ export function LiveMatchsEnCoursTab({
     exportPayload,
     captureExportPages,
     onExportPhaseChange,
+    pdfFilename,
   ]);
 
   const dayMatches = useMemo(
