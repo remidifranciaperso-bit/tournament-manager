@@ -252,6 +252,7 @@ _MAX_GROUP_PERM = 6
 _MAX_SPORTIF_CANDIDATES = 4096
 _MAX_HOUR_GROUP_PERM = 6
 _SKIP_OPTIMIZE_TEAMS = 32
+_REBUILD_BRACKET_SIZES = frozenset({8, 12, 16, 20, 24})
 
 
 def _team_count(snapshot: dict[str, Any]) -> int:
@@ -488,6 +489,144 @@ def _optimize_ts_assignment(snapshot: dict[str, Any]) -> tuple[bool, int, bool]:
     return ts_changed, conv_cost, sportif_ok
 
 
+def _can_rebuild_bracket(snapshot: dict[str, Any]) -> bool:
+    count = _team_count(snapshot)
+    if count not in _REBUILD_BRACKET_SIZES:
+        return False
+    mode = (snapshot.get("meta") or {}).get("mode_tournoi") or "Élimination directe"
+    if mode == "Poules + tableau final":
+        return count in {20, 24}
+    return True
+
+
+def _bracket_draw_seed(snapshot: dict[str, Any]) -> int:
+    meta = snapshot.get("meta") or {}
+    stored = meta.get("bracket_seed")
+    if stored is not None:
+        try:
+            return int(stored)
+        except (TypeError, ValueError):
+            pass
+    parts = tuple(
+        (
+            str(equipe.get("joueur1") or ""),
+            str(equipe.get("joueur2") or ""),
+            int(equipe.get("ts") or 0),
+            int(equipe.get("poids") or 0),
+        )
+        for equipe in sorted(
+            snapshot.get("equipes") or [],
+            key=lambda item: int(item.get("ts") or 0),
+        )
+    )
+    return hash(parts) & 0x7FFFFFFF
+
+
+def _team_from_equipe_dict(data: dict[str, Any]):
+    from engine.models.team import Team
+
+    return Team(
+        numero=int(data.get("numero") or data.get("ts") or 0),
+        ts=int(data.get("ts") or 0),
+        joueur1=str(data.get("joueur1") or ""),
+        classement_j1=int(data.get("classement_j1") or 0),
+        joueur2=str(data.get("joueur2") or ""),
+        classement_j2=int(data.get("classement_j2") or 0),
+        poids=int(data.get("poids") or 0),
+    )
+
+
+def _tournament_from_snapshot(snapshot: dict[str, Any]):
+    from engine.models.tournament import Tournament
+
+    meta = snapshot.get("meta") or {}
+    equipes = [
+        _team_from_equipe_dict(item)
+        for item in sorted(
+            snapshot.get("equipes") or [],
+            key=lambda row: int(row.get("ts") or 0),
+        )
+    ]
+    heures = list(meta.get("heures_debut_jours") or [])
+    if not heures:
+        heures = [meta.get("heure_debut") or "18:00"]
+
+    tournoi = Tournament(
+        club=meta.get("club") or "",
+        date_tournoi=meta.get("date_tournoi") or "",
+        type_tournoi=meta.get("type_tournoi") or "",
+        equipes=equipes,
+        heure_debut=meta.get("heure_debut") or heures[0],
+        duree_match=int(meta.get("duree_match") or 40),
+        terrains=list(meta.get("terrains") or ["Terrain 1"]),
+        terrain_principal=meta.get("terrain_principal") or "Terrain 1",
+        mode_tournoi=meta.get("mode_tournoi") or "Élimination directe",
+        nb_jours=int(meta.get("nb_jours") or 1),
+        heures_debut_jours=heures,
+    )
+    tournoi.methode_poules = meta.get("methode_poules") or "Méthode du serpentin"
+    return tournoi
+
+
+def _rebuild_bracket_and_planning(snapshot: dict[str, Any]) -> bool:
+    """Nouveau tirage sportif + planning après changement de TS (8–24 eq., hors 32)."""
+    if not _can_rebuild_bracket(snapshot):
+        return False
+
+    from engine.bracket_generator import generer_tableau
+    from engine.live_export import serialiser_equipe, serialiser_match
+    from engine.live_valeurs import construire_champs_live
+    from engine.schedule_engine import ajouter_planning
+
+    tournoi = _tournament_from_snapshot(snapshot)
+    if tournoi.nb_equipes != len(tournoi.equipes):
+        return False
+
+    matchs = generer_tableau(tournoi, seed=_bracket_draw_seed(snapshot))
+    matchs = ajouter_planning(
+        matchs,
+        tournoi.terrains,
+        tournoi.heure_debut,
+        tournoi.duree_match,
+        terrain_principal=tournoi.terrain_principal,
+        nb_jours=tournoi.nb_jours,
+        heures_debut_jours=tournoi.heures_debut_jours,
+    )
+    tournoi.matches = matchs
+    snapshot["matches"] = [serialiser_match(match) for match in matchs]
+    snapshot["fields"] = construire_champs_live(tournoi, matchs)
+    snapshot["equipes"] = [serialiser_equipe(equipe) for equipe in tournoi.equipes]
+    return True
+
+
+def _maybe_rebuild_after_ts_change(snapshot: dict[str, Any], ts_changed: bool) -> bool:
+    if not ts_changed or not _can_rebuild_bracket(snapshot):
+        return False
+    rebuilt = _rebuild_bracket_and_planning(snapshot)
+    if rebuilt:
+        meta = snapshot.setdefault("meta", {})
+        if isinstance(meta, dict):
+            meta["bracket_seed"] = _bracket_draw_seed(snapshot)
+    return rebuilt
+
+
+def _sportif_state(snapshot: dict[str, Any]) -> tuple[dict[tuple[str, str], int], dict[tuple[str, str], int]]:
+    equipes = snapshot.get("equipes") or []
+    current_ts = _team_ts_map(snapshot)
+    poids_by_team = {_team_identity(equipe): int(equipe.get("poids") or 999_999) for equipe in equipes}
+    return current_ts, poids_by_team
+
+
+def _apply_ranking_side_effects(snapshot: dict[str, Any], *, ranking_changed: bool) -> None:
+    current_ts, poids_by_team = _sportif_state(snapshot)
+    sportif_before = _sportif_valid(current_ts, poids_by_team)
+    if not ranking_changed and sportif_before:
+        return
+
+    ts_changed, _, _ = _optimize_ts_assignment(snapshot)
+    _maybe_rebuild_after_ts_change(snapshot, ts_changed)
+
+
 def _find_equipe(snapshot: dict[str, Any], team_id: str) -> dict[str, Any] | None:
     ts = int(team_id.rsplit("-", 1)[-1])
     for item in snapshot.get("equipes") or []:
@@ -546,8 +685,7 @@ def _apply_partner_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> 
 
     _apply_label_replacement(snapshot, old_labels, label_court)
     ranking_changed = new_poids != old_poids or new_c1 != old_c1 or new_c2 != old_c2
-    if ranking_changed:
-        _optimize_ts_assignment(snapshot)
+    _apply_ranking_side_effects(snapshot, ranking_changed=ranking_changed)
     return snapshot
 
 
@@ -580,7 +718,7 @@ def _apply_team_replace(snapshot: dict[str, Any], payload: dict[str, Any]) -> di
     equipe["label"] = label
 
     _apply_label_replacement(snapshot, old_labels, label_court)
-    _optimize_ts_assignment(snapshot)
+    _apply_ranking_side_effects(snapshot, ranking_changed=True)
     return snapshot
 
 
@@ -619,10 +757,11 @@ def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict
     before = copy.deepcopy(snapshot)
     after = apply_team_change(copy.deepcopy(snapshot), payload)
     ts_modified = _ts_numbers_changed(before, after)
-    bracket_modified = ts_modified
+    bracket_rebuilt = ts_modified and _can_rebuild_bracket(before)
+    bracket_modified = bracket_rebuilt
     convocations_changed = _team_convocation_changes(before, after)
 
-    if mode == "partner" and convocations_changed > 0:
+    if mode == "partner" and convocations_changed > 0 and not ts_modified:
         result = "blocked"
         impact = _impact_flags(
             mode,
@@ -646,12 +785,12 @@ def check_team_change(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict
         if convocations_changed == 0:
             message = (
                 "Compatible — aucune convocation ne change "
-                "(classement TS corrigé sans déplacer les créneaux)."
+                "(classement TS et tirage sportif corrigés)."
             )
         else:
             message = (
-                f"Compatible avec ajustement du tirage — {convocations_changed} convocation(s) "
-                "modifiée(s) (meilleure solution sportive trouvée)."
+                f"Compatible avec ajustement — {convocations_changed} convocation(s) "
+                "modifiée(s) (solution sportive avec le minimum de décalages)."
             )
     else:
         result = "ok"
