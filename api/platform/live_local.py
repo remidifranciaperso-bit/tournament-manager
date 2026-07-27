@@ -1,4 +1,4 @@
-"""Session Manager Live Platform — même init que Engine V2 ``init-from-pack`` (sans modifier V2)."""
+"""Session Manager Live Platform — même logique que ``engine.live_init.init_live_from_snapshot``."""
 
 from __future__ import annotations
 
@@ -50,6 +50,63 @@ def _write_logo_file(
     return path
 
 
+def _init_live_from_snapshot_local(
+    pdf_path: Path, snapshot: dict, logo_path: Path | None
+) -> dict:
+    """Copie de ``engine.live_init.init_live_from_snapshot`` — imports sans pandas."""
+    from api.live_store import chemin_logo, creer_session
+    from engine.live_logo_session import logo_url_pour_meta, preparer_logo_import
+    from engine.live_page_map import elaguer_planning_layout, normaliser_page_map_planning
+
+    pdf_filename = snapshot.get("pdf_filename") or pdf_path.name
+    planning_layout = snapshot.get("planning_layout") or {}
+    page_map = normaliser_page_map_planning(
+        snapshot["page_map"],
+        planning_layout=planning_layout,
+    )
+    planning_layout = elaguer_planning_layout(page_map, planning_layout)
+    page_sizes = snapshot.get("page_sizes") or {}
+
+    if not page_map.get("main") and not page_map.get("classement"):
+        raise ValueError("Snapshot invalide : aucune page tableau pour le live.")
+
+    resolved_logo = preparer_logo_import(pdf_path, snapshot, logo_path)
+
+    live_token, _pages_dir, page_sizes = creer_session(
+        pdf_path,
+        pdf_filename,
+        page_map,
+        logo_path=resolved_logo,
+        move_pdf=True,
+        trim_logo=False,
+        page_sizes=page_sizes,
+        pack_version=snapshot.get("version"),
+    )
+
+    meta = dict(snapshot["meta"])
+    logo_url = logo_url_pour_meta(live_token)
+    if logo_url is not None:
+        meta["logo_url"] = logo_url
+
+    payload = {
+        "meta": meta,
+        "matches": snapshot["matches"],
+        "page_map": page_map,
+        "fields": snapshot["fields"],
+        "planning_layout": planning_layout,
+        "live_token": live_token,
+        "page_sizes": page_sizes,
+        "pdf_filename": pdf_filename,
+        "live_version": "engine-pdf",
+        "pack_version": snapshot.get("version"),
+    }
+    if chemin_logo(live_token) is None:
+        logo_png = snapshot.get("logo_png")
+        if logo_png:
+            payload["logo_png"] = logo_png
+    return payload
+
+
 def init_platform_live_session(
     *,
     pdf_bytes: bytes,
@@ -58,9 +115,7 @@ def init_platform_live_session(
     logo_bytes: bytes | None = None,
     logo_content_type: str | None = None,
 ) -> dict:
-    """Crée une session ``/api/live/{token}`` — code partagé ``engine.live_init``."""
-    from engine.live_init import init_live_from_snapshot
-
+    """Crée une session ``/api/live/{token}`` locale depuis le tournoi Platform."""
     slim_snapshot = {
         key: value
         for key, value in live_snapshot.items()
@@ -76,7 +131,7 @@ def init_platform_live_session(
     logo_path = _write_logo_file(temp_dir, live_snapshot, logo_bytes, logo_content_type)
 
     try:
-        payload = init_live_from_snapshot(pdf_path, slim_snapshot, logo_path)
+        payload = _init_live_from_snapshot_local(pdf_path, slim_snapshot, logo_path)
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
