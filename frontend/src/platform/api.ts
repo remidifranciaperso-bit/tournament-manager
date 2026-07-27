@@ -398,16 +398,43 @@ export async function platformLaunchManagerLive(
   form: import("../types").TournamentForm,
   nbEquipes: number
 ): Promise<void> {
-  const { clearLiveSession, loadLiveSession, saveLiveSession, PLATFORM_LIVE_AUTO_ENTER_KEY } =
-    await import("../manager/liveSessionStore");
+  const {
+    clearLiveSession,
+    loadLiveSession,
+    saveLiveSession,
+    setPlatformLiveSetupMode,
+  } = await import("../manager/liveSessionStore");
   const { normalizeLiveTournamentData } = await import("../api");
   const previous = loadLiveSession();
   if (previous) {
     clearLiveSession(previous.liveData.live_token);
   }
   const result = await platformInitLive(tournamentId);
-  saveLiveSession(normalizeLiveTournamentData(result.live_data), form, nbEquipes);
-  sessionStorage.setItem(PLATFORM_LIVE_AUTO_ENTER_KEY, "1");
+  saveLiveSession(normalizeLiveTournamentData(result.live_data), form, nbEquipes, {
+    tournamentId,
+    formatsConfirmed: false,
+  });
+  setPlatformLiveSetupMode("formats");
+}
+
+export async function platformResumeManagerLive(tournamentId: string): Promise<void> {
+  const { platformAnyLiveSessionForTournament, setPlatformLiveSetupMode } =
+    await import("../manager/liveSessionStore");
+  const session = platformAnyLiveSessionForTournament(tournamentId);
+  if (!session) {
+    throw new Error("Aucune session live à reprendre pour ce tournoi.");
+  }
+  setPlatformLiveSetupMode("resume");
+}
+
+export async function platformCancelManagerLive(tournamentId: string): Promise<void> {
+  const { clearLiveSession, platformAnyLiveSessionForTournament } =
+    await import("../manager/liveSessionStore");
+  const session = platformAnyLiveSessionForTournament(tournamentId);
+  if (!session) {
+    throw new Error("Aucun live actif pour ce tournoi.");
+  }
+  clearLiveSession(session.liveData.live_token);
 }
 
 export interface PlatformRosterPlayer {

@@ -28,8 +28,8 @@ import { HUB_CHOOSE_SEARCH } from "./HubPage";
 import {
   buildResumeSummary,
   clearLiveSession,
+  consumePlatformLiveSetupMode,
   loadLiveSession,
-  PLATFORM_LIVE_AUTO_ENTER_KEY,
   saveLiveSession,
   snapshotToForm,
   type StoredLiveSession,
@@ -72,10 +72,7 @@ export default function ManagerPage() {
 
   useEffect(() => {
     const stored = loadLiveSession();
-    const freshLaunch = sessionStorage.getItem(PLATFORM_LIVE_AUTO_ENTER_KEY) === "1";
-    if (freshLaunch) {
-      sessionStorage.removeItem(PLATFORM_LIVE_AUTO_ENTER_KEY);
-    }
+    const setupMode = isPlatformBuild ? consumePlatformLiveSetupMode() : null;
 
     if (isPlatformBuild && stored) {
       void (async () => {
@@ -84,17 +81,33 @@ export default function ManagerPage() {
           if (!res.ok) {
             clearLiveSession(stored.liveData.live_token);
             setResumeSession(null);
-            if (freshLaunch) {
+            if (setupMode === "formats") {
               setGenError("Session live indisponible. Relancez depuis Mes tournois.");
             }
             return;
           }
-          setForm(snapshotToForm(stored.form));
+
+          const hasPoules = packHasPoules(stored.liveData);
+          const hydrated = hydrateFormFromPackMeta(stored.liveData.meta, hasPoules);
+          setForm((prev) => ({
+            ...snapshotToForm(stored.form),
+            ...hydrated,
+          }));
+
+          const needsFormats = stored.formatsConfirmed !== true;
+
+          if (needsFormats) {
+            setPendingPackLiveData(stored.liveData);
+            setPackHasPoulesFormat(hasPoules);
+            setStep(STEP_PACK_FORMAT);
+            return;
+          }
+
           setLiveData(stored.liveData);
           setResumeSession(null);
           setPhase("live");
         } catch {
-          if (freshLaunch) {
+          if (setupMode === "formats") {
             setGenError("Impossible de joindre le serveur live.");
           }
         } finally {
@@ -114,7 +127,11 @@ export default function ManagerPage() {
 
   const enterLivePhase = useCallback(
     (data: LiveTournamentData, formState: TournamentForm, equipes: number) => {
-      saveLiveSession(data, formState, equipes);
+      const existing = loadLiveSession();
+      saveLiveSession(data, formState, equipes, {
+        tournamentId: existing?.tournamentId,
+        formatsConfirmed: true,
+      });
       setLiveData(data);
       setResumeSession(null);
       setPhase("live");
@@ -238,6 +255,10 @@ export default function ManagerPage() {
   const goNext = () => setStep((s) => Math.min(s + 1, STEP_GENERATE));
   const goBack = () => {
     if (step === STEP_PACK_FORMAT) {
+      if (isPlatformBuild) {
+        window.close();
+        return;
+      }
       setPendingPackLiveData(null);
       setPackHasPoulesFormat(false);
       setStep(STEP_ENTRY);

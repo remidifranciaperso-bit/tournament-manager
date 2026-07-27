@@ -5,7 +5,12 @@ import { clearLiveProgress, readLiveProgressStats } from "./useLiveProgress";
 import { clearBroadcastSession } from "./liveBroadcastStore";
 
 const SESSION_STORAGE_KEY = "manager-live-session-v1";
+export const LIVE_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
+/** @deprecated use PLATFORM_LIVE_SETUP_KEY */
 export const PLATFORM_LIVE_AUTO_ENTER_KEY = "platform-live-auto-enter";
+export const PLATFORM_LIVE_SETUP_KEY = "platform-live-setup";
+
+export type PlatformLiveSetupMode = "formats" | "resume";
 
 export interface StoredFormSnapshot {
   pasDeLogo: boolean;
@@ -33,6 +38,10 @@ export interface StoredLiveSession {
   form: StoredFormSnapshot;
   nbEquipes: number;
   savedAt: number;
+  /** Platform : tournoi associé à la session live. */
+  tournamentId?: string;
+  /** Platform : formats validés et live accessible. */
+  formatsConfirmed?: boolean;
 }
 
 export interface LiveResumeSummary {
@@ -83,14 +92,18 @@ function stripHeavyLiveFields(data: LiveTournamentData): LiveTournamentData {
 export function saveLiveSession(
   liveData: LiveTournamentData,
   form: TournamentForm,
-  nbEquipes: number
+  nbEquipes: number,
+  options?: { tournamentId?: string; formatsConfirmed?: boolean }
 ): void {
+  const previous = loadLiveSession();
   const session: StoredLiveSession = {
     version: 1,
     liveData: stripHeavyLiveFields(liveData),
     form: formToSnapshot(form),
     nbEquipes,
     savedAt: Date.now(),
+    tournamentId: options?.tournamentId ?? previous?.tournamentId,
+    formatsConfirmed: options?.formatsConfirmed ?? previous?.formatsConfirmed,
   };
 
   try {
@@ -133,4 +146,35 @@ export function clearLiveSession(liveToken: string): void {
   localStorage.removeItem(SESSION_STORAGE_KEY);
   clearLiveProgress(liveToken);
   clearBroadcastSession(liveToken);
+}
+
+export function setPlatformLiveSetupMode(mode: PlatformLiveSetupMode): void {
+  localStorage.setItem(PLATFORM_LIVE_SETUP_KEY, mode);
+}
+
+export function consumePlatformLiveSetupMode(): PlatformLiveSetupMode | null {
+  const mode = localStorage.getItem(PLATFORM_LIVE_SETUP_KEY);
+  localStorage.removeItem(PLATFORM_LIVE_SETUP_KEY);
+  if (mode === "formats" || mode === "resume") return mode;
+  return null;
+}
+
+export function platformLiveSessionForTournament(
+  tournamentId: string
+): StoredLiveSession | null {
+  const session = loadLiveSession();
+  if (!session) return null;
+  if (session.tournamentId !== tournamentId) return null;
+  if (!session.formatsConfirmed) return null;
+  return session;
+}
+
+/** Session live Platform en cours (y compris avant validation des formats). */
+export function platformAnyLiveSessionForTournament(
+  tournamentId: string
+): StoredLiveSession | null {
+  const session = loadLiveSession();
+  if (!session) return null;
+  if (session.tournamentId !== tournamentId) return null;
+  return session;
 }

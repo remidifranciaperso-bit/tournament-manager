@@ -775,7 +775,11 @@ export function MvpTournamentDashboardScreen({
   onDownloadPdf,
   onExportConvocations,
   onModifyTeams,
+  liveActive = false,
+  canResumeLive = false,
   onLaunchLive,
+  onResumeLive,
+  onCancelLive,
   onDelete,
   onBack,
   onLogout,
@@ -785,11 +789,26 @@ export function MvpTournamentDashboardScreen({
   onDownloadPdf: () => void;
   onExportConvocations: () => void;
   onModifyTeams: () => void;
+  liveActive?: boolean;
+  canResumeLive?: boolean;
   onLaunchLive: () => void;
+  onResumeLive?: () => void;
+  onCancelLive?: () => void;
   onDelete?: () => void;
   onBack: () => void;
   onLogout: () => void;
 }) {
+  const liveButtonLabel = liveActive
+    ? canResumeLive
+      ? "Reprendre le live"
+      : "Continuer le live"
+    : "Lancer le Live V2";
+  const liveButtonHint = liveActive
+    ? canResumeLive
+      ? "Session en cours — reprendre le suivi jour J"
+      : "Configuration live en cours — reprendre la mise en place"
+    : "Suivi jour J — snapshot intégré, sans JSON";
+  const handleLiveClick = liveActive ? onResumeLive : canResumeLive ? onResumeLive : onLaunchLive;
   return (
     <MvpAccountPage onBack={onBack} onLogout={onLogout} scrollable className="gap-6">
       <div className="mx-auto w-full max-w-3xl">
@@ -848,31 +867,51 @@ export function MvpTournamentDashboardScreen({
             </span>
           </button>
 
-          <button type="button" onClick={onModifyTeams} className={actionCardClass()}>
+          <button
+            type="button"
+            onClick={liveActive ? undefined : onModifyTeams}
+            disabled={liveActive}
+            aria-disabled={liveActive}
+            className={[
+              actionCardClass(),
+              liveActive
+                ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
+                : "",
+            ].join(" ")}
+          >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconGrid className="h-5 w-5 text-lime" />
               Modifier les équipes
             </span>
             <span className="text-xs text-white/50">
-              Partenaire, remplacement — vérif convocations
+              {liveActive
+                ? "Live lancé, changements impossibles"
+                : "Partenaire, remplacement — vérif convocations"}
             </span>
           </button>
         </motion.div>
 
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex flex-col items-center gap-2">
           <button
             type="button"
-            onClick={onLaunchLive}
+            onClick={() => handleLiveClick?.()}
             className={`${actionCardClass()} w-full max-w-sm text-left`}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconTrophy className="h-5 w-5 text-lime" />
-              Lancer le Live V2
+              {liveButtonLabel}
             </span>
-            <span className="text-xs text-white/50">
-              Suivi jour J — snapshot intégré, sans JSON
-            </span>
+            <span className="text-xs text-white/50">{liveButtonHint}</span>
           </button>
+          {liveActive && onCancelLive ? (
+            <button
+              type="button"
+              onClick={onCancelLive}
+              className="text-xs font-semibold uppercase tracking-wide text-red-300/80 transition hover:text-red-200"
+            >
+              Annuler le live
+            </button>
+          ) : null}
         </div>
 
         {onDelete ? (

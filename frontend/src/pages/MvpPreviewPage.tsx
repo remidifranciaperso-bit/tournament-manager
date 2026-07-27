@@ -20,6 +20,7 @@ import {
 import { MVP_PREVIEW_BUILD } from "../preview/mvp/MvpPreviewShell";
 import {
   hasPlatformSession,
+  platformCancelManagerLive,
   platformClearActAsUser,
   platformFetchMe,
   platformFetchTournaments,
@@ -27,6 +28,7 @@ import {
   platformLaunchManagerLive,
   platformLogin,
   platformLogout,
+  platformResumeManagerLive,
   platformSetActAsUser,
   platformDeleteTournament,
   platformDownloadConvocationsPdf,
@@ -36,6 +38,11 @@ import {
   platformViewTournamentPdf,
 } from "../platform/api";
 import { defaultForm } from "../types";
+import {
+  clearLiveSession,
+  LIVE_SESSION_STORAGE_KEY,
+  platformAnyLiveSessionForTournament,
+} from "../manager/liveSessionStore";
 
 const PREVIEW_SCREENS: { id: MvpPreviewScreen; label: string }[] = [
   { id: "login", label: "Connexion" },
@@ -83,11 +90,69 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
   );
   const [navHistory, setNavHistory] = useState<MvpPreviewScreen[]>([]);
   const [booting, setBooting] = useState(apiEnabled);
+  const [canResumeLive, setCanResumeLive] = useState(false);
+  const [liveActive, setLiveActive] = useState(false);
 
   const activeTournament = useMemo(
     () => tournaments.find((item) => item.id === activeTournamentId) ?? null,
     [activeTournamentId, tournaments]
   );
+
+  const refreshLiveSessionState = useCallback(async (tournamentId: string | null) => {
+    if (!tournamentId || !apiEnabled) {
+      setCanResumeLive(false);
+      setLiveActive(false);
+      return;
+    }
+    const session = platformAnyLiveSessionForTournament(tournamentId);
+    if (!session) {
+      setCanResumeLive(false);
+      setLiveActive(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/live/${session.liveData.live_token}/status`);
+      if (!res.ok) {
+        clearLiveSession(session.liveData.live_token);
+        setCanResumeLive(false);
+        setLiveActive(false);
+        return;
+      }
+      setLiveActive(true);
+      setCanResumeLive(session.formatsConfirmed === true);
+    } catch {
+      setLiveActive(true);
+      setCanResumeLive(session.formatsConfirmed === true);
+    }
+  }, [apiEnabled]);
+
+  useEffect(() => {
+    if (screen !== "tournament" || !activeTournamentId) {
+      setCanResumeLive(false);
+      setLiveActive(false);
+      return;
+    }
+    void refreshLiveSessionState(activeTournamentId);
+  }, [screen, activeTournamentId, refreshLiveSessionState]);
+
+  useEffect(() => {
+    if (!apiEnabled || screen !== "tournament" || !activeTournamentId) return;
+
+    const syncLiveState = () => {
+      void refreshLiveSessionState(activeTournamentId);
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === LIVE_SESSION_STORAGE_KEY) syncLiveState();
+    };
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", syncLiveState);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", syncLiveState);
+    };
+  }, [apiEnabled, screen, activeTournamentId, refreshLiveSessionState]);
 
   const showAccountNav = loggedIn && screen !== "login" && devOpen;
   const isLogin = screen === "login";
@@ -304,12 +369,8 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [apiEnabled]
   );
 
-  const handleLaunchLive = useCallback(
-    async (tournamentId: string) => {
-      if (!apiEnabled) {
-        window.alert("Preview : ouvrirait Live V2 avec le snapshot de ce tournoi.");
-        return;
-      }
+  const openLiveWindow = useCallback(
+    async (prepare: () => Promise<void>, tournamentId?: string) => {
       const liveUrl = `${window.location.href.split("#")[0]}#/manager`;
       const liveWindow = window.open("", "_blank");
       if (!liveWindow) {
@@ -317,6 +378,27 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         return;
       }
       try {
+        await prepare();
+        liveWindow.location.href = liveUrl;
+        if (tournamentId) {
+          void refreshLiveSessionState(tournamentId);
+        }
+      } catch (err) {
+        liveWindow.close();
+        window.alert(err instanceof Error ? err.message : "Live indisponible");
+      }
+    },
+    [refreshLiveSessionState]
+  );
+
+  const handleLaunchLive = useCallback(
+    async (tournamentId: string) => {
+      if (!apiEnabled) {
+        window.alert("Preview : ouvrirait Live V2 avec le snapshot de ce tournoi.");
+        return;
+      }
+      if (liveActive) return;
+      await openLiveWindow(async () => {
         const form = {
           ...defaultForm(),
           club: clubProfile.club,
@@ -328,14 +410,50 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         const teams =
           tournaments.find((item) => item.id === tournamentId)?.teams ?? 0;
         await platformLaunchManagerLive(tournamentId, form, teams);
-        liveWindow.location.href = liveUrl;
+      }, tournamentId);
+    },
+    [apiEnabled, clubProfile, liveActive, openLiveWindow, tournaments]
+  );
+
+  const handleResumeLive = useCallback(
+    async (tournamentId: string) => {
+      if (!apiEnabled) {
+        window.alert("Preview : reprendrait le live de ce tournoi.");
+        return;
+      }
+      await openLiveWindow(async () => {
+        await platformResumeManagerLive(tournamentId);
+      }, tournamentId);
+    },
+    [apiEnabled, openLiveWindow]
+  );
+
+  const handleCancelLive = useCallback(
+    async (tournamentId: string) => {
+      if (!apiEnabled) return;
+      if (
+        !window.confirm(
+          "Annuler le live ? Vous pourrez à nouveau modifier les équipes."
+        )
+      ) {
+        return;
+      }
+      try {
+        await platformCancelManagerLive(tournamentId);
+        await refreshLiveSessionState(tournamentId);
       } catch (err) {
-        liveWindow.close();
-        window.alert(err instanceof Error ? err.message : "Live indisponible");
+        window.alert(err instanceof Error ? err.message : "Impossible d'annuler le live.");
       }
     },
-    [apiEnabled, clubProfile, tournaments]
+    [apiEnabled, refreshLiveSessionState]
   );
+
+  useEffect(() => {
+    if (screen !== "teams" || !activeTournamentId || !apiEnabled) return;
+    if (platformAnyLiveSessionForTournament(activeTournamentId)) {
+      setScreen("tournament");
+    }
+  }, [screen, activeTournamentId, apiEnabled]);
 
   if (booting) {
     return (
@@ -448,8 +566,15 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
               onExportConvocations={() => void handleExportConvocations(activeTournament.id)}
               onViewPdf={() => void handleViewPdf(activeTournament.id)}
               onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}
-              onModifyTeams={() => navigateTo("teams")}
+              onModifyTeams={() => {
+                if (liveActive) return;
+                navigateTo("teams");
+              }}
+              liveActive={liveActive}
+              canResumeLive={canResumeLive}
               onLaunchLive={() => void handleLaunchLive(activeTournament.id)}
+              onResumeLive={() => void handleResumeLive(activeTournament.id)}
+              onCancelLive={() => void handleCancelLive(activeTournament.id)}
               onDelete={() =>
                 void handleDeleteTournament(activeTournament.id, activeTournament.name)
               }
