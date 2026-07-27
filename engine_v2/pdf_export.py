@@ -39,6 +39,10 @@ def exporter_pdf_engine_v2(
     crosspage_stubs: dict[str, dict] | None = None,
     snapshot: dict | None = None,
     base_dir: Path | None = None,
+    native_bracket_sections: frozenset[str] | None = None,
+    tournoi=None,
+    match_dicts: list[dict] | None = None,
+    template_id: str | None = None,
 ) -> None:
     """
     Assemble le PDF final Engine V2.
@@ -99,6 +103,39 @@ def exporter_pdf_engine_v2(
                 slide_index = int(entry["index"])
                 key = capture_key(section, slide_index)
                 capture_data = captures.get(key)
+
+                if (
+                    native_bracket_sections
+                    and section in native_bracket_sections
+                    and section in ("main", "classement")
+                    and tournoi is not None
+                    and match_dicts is not None
+                    and template_id
+                ):
+                    from engine_v2.pdf_document import _render_bracket_page, _section_title
+
+                    default_title = (
+                        "Tableau principal" if section == "main" else "Matchs classement"
+                    )
+                    native_doc = fitz.open()
+                    try:
+                        _render_bracket_page(
+                            native_doc,
+                            base_dir=render_base,
+                            template_id=template_id,
+                            slide_index=slide_index,
+                            matches=match_dicts,
+                            match_results={},
+                            page_size=page_rect,
+                            tournoi=tournoi,
+                            title=_section_title(entry, default_title),
+                            logo_bytes=logo_bytes,
+                            logo_wh=logo_wh,
+                        )
+                        merged.insert_pdf(native_doc)
+                    finally:
+                        native_doc.close()
+                    continue
 
                 if slide_index < 0 or slide_index >= source.page_count:
                     if not capture_data:
