@@ -310,6 +310,12 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         window.alert("Preview : ouvrirait Live V2 avec le snapshot de ce tournoi.");
         return;
       }
+      const liveUrl = `${window.location.href.split("#")[0]}#/manager`;
+      const liveWindow = window.open("", "_blank");
+      if (!liveWindow) {
+        window.alert("Autorisez les pop-ups pour ouvrir le live dans une nouvelle fenêtre.");
+        return;
+      }
       try {
         const form = {
           ...defaultForm(),
@@ -322,12 +328,13 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         const teams =
           tournaments.find((item) => item.id === tournamentId)?.teams ?? 0;
         await platformLaunchManagerLive(tournamentId, form, teams);
-        navigate("/manager");
+        liveWindow.location.href = liveUrl;
       } catch (err) {
+        liveWindow.close();
         window.alert(err instanceof Error ? err.message : "Live indisponible");
       }
     },
-    [apiEnabled, clubProfile, navigate, tournaments]
+    [apiEnabled, clubProfile, tournaments]
   );
 
   if (booting) {
