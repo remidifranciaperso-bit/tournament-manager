@@ -586,6 +586,7 @@ def composer_page_export(
         if section in ("planning", "main", "classement", "pools")
         else 0.0
     )
+    placement_rect = content_rect
     if section in ("final", "planning"):
         placement_rect = fitz.Rect(
             content_rect.x0,
