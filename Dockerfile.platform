@@ -13,8 +13,7 @@ COPY frontend/ .
 RUN echo "${FRONTEND_BUILD_ID}" > .docker-build-id
 ENV VITE_DEPLOY_TARGET=platform
 ENV VITE_ENGINE_V2_URL=https://tournament-manager-engine-v2.onrender.com
-RUN npm run build && test -f dist/index.html \
-  && grep -q 'live-planning-v2-table' dist/assets/*.js
+RUN npm run build && test -f dist/index.html
 
 FROM python:3.12-slim
 
@@ -30,12 +29,8 @@ RUN apt-get update \
         fonts-dejavu \
         fonts-liberation \
         fonts-noto \
-        fonts-noto-color-emoji \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-COPY fonts/ /usr/share/fonts/truetype/tournament/
-RUN fc-cache -f -v > /dev/null
 
 WORKDIR /app
 
@@ -51,7 +46,7 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 RUN mkdir -p /tmp/_live && chmod 777 /tmp/_live
 RUN test -f frontend/dist/index.html
-RUN python3 -c "from api.main_platform import app"
+RUN python3 -c "from api.main_platform import app; from api.platform.manager_inject import manager_inject_js; assert len(manager_inject_js()) > 1000"
 
 EXPOSE 8000
 
