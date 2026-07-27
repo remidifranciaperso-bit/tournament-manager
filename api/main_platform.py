@@ -6,10 +6,17 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette import formparsers
 
 from api.live_router import router as live_router
+from api.main_v2 import (
+    _LIVE_MANAGER_INJECT_CSS,
+    _LIVE_MANAGER_INJECT_HEAD_SNIPPET,
+    _LIVE_MANAGER_INJECT_JS,
+    _strip_live_manager_inject,
+)
 from api.platform.config import DATABASE_URL, DEPLOY_TARGET, ENGINE_V2_URL, MULTIPART_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import Base, SessionLocal, engine, migrate_schema
 from api.platform.router import router as platform_router
@@ -66,6 +73,61 @@ def health() -> HealthResponse:
 @app.get("/api/platform/health", response_model=HealthResponse)
 def platform_health() -> HealthResponse:
     return health()
+
+
+_NO_STORE_HEADERS = {"Cache-Control": "no-store, max-age=0, must-revalidate"}
+
+
+@app.get("/engine-v2-live-manager-inject.css")
+def platform_live_manager_inject_css():
+    """CSS Manager Live — même bundle que Live V2 (glissement équipes / planning)."""
+    return Response(
+        content=_LIVE_MANAGER_INJECT_CSS,
+        media_type="text/css",
+        headers=_NO_STORE_HEADERS,
+    )
+
+
+@app.get("/engine-v2-live-manager-inject.js")
+def platform_live_manager_inject_js():
+    """JS Manager Live — même bundle que Live V2 (propagation vainqueur/perdant)."""
+    return Response(
+        content=_LIVE_MANAGER_INJECT_JS,
+        media_type="application/javascript",
+        headers=_NO_STORE_HEADERS,
+    )
+
+
+@app.middleware("http")
+async def inject_platform_live_manager_assets(request, call_next):
+    """Injecte le fallback Live V2 dans index.html (sans modifier le service Engine V2)."""
+    response = await call_next(request)
+    path = request.url.path
+    if path not in ("", "/") and path != "/index.html":
+        return response
+    content_type = response.headers.get("content-type", "")
+    if "text/html" not in content_type:
+        return response
+    body = b""
+    async for chunk in response.body_iterator:
+        body += chunk
+    html = body.decode("utf-8", errors="replace")
+    if "</head>" not in html:
+        return HTMLResponse(
+            content=html,
+            status_code=response.status_code,
+            headers=dict(response.headers),
+        )
+    html = _strip_live_manager_inject(html)
+    html = html.replace(
+        "</head>",
+        f"    {_LIVE_MANAGER_INJECT_HEAD_SNIPPET}\n  </head>",
+        1,
+    )
+    headers = dict(response.headers)
+    headers.pop("content-length", None)
+    headers["Cache-Control"] = "no-store, max-age=0"
+    return HTMLResponse(content=html, status_code=response.status_code, headers=headers)
 
 
 if _FRONT_DIST.is_dir():
