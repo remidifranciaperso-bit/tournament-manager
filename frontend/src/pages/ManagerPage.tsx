@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { previewExcel, generateLiveTournament, fetchDeployTarget } from "../api";
+import { isPlatformBuild } from "../platform/engineV2ApiBase";
 import { CourtBackground } from "../components/CourtBackground";
 import { PadelBall } from "../components/PadelBall";
 import { RacketProgress } from "../components/RacketProgress";
@@ -28,6 +29,7 @@ import {
   buildResumeSummary,
   clearLiveSession,
   loadLiveSession,
+  PLATFORM_LIVE_AUTO_ENTER_KEY,
   saveLiveSession,
   snapshotToForm,
   type StoredLiveSession,
@@ -69,7 +71,40 @@ export default function ManagerPage() {
   const genStartedRef = useRef(false);
 
   useEffect(() => {
-    setResumeSession(loadLiveSession());
+    const stored = loadLiveSession();
+    const freshLaunch = sessionStorage.getItem(PLATFORM_LIVE_AUTO_ENTER_KEY) === "1";
+    if (freshLaunch) {
+      sessionStorage.removeItem(PLATFORM_LIVE_AUTO_ENTER_KEY);
+    }
+
+    if (isPlatformBuild && stored) {
+      void (async () => {
+        try {
+          const res = await fetch(`/api/live/${stored.liveData.live_token}/status`);
+          if (!res.ok) {
+            clearLiveSession(stored.liveData.live_token);
+            setResumeSession(null);
+            if (freshLaunch) {
+              setGenError("Session live indisponible. Relancez depuis Mes tournois.");
+            }
+            return;
+          }
+          setForm(snapshotToForm(stored.form));
+          setLiveData(stored.liveData);
+          setResumeSession(null);
+          setPhase("live");
+        } catch {
+          if (freshLaunch) {
+            setGenError("Impossible de joindre le serveur live.");
+          }
+        } finally {
+          setResumeChecked(true);
+        }
+      })();
+      return;
+    }
+
+    setResumeSession(stored);
     setResumeChecked(true);
   }, []);
 
@@ -115,7 +150,10 @@ export default function ManagerPage() {
       clearLiveSession(resumeSession.liveData.live_token);
     }
     setResumeSession(null);
-  }, [resumeSession]);
+    if (isPlatformBuild) {
+      navigate("/");
+    }
+  }, [resumeSession, navigate]);
 
   const handlePdfExported = useCallback(() => {
     if (liveData) clearLiveSession(liveData.live_token);
@@ -206,7 +244,7 @@ export default function ManagerPage() {
       return;
     }
     if (step === STEP_ENTRY) {
-      navigate(`/?${HUB_CHOOSE_SEARCH}`);
+      navigate(isPlatformBuild ? "/" : `/?${HUB_CHOOSE_SEARCH}`);
       return;
     }
     setStep((s) => Math.max(s - 1, STEP_ENTRY));
@@ -289,7 +327,18 @@ export default function ManagerPage() {
     );
   }
 
-  if (resumeChecked && resumeSession) {
+  if (isPlatformBuild && !resumeChecked) {
+    return (
+      <div className="relative flex h-dvh w-full items-center justify-center overflow-hidden">
+        <CourtBackground />
+        <p className="relative z-10 text-sm font-medium text-white/70">
+          Ouverture du live…
+        </p>
+      </div>
+    );
+  }
+
+  if (resumeChecked && resumeSession && !isPlatformBuild) {
     return (
       <ManagerLiveResumeDialog
         summary={buildResumeSummary(resumeSession)}
@@ -300,6 +349,28 @@ export default function ManagerPage() {
   }
 
   if (step === STEP_ENTRY) {
+    if (isPlatformBuild) {
+      if (genError) {
+        return (
+          <div className="relative flex h-dvh w-full flex-col items-center justify-center gap-4 overflow-hidden px-4">
+            <CourtBackground />
+            <p className="relative z-10 max-w-md text-center text-sm text-red-300">
+              {genError}
+            </p>
+            <PrimaryButton
+              type="button"
+              onClick={() => navigate("/")}
+              className="relative z-10"
+            >
+              Retour aux tournois
+            </PrimaryButton>
+          </div>
+        );
+      }
+      navigate("/");
+      return null;
+    }
+
     return (
       <div className="relative flex h-dvh w-full flex-col overflow-hidden">
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">

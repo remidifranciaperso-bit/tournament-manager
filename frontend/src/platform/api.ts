@@ -398,10 +398,16 @@ export async function platformLaunchManagerLive(
   form: import("../types").TournamentForm,
   nbEquipes: number
 ): Promise<void> {
-  const { saveLiveSession } = await import("../manager/liveSessionStore");
+  const { clearLiveSession, loadLiveSession, saveLiveSession, PLATFORM_LIVE_AUTO_ENTER_KEY } =
+    await import("../manager/liveSessionStore");
   const { normalizeLiveTournamentData } = await import("../api");
+  const previous = loadLiveSession();
+  if (previous) {
+    clearLiveSession(previous.liveData.live_token);
+  }
   const result = await platformInitLive(tournamentId);
   saveLiveSession(normalizeLiveTournamentData(result.live_data), form, nbEquipes);
+  sessionStorage.setItem(PLATFORM_LIVE_AUTO_ENTER_KEY, "1");
 }
 
 export interface PlatformRosterPlayer {

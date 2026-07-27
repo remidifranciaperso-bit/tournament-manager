@@ -5,6 +5,7 @@ import { clearLiveProgress, readLiveProgressStats } from "./useLiveProgress";
 import { clearBroadcastSession } from "./liveBroadcastStore";
 
 const SESSION_STORAGE_KEY = "manager-live-session-v1";
+export const PLATFORM_LIVE_AUTO_ENTER_KEY = "platform-live-auto-enter";
 
 export interface StoredFormSnapshot {
   pasDeLogo: boolean;
