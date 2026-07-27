@@ -3,7 +3,7 @@ from uuid import UUID
 import json
 
 import httpx
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -502,19 +502,50 @@ def cancel_tournament_live(
 @router.post("/tournaments/{tournament_id}/live-finish")
 async def finish_tournament_live(
     tournament_id: UUID,
+    request: Request,
     user: User = Depends(get_acting_user),
     db: Session = Depends(get_db),
-    pdf: UploadFile | None = File(default=None),
 ) -> dict:
     row = _get_user_tournament(db, user, tournament_id)
-    if pdf is not None:
-        pdf_bytes = await pdf.read()
-        if pdf_bytes:
-            if len(pdf_bytes) > PDF_MAX_BYTES:
-                raise HTTPException(status_code=400, detail="PDF trop volumineux")
-            row.pdf_data = pdf_bytes
-            if pdf.filename:
-                row.pdf_filename = pdf.filename
+    pdf_bytes: bytes | None = None
+
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        pdf_file = form.get("pdf")
+        if pdf_file is not None and hasattr(pdf_file, "read"):
+            raw = await pdf_file.read()
+            if raw:
+                pdf_bytes = raw
+                if pdf_file.filename:
+                    row.pdf_filename = pdf_file.filename
+
+        if pdf_bytes is None:
+            live_token = form.get("live_token")
+            payload_raw = form.get("payload")
+            if live_token and payload_raw:
+                from api.live_router import (
+                    LivePdfExportBody,
+                    _captures_depuis_form,
+                    _generer_pdf_export,
+                )
+
+                try:
+                    payload = json.loads(payload_raw)
+                except json.JSONDecodeError as exc:
+                    raise HTTPException(
+                        status_code=422, detail="Payload export invalide."
+                    ) from exc
+                captures = await _captures_depuis_form(form)
+                body = LivePdfExportBody(**payload, captures=captures)
+                export_path = _generer_pdf_export(str(live_token), body)
+                pdf_bytes = export_path.read_bytes()
+
+    if pdf_bytes:
+        if len(pdf_bytes) > PDF_MAX_BYTES:
+            raise HTTPException(status_code=400, detail="PDF trop volumineux")
+        row.pdf_data = pdf_bytes
+
     row.status = "finished"
     db.commit()
     return {"ok": True}

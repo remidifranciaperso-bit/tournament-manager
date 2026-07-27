@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { previewExcel, generateLiveTournament, fetchDeployTarget } from "../api";
 import { isPlatformBuild } from "../platform/engineV2ApiBase";
 import {
-  platformFinishLive,
+  platformFinishLiveWithExport,
+  type PlatformFinishExportInput,
   platformMarkTournamentFinished,
   platformNotifyTournamentFinished,
 } from "../platform/api";
@@ -189,10 +190,9 @@ export default function ManagerPage() {
     if (!tournamentId) return undefined;
     return {
       tournamentId,
-      complete: async (pdf?: Blob) => {
-        if (pdf && pdf.size > 0) {
-          const filename = liveData?.pdf_filename || "tournoi.pdf";
-          await platformFinishLive(tournamentId, pdf, filename);
+      complete: async (exportInput?: PlatformFinishExportInput) => {
+        if (exportInput) {
+          await platformFinishLiveWithExport(tournamentId, exportInput);
         } else {
           await platformMarkTournamentFinished(tournamentId);
         }
@@ -203,7 +203,7 @@ export default function ManagerPage() {
         window.close();
       },
     };
-  }, [handlePdfExported, liveData?.pdf_filename]);
+  }, [handlePdfExported]);
 
   const nbEquipes = preview?.nb_equipes ?? 0;
   const poulesDisponibles = nbEquipes === 20 || nbEquipes === 24;

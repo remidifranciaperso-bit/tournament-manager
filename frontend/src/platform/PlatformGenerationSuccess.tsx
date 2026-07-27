@@ -39,11 +39,11 @@ export function PlatformGenerationSuccess({
             : "border-lime/30 bg-lime/10",
         ].join(" ")}
       >
-        <p className={["text-sm", saveError ? "text-red-100/90" : "text-lime/90"].join(" ")}>
-          {saveError
-            ? "Le PDF a été généré mais n'a pas pu être enregistré dans Mes tournois."
-            : "PDF et données Live enregistrés — aucun JSON à télécharger."}
-        </p>
+        {saveError ? (
+          <p className="text-sm text-red-100/90">
+            Le PDF a été généré mais n'a pas pu être enregistré dans Mes tournois.
+          </p>
+        ) : null}
         <div className="mt-6 flex flex-col items-center gap-3">
           {saveError && onRetrySave ? (
             <PrimaryButton onClick={onRetrySave} disabled={saving}>

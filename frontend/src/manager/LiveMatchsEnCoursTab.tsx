@@ -12,7 +12,7 @@ import { resolveFormatForMatch } from "./matchFormatResolver";
 import { parseTeamLabel } from "./parseTeamLabel";
 import type { LiveMatch, LiveTournamentMeta } from "./liveTypes";
 import type { ExportPhase } from "./exportCapture";
-import { buildTournamentExportPdfBlob, downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
+import { downloadTournamentExportPdf, type LivePdfExportPayload } from "./LivePdfViewer";
 import type { ManagerExportCapture } from "./captureExportPages";
 import { LiveProjectionPage } from "./LiveProjectionPage";
 import type { StoredMatchResult } from "./useLiveProgress";
@@ -116,7 +116,11 @@ interface LiveMatchsEnCoursTabProps {
   /** Platform : finalisation au clic Retour (sans export auto ni téléchargement). */
   platformFinish?: {
     tournamentId: string;
-    complete: (pdf?: Blob) => Promise<void>;
+    complete: (exportInput?: {
+      liveToken: string;
+      payload: Record<string, unknown>;
+      captures: Record<string, string>;
+    }) => Promise<void>;
     exit: () => void;
   };
 }
@@ -329,29 +333,20 @@ export function LiveMatchsEnCoursTab({
     if (!platformFinish || platformReturning) return;
     setPlatformReturning(true);
     setExportError(null);
-    let pdfWarning: string | null = null;
     try {
-      try {
-        const blob = await buildTournamentExportPdfBlob(
-          liveToken,
-          exportPayload,
-          captureExportPages,
-          onExportPhaseChange
-        );
-        await platformFinish.complete(blob);
-      } catch (pdfError) {
-        pdfWarning =
-          pdfError instanceof Error
-            ? pdfError.message
-            : "Enregistrement PDF impossible.";
-        await platformFinish.complete();
+      onExportPhaseChange("capture");
+      const { captures, crosspageStubs } = await captureExportPages();
+      if (Object.keys(captures).length === 0) {
+        throw new Error("Aucune capture Manager n'a pu être générée.");
       }
-      if (pdfWarning) {
-        setExportError(
-          `${pdfWarning} — le tournoi est marqué terminé ; le PDF d'origine reste disponible.`
-        );
-        await new Promise((resolve) => window.setTimeout(resolve, 1200));
-      }
+      onExportPhaseChange("upload");
+      const { captures: _omit, ...payloadWithoutCaptures } = exportPayload;
+      await platformFinish.complete({
+        liveToken,
+        payload: { ...payloadWithoutCaptures, crosspage_stubs: crosspageStubs },
+        captures,
+      });
+      onExportPhaseChange("idle");
       platformFinish.exit();
     } catch (error) {
       const message =

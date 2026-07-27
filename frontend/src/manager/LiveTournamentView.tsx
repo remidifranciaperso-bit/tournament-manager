@@ -92,7 +92,11 @@ interface LiveTournamentViewProps {
   onPdfExported?: () => void;
   platformFinish?: {
     tournamentId: string;
-    complete: (pdf?: Blob) => Promise<void>;
+    complete: (exportInput?: {
+      liveToken: string;
+      payload: Record<string, unknown>;
+      captures: Record<string, string>;
+    }) => Promise<void>;
     exit: () => void;
   };
 }
