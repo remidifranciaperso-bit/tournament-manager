@@ -1,15 +1,19 @@
-"""Appel Engine V2 pour regénérer un PDF depuis snapshot + captures."""
+"""Regénération PDF tournoi Platform (local) avec repli Engine V2 distant."""
 
 from __future__ import annotations
 
 import base64
 import copy
+import logging
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from api.platform.config import ENGINE_V2_URL
+from api.platform.config import DEPLOY_TARGET, ENGINE_V2_URL
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from api.platform.models import ClubProfile
@@ -64,6 +68,24 @@ def _merge_snapshot_patch(snapshot: dict, patch: dict) -> dict:
     return merged
 
 
+def _repo_base_dir() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _can_regenerate_locally() -> bool:
+    return (_repo_base_dir() / "templates bleus").is_dir()
+
+
+def _regenerate_pdf_local(snapshot: dict, captures: dict[str, str]) -> tuple[bytes, dict]:
+    from engine_v2.snapshot_regen import regenerate_pdf_from_snapshot
+
+    return regenerate_pdf_from_snapshot(
+        snapshot,
+        captures,
+        base_dir=_repo_base_dir(),
+    )
+
+
 def _regenerate_pdf_remote(snapshot: dict, captures: dict[str, str]) -> tuple[bytes, dict]:
     slim_snapshot = _slim_snapshot_for_remote(snapshot)
     url = f"{ENGINE_V2_URL.rstrip('/')}/api/v2/regenerate-from-snapshot"
@@ -109,4 +131,16 @@ def _regenerate_pdf_remote(snapshot: dict, captures: dict[str, str]) -> tuple[by
 
 def regenerate_pdf_via_engine(snapshot: dict) -> tuple[bytes, dict]:
     captures = _extract_captures(snapshot)
+    prefer_local = DEPLOY_TARGET == "platform" or _can_regenerate_locally()
+    if prefer_local:
+        try:
+            return _regenerate_pdf_local(snapshot, captures)
+        except Exception as exc:
+            logger.exception("Regénération PDF locale impossible")
+            if DEPLOY_TARGET == "platform" and not _can_regenerate_locally():
+                raise ValueError(
+                    "Regénération PDF impossible (templates tournoi absents sur le serveur)."
+                ) from exc
+            if DEPLOY_TARGET == "platform":
+                raise ValueError(f"Regénération PDF impossible : {exc}") from exc
     return _regenerate_pdf_remote(snapshot, captures)
