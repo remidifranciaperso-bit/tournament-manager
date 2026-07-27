@@ -105,9 +105,13 @@ def _match_dicts(matchs: list[Match]) -> list[dict]:
     ]
 
 
-def _native_bracket_sections(snapshot: dict) -> frozenset[str]:
+def _regen_uses_native_export(snapshot: dict) -> bool:
     meta = snapshot.get("meta") or {}
-    if isinstance(meta, dict) and meta.get("bracket_pages_native"):
+    return isinstance(meta, dict) and bool(meta.get("bracket_pages_native"))
+
+
+def _native_bracket_sections(snapshot: dict) -> frozenset[str]:
+    if _regen_uses_native_export(snapshot):
         return frozenset({"main", "classement"})
     return frozenset()
 
@@ -178,6 +182,7 @@ def regenerate_pdf_from_snapshot(
 
     _, template_id, _ = resolve_template_bundle(tournoi, render_base)
     native_sections = _native_bracket_sections(refreshed)
+    use_native_export = _regen_uses_native_export(refreshed)
 
     export_path = shell_path.parent / f"{shell_path.stem}.regen.pdf"
     try:
@@ -191,8 +196,10 @@ def regenerate_pdf_from_snapshot(
             snapshot=refreshed,
             base_dir=render_base,
             native_bracket_sections=native_sections,
-            match_dicts=_match_dicts(matchs) if native_sections else None,
-            template_id=template_id if native_sections else None,
+            match_dicts=_match_dicts(matchs) if use_native_export else None,
+            template_id=template_id if use_native_export else None,
+            native_planning=use_native_export,
+            planning_layout=refreshed.get("planning_layout") if use_native_export else None,
         )
         pdf_bytes = export_path.read_bytes()
         return pdf_bytes, refreshed

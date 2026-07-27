@@ -12,6 +12,7 @@ from engine.live_pdf_composite import (
     capture_key,
     composer_page_bracket_native,
     composer_page_export,
+    composer_page_planning_native,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
 _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
@@ -43,6 +44,8 @@ def exporter_pdf_engine_v2(
     native_bracket_sections: frozenset[str] | None = None,
     match_dicts: list[dict] | None = None,
     template_id: str | None = None,
+    native_planning: bool = False,
+    planning_layout: dict | None = None,
 ) -> None:
     """
     Assemble le PDF final Engine V2.
@@ -126,6 +129,37 @@ def exporter_pdf_engine_v2(
                         logo_wh=logo_wh,
                         club_name=club_name,
                         crosspage_stub=(crosspage_stubs or {}).get(key),
+                    )
+                    continue
+
+                if (
+                    native_planning
+                    and section == "planning"
+                    and match_dicts is not None
+                    and template_id
+                ):
+                    from engine.live_render_pdf import charger_layout_slide
+
+                    layout_fields = (planning_layout or {}).get(str(slide_index))
+                    if not layout_fields:
+                        layout_fields = charger_layout_slide(
+                            template_id, slide_index, render_base
+                        )
+                    page = merged.new_page(
+                        width=page_rect.width, height=page_rect.height
+                    )
+                    composer_page_planning_native(
+                        page,
+                        source,
+                        slide_index,
+                        layout_fields,
+                        match_dicts,
+                        {},
+                        base_dir=render_base,
+                        footer_slide_index=footer_reference,
+                        logo_bytes=logo_bytes,
+                        logo_wh=logo_wh,
+                        club_name=club_name,
                     )
                     continue
 
