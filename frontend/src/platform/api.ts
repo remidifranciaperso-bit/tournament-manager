@@ -329,6 +329,10 @@ export function platformTournamentConvocationsPdfUrl(id: string): string {
   return `/api/platform/tournaments/${id}/convocations-pdf`;
 }
 
+export function platformTournamentClassementFinalPdfUrl(id: string): string {
+  return `/api/platform/tournaments/${id}/classement-final-pdf`;
+}
+
 async function fetchTournamentPdfBlob(id: string, inline: boolean): Promise<{ blob: Blob; filename: string }> {
   const res = await fetch(platformTournamentPdfUrl(id, inline), {
     headers: authHeaders(),
@@ -378,6 +382,29 @@ export async function platformDownloadConvocationsPdf(id: string): Promise<void>
   const disposition = res.headers.get("Content-Disposition") ?? "";
   const match = disposition.match(/filename="([^"]+)"/i);
   const filename = match?.[1] ?? "convocations.pdf";
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function platformDownloadClassementFinalPdf(id: string): Promise<void> {
+  const res = await fetch(platformTournamentClassementFinalPdfUrl(id), {
+    headers: authHeaders(),
+  });
+  if (res.status === 401) {
+    platformLogout();
+    throw new PlatformAuthError("Session expirée");
+  }
+  if (!res.ok) {
+    throw new Error(await parseError(res));
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/i);
+  const filename = match?.[1] ?? "classement-final.pdf";
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

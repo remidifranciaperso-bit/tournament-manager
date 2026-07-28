@@ -777,6 +777,7 @@ export function MvpTournamentDashboardScreen({
   onViewPdf,
   onDownloadPdf,
   onExportConvocations,
+  onExportClassementFinal,
   onModifyTeams,
   liveActive = false,
   canResumeLive = false,
@@ -791,6 +792,7 @@ export function MvpTournamentDashboardScreen({
   onViewPdf: () => void;
   onDownloadPdf: () => void;
   onExportConvocations: () => void;
+  onExportClassementFinal: () => void;
   onModifyTeams: () => void;
   liveActive?: boolean;
   canResumeLive?: boolean;
@@ -877,15 +879,27 @@ export function MvpTournamentDashboardScreen({
             </button>
           )}
 
-          <button type="button" onClick={onExportConvocations} className={actionCardClass()}>
-            <span className="flex items-center gap-2 text-sm font-semibold text-white">
-              <IconClock className="h-5 w-5 text-lime" />
-              Exporter les convocations
-            </span>
-            <span className="text-xs text-white/50">
-              Télécharger la page convocations — à envoyer aux joueurs
-            </span>
-          </button>
+          {tournament.status === "finished" ? (
+            <button type="button" onClick={onExportClassementFinal} className={actionCardClass()}>
+              <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                <IconTrophy className="h-5 w-5 text-lime" />
+                Exporter le classement final
+              </span>
+              <span className="text-xs text-white/50">
+                Télécharger la page classement final — résultats à jour
+              </span>
+            </button>
+          ) : (
+            <button type="button" onClick={onExportConvocations} className={actionCardClass()}>
+              <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                <IconClock className="h-5 w-5 text-lime" />
+                Exporter les convocations
+              </span>
+              <span className="text-xs text-white/50">
+                Télécharger la page convocations — à envoyer aux joueurs
+              </span>
+            </button>
+          )}
 
           <button
             type="button"

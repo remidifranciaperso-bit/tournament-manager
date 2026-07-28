@@ -32,6 +32,7 @@ import {
   platformSetActAsUser,
   platformDeleteTournament,
   platformDownloadConvocationsPdf,
+  platformDownloadClassementFinalPdf,
   platformDownloadTournamentPdf,
   platformUpdateClubProfile,
   platformUploadLogo,
@@ -437,6 +438,18 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [apiEnabled]
   );
 
+  const handleExportClassementFinal = useCallback(
+    async (id: string) => {
+      if (!apiEnabled) return;
+      try {
+        await platformDownloadClassementFinalPdf(id);
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : "Classement final indisponible");
+      }
+    },
+    [apiEnabled]
+  );
+
   const patchTournamentStatus = useCallback(
     (tournamentId: string, status: MvpTournamentSummary["status"]) => {
       setTournaments((prev) =>
@@ -651,6 +664,9 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
             <MvpTournamentDashboardScreen
               tournament={activeTournament}
               onExportConvocations={() => void handleExportConvocations(activeTournament.id)}
+              onExportClassementFinal={() =>
+                void handleExportClassementFinal(activeTournament.id)
+              }
               onViewPdf={() => void handleViewPdf(activeTournament.id)}
               onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}
               onModifyTeams={() => {

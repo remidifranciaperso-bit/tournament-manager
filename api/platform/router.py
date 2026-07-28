@@ -12,6 +12,7 @@ from api.platform.database import get_db
 from api.platform.engine_regen import attach_club_logo_to_snapshot, regenerate_pdf_via_engine
 from api.platform.live_local import init_platform_live_session
 from api.platform.pdf_convocations import extraire_pdf_convocations
+from api.platform.pdf_classement_final import extraire_pdf_classement_final
 from api.platform.roster import roster_from_snapshot
 from api.platform.snapshot_bundle import live_snapshot_for_init, tournament_snapshot_bundle
 from api.platform.team_change import (
@@ -442,6 +443,38 @@ def get_tournament_convocations_pdf(
     filename = _convocations_filename(row.pdf_filename)
     return Response(
         content=convocations_pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _classement_final_filename(pdf_filename: str | None) -> str:
+    base = (pdf_filename or "tournoi.pdf").rsplit(".", 1)[0]
+    return f"{base}-classement-final.pdf"
+
+
+@router.get("/tournaments/{tournament_id}/classement-final-pdf")
+def get_tournament_classement_final_pdf(
+    tournament_id: UUID,
+    user: User = Depends(get_acting_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    row = _get_user_tournament(db, user, tournament_id)
+    if row.status != "finished":
+        raise HTTPException(
+            status_code=422,
+            detail="Classement final disponible uniquement après clôture du tournoi.",
+        )
+    if not row.pdf_data:
+        raise HTTPException(status_code=404, detail="PDF introuvable")
+    try:
+        classement_pdf = extraire_pdf_classement_final(row.pdf_data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    filename = _classement_final_filename(row.pdf_filename)
+    return Response(
+        content=classement_pdf,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
