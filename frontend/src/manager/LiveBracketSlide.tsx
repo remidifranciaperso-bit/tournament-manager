@@ -32,7 +32,7 @@ import {
   resolveTeamLabelDeep,
 } from "./resolveTeamLabel";
 import { buildPoolQualifierMap } from "./buildPoolStandings";
-import { LIVE_BRUSH_LABEL_CLASS } from "./LiveTabTitle";
+import { LIVE_BRUSH_LABEL_SIZE_CLASS } from "./LiveTabTitle";
 import { matchPlacementLabel } from "./matchPlacementLabel";
 import type { StoredMatchResult } from "./useLiveProgress";
 
@@ -155,6 +155,7 @@ export function TemplateMatchBox({
   placementLabel,
   splitMainBracket,
   capture = false,
+  platformExportCapture = false,
 }: {
   match: LiveMatch;
   box: BoxRectPct;
@@ -166,6 +167,7 @@ export function TemplateMatchBox({
   placementLabel: string | null;
   splitMainBracket: boolean;
   capture?: boolean;
+  platformExportCapture?: boolean;
 }) {
   const codePx = ptOnSlide(TEMPLATE_PT.matchCode, scaleH);
   const team1Px = teamFontSize(team1, scaleH);
@@ -195,6 +197,10 @@ export function TemplateMatchBox({
   const team2Weight = winnerSide === 2 ? "font-semibold" : "font-normal";
   const team1Display = team1;
   const team2Display = team2;
+  const placementLabelPx =
+    platformExportCapture && capture
+      ? ptOnSlide(TEMPLATE_PT.placementBrush, scaleH)
+      : null;
 
   return (
     <div
@@ -215,7 +221,10 @@ export function TemplateMatchBox({
             placementLabel === "1-2" && splitMainBracket
               ? "left-[72%]"
               : "left-1/2"
-          } ${LIVE_BRUSH_LABEL_CLASS}`}
+          } font-brush leading-none text-template-blue ${
+            placementLabelPx ? "" : LIVE_BRUSH_LABEL_SIZE_CLASS
+          }`}
+          style={placementLabelPx ? { fontSize: placementLabelPx } : undefined}
         >
           {placementLabel}
         </p>
@@ -412,6 +421,8 @@ interface LiveBracketSlideProps {
   capture?: boolean;
   /** Platform : (TSn) uniquement sur l'emplacement initial, pas après propagation. */
   tsInSeedSlotOnly?: boolean;
+  /** Platform export PDF : taille fixe des libellés « 1-2 », « 3-4 » (pas clamp vw). */
+  platformExportCapture?: boolean;
 }
 
 export function LiveBracketSlide({
@@ -421,6 +432,7 @@ export function LiveBracketSlide({
   renderWidth,
   capture = false,
   tsInSeedSlotOnly = false,
+  platformExportCapture = false,
 }: LiveBracketSlideProps) {
   const parsed = useMemo(() => parseBracketSlide(fields), [fields]);
   const matchesByCode = useMemo(() => buildMatchesByCode(matches), [matches]);
@@ -539,6 +551,7 @@ export function LiveBracketSlide({
             placementLabel={matchPlacementLabel(match.tour)}
             splitMainBracket={splitMainBracket}
             capture={capture}
+            platformExportCapture={platformExportCapture}
           />
         );
       })}

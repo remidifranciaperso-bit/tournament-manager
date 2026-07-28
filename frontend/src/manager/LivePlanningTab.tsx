@@ -71,6 +71,8 @@ interface LivePlanningTabProps {
   planningSlideKey?: string | number;
   /** Platform : (TSn) uniquement sur l'emplacement initial, pas après propagation. */
   tsInSeedSlotOnly?: boolean;
+  /** Platform export PDF : cases cochées selon le live (pas vides à remplir à la main). */
+  exportShowCompleted?: boolean;
 }
 
 const PLANNING_V2_TABLE_CLASS = "live-planning-v2-table";
@@ -92,11 +94,13 @@ function PlanningColgroup({ tableWidth }: { tableWidth: number }) {
 function PlanningDoneCell({
   done,
   exportMode,
+  exportShowCompleted,
   code,
   onToggleDone,
 }: {
   done: boolean;
   exportMode: boolean;
+  exportShowCompleted: boolean;
   code: string;
   onToggleDone: (code: string) => void;
 }) {
@@ -104,10 +108,16 @@ function PlanningDoneCell({
     return (
       <div className="flex w-full justify-center">
         <span
-          className="inline-block shrink-0 border border-template-blue/60 bg-white"
+          className={`inline-flex shrink-0 items-center justify-center border border-template-blue/60 bg-white ${
+            exportShowCompleted && done
+              ? "font-noto text-[9px] leading-none text-template-blue"
+              : ""
+          }`}
           style={{ width: 11, height: 11 }}
           aria-hidden
-        />
+        >
+          {exportShowCompleted && done ? "✓" : null}
+        </span>
       </div>
     );
   }
@@ -135,6 +145,7 @@ export function LivePlanningTab({
   planningReferenceHeight,
   planningSlideKey = 0,
   tsInSeedSlotOnly = false,
+  exportShowCompleted = false,
 }: LivePlanningTabProps) {
   const v2TableHeaders = useLiveTableV2Typography(v2TableHeadersProp);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -274,6 +285,7 @@ export function LivePlanningTab({
           <PlanningDoneCell
             done={row.done}
             exportMode={exportMode}
+            exportShowCompleted={exportShowCompleted}
             code={code}
             onToggleDone={onToggleDone}
           />

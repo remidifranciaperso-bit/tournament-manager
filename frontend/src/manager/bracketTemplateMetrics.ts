@@ -11,6 +11,8 @@ export const TEMPLATE_PT = {
   score: 9,
   scoreLabel: 10,
   feedLabel: 8,
+  /** Libellés brush « 1-2 », « 3-4 » — aligné engine/live_export_render_support.py */
+  placementBrush: 36,
 } as const;
 
 /** Boîte match — hauteur intermédiaire (noms + zone score). */

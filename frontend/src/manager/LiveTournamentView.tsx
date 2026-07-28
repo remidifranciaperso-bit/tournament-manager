@@ -656,6 +656,7 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
         fields={fields}
         packVersion={pack_version}
         tsInSeedSlotOnly={tsInSeedSlotOnly}
+        platformExport={isPlatformBuild}
       />
     </div>
   );

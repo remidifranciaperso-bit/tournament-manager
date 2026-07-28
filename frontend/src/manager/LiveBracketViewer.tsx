@@ -15,6 +15,8 @@ interface LiveBracketViewerProps {
   capture?: boolean;
   /** Platform : (TSn) uniquement sur l'emplacement initial, pas après propagation. */
   tsInSeedSlotOnly?: boolean;
+  /** Platform export PDF : taille fixe des libellés « 1-2 », « 3-4 ». */
+  platformExportCapture?: boolean;
 }
 
 export function LiveBracketViewer({
@@ -25,6 +27,7 @@ export function LiveBracketViewer({
   fixedRenderWidth,
   capture = false,
   tsInSeedSlotOnly = false,
+  platformExportCapture = false,
 }: LiveBracketViewerProps) {
   const { layout, loading, error } = useTemplateLayout(templateId);
   const slotRef = useRef<HTMLDivElement>(null);
@@ -80,6 +83,7 @@ export function LiveBracketViewer({
           renderWidth={effectiveWidth}
           capture={capture}
           tsInSeedSlotOnly={tsInSeedSlotOnly}
+          platformExportCapture={platformExportCapture}
         />
       ) : error ? (
         <p className="py-8 text-center text-sm text-red-500/80">

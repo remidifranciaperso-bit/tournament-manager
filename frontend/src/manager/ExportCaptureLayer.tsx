@@ -26,6 +26,8 @@ interface ExportCaptureLayerProps {
   fields: Record<string, string>;
   packVersion?: string | null;
   tsInSeedSlotOnly?: boolean;
+  /** Platform export PDF — cases planning cochées + libellés placement à taille fixe. */
+  platformExport?: boolean;
 }
 
 export function ExportCaptureLayer({
@@ -40,6 +42,7 @@ export function ExportCaptureLayer({
   fields,
   packVersion = null,
   tsInSeedSlotOnly = false,
+  platformExport = false,
 }: ExportCaptureLayerProps) {
   if (!target) return null;
 
@@ -144,6 +147,7 @@ export function ExportCaptureLayer({
             exportMode
             capture
             tsInSeedSlotOnly={tsInSeedSlotOnly}
+            exportShowCompleted={platformExport}
           />
         </LiveManagerDocumentPage>
         </LiveTableTypographyProvider>
@@ -179,6 +183,7 @@ export function ExportCaptureLayer({
             fixedRenderWidth={bracketCaptureWidth}
             capture
             tsInSeedSlotOnly={tsInSeedSlotOnly}
+            platformExportCapture={platformExport}
           />
         </LiveManagerDocumentPage>
       </LiveTableTypographyProvider>
