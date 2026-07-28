@@ -11,8 +11,12 @@ _PLANNING_MARKERS = ("CODE", "TERRAIN", "ÉQUIPE 1", "EQUIPE 1")
 _PARTICIPANTS_MARKERS = ("JOUEUR 1", "CLASSEMENT J1", "PARTICIPANTS")
 
 
+def _normalize_pdf_text(text: str) -> str:
+    return text.upper().replace("\xa0", " ").replace("\u202f", " ")
+
+
 def _page_est_classement_final(text: str) -> bool:
-    upper = text.upper()
+    upper = _normalize_pdf_text(text)
     if "CONVOCATION" in upper:
         return False
     if "PLANNING" in upper:

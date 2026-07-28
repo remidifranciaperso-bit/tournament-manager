@@ -31,9 +31,10 @@ import {
   platformResumeManagerLive,
   platformSetActAsUser,
   platformDeleteTournament,
-  platformDownloadConvocationsPdf,
   platformDownloadClassementFinalPdf,
+  platformDownloadConvocationsPdf,
   platformDownloadTournamentPdf,
+  PLATFORM_TOURNAMENT_FINISHED_EVENT,
   platformUpdateClubProfile,
   platformUploadLogo,
   platformViewTournamentPdf,
@@ -208,16 +209,31 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
   }, [apiEnabled, screen, activeTournamentId, refreshLiveSessionState, refreshSession]);
 
   useEffect(() => {
+    if (!apiEnabled || screen !== "tournament" || !activeTournamentId) return;
+    void refreshSession().catch(() => {});
+  }, [apiEnabled, screen, activeTournamentId, refreshSession]);
+
+  useEffect(() => {
     if (!apiEnabled || !loggedIn) return;
 
-    const onStorage = (event: StorageEvent) => {
-      if (event.key !== PLATFORM_TOURNAMENT_FINISHED_KEY || !event.newValue) return;
+    const applyFinishedRefresh = (tournamentId: string) => {
       void refreshSession().then(({ rows }) => {
-        if (activeTournamentId === event.newValue) {
-          void refreshLiveSessionState(event.newValue, rows);
+        if (activeTournamentId === tournamentId) {
+          void refreshLiveSessionState(tournamentId, rows);
         }
         localStorage.removeItem(PLATFORM_TOURNAMENT_FINISHED_KEY);
       });
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== PLATFORM_TOURNAMENT_FINISHED_KEY || !event.newValue) return;
+      applyFinishedRefresh(event.newValue);
+    };
+
+    const onFinished = (event: Event) => {
+      const tournamentId = (event as CustomEvent<string>).detail;
+      if (!tournamentId) return;
+      applyFinishedRefresh(tournamentId);
     };
 
     const onFocus = () => {
@@ -225,9 +241,11 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     };
 
     window.addEventListener("storage", onStorage);
+    window.addEventListener(PLATFORM_TOURNAMENT_FINISHED_EVENT, onFinished);
     window.addEventListener("focus", onFocus);
     return () => {
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener(PLATFORM_TOURNAMENT_FINISHED_EVENT, onFinished);
       window.removeEventListener("focus", onFocus);
     };
   }, [
@@ -426,25 +444,23 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [apiEnabled]
   );
 
-  const handleExportConvocations = useCallback(
-    async (id: string) => {
+  const handleExportPartialPdf = useCallback(
+    async (tournament: MvpTournamentSummary) => {
       if (!apiEnabled) return;
       try {
-        await platformDownloadConvocationsPdf(id);
+        if (tournament.status === "finished") {
+          await platformDownloadClassementFinalPdf(tournament.id);
+        } else {
+          await platformDownloadConvocationsPdf(tournament.id);
+        }
       } catch (err) {
-        window.alert(err instanceof Error ? err.message : "Convocations indisponibles");
-      }
-    },
-    [apiEnabled]
-  );
-
-  const handleExportClassementFinal = useCallback(
-    async (id: string) => {
-      if (!apiEnabled) return;
-      try {
-        await platformDownloadClassementFinalPdf(id);
-      } catch (err) {
-        window.alert(err instanceof Error ? err.message : "Classement final indisponible");
+        window.alert(
+          err instanceof Error
+            ? err.message
+            : tournament.status === "finished"
+              ? "Classement final indisponible"
+              : "Convocations indisponibles"
+        );
       }
     },
     [apiEnabled]
@@ -639,6 +655,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
               }}
               onNewTournament={() => void handleNewTournament()}
               onEditClub={() => navigateTo("club")}
+              onDeleteTournament={(id, name) => void handleDeleteTournament(id, name)}
               onBack={accountBack}
               onLogout={handleLogout}
               showBack={Boolean(actingAs)}
@@ -663,9 +680,8 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
             {impersonationBanner}
             <MvpTournamentDashboardScreen
               tournament={activeTournament}
-              onExportConvocations={() => void handleExportConvocations(activeTournament.id)}
-              onExportClassementFinal={() =>
-                void handleExportClassementFinal(activeTournament.id)
+              onExportPartialPdf={() =>
+                void handleExportPartialPdf(activeTournament)
               }
               onViewPdf={() => void handleViewPdf(activeTournament.id)}
               onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}

@@ -435,6 +435,17 @@ def get_tournament_convocations_pdf(
     row = _get_user_tournament(db, user, tournament_id)
     if not row.pdf_data:
         raise HTTPException(status_code=404, detail="PDF introuvable")
+    if row.status == "finished":
+        try:
+            classement_pdf = extraire_pdf_classement_final(row.pdf_data)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        filename = _classement_final_filename(row.pdf_filename)
+        return Response(
+            content=classement_pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
     try:
         convocations_pdf = extraire_pdf_convocations(row.pdf_data)
     except ValueError as exc:

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { FileDrop } from "../../components/FileDrop";
-import { IconCheck, IconClock, IconGrid, IconLogo, IconTable, IconTrophy, WizardPageTitle } from "../../components/Icons";
+import { IconCheck, IconClock, IconGrid, IconLogo, IconTable, IconTrash, IconTrophy, WizardPageTitle } from "../../components/Icons";
 import { ProductBrushHeadline } from "../../components/ProductEntry";
 import { GhostButton, NumberStepper, PrimaryButton } from "../../components/ui";
 import { LIVE_LOGO_HEIGHT_CLASS } from "../../manager/LiveTabTitle";
@@ -495,6 +495,7 @@ export function MvpTournamentsScreen({
   onOpenTournament,
   onNewTournament,
   onEditClub,
+  onDeleteTournament,
   onBack,
   onLogout,
   showBack = false,
@@ -505,6 +506,7 @@ export function MvpTournamentsScreen({
   onOpenTournament: (id: string) => void;
   onNewTournament: () => void;
   onEditClub: () => void;
+  onDeleteTournament?: (id: string, name: string) => void;
   onBack: () => void;
   onLogout: () => void;
   showBack?: boolean;
@@ -529,17 +531,34 @@ export function MvpTournamentsScreen({
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {tournaments.map((tournament) => (
-              <button
+              <div
                 key={tournament.id}
-                type="button"
-                onClick={() => onOpenTournament(tournament.id)}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-lime/25 hover:bg-white/[0.06]"
+                className="relative rounded-2xl border border-white/10 bg-white/[0.04] transition hover:border-lime/25 hover:bg-white/[0.06]"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <TournamentListCard tournament={tournament} />
-                  <StatusBadge status={tournament.status} />
-                </div>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenTournament(tournament.id)}
+                  className="w-full p-5 pr-12 text-left"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <TournamentListCard tournament={tournament} />
+                    <StatusBadge status={tournament.status} />
+                  </div>
+                </button>
+                {onDeleteTournament ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDeleteTournament(tournament.id, tournament.name);
+                    }}
+                    className="absolute bottom-3 right-3 rounded-lg border border-red-400/20 bg-red-500/10 p-2 text-red-200/80 transition hover:border-red-300/35 hover:bg-red-500/15 hover:text-red-100"
+                    aria-label={`Supprimer ${tournament.name}`}
+                  >
+                    <IconTrash className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
             ))}
           </div>
         )}
@@ -776,8 +795,7 @@ export function MvpTournamentDashboardScreen({
   tournament,
   onViewPdf,
   onDownloadPdf,
-  onExportConvocations,
-  onExportClassementFinal,
+  onExportPartialPdf,
   onModifyTeams,
   liveActive = false,
   canResumeLive = false,
@@ -791,8 +809,7 @@ export function MvpTournamentDashboardScreen({
   tournament: MvpTournamentSummary;
   onViewPdf: () => void;
   onDownloadPdf: () => void;
-  onExportConvocations: () => void;
-  onExportClassementFinal: () => void;
+  onExportPartialPdf: () => void;
   onModifyTeams: () => void;
   liveActive?: boolean;
   canResumeLive?: boolean;
@@ -880,7 +897,7 @@ export function MvpTournamentDashboardScreen({
           )}
 
           {tournament.status === "finished" ? (
-            <button type="button" onClick={onExportClassementFinal} className={actionCardClass()}>
+            <button type="button" onClick={onExportPartialPdf} className={actionCardClass()}>
               <span className="flex items-center gap-2 text-sm font-semibold text-white">
                 <IconTrophy className="h-5 w-5 text-lime" />
                 Exporter le classement final
@@ -890,7 +907,7 @@ export function MvpTournamentDashboardScreen({
               </span>
             </button>
           ) : (
-            <button type="button" onClick={onExportConvocations} className={actionCardClass()}>
+            <button type="button" onClick={onExportPartialPdf} className={actionCardClass()}>
               <span className="flex items-center gap-2 text-sm font-semibold text-white">
                 <IconClock className="h-5 w-5 text-lime" />
                 Exporter les convocations

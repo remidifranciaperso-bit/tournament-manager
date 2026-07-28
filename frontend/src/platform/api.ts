@@ -485,8 +485,13 @@ export async function platformFinishLive(
 
 import { PLATFORM_TOURNAMENT_FINISHED_KEY } from "../manager/liveSessionStore";
 
+export const PLATFORM_TOURNAMENT_FINISHED_EVENT = "platform-tournament-finished";
+
 export function platformNotifyTournamentFinished(tournamentId: string): void {
   localStorage.setItem(PLATFORM_TOURNAMENT_FINISHED_KEY, tournamentId);
+  window.dispatchEvent(
+    new CustomEvent(PLATFORM_TOURNAMENT_FINISHED_EVENT, { detail: tournamentId })
+  );
 }
 
 export interface PlatformRosterPlayer {
