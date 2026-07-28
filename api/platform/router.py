@@ -6,6 +6,7 @@ import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from types import SimpleNamespace
 
 from api.platform.config import ENGINE_V2_URL, LOGO_MAX_BYTES, PDF_MAX_BYTES, PLATFORM_SEED_TEST_USERS
 from api.platform.database import get_db
@@ -13,6 +14,13 @@ from api.platform.engine_regen import attach_club_logo_to_snapshot, regenerate_p
 from api.platform.live_local import init_platform_live_session
 from api.platform.pdf_convocations import extraire_pdf_convocations
 from api.platform.pdf_classement_final import extraire_pdf_classement_final
+from api.platform.pdf_filenames import (
+    platform_convocations_pdf_filename,
+    platform_finished_pdf_filename,
+    platform_pre_live_pdf_filename,
+    platform_resultats_pdf_filename,
+    platform_tournament_pdf_filename,
+)
 from api.platform.roster import roster_from_snapshot
 from api.platform.snapshot_bundle import live_snapshot_for_init, tournament_snapshot_bundle
 from api.platform.team_change import (
@@ -310,6 +318,11 @@ def _tournament_out(row: Tournament, club_name: str) -> TournamentOut:
     )
 
 
+def _acting_club(user: User) -> str:
+    profile = user.club_profile
+    return profile.club if profile else ""
+
+
 def _get_user_tournament(db: Session, user: User, tournament_id: UUID) -> Tournament:
     row = (
         db.query(Tournament)
@@ -371,6 +384,15 @@ async def create_tournament(
 
     profile = user.club_profile
     attach_club_logo_to_snapshot(live_snapshot, profile)
+    club_name = _acting_club(user)
+    pdf_stub = SimpleNamespace(
+        live_snapshot=live_snapshot,
+        date_label=date_label.strip(),
+        format_label=format_label.strip(),
+        name=name.strip().upper() or "TOURNOI",
+        status="generated",
+    )
+    pdf_filename = platform_pre_live_pdf_filename(pdf_stub, club_name)
 
     row = Tournament(
         user_id=user.id,
@@ -379,7 +401,7 @@ async def create_tournament(
         format_label=format_label.strip(),
         teams=max(0, teams),
         status="generated",
-        pdf_filename=pdf.filename or "tournoi.pdf",
+        pdf_filename=pdf_filename,
         pdf_data=pdf_bytes,
         live_snapshot=live_snapshot,
         export_captures=export_captures or None,
@@ -413,17 +435,12 @@ def get_tournament_pdf(
     if not row.pdf_data:
         raise HTTPException(status_code=404, detail="PDF introuvable")
     disposition = "inline" if inline else "attachment"
-    filename = row.pdf_filename or "tournoi.pdf"
+    filename = platform_tournament_pdf_filename(row, _acting_club(user))
     return Response(
         content=row.pdf_data,
         media_type="application/pdf",
         headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
     )
-
-
-def _convocations_filename(pdf_filename: str | None) -> str:
-    base = (pdf_filename or "tournoi.pdf").rsplit(".", 1)[0]
-    return f"{base}-convocations.pdf"
 
 
 @router.get("/tournaments/{tournament_id}/convocations-pdf")
@@ -433,6 +450,7 @@ def get_tournament_convocations_pdf(
     db: Session = Depends(get_db),
 ) -> Response:
     row = _get_user_tournament(db, user, tournament_id)
+    club_name = _acting_club(user)
     if not row.pdf_data:
         raise HTTPException(status_code=404, detail="PDF introuvable")
     if row.status == "finished":
@@ -440,7 +458,7 @@ def get_tournament_convocations_pdf(
             classement_pdf = extraire_pdf_classement_final(row.pdf_data)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        filename = _classement_final_filename(row.pdf_filename)
+        filename = platform_resultats_pdf_filename(row, club_name)
         return Response(
             content=classement_pdf,
             media_type="application/pdf",
@@ -451,17 +469,12 @@ def get_tournament_convocations_pdf(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    filename = _convocations_filename(row.pdf_filename)
+    filename = platform_convocations_pdf_filename(row, club_name)
     return Response(
         content=convocations_pdf,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
-
-
-def _classement_final_filename(pdf_filename: str | None) -> str:
-    base = (pdf_filename or "tournoi.pdf").rsplit(".", 1)[0]
-    return f"{base}-classement-final.pdf"
 
 
 @router.get("/tournaments/{tournament_id}/classement-final-pdf")
@@ -483,7 +496,7 @@ def get_tournament_classement_final_pdf(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    filename = _classement_final_filename(row.pdf_filename)
+    filename = platform_resultats_pdf_filename(row, _acting_club(user))
     return Response(
         content=classement_pdf,
         media_type="application/pdf",
@@ -559,8 +572,7 @@ async def finish_tournament_live(
     if len(pdf_bytes) > PDF_MAX_BYTES:
         raise HTTPException(status_code=400, detail="PDF trop volumineux")
     row.pdf_data = pdf_bytes
-    if pdf.filename:
-        row.pdf_filename = pdf.filename
+    row.pdf_filename = platform_finished_pdf_filename(row, _acting_club(user))
     row.status = "finished"
     db.commit()
     return {"ok": True}
@@ -653,6 +665,8 @@ def apply_tournament_team_change(
     }
     row.export_captures = refreshed.get("export_captures") or row.export_captures
     row.crosspage_stubs = refreshed.get("crosspage_stubs") or row.crosspage_stubs
+    if row.status != "finished":
+        row.pdf_filename = platform_pre_live_pdf_filename(row, _acting_club(user))
     db.commit()
     return TeamChangeApplyResponse(
         message="Tournoi mis à jour — PDF et snapshot regénérés.",
