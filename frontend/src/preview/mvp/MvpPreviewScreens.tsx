@@ -871,14 +871,9 @@ export function MvpTournamentDashboardScreen({
         </div>
 
         {redrawBusy ? (
-          <div className="mt-6 w-full">
-            <p className="mb-2 text-center text-sm font-semibold text-lime">
-              Nouveau tirage au sort — génération du dossier…
-            </p>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
-              <div className="redraw-progress-bar h-full rounded-full bg-lime" />
-            </div>
-          </div>
+          <p className="mt-6 text-center text-sm font-semibold text-lime">
+            Nouveau tirage au sort — génération du dossier…
+          </p>
         ) : null}
 
         {redrawError ? (
@@ -1101,7 +1096,9 @@ function TeamChangeImpactRow({ label, modified }: { label: string; modified: boo
       <span
         className={[
           "shrink-0 rounded-md px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide",
-          modified ? "bg-amber-400/20 text-amber-200 ring-1 ring-amber-300/35" : "bg-emerald-400/15 text-emerald-200 ring-1 ring-emerald-300/30",
+          modified
+            ? "bg-lime/15 text-lime ring-1 ring-lime/35"
+            : "bg-emerald-400/15 text-emerald-200 ring-1 ring-emerald-300/30",
         ].join(" ")}
       >
         {modified ? "Oui" : "Non"}
@@ -1110,7 +1107,36 @@ function TeamChangeImpactRow({ label, modified }: { label: string; modified: boo
   );
 }
 
+function TeamChangeImpactDetailLine({ line }: { line: string }) {
+  const colonIdx = line.indexOf(":");
+  if (colonIdx === -1) {
+    const replacedBy = " remplacée par ";
+    const replacedIdx = line.indexOf(replacedBy);
+    if (replacedIdx !== -1) {
+      return (
+        <p className="mt-1 pl-1 text-xs leading-snug text-white/65">
+          {line.slice(0, replacedIdx + replacedBy.length)}
+          <span className="font-medium text-lime">{line.slice(replacedIdx + replacedBy.length)}</span>
+        </p>
+      );
+    }
+    return <p className="mt-1 pl-1 text-xs leading-snug text-lime">{line}</p>;
+  }
+
+  const prefix = line.slice(0, colonIdx + 1);
+  const change = line.slice(colonIdx + 1).trim();
+  return (
+    <p className="mt-1 pl-1 text-xs leading-snug text-white/65">
+      {prefix}{" "}
+      <span className="font-medium text-lime">{change}</span>
+    </p>
+  );
+}
+
 function TeamChangeImpactDetail({ children }: { children: ReactNode }) {
+  if (typeof children === "string") {
+    return <TeamChangeImpactDetailLine line={children} />;
+  }
   return <p className="mt-1 pl-1 text-xs leading-snug text-white/65">{children}</p>;
 }
 

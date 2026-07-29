@@ -517,57 +517,58 @@ export default function EngineV2Page() {
             className="mx-auto my-4 flex justify-center rounded-full transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/50"
             aria-label="Retour à l'accueil"
           >
-            <PadelBall size={40} realistic />
+            {isPlatformBuild ? (
+              <span className="text-sm font-semibold text-white/70 transition hover:text-lime">
+                ← Retour
+              </span>
+            ) : (
+              <PadelBall size={40} realistic />
+            )}
           </button>
           <p className="text-sm font-medium text-white/55">
             Génération tournoi
           </p>
         </div>
-        <Stepper
-          steps={activeWizardSteps}
-          current={stepperIndex}
-          onGo={(i) => {
-            if (isPlatformBuild) {
-              const target = activeWizardSteps[i]?.key;
-              const map: Record<string, number> = {
-                participants: 1,
-                identity: 3,
-                format: 4,
-                planning: 5,
-                summary: 7,
-                generate: 8,
-              };
-              if (target && map[target] < step) setStep(map[target]);
-              return;
-            }
-            if (i < step - 1) setStep(i + 1);
-          }}
-          className="min-h-0 flex-1 overflow-y-auto"
-        />
-        <div className="shrink-0 pt-3">
-          <div className="overflow-visible rounded-xl border border-lime/15 bg-lime/[0.04] px-3 py-2">
-            <div className="flex items-center gap-2">
-              <div className="flex shrink-0 flex-col justify-center">
-                <div className="text-sm font-medium text-lime">
-                  Progression
+        {!isPlatformBuild ? (
+          <>
+            <Stepper
+              steps={activeWizardSteps}
+              current={stepperIndex}
+              onGo={(i) => {
+                if (i < step - 1) setStep(i + 1);
+              }}
+              className="min-h-0 flex-1 overflow-y-auto"
+            />
+            <div className="shrink-0 pt-3">
+              <div className="overflow-visible rounded-xl border border-lime/15 bg-lime/[0.04] px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 flex-col justify-center">
+                    <div className="text-sm font-medium text-lime">
+                      Progression
+                    </div>
+                    <div className="mt-2 font-display text-3xl leading-none text-lime">
+                      {step}/{WIZARD_STEPS.length}
+                    </div>
+                  </div>
+                  <div className="flex min-h-[4rem] min-w-0 flex-1 items-center justify-center overflow-visible">
+                    <RacketProgress step={stepperIndex + 1} total={activeWizardSteps.length} />
+                  </div>
                 </div>
-                <div className="mt-2 font-display text-3xl leading-none text-lime">
-                  {step}/{WIZARD_STEPS.length}
-                </div>
-              </div>
-              <div className="flex min-h-[4rem] min-w-0 flex-1 items-center justify-center overflow-visible">
-                <RacketProgress step={stepperIndex + 1} total={activeWizardSteps.length} />
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        ) : (
+          <div className="min-h-0 flex-1" aria-hidden />
+        )}
       </aside>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Header mobile */}
-        <header className="border-b border-white/[0.06] bg-arena-900/40 px-4 py-4 backdrop-blur-xl lg:hidden">
-          <StepperMobile steps={activeWizardSteps} current={stepperIndex} />
-        </header>
+        {!isPlatformBuild ? (
+          <header className="border-b border-white/[0.06] bg-arena-900/40 px-4 py-4 backdrop-blur-xl lg:hidden">
+            <StepperMobile steps={activeWizardSteps} current={stepperIndex} />
+          </header>
+        ) : null}
 
         <main
           className={`mx-auto w-full max-w-2xl min-h-0 flex-1 px-4 sm:px-8 ${
@@ -604,6 +605,7 @@ export default function EngineV2Page() {
                     pdfFilename={pdfFilename}
                     genreTournoi={form.genreTournoi}
                     hideDownloads
+                    hideProgressChrome
                     onDownloadPdf={() => {}}
                   />
                 ) : genError ? (
@@ -614,6 +616,7 @@ export default function EngineV2Page() {
                     pdfFilename={pdfFilename}
                     genreTournoi={form.genreTournoi}
                     hideDownloads
+                    hideProgressChrome
                     hasTelecharge
                     onDownloadPdf={() => {}}
                     onRegenerateSame={handleRegenerateSame}

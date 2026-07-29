@@ -910,6 +910,7 @@ export function GenerationStep({
   hasTelecharge = false,
   generatingMessage,
   hideDownloads = false,
+  hideProgressChrome = false,
   onDownloadPdf,
   onDownloadManagerLive,
   onRegenerateSame,
@@ -925,6 +926,7 @@ export function GenerationStep({
   hasTelecharge?: boolean;
   generatingMessage?: string;
   hideDownloads?: boolean;
+  hideProgressChrome?: boolean;
   onDownloadPdf: () => void;
   onDownloadManagerLive?: () => void;
   onRegenerateSame?: () => void;
@@ -945,7 +947,7 @@ export function GenerationStep({
       <WizardPageTitle title="Génération" subtitle={sousTitre} />
 
       <div className="mx-auto mt-6 flex min-h-[3.75rem] w-full max-w-md items-center justify-center">
-        {generating ? (
+        {!hideProgressChrome && generating ? (
           <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
             <motion.div
               className="h-full rounded-full bg-lime shadow-lime"
@@ -968,7 +970,7 @@ export function GenerationStep({
               nouveau tirage au sort - paramètres identiques
             </span>
           </button>
-        ) : done ? (
+        ) : !hideProgressChrome && done ? (
           <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
             <motion.div
               initial={{ width: "0%" }}
@@ -982,7 +984,7 @@ export function GenerationStep({
         )}
       </div>
 
-      {generating && (
+      {!hideProgressChrome && generating && (
         <div className="mt-8 flex flex-col items-center gap-4">
           <PadelBall size={40} spinning realistic />
           <p className="text-sm text-white/45">
