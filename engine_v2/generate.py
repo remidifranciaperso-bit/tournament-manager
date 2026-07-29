@@ -135,6 +135,25 @@ def prepare_tournament_v2(
     snapshot["version"] = SNAPSHOT_VERSION
     snapshot["engine"] = "v2-live-capture"
     snapshot["meta"]["template_id"] = template_id
+    try:
+        from engine.live_pool_layout import (
+            charger_layout_template,
+            composition_slide_index_from_layout,
+            pool_slide_letters_from_layout,
+        )
+
+        layout = charger_layout_template(template_id, base_dir)
+        pool_letters = pool_slide_letters_from_layout(layout)
+        if pool_letters:
+            snapshot["meta"]["pool_slide_letters"] = {
+                str(slide_index): letter
+                for slide_index, letter in pool_letters.items()
+            }
+        composition_index = composition_slide_index_from_layout(layout)
+        if composition_index is not None:
+            snapshot["meta"]["composition_slide_index"] = composition_index
+    except FileNotFoundError:
+        pass
     return shell_path, snapshot, pdf_filename
 
 

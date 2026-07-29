@@ -23,7 +23,16 @@ _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
 def _pool_export_context(
     template_id: str | None,
     base_dir: Path,
+    meta: dict | None = None,
 ) -> tuple[dict[int, str], int | None]:
+    snapshot_meta = meta if isinstance(meta, dict) else {}
+    raw_letters = snapshot_meta.get("pool_slide_letters")
+    if isinstance(raw_letters, dict) and raw_letters:
+        letters = {int(key): str(value) for key, value in raw_letters.items()}
+        comp_raw = snapshot_meta.get("composition_slide_index")
+        composition_index = int(comp_raw) if comp_raw is not None else None
+        return letters, composition_index
+
     if not template_id:
         return {}, None
     try:
@@ -103,7 +112,7 @@ def exporter_pdf_engine_v2(
         meta = (snapshot or {}).get("meta") or {}
         club_name = meta.get("club")
         pool_slide_letters, composition_index = _pool_export_context(
-            template_id, render_base
+            template_id, render_base, meta
         )
         snapshot_fields = (snapshot or {}).get("fields") or {}
         export_match_results = (snapshot or {}).get("match_results") or {}
@@ -152,7 +161,7 @@ def exporter_pdf_engine_v2(
                     page = merged.new_page(
                         width=page_rect.width, height=page_rect.height
                     )
-                    if native_bracket_sections and match_dicts is not None:
+                    if match_dicts is not None:
                         composer_page_pool_native(
                             page,
                             source,
@@ -177,20 +186,6 @@ def exporter_pdf_engine_v2(
                             logo_wh=logo_wh,
                             club_name=club_name,
                             base_dir=render_base,
-                        )
-                    elif match_dicts is not None:
-                        composer_page_pool_native(
-                            page,
-                            source,
-                            slide_index,
-                            pool_letter,
-                            match_dicts,
-                            export_match_results,
-                            base_dir=render_base,
-                            footer_slide_index=footer_reference,
-                            logo_bytes=logo_bytes,
-                            logo_wh=logo_wh,
-                            club_name=club_name,
                         )
                     elif 0 <= slide_index < source.page_count:
                         merged.insert_pdf(
