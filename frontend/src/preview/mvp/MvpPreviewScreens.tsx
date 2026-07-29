@@ -176,7 +176,7 @@ function TournamentListCard({ tournament }: { tournament: MvpTournamentSummary }
       </p>
       <p className="mt-2 text-sm text-white">{tournamentDateHeureLine(tournament)}</p>
       <p className="mt-1 text-sm text-white/45">
-        {tournament.teams} équipe{tournament.teams > 1 ? "s" : ""}
+        {tournament.teams} équipe{tournament.teams > 1 ? "s" : ""} · {tournament.modeLabel}
       </p>
       <p className="mt-1 text-sm text-white/45">
         {jours} jour{jours > 1 ? "s" : ""}

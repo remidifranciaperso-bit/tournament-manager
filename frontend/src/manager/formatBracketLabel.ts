@@ -107,6 +107,17 @@ function normalizeFeedCode(code: string): string {
   return code.trim().toUpperCase().replace(/\s+/g, "_");
 }
 
+/** Clé feed poule → libellé qualifié (« WIN_POULE_A » → « Vainqueur Poule A »). */
+export function poolQualifierLabelFromFeedKey(key: string): string | null {
+  const winPool = key.match(/^WIN_POULE_([A-D])$/i);
+  if (winPool) return `Vainqueur Poule ${winPool[1].toUpperCase()}`;
+  const secondPool = key.match(/^SECOND_POULE_([A-D])$/i);
+  if (secondPool) return `Deuxième Poule ${secondPool[1].toUpperCase()}`;
+  const thirdPool = key.match(/^THIRD_POULE_([A-D])$/i);
+  if (thirdPool) return `Troisième Poule ${thirdPool[1].toUpperCase()}`;
+  return null;
+}
+
 /** Déduit la clé WIN_/LOSE_ d'un libellé « Vainqueur H1 » / « Perdant Q2 ». */
 export function feedKeyFromTeamLabel(label: string): string | null {
   const text = label.trim();

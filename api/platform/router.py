@@ -289,6 +289,16 @@ def _heure_label(row: Tournament) -> str:
     return str(meta.get("heure_debut") or "").strip()
 
 
+def _mode_label(row: Tournament) -> str:
+    meta = (row.live_snapshot or {}).get("meta") if isinstance(row.live_snapshot, dict) else {}
+    if not isinstance(meta, dict):
+        meta = {}
+    mode = str(meta.get("mode_tournoi") or "Élimination directe").strip()
+    if mode == "Poules + tableau final":
+        return "Poules + Tableau final"
+    return "TMC"
+
+
 def _nb_jours(row: Tournament) -> int:
     meta = (row.live_snapshot or {}).get("meta") if isinstance(row.live_snapshot, dict) else {}
     if isinstance(meta, dict):
@@ -310,6 +320,7 @@ def _tournament_out(row: Tournament, club_name: str) -> TournamentOut:
         type_label=_type_label(row),
         heure_label=_heure_label(row),
         nb_jours=_nb_jours(row),
+        mode_label=_mode_label(row),
         date_label=row.date_label,
         format_label=row.format_label,
         teams=row.teams,

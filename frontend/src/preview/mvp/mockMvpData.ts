@@ -10,6 +10,7 @@ export interface MvpTournamentSummary {
   nbJours: number;
   dateLabel: string;
   formatLabel: string;
+  modeLabel: string;
   teams: number;
   status: MvpTournamentStatus;
 }
@@ -43,6 +44,7 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     nbJours: 1,
     dateLabel: "26 juillet 2026",
     formatLabel: "P100 · 8 équipes",
+    modeLabel: "TMC",
     teams: 8,
     status: "convocations_sent",
   },
@@ -56,6 +58,7 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     nbJours: 2,
     dateLabel: "12 septembre 2026",
     formatLabel: "P500 · 16 équipes",
+    modeLabel: "Poules + Tableau final",
     teams: 16,
     status: "generated",
   },
@@ -69,6 +72,7 @@ export const MOCK_TOURNAMENTS: MvpTournamentSummary[] = [
     nbJours: 1,
     dateLabel: "15 juin 2026",
     formatLabel: "P250 · 12 équipes",
+    modeLabel: "TMC",
     teams: 12,
     status: "finished",
   },

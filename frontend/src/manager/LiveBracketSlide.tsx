@@ -21,6 +21,7 @@ import {
   formatTeamSingleLineForCapture,
   formatTeamSlot,
   formatTeamWithInitials,
+  poolQualifierLabelFromFeedKey,
   stripTeamTsSuffix,
   buildTeamTsSeedSlots,
   shouldShowTeamTs,
@@ -43,6 +44,33 @@ function resolveFeedContent(
   poolQualifiers: Map<string, string>,
   tsInSeedSlotOnly = false
 ): string {
+  const poolLabel = poolQualifierLabelFromFeedKey(key);
+  if (poolLabel) {
+    const qualified = poolQualifiers.get(poolLabel);
+    const resolved =
+      qualified ??
+      resolveTeamLabelDeep(
+        poolLabel,
+        matchesByCode,
+        matchResults,
+        poolQualifiers
+      );
+    if (
+      resolved &&
+      resolved !== poolLabel &&
+      !isBracketPlaceholder(resolved) &&
+      !/^Vainqueur\s+/i.test(resolved) &&
+      !/^Perdant\s+/i.test(resolved) &&
+      !/^Deuxième\s+/i.test(resolved) &&
+      !/^Second\s+/i.test(resolved) &&
+      !/^Troisième\s+/i.test(resolved)
+    ) {
+      const formatted = formatTeamWithInitials(resolved);
+      return tsInSeedSlotOnly ? stripTeamTsSuffix(formatted) : formatted;
+    }
+    return formatTeamSlot(poolLabel);
+  }
+
   const win = key.match(/^WIN_(.+)$/);
   const lose = key.match(/^LOSE_(.+)$/);
   const parentCode = win?.[1] ?? lose?.[1];

@@ -42,6 +42,7 @@ interface ApiTournament {
   nb_jours: number;
   date_label: string;
   format_label: string;
+  mode_label: string;
   teams: number;
   status: MvpTournamentSummary["status"];
   created_at: string;
@@ -180,6 +181,7 @@ function toMvpTournament(row: ApiTournament): MvpTournamentSummary {
     nbJours: row.nb_jours > 0 ? row.nb_jours : 1,
     dateLabel: row.date_label,
     formatLabel: row.format_label,
+    modeLabel: row.mode_label || "TMC",
     teams: row.teams,
     status: row.status,
   };

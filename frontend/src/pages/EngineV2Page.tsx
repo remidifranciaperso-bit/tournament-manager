@@ -605,7 +605,6 @@ export default function EngineV2Page() {
                     pdfFilename={pdfFilename}
                     genreTournoi={form.genreTournoi}
                     hideDownloads
-                    hideProgressChrome
                     onDownloadPdf={() => {}}
                   />
                 ) : genError ? (
@@ -616,7 +615,6 @@ export default function EngineV2Page() {
                     pdfFilename={pdfFilename}
                     genreTournoi={form.genreTournoi}
                     hideDownloads
-                    hideProgressChrome
                     hasTelecharge
                     onDownloadPdf={() => {}}
                     onRegenerateSame={handleRegenerateSame}
