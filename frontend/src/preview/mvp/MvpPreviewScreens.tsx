@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { FileDrop } from "../../components/FileDrop";
-import { IconCheck, IconClock, IconGrid, IconLogo, IconTable, IconTrash, IconTrophy, WizardPageTitle } from "../../components/Icons";
+import { IconCheck, IconClock, IconGrid, IconHourglass, IconLogo, IconTable, IconTrash, IconTrophy, WizardPageTitle } from "../../components/Icons";
 import { ProductBrushHeadline } from "../../components/ProductEntry";
 import { GhostButton, NumberStepper, PrimaryButton } from "../../components/ui";
 import { LIVE_LOGO_HEIGHT_CLASS } from "../../manager/LiveTabTitle";
@@ -796,6 +796,7 @@ export function MvpTournamentDashboardScreen({
   onViewPdf,
   onDownloadPdf,
   onExportPartialPdf,
+  onRedrawDraw,
   onModifyTeams,
   liveActive = false,
   canResumeLive = false,
@@ -810,6 +811,7 @@ export function MvpTournamentDashboardScreen({
   onViewPdf: () => void;
   onDownloadPdf: () => void;
   onExportPartialPdf: () => void;
+  onRedrawDraw?: () => void;
   onModifyTeams: () => void;
   liveActive?: boolean;
   canResumeLive?: boolean;
@@ -820,11 +822,13 @@ export function MvpTournamentDashboardScreen({
   onBack: () => void;
   onLogout: () => void;
 }) {
+  const finished = tournament.status === "finished";
+  const actionsLocked = liveActive || finished;
   const liveButtonLabel = liveActive
     ? canResumeLive
       ? "Reprendre le live"
       : "Continuer le live"
-    : "Lancer le Live V2";
+    : "Lancer le live";
   const liveButtonHint = liveActive
     ? canResumeLive
       ? "Session en cours — reprendre le suivi jour J"
@@ -837,12 +841,9 @@ export function MvpTournamentDashboardScreen({
         <div className="pt-1 text-center">
           <StatusBadge status={tournament.status} />
           <h2 className="mt-3 font-display text-[clamp(1.5rem,4vw,2.25rem)] text-white">
-            {tournament.name}
+            {tournament.typeLabel} {tournament.genreLabel}
           </h2>
           <p className="mt-2 text-sm text-white">{tournamentDateHeureLine(tournament)}</p>
-          <p className="mt-1 text-sm text-white/55">
-            {tournament.typeLabel} · {tournament.genreLabel}
-          </p>
           <p className="mt-1 text-sm text-white/45">
             {tournament.teams} équipe{tournament.teams > 1 ? "s" : ""} · {tournament.nbJours} jour
             {tournament.nbJours > 1 ? "s" : ""}
@@ -852,7 +853,7 @@ export function MvpTournamentDashboardScreen({
               Convocations verrouillées — modifications sans décalage horaire
             </p>
           ) : null}
-          {tournament.status === "finished" ? (
+          {finished ? (
             <p className="mt-3 text-xs font-medium uppercase tracking-wide text-emerald-200/80">
               Tournoi terminé — PDF final disponible
             </p>
@@ -874,90 +875,104 @@ export function MvpTournamentDashboardScreen({
             </span>
           </button>
 
-          {tournament.status === "finished" ? (
-            <button type="button" onClick={onDownloadPdf} className={actionCardClass()}>
-              <span className="flex items-center gap-2 text-sm font-semibold text-white">
-                <IconCheck className="h-5 w-5 text-lime" />
-                Télécharger le PDF du tournoi terminé
-              </span>
-              <span className="text-xs text-white/50">
-                Tableaux, planning et classement final à jour
-              </span>
-            </button>
-          ) : (
-            <button type="button" onClick={onDownloadPdf} className={actionCardClass()}>
-              <span className="flex items-center gap-2 text-sm font-semibold text-white">
-                <IconCheck className="h-5 w-5 text-lime" />
-                Télécharger le PDF
-              </span>
-              <span className="text-xs text-white/50">
-                Tableaux, planning, convocations, classement final
-              </span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={actionsLocked ? undefined : onRedrawDraw}
+            disabled={actionsLocked || !onRedrawDraw}
+            aria-disabled={actionsLocked || !onRedrawDraw}
+            className={[
+              actionCardClass(),
+              actionsLocked || !onRedrawDraw
+                ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
+                : "",
+            ].join(" ")}
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-white">
+              <IconHourglass className="h-5 w-5 text-lime" />
+              Refaire un tirage au sort
+            </span>
+            <span className="text-xs text-white/50">Mêmes équipes, mêmes paramètres</span>
+          </button>
 
-          {tournament.status === "finished" ? (
-            <button type="button" onClick={onExportPartialPdf} className={actionCardClass()}>
-              <span className="flex items-center gap-2 text-sm font-semibold text-white">
+          <button type="button" onClick={onDownloadPdf} className={actionCardClass()}>
+            <span className="flex items-center gap-2 text-sm font-semibold text-white">
+              <IconCheck className="h-5 w-5 text-lime" />
+              Télécharger le PDF complet
+            </span>
+            <span className="text-xs text-white/50">
+              {finished
+                ? "Tableaux, planning et classement final à jour"
+                : "Tableaux, planning, convocations, classement final"}
+            </span>
+          </button>
+
+          <button type="button" onClick={onExportPartialPdf} className={actionCardClass()}>
+            <span className="flex items-center gap-2 text-sm font-semibold text-white">
+              {finished ? (
                 <IconTrophy className="h-5 w-5 text-lime" />
-                Exporter le classement final
-              </span>
-              <span className="text-xs text-white/50">
-                Télécharger la page classement final — résultats à jour
-              </span>
-            </button>
-          ) : (
-            <button type="button" onClick={onExportPartialPdf} className={actionCardClass()}>
-              <span className="flex items-center gap-2 text-sm font-semibold text-white">
+              ) : (
                 <IconClock className="h-5 w-5 text-lime" />
-                Exporter les convocations
-              </span>
-              <span className="text-xs text-white/50">
-                Télécharger la page convocations — à envoyer aux joueurs
-              </span>
-            </button>
-          )}
+              )}
+              {finished
+                ? "Télécharger le classement final"
+                : "Télécharger les convocations seules"}
+            </span>
+            <span className="text-xs text-white/50">
+              {finished
+                ? "Page résultats — classement final à jour"
+                : "Page convocations — à envoyer aux joueurs"}
+            </span>
+          </button>
 
           <button
             type="button"
-            onClick={liveActive || tournament.status === "finished" ? undefined : onModifyTeams}
-            disabled={liveActive || tournament.status === "finished"}
-            aria-disabled={liveActive || tournament.status === "finished"}
+            onClick={actionsLocked ? undefined : onModifyTeams}
+            disabled={actionsLocked}
+            aria-disabled={actionsLocked}
             className={[
               actionCardClass(),
-              liveActive || tournament.status === "finished"
+              actionsLocked
                 ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
                 : "",
             ].join(" ")}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconGrid className="h-5 w-5 text-lime" />
-              Modifier les équipes
+              Modifier une équipe
             </span>
             <span className="text-xs text-white/50">
               {liveActive
                 ? "Live lancé, changements impossibles"
-                : tournament.status === "finished"
+                : finished
                   ? "Tournoi terminé"
                   : "Partenaire, remplacement — vérif convocations"}
             </span>
           </button>
-        </motion.div>
 
-        {tournament.status !== "finished" ? (
-        <div className="mt-3 flex flex-col items-center gap-2">
           <button
             type="button"
-            onClick={() => handleLiveClick?.()}
-            className={`${actionCardClass()} w-full max-w-sm text-left`}
+            onClick={finished ? undefined : () => handleLiveClick?.()}
+            disabled={finished}
+            aria-disabled={finished}
+            className={[
+              actionCardClass(),
+              finished
+                ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
+                : "",
+            ].join(" ")}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconTrophy className="h-5 w-5 text-lime" />
               {liveButtonLabel}
             </span>
-            <span className="text-xs text-white/50">{liveButtonHint}</span>
+            <span className="text-xs text-white/50">
+              {finished ? "Tournoi terminé" : liveButtonHint}
+            </span>
           </button>
-          {liveActive && onCancelLive ? (
+        </motion.div>
+
+        {liveActive && onCancelLive ? (
+          <div className="mt-3 flex justify-center">
             <button
               type="button"
               onClick={onCancelLive}
@@ -965,8 +980,7 @@ export function MvpTournamentDashboardScreen({
             >
               Annuler le live
             </button>
-          ) : null}
-        </div>
+          </div>
         ) : null}
 
         {onDelete ? (

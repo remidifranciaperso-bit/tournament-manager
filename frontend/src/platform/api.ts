@@ -483,6 +483,12 @@ export async function platformFinishLive(
   });
 }
 
+export async function platformRedrawDraw(tournamentId: string): Promise<void> {
+  await platformFetch(`/api/platform/tournaments/${tournamentId}/redraw-draw`, {
+    method: "POST",
+  });
+}
+
 import { PLATFORM_TOURNAMENT_FINISHED_KEY } from "../manager/liveSessionStore";
 
 export const PLATFORM_TOURNAMENT_FINISHED_EVENT = "platform-tournament-finished";

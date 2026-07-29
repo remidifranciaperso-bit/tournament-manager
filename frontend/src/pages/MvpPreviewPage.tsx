@@ -35,6 +35,7 @@ import {
   platformDownloadConvocationsPdf,
   platformDownloadTournamentPdf,
   PLATFORM_TOURNAMENT_FINISHED_EVENT,
+  platformRedrawDraw,
   platformUpdateClubProfile,
   platformUploadLogo,
   platformViewTournamentPdf,
@@ -466,6 +467,26 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
     [apiEnabled]
   );
 
+  const handleRedrawDraw = useCallback(
+    async (tournamentId: string) => {
+      if (!apiEnabled) {
+        window.alert("Preview : refait un tirage au sort pour ce tournoi.");
+        return;
+      }
+      const confirmed = window.confirm(
+        "Refaire un tirage au sort ? Les équipes et paramètres restent identiques, seuls les placements changent."
+      );
+      if (!confirmed) return;
+      try {
+        await platformRedrawDraw(tournamentId);
+        await refreshSession();
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : "Tirage au sort impossible.");
+      }
+    },
+    [apiEnabled, refreshSession]
+  );
+
   const patchTournamentStatus = useCallback(
     (tournamentId: string, status: MvpTournamentSummary["status"]) => {
       setTournaments((prev) =>
@@ -685,6 +706,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
               }
               onViewPdf={() => void handleViewPdf(activeTournament.id)}
               onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}
+              onRedrawDraw={() => void handleRedrawDraw(activeTournament.id)}
               onModifyTeams={() => {
                 if (liveActive) return;
                 navigateTo("teams");

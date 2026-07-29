@@ -738,6 +738,59 @@ def _rebuild_bracket_and_planning(snapshot: dict[str, Any]) -> bool:
     return True
 
 
+_REDRAW_BRACKET_SIZES = frozenset({8, 12, 16, 20, 24, 32})
+
+
+def _can_redraw_bracket(snapshot: dict[str, Any]) -> bool:
+    count = _team_count(snapshot)
+    if count not in _REDRAW_BRACKET_SIZES:
+        return False
+    mode = (snapshot.get("meta") or {}).get("mode_tournoi") or "Élimination directe"
+    if mode == "Poules + tableau final":
+        return count in {20, 24, 32}
+    return True
+
+
+def redraw_bracket_draw(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Nouveau tirage sportif — mêmes équipes et paramètres, placements retirés."""
+    import random
+
+    updated = copy.deepcopy(snapshot)
+    if not _can_redraw_bracket(updated):
+        raise ValueError("Tirage au sort indisponible pour ce format de tournoi.")
+
+    new_seed = random.randint(1, 0x7FFFFFFF)
+    meta = updated.setdefault("meta", {})
+    if isinstance(meta, dict):
+        meta["bracket_seed"] = new_seed
+        meta["bracket_pages_native"] = True
+
+    from engine.bracket_generator import generer_tableau
+    from engine.live_export import serialiser_equipe, serialiser_match
+    from engine.live_valeurs import construire_champs_live
+    from engine.schedule_engine import ajouter_planning
+
+    tournoi = _tournament_from_snapshot(updated)
+    if tournoi.nb_equipes != len(tournoi.equipes):
+        raise ValueError("Snapshot tournoi incomplet.")
+
+    matchs = generer_tableau(tournoi, seed=new_seed)
+    matchs = ajouter_planning(
+        matchs,
+        tournoi.terrains,
+        tournoi.heure_debut,
+        tournoi.duree_match,
+        terrain_principal=tournoi.terrain_principal,
+        nb_jours=tournoi.nb_jours,
+        heures_debut_jours=tournoi.heures_debut_jours,
+    )
+    tournoi.matches = matchs
+    updated["matches"] = [serialiser_match(match) for match in matchs]
+    updated["fields"] = construire_champs_live(tournoi, matchs)
+    updated["equipes"] = [serialiser_equipe(equipe) for equipe in tournoi.equipes]
+    return updated
+
+
 def _maybe_rebuild_after_ts_change(snapshot: dict[str, Any], ts_changed: bool) -> bool:
     if not ts_changed or not _can_rebuild_bracket(snapshot):
         return False

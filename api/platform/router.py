@@ -26,8 +26,10 @@ from api.platform.snapshot_bundle import live_snapshot_for_init, tournament_snap
 from api.platform.team_change import (
     apply_team_change,
     check_team_change,
+    redraw_bracket_draw,
     validate_team_change_payload,
 )
+from api.platform.tournament_status import apply_auto_finish
 from api.platform.models import ClubProfile, Tournament, User
 from api.platform.schemas import (
     ActingAsOut,
@@ -344,6 +346,7 @@ def list_tournaments(user: User = Depends(get_acting_user), db: Session = Depend
         .order_by(Tournament.created_at.desc())
         .all()
     )
+    apply_auto_finish(rows, db)
     return [_tournament_out(row, club_name) for row in rows]
 
 
@@ -670,6 +673,49 @@ def apply_tournament_team_change(
     db.commit()
     return TeamChangeApplyResponse(
         message="Tournoi mis à jour — PDF et snapshot regénérés.",
+        tournament_id=row.id,
+    )
+
+
+@router.post("/tournaments/{tournament_id}/redraw-draw", response_model=TeamChangeApplyResponse)
+def redraw_tournament_draw(
+    tournament_id: UUID,
+    user: User = Depends(get_acting_user),
+    db: Session = Depends(get_db),
+) -> TeamChangeApplyResponse:
+    row = _get_user_tournament(db, user, tournament_id)
+    if row.status == "live_active":
+        raise HTTPException(status_code=422, detail="Tirage impossible pendant un live actif.")
+    if row.status == "finished":
+        raise HTTPException(status_code=422, detail="Tournoi terminé — tirage impossible.")
+    if not row.live_snapshot:
+        raise HTTPException(status_code=422, detail="Snapshot tournoi indisponible.")
+
+    snapshot = tournament_snapshot_bundle(row)
+    try:
+        updated = redraw_bracket_draw(snapshot)
+        attach_club_logo_to_snapshot(updated, user.club_profile)
+        pdf_bytes, refreshed = regenerate_pdf_via_engine(updated)
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Engine V2 indisponible: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if len(pdf_bytes) > PDF_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="PDF regénéré trop volumineux.")
+
+    row.pdf_data = pdf_bytes
+    row.live_snapshot = {
+        key: value
+        for key, value in refreshed.items()
+        if key not in {"export_captures", "crosspage_stubs"}
+    }
+    row.export_captures = refreshed.get("export_captures") or row.export_captures
+    row.crosspage_stubs = refreshed.get("crosspage_stubs") or row.crosspage_stubs
+    row.pdf_filename = platform_pre_live_pdf_filename(row, _acting_club(user))
+    db.commit()
+    return TeamChangeApplyResponse(
+        message="Nouveau tirage au sort — PDF et snapshot regénérés.",
         tournament_id=row.id,
     )
 
