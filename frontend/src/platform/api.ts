@@ -484,10 +484,22 @@ export async function platformFinishLive(
 }
 
 export async function platformRedrawDraw(tournamentId: string): Promise<void> {
-  await platformFetch(`/api/platform/tournaments/${tournamentId}/redraw-draw`, {
-    method: "POST",
-    body: "{}",
-  });
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 300_000);
+  try {
+    await platformFetch(`/api/platform/tournaments/${tournamentId}/redraw-draw`, {
+      method: "POST",
+      body: "{}",
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Délai dépassé — la génération du dossier prend trop de temps.");
+    }
+    throw err;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 import { PLATFORM_TOURNAMENT_FINISHED_KEY } from "../manager/liveSessionStore";

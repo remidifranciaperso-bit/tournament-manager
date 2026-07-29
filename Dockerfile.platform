@@ -2,7 +2,7 @@
 # Live Manager local + regénération PDF team-change locale (sans appel Engine V2).
 FROM node:20-slim AS frontend-build
 
-ARG FRONTEND_BUILD_ID=platform-team-change-summary-20260727b
+ARG FRONTEND_BUILD_ID=platform-redraw-draw-20260729a
 RUN echo "Frontend build id: ${FRONTEND_BUILD_ID}"
 
 WORKDIR /app/frontend

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MvpClubSettingsScreen,
@@ -99,6 +99,7 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
   const [liveActive, setLiveActive] = useState(false);
   const [redrawBusy, setRedrawBusy] = useState(false);
   const [redrawError, setRedrawError] = useState<string | null>(null);
+  const redrawInFlightRef = useRef(false);
 
   const activeTournament = useMemo(
     () => tournaments.find((item) => item.id === activeTournamentId) ?? null,
@@ -475,7 +476,8 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         window.alert("Preview : refait un tirage au sort pour ce tournoi.");
         return;
       }
-      if (redrawBusy) return;
+      if (redrawInFlightRef.current) return;
+      redrawInFlightRef.current = true;
       setRedrawBusy(true);
       setRedrawError(null);
       try {
@@ -486,10 +488,11 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
           err instanceof Error ? err.message : "Tirage au sort impossible.";
         setRedrawError(message);
       } finally {
+        redrawInFlightRef.current = false;
         setRedrawBusy(false);
       }
     },
-    [apiEnabled, redrawBusy, refreshSession]
+    [apiEnabled, refreshSession]
   );
 
   const patchTournamentStatus = useCallback(

@@ -908,11 +908,7 @@ export function MvpTournamentDashboardScreen({
 
           <button
             type="button"
-            onClick={() => {
-              if (!liveActive && !finished && !redrawBusy && onRedrawDraw) {
-                onRedrawDraw();
-              }
-            }}
+            onClick={() => onRedrawDraw?.()}
             disabled={liveActive || finished || redrawBusy || !onRedrawDraw}
             aria-disabled={liveActive || finished || redrawBusy || !onRedrawDraw}
             className={[
