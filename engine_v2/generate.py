@@ -149,6 +149,9 @@ def composite_tournament_v2_pdf(
 ) -> Path:
     """Assemble le PDF final (captures Live + bandeaux V2)."""
     output_pdf = Path(output_pdf)
+    meta = snapshot.get("meta") or {}
+    matches = snapshot.get("matches")
+    match_dicts = matches if isinstance(matches, list) and matches else None
     exporter_pdf_engine_v2(
         Path(shell_pdf),
         output_pdf,
@@ -158,5 +161,7 @@ def composite_tournament_v2_pdf(
         crosspage_stubs=crosspage_stubs,
         snapshot=snapshot,
         base_dir=Path(__file__).resolve().parent.parent,
+        match_dicts=match_dicts,
+        template_id=meta.get("template_id"),
     )
     return output_pdf

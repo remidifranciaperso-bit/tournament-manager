@@ -12,6 +12,11 @@ import {
   type EngineV2GeneratePhase,
   type EngineV2PrepareResult,
 } from "../api";
+import { fetchTemplateLayout, getCachedTemplateLayout } from "../manager/bracketSlideLayout";
+import {
+  compositionSlideIndexFromLayout,
+  poolSlideLettersFromLayout,
+} from "../manager/buildPoolStandings";
 import { captureManagerExportPages } from "../manager/captureExportPages";
 import type { ExportCaptureTarget } from "../manager/exportCapture";
 import { CourtBackground } from "../components/CourtBackground";
@@ -138,21 +143,32 @@ export default function EngineV2Page() {
   const stepperIndex = isPlatformBuild ? (PLATFORM_STEP_INDEX[step] ?? 0) : step - 1;
 
   const captureExportPages = useCallback(
-    (prepared: EngineV2PrepareResult) =>
-      captureManagerExportPages(prepared.page_map, {
-        showPage: (nextTarget) => {
-          flushSync(() => {
-            prepareDataRef.current = prepared;
-            setPrepareData(prepared);
-            setExportCaptureTarget(nextTarget);
-          });
+    async (prepared: EngineV2PrepareResult) => {
+      const layout =
+        getCachedTemplateLayout(prepared.template_id) ??
+        (await fetchTemplateLayout(prepared.template_id));
+      return captureManagerExportPages(
+        prepared.page_map,
+        {
+          showPage: (nextTarget) => {
+            flushSync(() => {
+              prepareDataRef.current = prepared;
+              setPrepareData(prepared);
+              setExportCaptureTarget(nextTarget);
+            });
+          },
+          restore: () => {
+            flushSync(() => {
+              setExportCaptureTarget(null);
+            });
+          },
         },
-        restore: () => {
-          flushSync(() => {
-            setExportCaptureTarget(null);
-          });
-        },
-      }),
+        {
+          compositionSlideIndex: compositionSlideIndexFromLayout(layout),
+          poolSlideLetters: poolSlideLettersFromLayout(layout),
+        }
+      );
+    },
     []
   );
 

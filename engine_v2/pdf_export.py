@@ -152,7 +152,7 @@ def exporter_pdf_engine_v2(
                     page = merged.new_page(
                         width=page_rect.width, height=page_rect.height
                     )
-                    if match_dicts is not None:
+                    if native_bracket_sections and match_dicts is not None:
                         composer_page_pool_native(
                             page,
                             source,
@@ -178,6 +178,20 @@ def exporter_pdf_engine_v2(
                             club_name=club_name,
                             base_dir=render_base,
                         )
+                    elif match_dicts is not None:
+                        composer_page_pool_native(
+                            page,
+                            source,
+                            slide_index,
+                            pool_letter,
+                            match_dicts,
+                            export_match_results,
+                            base_dir=render_base,
+                            footer_slide_index=footer_reference,
+                            logo_bytes=logo_bytes,
+                            logo_wh=logo_wh,
+                            club_name=club_name,
+                        )
                     elif 0 <= slide_index < source.page_count:
                         merged.insert_pdf(
                             source, from_page=slide_index, to_page=slide_index
@@ -192,7 +206,7 @@ def exporter_pdf_engine_v2(
                     page = merged.new_page(
                         width=page_rect.width, height=page_rect.height
                     )
-                    if match_dicts is not None:
+                    if native_bracket_sections and match_dicts is not None:
                         composer_page_pool_composition_native(
                             page,
                             source,
@@ -216,6 +230,19 @@ def exporter_pdf_engine_v2(
                             logo_wh=logo_wh,
                             club_name=club_name,
                             base_dir=render_base,
+                        )
+                    elif match_dicts is not None:
+                        composer_page_pool_composition_native(
+                            page,
+                            source,
+                            slide_index,
+                            match_dicts,
+                            snapshot_fields,
+                            base_dir=render_base,
+                            footer_slide_index=footer_reference,
+                            logo_bytes=logo_bytes,
+                            logo_wh=logo_wh,
+                            club_name=club_name,
                         )
                     elif 0 <= slide_index < source.page_count:
                         merged.insert_pdf(
