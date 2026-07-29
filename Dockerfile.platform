@@ -2,7 +2,7 @@
 # Live Manager local + regénération PDF team-change locale (sans appel Engine V2).
 FROM node:20-slim AS frontend-build
 
-ARG FRONTEND_BUILD_ID=platform-redraw-draw-20260729a
+ARG FRONTEND_BUILD_ID=platform-local-v2-export-20260730a
 RUN echo "Frontend build id: ${FRONTEND_BUILD_ID}"
 
 WORKDIR /app/frontend
@@ -48,7 +48,7 @@ RUN mkdir -p /tmp/_live exports && chmod 777 /tmp/_live exports
 RUN test -f frontend/dist/index.html \
     && test -f "templates bleus/Template_8_1J.pptx" \
     && test -f "templates bleus/Template_12_1J.pptx"
-RUN python3 -c "from api.platform.engine_regen import _can_regenerate_locally; from engine_v2.snapshot_regen import regenerate_pdf_from_snapshot; assert _can_regenerate_locally()"
+RUN python3 -c "from api.main_platform import app; from api.platform.engine_regen import _can_regenerate_locally; from engine_v2.generate import composite_tournament_v2_pdf; assert _can_regenerate_locally()"
 
 EXPOSE 8000
 

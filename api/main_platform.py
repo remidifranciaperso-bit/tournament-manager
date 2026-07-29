@@ -23,6 +23,8 @@ from api.platform.manager_inject import (
 from api.platform.router import router as platform_router
 from api.platform.schemas import HealthResponse
 from api.platform.test_users import seed_test_users
+from api.v2_router import router as v2_router
+from api.wizard_routes import router as wizard_router
 
 os.environ.setdefault("LIVE_DATA_DIR", "/tmp/_live")
 
@@ -69,6 +71,8 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Padel Tournament Platform", lifespan=lifespan)
 app.include_router(platform_router)
 app.include_router(live_router)
+app.include_router(v2_router)
+app.include_router(wizard_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -77,6 +81,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api/v2/frontend-check")
+def platform_frontend_check():
+    """Compat prepare/export Platform — même origine que le wizard."""
+    return {"ok": True}
 
 
 @app.get("/api/health", response_model=HealthResponse)
