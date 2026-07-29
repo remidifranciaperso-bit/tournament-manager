@@ -13,9 +13,33 @@ from engine.live_pdf_composite import (
     composer_page_bracket_native,
     composer_page_export,
     composer_page_planning_native,
+    composer_page_pool_composition_native,
+    composer_page_pool_native,
 )
 from engine.live_pdf_export import _charger_logo, _footer_reference_slide_index
 _CONVOCATION_RE = re.compile(r"CONVOCATION", re.IGNORECASE)
+
+
+def _pool_export_context(
+    template_id: str | None,
+    base_dir: Path,
+) -> tuple[dict[int, str], int | None]:
+    if not template_id:
+        return {}, None
+    try:
+        from engine.live_pool_layout import (
+            charger_layout_template,
+            composition_slide_index_from_layout,
+            pool_slide_letters_from_layout,
+        )
+
+        layout = charger_layout_template(template_id, base_dir)
+        return (
+            pool_slide_letters_from_layout(layout),
+            composition_slide_index_from_layout(layout),
+        )
+    except FileNotFoundError:
+        return {}, None
 
 
 def trouver_indices_convocations(pdf_path: Path) -> list[int]:
@@ -78,6 +102,11 @@ def exporter_pdf_engine_v2(
         footer_reference = _footer_reference_slide_index(page_map, source)
         meta = (snapshot or {}).get("meta") or {}
         club_name = meta.get("club")
+        pool_slide_letters, composition_index = _pool_export_context(
+            template_id, render_base
+        )
+        snapshot_fields = (snapshot or {}).get("fields") or {}
+        export_match_results = (snapshot or {}).get("match_results") or {}
 
         for key, capture_data in captures.items():
             if not key.startswith("composition:") or not capture_data:
@@ -108,11 +137,104 @@ def exporter_pdf_engine_v2(
                 capture_data = captures.get(key)
 
                 if (
+                    section == "main"
+                    and composition_index is not None
+                    and slide_index == composition_index
+                    and captures.get(f"composition:{slide_index}")
+                ):
+                    continue
+
+                pool_letter = (
+                    pool_slide_letters.get(slide_index) if section == "main" else None
+                )
+
+                if pool_letter and section == "main":
+                    page = merged.new_page(
+                        width=page_rect.width, height=page_rect.height
+                    )
+                    if match_dicts is not None:
+                        composer_page_pool_native(
+                            page,
+                            source,
+                            slide_index,
+                            pool_letter,
+                            match_dicts,
+                            export_match_results,
+                            base_dir=render_base,
+                            footer_slide_index=footer_reference,
+                            logo_bytes=logo_bytes,
+                            logo_wh=logo_wh,
+                            club_name=club_name,
+                        )
+                    elif capture_data:
+                        composer_page_export(
+                            page,
+                            source,
+                            slide_index,
+                            capture_data,
+                            section="pools",
+                            logo_bytes=logo_bytes,
+                            logo_wh=logo_wh,
+                            club_name=club_name,
+                            base_dir=render_base,
+                        )
+                    elif 0 <= slide_index < source.page_count:
+                        merged.insert_pdf(
+                            source, from_page=slide_index, to_page=slide_index
+                        )
+                    continue
+
+                if (
+                    section == "main"
+                    and composition_index is not None
+                    and slide_index == composition_index
+                ):
+                    page = merged.new_page(
+                        width=page_rect.width, height=page_rect.height
+                    )
+                    if match_dicts is not None:
+                        composer_page_pool_composition_native(
+                            page,
+                            source,
+                            slide_index,
+                            match_dicts,
+                            snapshot_fields,
+                            base_dir=render_base,
+                            footer_slide_index=footer_reference,
+                            logo_bytes=logo_bytes,
+                            logo_wh=logo_wh,
+                            club_name=club_name,
+                        )
+                    elif capture_data:
+                        composer_page_export(
+                            page,
+                            source,
+                            slide_index,
+                            capture_data,
+                            section="main",
+                            logo_bytes=logo_bytes,
+                            logo_wh=logo_wh,
+                            club_name=club_name,
+                            base_dir=render_base,
+                        )
+                    elif 0 <= slide_index < source.page_count:
+                        merged.insert_pdf(
+                            source, from_page=slide_index, to_page=slide_index
+                        )
+                    continue
+
+                if (
                     native_bracket_sections
                     and section in native_bracket_sections
                     and section in ("main", "classement")
                     and match_dicts is not None
                     and template_id
+                    and pool_letter is None
+                    and not (
+                        section == "main"
+                        and composition_index is not None
+                        and slide_index == composition_index
+                    )
                 ):
                     page = merged.new_page(
                         width=page_rect.width, height=page_rect.height
