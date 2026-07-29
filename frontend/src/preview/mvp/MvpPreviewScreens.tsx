@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { FileDrop } from "../../components/FileDrop";
-import { IconCheck, IconClock, IconGrid, IconHourglass, IconLogo, IconTable, IconTrash, IconTrophy, WizardPageTitle } from "../../components/Icons";
+import { IconCheck, IconClock, IconGrid, IconLogo, IconRefresh, IconTable, IconTrash, IconTrophy, WizardPageTitle } from "../../components/Icons";
 import { ProductBrushHeadline } from "../../components/ProductEntry";
 import { GhostButton, NumberStepper, PrimaryButton } from "../../components/ui";
 import { LIVE_LOGO_HEIGHT_CLASS } from "../../manager/LiveTabTitle";
@@ -791,12 +791,20 @@ export function MvpClubSettingsScreen({
   );
 }
 
+function actionCardLockedClass(locked: boolean) {
+  return locked
+    ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
+    : "";
+}
+
 export function MvpTournamentDashboardScreen({
   tournament,
   onViewPdf,
   onDownloadPdf,
   onExportPartialPdf,
   onRedrawDraw,
+  redrawBusy = false,
+  redrawError = null,
   onModifyTeams,
   liveActive = false,
   canResumeLive = false,
@@ -812,6 +820,8 @@ export function MvpTournamentDashboardScreen({
   onDownloadPdf: () => void;
   onExportPartialPdf: () => void;
   onRedrawDraw?: () => void;
+  redrawBusy?: boolean;
+  redrawError?: string | null;
   onModifyTeams: () => void;
   liveActive?: boolean;
   canResumeLive?: boolean;
@@ -823,7 +833,7 @@ export function MvpTournamentDashboardScreen({
   onLogout: () => void;
 }) {
   const finished = tournament.status === "finished";
-  const actionsLocked = liveActive || finished;
+  const actionsLocked = liveActive || finished || redrawBusy;
   const liveButtonLabel = liveActive
     ? canResumeLive
       ? "Reprendre le live"
@@ -860,12 +870,33 @@ export function MvpTournamentDashboardScreen({
           ) : null}
         </div>
 
+        {redrawBusy ? (
+          <div className="mt-6 w-full">
+            <p className="mb-2 text-center text-sm font-semibold text-lime">
+              Nouveau tirage au sort — génération du dossier…
+            </p>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div className="redraw-progress-bar h-full rounded-full bg-lime" />
+            </div>
+          </div>
+        ) : null}
+
+        {redrawError ? (
+          <p className="mt-3 text-center text-sm text-red-300/90">{redrawError}</p>
+        ) : null}
+
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-8 grid gap-3 sm:grid-cols-2"
         >
-          <button type="button" onClick={onViewPdf} className={actionCardClass()}>
+          <button
+            type="button"
+            onClick={actionsLocked ? undefined : onViewPdf}
+            disabled={actionsLocked}
+            aria-disabled={actionsLocked}
+            className={[actionCardClass(), actionCardLockedClass(actionsLocked)].join(" ")}
+          >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconTable className="h-5 w-5 text-lime" />
               Visualiser le PDF
@@ -877,24 +908,34 @@ export function MvpTournamentDashboardScreen({
 
           <button
             type="button"
-            onClick={actionsLocked ? undefined : onRedrawDraw}
-            disabled={actionsLocked || !onRedrawDraw}
-            aria-disabled={actionsLocked || !onRedrawDraw}
+            onClick={() => {
+              if (!liveActive && !finished && !redrawBusy && onRedrawDraw) {
+                onRedrawDraw();
+              }
+            }}
+            disabled={liveActive || finished || redrawBusy || !onRedrawDraw}
+            aria-disabled={liveActive || finished || redrawBusy || !onRedrawDraw}
             className={[
               actionCardClass(),
-              actionsLocked || !onRedrawDraw
-                ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
+              liveActive || finished || redrawBusy || !onRedrawDraw
+                ? actionCardLockedClass(true)
                 : "",
             ].join(" ")}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
-              <IconHourglass className="h-5 w-5 text-lime" />
+              <IconRefresh className={`h-5 w-5 text-lime ${redrawBusy ? "animate-spin" : ""}`} />
               Refaire un tirage au sort
             </span>
             <span className="text-xs text-white/50">Mêmes équipes, mêmes paramètres</span>
           </button>
 
-          <button type="button" onClick={onDownloadPdf} className={actionCardClass()}>
+          <button
+            type="button"
+            onClick={actionsLocked ? undefined : onDownloadPdf}
+            disabled={actionsLocked}
+            aria-disabled={actionsLocked}
+            className={[actionCardClass(), actionCardLockedClass(actionsLocked)].join(" ")}
+          >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconCheck className="h-5 w-5 text-lime" />
               Télécharger le PDF complet
@@ -906,7 +947,13 @@ export function MvpTournamentDashboardScreen({
             </span>
           </button>
 
-          <button type="button" onClick={onExportPartialPdf} className={actionCardClass()}>
+          <button
+            type="button"
+            onClick={actionsLocked ? undefined : onExportPartialPdf}
+            disabled={actionsLocked}
+            aria-disabled={actionsLocked}
+            className={[actionCardClass(), actionCardLockedClass(actionsLocked)].join(" ")}
+          >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               {finished ? (
                 <IconTrophy className="h-5 w-5 text-lime" />
@@ -929,19 +976,16 @@ export function MvpTournamentDashboardScreen({
             onClick={actionsLocked ? undefined : onModifyTeams}
             disabled={actionsLocked}
             aria-disabled={actionsLocked}
-            className={[
-              actionCardClass(),
-              actionsLocked
-                ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
-                : "",
-            ].join(" ")}
+            className={[actionCardClass(), actionCardLockedClass(actionsLocked)].join(" ")}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconGrid className="h-5 w-5 text-lime" />
               Modifier une équipe
             </span>
             <span className="text-xs text-white/50">
-              {liveActive
+              {redrawBusy
+                ? "Regénération en cours…"
+                : liveActive
                 ? "Live lancé, changements impossibles"
                 : finished
                   ? "Tournoi terminé"
@@ -951,14 +995,12 @@ export function MvpTournamentDashboardScreen({
 
           <button
             type="button"
-            onClick={finished ? undefined : () => handleLiveClick?.()}
-            disabled={finished}
-            aria-disabled={finished}
+            onClick={finished || actionsLocked ? undefined : () => handleLiveClick?.()}
+            disabled={finished || actionsLocked}
+            aria-disabled={finished || actionsLocked}
             className={[
               actionCardClass(),
-              finished
-                ? "cursor-not-allowed opacity-50 hover:border-white/15 hover:bg-white/[0.04]"
-                : "",
+              finished || actionsLocked ? actionCardLockedClass(true) : "",
             ].join(" ")}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -966,12 +1008,16 @@ export function MvpTournamentDashboardScreen({
               {liveButtonLabel}
             </span>
             <span className="text-xs text-white/50">
-              {finished ? "Tournoi terminé" : liveButtonHint}
+              {redrawBusy
+                ? "Regénération en cours…"
+                : finished
+                  ? "Tournoi terminé"
+                  : liveButtonHint}
             </span>
           </button>
         </motion.div>
 
-        {liveActive && onCancelLive ? (
+        {liveActive && onCancelLive && !redrawBusy ? (
           <div className="mt-3 flex justify-center">
             <button
               type="button"
@@ -987,8 +1033,13 @@ export function MvpTournamentDashboardScreen({
           <div className="mt-8 flex justify-center border-t border-white/10 pt-6">
             <button
               type="button"
-              onClick={onDelete}
-              className="text-xs font-semibold uppercase tracking-wide text-red-300/80 transition hover:text-red-200"
+              onClick={redrawBusy ? undefined : onDelete}
+              disabled={redrawBusy}
+              aria-disabled={redrawBusy}
+              className={[
+                "text-xs font-semibold uppercase tracking-wide text-red-300/80 transition hover:text-red-200",
+                redrawBusy ? "cursor-not-allowed opacity-40" : "",
+              ].join(" ")}
             >
               Supprimer ce tournoi
             </button>

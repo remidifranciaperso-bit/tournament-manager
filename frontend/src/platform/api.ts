@@ -486,6 +486,7 @@ export async function platformFinishLive(
 export async function platformRedrawDraw(tournamentId: string): Promise<void> {
   await platformFetch(`/api/platform/tournaments/${tournamentId}/redraw-draw`, {
     method: "POST",
+    body: "{}",
   });
 }
 

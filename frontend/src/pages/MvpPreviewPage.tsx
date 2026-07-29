@@ -97,6 +97,8 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
   const [booting, setBooting] = useState(apiEnabled);
   const [canResumeLive, setCanResumeLive] = useState(false);
   const [liveActive, setLiveActive] = useState(false);
+  const [redrawBusy, setRedrawBusy] = useState(false);
+  const [redrawError, setRedrawError] = useState<string | null>(null);
 
   const activeTournament = useMemo(
     () => tournaments.find((item) => item.id === activeTournamentId) ?? null,
@@ -473,18 +475,21 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
         window.alert("Preview : refait un tirage au sort pour ce tournoi.");
         return;
       }
-      const confirmed = window.confirm(
-        "Refaire un tirage au sort ? Les équipes et paramètres restent identiques, seuls les placements changent."
-      );
-      if (!confirmed) return;
+      if (redrawBusy) return;
+      setRedrawBusy(true);
+      setRedrawError(null);
       try {
         await platformRedrawDraw(tournamentId);
         await refreshSession();
       } catch (err) {
-        window.alert(err instanceof Error ? err.message : "Tirage au sort impossible.");
+        const message =
+          err instanceof Error ? err.message : "Tirage au sort impossible.";
+        setRedrawError(message);
+      } finally {
+        setRedrawBusy(false);
       }
     },
-    [apiEnabled, refreshSession]
+    [apiEnabled, redrawBusy, refreshSession]
   );
 
   const patchTournamentStatus = useCallback(
@@ -707,6 +712,8 @@ export default function MvpPreviewPage({ production = false }: { production?: bo
               onViewPdf={() => void handleViewPdf(activeTournament.id)}
               onDownloadPdf={() => void handleDownloadPdf(activeTournament.id)}
               onRedrawDraw={() => void handleRedrawDraw(activeTournament.id)}
+              redrawBusy={redrawBusy}
+              redrawError={redrawError}
               onModifyTeams={() => {
                 if (liveActive) return;
                 navigateTo("teams");

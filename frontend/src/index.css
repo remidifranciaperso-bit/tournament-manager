@@ -178,6 +178,20 @@ body {
 
 }
 
+@keyframes redraw-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(420%);
+  }
+}
+
+.redraw-progress-bar {
+  width: 35%;
+  animation: redraw-progress-slide 1.15s ease-in-out infinite;
+}
+
 /* Scrollbar discrète */
 ::-webkit-scrollbar {
   width: 6px;

@@ -75,6 +75,20 @@ export function IconTrash({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function IconRefresh({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M4 9V4h5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 15v5h-5" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M20 9a8 8 0 00-14.5-2M4 15a8 8 0 0014.5 2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconLogo({ className = "h-8 w-8" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

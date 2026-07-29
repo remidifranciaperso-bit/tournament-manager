@@ -788,6 +788,7 @@ def redraw_bracket_draw(snapshot: dict[str, Any]) -> dict[str, Any]:
     updated["matches"] = [serialiser_match(match) for match in matchs]
     updated["fields"] = construire_champs_live(tournoi, matchs)
     updated["equipes"] = [serialiser_equipe(equipe) for equipe in tournoi.equipes]
+    updated["crosspage_stubs"] = {}
     return updated
 
 

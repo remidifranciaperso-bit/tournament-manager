@@ -711,8 +711,10 @@ def redraw_tournament_draw(
         if key not in {"export_captures", "crosspage_stubs"}
     }
     row.export_captures = refreshed.get("export_captures") or row.export_captures
-    row.crosspage_stubs = refreshed.get("crosspage_stubs") or row.crosspage_stubs
+    row.crosspage_stubs = None
     row.pdf_filename = platform_pre_live_pdf_filename(row, _acting_club(user))
+    if row.status not in ("live_active", "finished"):
+        row.status = "generated"
     db.commit()
     return TeamChangeApplyResponse(
         message="Nouveau tirage au sort — PDF et snapshot regénérés.",
