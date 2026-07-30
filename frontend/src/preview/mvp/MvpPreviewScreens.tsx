@@ -833,7 +833,10 @@ export function MvpTournamentDashboardScreen({
   onLogout: () => void;
 }) {
   const finished = tournament.status === "finished";
-  const actionsLocked = liveActive || finished || redrawBusy;
+  /** PDF disponibles après clôture live ; verrouillés seulement pendant le live ou un tirage. */
+  const pdfActionsLocked = liveActive || redrawBusy;
+  /** Tirage, équipes et live : indisponibles une fois le tournoi terminé. */
+  const setupActionsLocked = liveActive || finished || redrawBusy;
   const liveButtonLabel = liveActive
     ? canResumeLive
       ? "Reprendre le live"
@@ -887,45 +890,28 @@ export function MvpTournamentDashboardScreen({
         >
           <button
             type="button"
-            onClick={actionsLocked ? undefined : onViewPdf}
-            disabled={actionsLocked}
-            aria-disabled={actionsLocked}
-            className={[actionCardClass(), actionCardLockedClass(actionsLocked)].join(" ")}
+            onClick={pdfActionsLocked ? undefined : onViewPdf}
+            disabled={pdfActionsLocked}
+            aria-disabled={pdfActionsLocked}
+            className={[actionCardClass(), actionCardLockedClass(pdfActionsLocked)].join(" ")}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconTable className="h-5 w-5 text-lime" />
               Visualiser le PDF
             </span>
             <span className="text-xs text-white/50">
-              Ouvrir le dossier complet dans un nouvel onglet
+              {finished
+                ? "Dossier final avec scores et classement à jour"
+                : "Ouvrir le dossier complet dans un nouvel onglet"}
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => onRedrawDraw?.()}
-            disabled={liveActive || finished || redrawBusy || !onRedrawDraw}
-            aria-disabled={liveActive || finished || redrawBusy || !onRedrawDraw}
-            className={[
-              actionCardClass(),
-              liveActive || finished || redrawBusy || !onRedrawDraw
-                ? actionCardLockedClass(true)
-                : "",
-            ].join(" ")}
-          >
-            <span className="flex items-center gap-2 text-sm font-semibold text-white">
-              <IconRefresh className={`h-5 w-5 text-lime ${redrawBusy ? "animate-spin" : ""}`} />
-              Refaire un tirage au sort
-            </span>
-            <span className="text-xs text-white/50">Mêmes équipes, mêmes paramètres</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={actionsLocked ? undefined : onDownloadPdf}
-            disabled={actionsLocked}
-            aria-disabled={actionsLocked}
-            className={[actionCardClass(), actionCardLockedClass(actionsLocked)].join(" ")}
+            onClick={pdfActionsLocked ? undefined : onDownloadPdf}
+            disabled={pdfActionsLocked}
+            aria-disabled={pdfActionsLocked}
+            className={[actionCardClass(), actionCardLockedClass(pdfActionsLocked)].join(" ")}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               <IconCheck className="h-5 w-5 text-lime" />
@@ -940,10 +926,10 @@ export function MvpTournamentDashboardScreen({
 
           <button
             type="button"
-            onClick={actionsLocked ? undefined : onExportPartialPdf}
-            disabled={actionsLocked}
-            aria-disabled={actionsLocked}
-            className={[actionCardClass(), actionCardLockedClass(actionsLocked)].join(" ")}
+            onClick={pdfActionsLocked ? undefined : onExportPartialPdf}
+            disabled={pdfActionsLocked}
+            aria-disabled={pdfActionsLocked}
+            className={[actionCardClass(), actionCardLockedClass(pdfActionsLocked)].join(" ")}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
               {finished ? (
@@ -962,50 +948,67 @@ export function MvpTournamentDashboardScreen({
             </span>
           </button>
 
-          <button
-            type="button"
-            onClick={actionsLocked ? undefined : onModifyTeams}
-            disabled={actionsLocked}
-            aria-disabled={actionsLocked}
-            className={[actionCardClass(), actionCardLockedClass(actionsLocked)].join(" ")}
-          >
-            <span className="flex items-center gap-2 text-sm font-semibold text-white">
-              <IconGrid className="h-5 w-5 text-lime" />
-              Modifier une équipe
-            </span>
-            <span className="text-xs text-white/50">
-              {redrawBusy
-                ? "Regénération en cours…"
-                : liveActive
-                ? "Live lancé, changements impossibles"
-                : finished
-                  ? "Tournoi terminé"
-                  : "Partenaire, remplacement — vérif convocations"}
-            </span>
-          </button>
+          {!finished ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onRedrawDraw?.()}
+                disabled={setupActionsLocked || !onRedrawDraw}
+                aria-disabled={setupActionsLocked || !onRedrawDraw}
+                className={[
+                  actionCardClass(),
+                  setupActionsLocked || !onRedrawDraw
+                    ? actionCardLockedClass(true)
+                    : "",
+                ].join(" ")}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <IconRefresh className={`h-5 w-5 text-lime ${redrawBusy ? "animate-spin" : ""}`} />
+                  Refaire un tirage au sort
+                </span>
+                <span className="text-xs text-white/50">Mêmes équipes, mêmes paramètres</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={finished || actionsLocked ? undefined : () => handleLiveClick?.()}
-            disabled={finished || actionsLocked}
-            aria-disabled={finished || actionsLocked}
-            className={[
-              actionCardClass(),
-              finished || actionsLocked ? actionCardLockedClass(true) : "",
-            ].join(" ")}
-          >
-            <span className="flex items-center gap-2 text-sm font-semibold text-white">
-              <IconTrophy className="h-5 w-5 text-lime" />
-              {liveButtonLabel}
-            </span>
-            <span className="text-xs text-white/50">
-              {redrawBusy
-                ? "Regénération en cours…"
-                : finished
-                  ? "Tournoi terminé"
-                  : liveButtonHint}
-            </span>
-          </button>
+              <button
+                type="button"
+                onClick={setupActionsLocked ? undefined : onModifyTeams}
+                disabled={setupActionsLocked}
+                aria-disabled={setupActionsLocked}
+                className={[actionCardClass(), actionCardLockedClass(setupActionsLocked)].join(" ")}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <IconGrid className="h-5 w-5 text-lime" />
+                  Modifier une équipe
+                </span>
+                <span className="text-xs text-white/50">
+                  {redrawBusy
+                    ? "Regénération en cours…"
+                    : liveActive
+                      ? "Live lancé, changements impossibles"
+                      : "Partenaire, remplacement — vérif convocations"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={setupActionsLocked ? undefined : () => handleLiveClick?.()}
+                disabled={setupActionsLocked}
+                aria-disabled={setupActionsLocked}
+                className={[
+                  actionCardClass(),
+                  setupActionsLocked ? actionCardLockedClass(true) : "",
+                ].join(" ")}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <IconTrophy className="h-5 w-5 text-lime" />
+                  {liveButtonLabel}
+                </span>
+                <span className="text-xs text-white/50">
+                  {redrawBusy ? "Regénération en cours…" : liveButtonHint}
+                </span>
+              </button>
+            </>
+          ) : null}
         </motion.div>
 
         {liveActive && onCancelLive && !redrawBusy ? (
