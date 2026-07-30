@@ -32,7 +32,7 @@ _PLANNING_TABLE_WIDTH_PX = round(
     _PLANNING_TABLE_BASE_WIDTH_PX * _PLANNING_TABLE_WIDTH_TERRAIN_FACTOR
 )
 _PLANNING_CAPTURE_WIDTH_PX = _PLANNING_TABLE_WIDTH_PX + 2 * _PLANNING_SIDE_MARGIN_PX
-_LIVE_MANAGER_INJECT_VERSION = "live-planning-propagate-v2-20260725f"
+_LIVE_MANAGER_INJECT_VERSION = "live-pool-qualifiers-v2-20260730b"
 
 
 def _planning_col_width_percents() -> list[str]:
@@ -350,6 +350,15 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
   function bracketFormatTeamSlot(label) {
     var text = String(label || "").trim();
     if (!text) return "—";
+    if (/^Vainqueur Poule /i.test(text)) {
+      return "🥇\u2009" + text.replace(/^Vainqueur /i, "") + ":";
+    }
+    if (/^(?:Deuxième|Second) Poule /i.test(text)) {
+      return "🥈\u2009" + text.replace(/^(?:Deuxième|Second) /i, "") + ":";
+    }
+    if (/^Troisième Poule /i.test(text)) {
+      return "🥉\u2009" + text.replace(/^Troisième /i, "") + ":";
+    }
     if (/^Vainqueur\s+/i.test(text)) {
       return "🏆\u2009" + text.replace(/^Vainqueur\s+/i, "") + ":";
     }
@@ -357,6 +366,132 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
       return "❌\u2009" + text.replace(/^Perdant\s+/i, "") + ":";
     }
     return text;
+  }
+
+  function poolLetterFromCode(code) {
+    var m = String(code || "").match(/^P([A-Z])_M\d+$/);
+    return m ? m[1] : null;
+  }
+
+  function poolMatchNumber(code) {
+    var m = String(code || "").match(/^P[A-Z]_M(\d+)$/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  function poolMatchesForLetter(matches, letter) {
+    return matches
+      .filter(function (match) {
+        return poolLetterFromCode(match.code) === letter;
+      })
+      .sort(function (a, b) {
+        return poolMatchNumber(a.code) - poolMatchNumber(b.code);
+      });
+  }
+
+  function poolLettersFromMatches(matches) {
+    var letters = {};
+    for (var i = 0; i < matches.length; i++) {
+      var letter = poolLetterFromCode(matches[i].code);
+      if (letter) letters[letter] = true;
+    }
+    return Object.keys(letters).sort();
+  }
+
+  function teamTsFromLabel(label) {
+    var m = String(label || "").match(/\(TS(\d+)\)\s*$/i);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  function buildPoolStandings(pool, matchResults) {
+    var stats = {};
+    var order = 0;
+    function ensure(team) {
+      if (!stats[team]) {
+        stats[team] = {
+          team: team,
+          order: order++,
+          played: 0,
+          wins: 0,
+          losses: 0,
+          gamesFor: 0,
+          gamesAgainst: 0,
+        };
+      }
+      return stats[team];
+    }
+    for (var i = 0; i < pool.length; i++) {
+      var match = pool[i];
+      var team1 = String(match.equipe1 || "").trim();
+      var team2 = String(match.equipe2 || "").trim();
+      if (!team1 || !team2) continue;
+      var s1 = ensure(team1);
+      var s2 = ensure(team2);
+      var result = lookupCaseMap(matchResults, match.code);
+      if (!result) continue;
+      var g1 = 0;
+      var g2 = 0;
+      var sets = result.sets || [];
+      for (var j = 0; j < sets.length; j++) {
+        g1 += parseInt(sets[j].team1 || 0, 10);
+        g2 += parseInt(sets[j].team2 || 0, 10);
+      }
+      s1.played += 1;
+      s2.played += 1;
+      s1.gamesFor += g1;
+      s1.gamesAgainst += g2;
+      s2.gamesFor += g2;
+      s2.gamesAgainst += g1;
+      if (result.winner === 1) {
+        s1.wins += 1;
+        s2.losses += 1;
+      } else if (result.winner === 2) {
+        s2.wins += 1;
+        s1.losses += 1;
+      }
+    }
+    var rows = Object.keys(stats).map(function (key) {
+      return stats[key];
+    });
+    rows.sort(function (a, b) {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      var diffA = a.gamesFor - a.gamesAgainst;
+      var diffB = b.gamesFor - b.gamesAgainst;
+      if (diffB !== diffA) return diffB - diffA;
+      if (b.gamesFor !== a.gamesFor) return b.gamesFor - a.gamesFor;
+      var tsA = teamTsFromLabel(a.team);
+      var tsB = teamTsFromLabel(b.team);
+      if (tsA != null && tsB != null && tsA !== tsB) return tsA - tsB;
+      return a.order - b.order;
+    });
+    return rows;
+  }
+
+  function isPoolComplete(pool, matchResults) {
+    if (!pool.length) return false;
+    for (var i = 0; i < pool.length; i++) {
+      if (!lookupCaseMap(matchResults, pool[i].code)) return false;
+    }
+    return true;
+  }
+
+  function buildPoolQualifierMap(matches, matchResults) {
+    var map = {};
+    var letters = poolLettersFromMatches(matches);
+    for (var i = 0; i < letters.length; i++) {
+      var letter = letters[i];
+      var pool = poolMatchesForLetter(matches, letter);
+      if (!isPoolComplete(pool, matchResults)) continue;
+      var standings = buildPoolStandings(pool, matchResults);
+      if (standings[0]) map["Vainqueur Poule " + letter] = standings[0].team;
+      if (standings[1]) {
+        map["Deuxième Poule " + letter] = standings[1].team;
+        map["Second Poule " + letter] = standings[1].team;
+      }
+      if (standings[2]) {
+        map["Troisième Poule " + letter] = standings[2].team;
+      }
+    }
+    return map;
   }
 
   function bracketShortPlayer(name) {
@@ -444,9 +579,13 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     return showTs ? direct : stripTeamTsSuffix(direct);
   }
 
-  function resolveBracketLabelOnce(label, matchesByCode, matchResults) {
+  function resolveBracketLabelOnce(label, matchesByCode, matchResults, poolQualifiers) {
     var text = String(label || "").trim();
     if (!text) return label;
+
+    if (poolQualifiers && poolQualifiers[text]) {
+      return poolQualifiers[text];
+    }
 
     var winMatch = text.match(/^Vainqueur\s+(.+)$/i);
     var loseMatch = text.match(/^Perdant\s+(.+)$/i);
@@ -474,15 +613,74 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     return resolved || label;
   }
 
-  function resolveBracketLabelDeep(label, matchesByCode, matchResults, depth) {
+  function poolQualifierLabelFromFeedKey(key) {
+    var winPool = String(key || "").match(/^WIN_POULE_([A-D])$/i);
+    if (winPool) return "Vainqueur Poule " + winPool[1].toUpperCase();
+    var secondPool = String(key || "").match(/^SECOND_POULE_([A-D])$/i);
+    if (secondPool) return "Deuxième Poule " + secondPool[1].toUpperCase();
+    var thirdPool = String(key || "").match(/^THIRD_POULE_([A-D])$/i);
+    if (thirdPool) return "Troisième Poule " + thirdPool[1].toUpperCase();
+    return null;
+  }
+
+  function resolveFeedContent(key, matchesByCode, matchResults, poolQualifiers) {
+    var poolLabel = poolQualifierLabelFromFeedKey(key);
+    if (poolLabel) {
+      var qualified = poolQualifiers && poolQualifiers[poolLabel];
+      var resolved =
+        qualified ||
+        resolveBracketLabelDeep(
+          poolLabel,
+          matchesByCode,
+          matchResults,
+          poolQualifiers
+        );
+      if (
+        resolved &&
+        resolved !== poolLabel &&
+        !bracketUnresolved(resolved)
+      ) {
+        return bracketFormatInitials(resolved);
+      }
+      return bracketFormatTeamSlot(poolLabel);
+    }
+
+    var win = String(key || "").match(/^WIN_(.+)$/);
+    var lose = String(key || "").match(/^LOSE_(.+)$/);
+    var parentCode = win ? win[1] : lose ? lose[1] : null;
+    if (!parentCode) return key;
+
+    var parent = lookupCaseMap(matchesByCode, parentCode);
+    var result = lookupCaseMap(matchResults, parentCode);
+    if (!parent || !result) return key;
+
+    var side = win ? result.winner : result.loser;
+    var raw = side === 1 ? parent.equipe1 : parent.equipe2;
+    var resolvedFeed = resolveBracketLabelDeep(
+      String(raw || "").trim(),
+      matchesByCode,
+      matchResults,
+      poolQualifiers
+    );
+    if (bracketUnresolved(resolvedFeed)) return bracketFormatTeamSlot(resolvedFeed);
+    return bracketFormatInitials(resolvedFeed);
+  }
+
+  function resolveBracketLabelDeep(label, matchesByCode, matchResults, poolQualifiers, depth) {
     depth = depth || 0;
     if (depth > 8) return label;
-    var resolved = resolveBracketLabelOnce(label, matchesByCode, matchResults);
+    var resolved = resolveBracketLabelOnce(
+      label,
+      matchesByCode,
+      matchResults,
+      poolQualifiers
+    );
     if (resolved === label) return label;
     return resolveBracketLabelDeep(
       resolved,
       matchesByCode,
       matchResults,
+      poolQualifiers,
       depth + 1
     );
   }
@@ -493,11 +691,17 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
     matchResults,
     matchCode,
     side,
-    tsSeedSlots
+    tsSeedSlots,
+    poolQualifiers
   ) {
     var raw = String(label || "").trim();
     if (!raw) return "—";
-    var resolved = resolveBracketLabelDeep(raw, matchesByCode, matchResults);
+    var resolved = resolveBracketLabelDeep(
+      raw,
+      matchesByCode,
+      matchResults,
+      poolQualifiers
+    );
     var showTs = tsSeedSlots
       ? shouldShowTeamTs(matchCode, side, tsSeedSlots)
       : true;
@@ -573,6 +777,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 
     var matchesByCode = buildBracketMatchesByCode(liveData.matches);
     var matchResults = loadBracketMatchResults(liveData.live_token);
+    var poolQualifiers = buildPoolQualifierMap(liveData.matches, matchResults);
     var tsSeedSlots = buildTeamTsSeedSlots(liveData.matches);
     var slides = document.querySelectorAll("[data-bracket-slide]");
     if (!slides.length) return;
@@ -607,7 +812,8 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
           matchResults,
           match.code,
           "equipe1",
-          tsSeedSlots
+          tsSeedSlots,
+          poolQualifiers
         );
         var next2 = resolveBracketTeamDisplay(
           match.equipe2,
@@ -615,7 +821,8 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
           matchResults,
           match.code,
           "equipe2",
-          tsSeedSlots
+          tsSeedSlots,
+          poolQualifiers
         );
         var result = lookupCaseMap(matchResults, code);
         var winnerSide = result && result.winner ? result.winner : null;
@@ -623,6 +830,21 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
         team2Span.textContent = next2;
         applyBracketTeamRowStyle(team1Row, team1Span, next1, scaleH, winnerSide === 1);
         applyBracketTeamRowStyle(team2Row, team2Span, next2, scaleH, winnerSide === 2);
+      });
+
+      slide.querySelectorAll("[data-bracket-feed-key]").forEach(function (feedEl) {
+        var feedKey = (feedEl.getAttribute("data-bracket-feed-key") || "").trim();
+        if (!feedKey) return;
+        var feedText = resolveFeedContent(
+          feedKey,
+          matchesByCode,
+          matchResults,
+          poolQualifiers
+        );
+        var feedSpan = feedEl.querySelector("span") || feedEl;
+        if ((feedSpan.textContent || "").trim() !== feedText) {
+          feedSpan.textContent = feedText;
+        }
       });
     });
   }
@@ -663,6 +885,7 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
 
     var matchesByCode = buildBracketMatchesByCode(liveData.matches);
     var matchResults = loadBracketMatchResults(liveData.live_token);
+    var poolQualifiers = buildPoolQualifierMap(liveData.matches, matchResults);
     var tsSeedSlots = buildTeamTsSeedSlots(liveData.matches);
 
     document.querySelectorAll("#root table").forEach(function (table) {
@@ -680,7 +903,8 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
           matchResults,
           match.code,
           "equipe1",
-          tsSeedSlots
+          tsSeedSlots,
+          poolQualifiers
         );
         var next2 = resolveBracketTeamDisplay(
           match.equipe2,
@@ -688,7 +912,8 @@ _LIVE_MANAGER_INJECT_JS_TEMPLATE = """
           matchResults,
           match.code,
           "equipe2",
-          tsSeedSlots
+          tsSeedSlots,
+          poolQualifiers
         );
         if ((cells[3].textContent || "").trim() !== next1) {
           cells[3].textContent = next1;

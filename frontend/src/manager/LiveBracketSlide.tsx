@@ -353,6 +353,7 @@ function FeedLabel({
 
   return (
     <div
+      data-bracket-feed-key={field.key}
       className="absolute z-10 flex items-center overflow-hidden rounded-md border border-template-blue/35 bg-template-blue/10 px-[0.3em] font-noto font-medium leading-tight text-arena-800"
       style={{
         left: `${mapped.left}%`,
