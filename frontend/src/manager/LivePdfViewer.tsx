@@ -13,7 +13,10 @@ export interface LivePdfExportPayload {
   page_map: LivePageMap;
   template_id: string;
   matches: LiveMatch[];
-  match_results: Record<string, Pick<StoredMatchResult, "winner" | "loser" | "display">>;
+  match_results: Record<
+    string,
+    Pick<StoredMatchResult, "winner" | "loser" | "display" | "sets">
+  >;
   completed: string[];
   fields: Record<string, string>;
   planning_layout: Record<string, LiveLayoutField[]>;

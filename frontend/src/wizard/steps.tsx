@@ -673,20 +673,17 @@ export function PlanningStep({
           <label className="field-label-tight">{horaireLabel}</label>
           <div className="flex w-full max-w-md flex-col gap-3">
             {form.heuresDebutJours.map((heure, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center gap-1.5 sm:flex-row sm:justify-center"
-              >
+              <div key={i} className="flex flex-col items-center gap-1.5">
                 {form.nbJours > 1 && (
-                  <span className="min-w-[4.5rem] text-xs font-medium uppercase tracking-widest text-white/35">
+                  <span className="text-xs font-medium uppercase tracking-widest text-white/35">
                     Jour {i + 1}
                   </span>
                 )}
-                <div className="relative w-[140px]">
-                  <IconClock className="pointer-events-none absolute right-full top-1/2 mr-3 h-5 w-5 -translate-y-1/2 text-lime/70" />
+                <div className="flex items-center justify-center gap-3">
+                  <IconClock className="h-5 w-5 shrink-0 text-lime/70" aria-hidden />
                   <input
                     id={`heure-${i}`}
-                    className="text-input lime-input w-full text-center"
+                    className="text-input lime-input w-[140px] text-center"
                     value={heure}
                     onChange={(e) => {
                       const heures = [...form.heuresDebutJours];
@@ -705,9 +702,9 @@ export function PlanningStep({
           <label className="field-label-tight">
             Durée estimée d&apos;un match
           </label>
-          <div className="relative w-[140px]">
-            <IconHourglass className="pointer-events-none absolute right-full top-1/2 mr-3 h-5 w-5 -translate-y-1/2 text-lime/70" />
-            <div className="text-input lime-input w-full text-center">
+          <div className="flex items-center justify-center gap-3">
+            <IconHourglass className="h-5 w-5 shrink-0 text-lime/70" aria-hidden />
+            <div className="text-input lime-input w-[140px] text-center">
               {form.dureeMatch} min
             </div>
           </div>

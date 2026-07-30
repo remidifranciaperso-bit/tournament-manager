@@ -128,6 +128,7 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
         winner: result.winner,
         loser: result.loser,
         display: result.display,
+        sets: result.sets,
       };
     }
 
