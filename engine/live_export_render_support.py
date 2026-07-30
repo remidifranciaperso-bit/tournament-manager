@@ -9,11 +9,14 @@ from pathlib import Path
 import fitz
 
 from engine.live_ranking import build_final_ranking, format_place_label
+from engine.live_pool_standings import build_pool_qualifier_map
 from engine.live_team_resolve import (
     format_feed_key,
     format_team_display,
+    format_team_slot,
     format_team_with_initials,
     is_placeholder,
+    pool_qualifier_label_from_feed_key,
     resolve_team_label_deep,
 )
 from engine.match_placement_label import match_placement_label
@@ -804,6 +807,7 @@ def _draw_match_box(
     split_main_bracket: bool,
     base_dir: Path | None = None,
     export_mode: bool = False,
+    pool_qualifiers: dict[str, str] | None = None,
 ) -> None:
     has_score = False if export_mode else bool(result and result.get("display"))
     header_frac = 0.22 if export_mode or not has_score else 0.20
@@ -886,11 +890,13 @@ def _draw_match_box(
         match.get("equipe1", ""),
         matches_by_code,
         match_results,
+        pool_qualifiers,
     )
     equipe2 = format_team_display(
         match.get("equipe2", ""),
         matches_by_code,
         match_results,
+        pool_qualifiers,
     )
 
     team1_rect = fitz.Rect(body.x0 + 2, body.y0 + 2, body.x1 - 2, mid_y - 2)
@@ -1053,8 +1059,31 @@ def _resolve_feed_text(
     key: str,
     matches_by_code: dict[str, dict],
     match_results: dict[str, dict],
+    pool_qualifiers: dict[str, str] | None = None,
 ) -> str:
     import re
+
+    pool_label = pool_qualifier_label_from_feed_key(key)
+    if pool_label:
+        qualified = (pool_qualifiers or {}).get(pool_label)
+        if qualified:
+            return format_team_with_initials(qualified)
+        resolved = resolve_team_label_deep(
+            pool_label,
+            matches_by_code,
+            match_results,
+            pool_qualifiers,
+        )
+        if (
+            resolved
+            and resolved != pool_label
+            and not is_placeholder(resolved)
+            and not re.match(r"^Vainqueur\s+", resolved, re.I)
+            and not re.match(r"^Perdant\s+", resolved, re.I)
+            and not re.match(r"^(?:Deuxième|Second|Troisième)\s+", resolved, re.I)
+        ):
+            return format_team_with_initials(resolved)
+        return format_team_slot(pool_label)
 
     win = re.match(r"^WIN_(.+)$", key)
     lose = re.match(r"^LOSE_(.+)$", key)
@@ -1069,7 +1098,9 @@ def _resolve_feed_text(
 
     side = result.get("winner") if win else result.get("loser")
     raw = parent.get("equipe1") if side == 1 else parent.get("equipe2")
-    resolved = resolve_team_label_deep(raw or "", matches_by_code, match_results)
+    resolved = resolve_team_label_deep(
+        raw or "", matches_by_code, match_results, pool_qualifiers
+    )
     text = resolved if resolved != (raw or "").strip() else format_feed_key(key)
     return format_team_with_initials(text)
 
@@ -1092,6 +1123,7 @@ def draw_bracket_slide(
 
     fonts = _font_paths(base_dir)
     matches_by_code = {match["code"]: match for match in matches}
+    pool_qualifiers = build_pool_qualifier_map(matches, match_results)
     consumed_feeds: set[str] = set()
 
     for slot in slots:
@@ -1126,12 +1158,15 @@ def draw_bracket_slide(
             split_main_bracket=split_main_bracket,
             base_dir=base_dir,
             export_mode=export_mode,
+            pool_qualifiers=pool_qualifiers,
         )
 
     for feed in feeds:
         if feed["key"] in consumed_feeds:
             continue
-        text = _resolve_feed_text(feed["key"], matches_by_code, match_results)
+        text = _resolve_feed_text(
+            feed["key"], matches_by_code, match_results, pool_qualifiers
+        )
         rect = _pct_rect(feed, area)
         page.draw_rect(
             rect,
@@ -1170,6 +1205,7 @@ def _build_planning_rows(
     match_results: dict[str, dict],
 ) -> list[dict]:
     matches_by_code = {match["code"]: match for match in matches}
+    pool_qualifiers = build_pool_qualifier_map(matches, match_results)
     ordered = sorted(
         matches,
         key=lambda item: (
@@ -1196,11 +1232,13 @@ def _build_planning_rows(
                     match.get("equipe1", ""),
                     matches_by_code,
                     match_results,
+                    pool_qualifiers,
                 ),
                 "equipe2": format_team_display(
                     match.get("equipe2", ""),
                     matches_by_code,
                     match_results,
+                    pool_qualifiers,
                 ),
                 "duration": "—",
             }

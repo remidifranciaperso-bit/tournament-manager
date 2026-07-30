@@ -403,6 +403,11 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
                     detail="Payload export requis pour Engine V2.",
                 )
             snapshot = _snapshot_depuis_export_body(body, carte)
+            meta = snapshot.get("meta") or {}
+            template_id = body.template_id or meta.get("template_id")
+            match_dicts = snapshot.get("matches") or None
+            has_scores = bool(snapshot.get("match_results"))
+            use_native = bool(match_dicts and template_id and has_scores)
             exporter_pdf_engine_v2(
                 chemin_source,
                 chemin_export,
@@ -412,6 +417,13 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
                 crosspage_stubs=body.crosspage_stubs,
                 snapshot=snapshot,
                 base_dir=BASE_DIR,
+                match_dicts=match_dicts if use_native else None,
+                template_id=template_id if use_native else None,
+                native_bracket_sections=frozenset({"main", "classement"})
+                if use_native
+                else None,
+                native_planning=use_native,
+                planning_layout=body.planning_layout if use_native else None,
             )
         else:
             from engine.live_pdf_export import exporter_pdf_tournoi_manager

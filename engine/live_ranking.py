@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from engine.live_pool_standings import build_pool_qualifier_map
 from engine.live_team_resolve import resolve_team_label_deep
 from engine.match_placement_label import parse_placement_tour
 
@@ -18,8 +19,11 @@ def _format_team_name(
     label: str,
     matches_by_code: dict[str, dict],
     match_results: dict[str, dict],
+    pool_qualifiers: dict[str, str] | None = None,
 ) -> str:
-    resolved = resolve_team_label_deep(label, matches_by_code, match_results).strip()
+    resolved = resolve_team_label_deep(
+        label, matches_by_code, match_results, pool_qualifiers
+    ).strip()
     if not resolved or VAINQUEUR_RE.match(resolved):
         return ""
     return resolved
@@ -32,6 +36,7 @@ def build_final_ranking(
     nb_equipes: int,
 ) -> list[dict]:
     matches_by_code = _matches_by_code(matches)
+    pool_qualifiers = build_pool_qualifier_map(matches, match_results)
     teams_by_place: dict[int, str] = {}
 
     for match in matches:
@@ -43,8 +48,12 @@ def build_final_ranking(
         winner_raw = match.get("equipe1") if result.get("winner") == 1 else match.get("equipe2")
         loser_raw = match.get("equipe1") if result.get("loser") == 1 else match.get("equipe2")
 
-        winner = _format_team_name(winner_raw or "", matches_by_code, match_results)
-        loser = _format_team_name(loser_raw or "", matches_by_code, match_results)
+        winner = _format_team_name(
+            winner_raw or "", matches_by_code, match_results, pool_qualifiers
+        )
+        loser = _format_team_name(
+            loser_raw or "", matches_by_code, match_results, pool_qualifiers
+        )
 
         if winner:
             teams_by_place[placement["winnerPlace"]] = winner

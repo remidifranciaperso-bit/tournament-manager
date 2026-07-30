@@ -10,6 +10,9 @@ WIN_RE = re.compile(r"^Vainqueur\s+(.+)$", re.IGNORECASE)
 LOSE_RE = re.compile(r"^Perdant\s+(.+)$", re.IGNORECASE)
 SECOND_RE = re.compile(r"^(?:Deuxième|Second)\s+(.+)$", re.IGNORECASE)
 THIRD_RE = re.compile(r"^Troisième\s+(.+)$", re.IGNORECASE)
+WIN_POULE_RE = re.compile(r"^WIN_POULE_([A-D])$", re.IGNORECASE)
+SECOND_POULE_RE = re.compile(r"^SECOND_POULE_([A-D])$", re.IGNORECASE)
+THIRD_POULE_RE = re.compile(r"^THIRD_POULE_([A-D])$", re.IGNORECASE)
 
 EMOJI_GAP = "\u2009"
 ICONE_VAINQUEUR = f"🏆{EMOJI_GAP}"
@@ -62,14 +65,33 @@ def _matches_by_code(matches: list[dict]) -> dict[str, dict]:
     return {match["code"]: match for match in matches}
 
 
+def pool_qualifier_label_from_feed_key(key: str) -> str | None:
+    win = WIN_POULE_RE.match(key.strip())
+    if win:
+        return f"Vainqueur Poule {win.group(1).upper()}"
+    second = SECOND_POULE_RE.match(key.strip())
+    if second:
+        return f"Deuxième Poule {second.group(1).upper()}"
+    third = THIRD_POULE_RE.match(key.strip())
+    if third:
+        return f"Troisième Poule {third.group(1).upper()}"
+    return None
+
+
 def resolve_team_label(
     label: str,
     matches_by_code: dict[str, dict],
     match_results: dict[str, dict],
+    pool_qualifiers: dict[str, str] | None = None,
 ) -> str:
     text = label.strip()
     if not text:
         return label
+
+    if pool_qualifiers:
+        qualified = pool_qualifiers.get(text)
+        if qualified:
+            return qualified
 
     role = None
     parent_code = None
@@ -107,14 +129,19 @@ def resolve_team_label_deep(
     label: str,
     matches_by_code: dict[str, dict],
     match_results: dict[str, dict],
+    pool_qualifiers: dict[str, str] | None = None,
     depth: int = 0,
 ) -> str:
     if depth > 8:
         return label
-    resolved = resolve_team_label(label, matches_by_code, match_results)
+    resolved = resolve_team_label(
+        label, matches_by_code, match_results, pool_qualifiers
+    )
     if resolved == label:
         return label
-    return resolve_team_label_deep(resolved, matches_by_code, match_results, depth + 1)
+    return resolve_team_label_deep(
+        resolved, matches_by_code, match_results, pool_qualifiers, depth + 1
+    )
 
 
 def _normalize_feed_code(code: str) -> str:
@@ -204,14 +231,15 @@ def format_team_display(
     label: str,
     matches_by_code: dict[str, dict],
     match_results: dict[str, dict],
+    pool_qualifiers: dict[str, str] | None = None,
 ) -> str:
     raw = label.strip() if isinstance(label, str) else ""
     if not raw:
         return "—"
-    if _is_unresolved_placeholder(raw):
-        return format_team_slot(raw)
 
-    resolved = resolve_team_label_deep(label, matches_by_code, match_results)
+    resolved = resolve_team_label_deep(
+        label, matches_by_code, match_results, pool_qualifiers
+    )
     if (
         resolved != raw
         and resolved.strip()

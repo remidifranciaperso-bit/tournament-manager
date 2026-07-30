@@ -102,3 +102,35 @@ def build_pool_standings(
             )
         )
     return rows
+
+
+def is_pool_complete(
+    pool: list[dict],
+    match_results: dict[str, dict],
+) -> bool:
+    return bool(pool) and all(
+        match_results.get(match.get("code", "")) for match in pool
+    )
+
+
+def build_pool_qualifier_map(
+    matches: list[dict],
+    match_results: dict[str, dict],
+) -> dict[str, str]:
+    """« Vainqueur/Deuxième/Troisième Poule X » → équipe (poules terminées)."""
+    from engine.live_pool_layout import pool_letters, pool_matches
+
+    result: dict[str, str] = {}
+    for letter in pool_letters(matches):
+        pool = pool_matches(matches, letter)
+        if not is_pool_complete(pool, match_results):
+            continue
+        standings = build_pool_standings(matches, match_results, letter=letter)
+        if standings:
+            result[f"Vainqueur Poule {letter}"] = standings[0].team
+        if len(standings) > 1:
+            result[f"Deuxième Poule {letter}"] = standings[1].team
+            result[f"Second Poule {letter}"] = standings[1].team
+        if len(standings) > 2:
+            result[f"Troisième Poule {letter}"] = standings[2].team
+    return result
