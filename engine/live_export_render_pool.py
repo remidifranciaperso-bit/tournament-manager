@@ -23,6 +23,7 @@ from engine.live_pool_layout import (
     pool_matches,
     pool_roster,
 )
+from engine.live_pool_standings import PoolStandingRow, build_pool_standings
 from engine.live_team_resolve import format_team_with_initials
 
 POOL_REF_WIDTH_PT = 920.0
@@ -198,15 +199,38 @@ def draw_pool_standings_table(
     teams: list[str],
     *,
     base_dir: Path | None,
+    pool: list[dict] | None = None,
+    match_results: dict[str, dict] | None = None,
 ) -> None:
-    """Tableau feuille poule : équipes (TS croissant), colonnes stats vides pour saisie."""
+    """Tableau feuille poule — stats vides (modèle) ou remplies depuis le live."""
     headers = ["Équipe", "Victoires", "Défaites", "Jeux", "Classement"]
     col_widths = [0.38, 0.14, 0.14, 0.14, 0.20]
+    standings_by_team: dict[str, PoolStandingRow] = {}
+    if pool and match_results:
+        for row in build_pool_standings(pool, match_results):
+            standings_by_team[row.team] = row
+
     rows: list[list[str]] = []
     body_colors: list[tuple[float, float, float]] = []
+    use_blank_stats = not standings_by_team
     for team in teams:
         label = format_team_with_initials(team)
-        rows.append([label, "", "", "", ""])
+        standing = standings_by_team.get(team)
+        if standing:
+            diff = standing.game_diff
+            diff_str = f"+{diff}" if diff > 0 else str(diff)
+            games_cell = diff_str if standing.played > 0 else "—"
+            rows.append(
+                [
+                    label,
+                    str(standing.wins),
+                    str(standing.losses),
+                    games_cell,
+                    str(standing.rank),
+                ]
+            )
+        else:
+            rows.append([label, "", "", "", ""])
         body_colors.extend([ARENA_800, TEMPLATE_BLUE, TEMPLATE_BLUE, TEMPLATE_BLUE, TEMPLATE_BLUE])
 
     table_area = _fit_live_table_area(
@@ -233,7 +257,7 @@ def draw_pool_standings_table(
         body_bold=[False, True, True, True, True],
         body_colors=body_colors,
         ref_width_pt=table_area.width,
-        blank_cols=[1, 2, 3, 4],
+        blank_cols=[1, 2, 3, 4] if use_blank_stats else None,
     )
 
 
@@ -249,6 +273,8 @@ def draw_pool_page(
 ) -> None:
     pool = pool_matches(matches, letter)
     teams = pool_roster(matches, letter)
+    live_filled = any(match_results.get(match.get("code", "")) for match in pool)
+    box_export_mode = export_mode and not live_filled
     fit = fitz.Rect(
         area.x0,
         area.y0 + FINAL_TABLE_VERTICAL_MARGIN_PT,
@@ -287,7 +313,7 @@ def draw_pool_page(
             fonts=fonts,
             split_main_bracket=False,
             base_dir=base_dir,
-            export_mode=export_mode,
+            export_mode=box_export_mode,
         )
 
     rows_count = max(1, (len(pool) + _GRID_COLS - 1) // _GRID_COLS)
@@ -303,4 +329,6 @@ def draw_pool_page(
         standings_area,
         teams,
         base_dir=base_dir,
+        pool=pool if live_filled else None,
+        match_results=match_results if live_filled else None,
     )

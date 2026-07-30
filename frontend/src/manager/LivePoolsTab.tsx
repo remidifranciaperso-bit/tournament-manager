@@ -264,6 +264,10 @@ function PoolView({
     () => buildPoolStandings(pool, matchResults),
     [pool, matchResults]
   );
+  const poolHasLiveResults = useMemo(
+    () => pool.some((match) => Boolean(matchResults[match.code])),
+    [pool, matchResults]
+  );
 
   const columns = 3;
   const headClass = useLiveTableHeadPresentation(v2TableHeaders);
@@ -336,7 +340,7 @@ function PoolView({
               </tr>
             </thead>
             <tbody>
-              {capture
+              {capture && !poolHasLiveResults
                 ? roster.map((team) => {
                     const label = formatTeamWithInitials(team);
                     return (
