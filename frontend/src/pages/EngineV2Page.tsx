@@ -35,6 +35,7 @@ import {
 } from "../platform/api";
 import { buildPlatformLiveSnapshot } from "../platform/liveSnapshot";
 import { PlatformGenerationSuccess } from "../platform/PlatformGenerationSuccess";
+import { PlatformPlanningStep } from "../platform/PlatformPlanningStep";
 import {
   ClubStep,
   FormatStep,
@@ -688,7 +689,12 @@ export default function EngineV2Page() {
                   multiJoursDisponible={multiJoursDisponible}
                 />
               )}
-              {step === 5 && <PlanningStep form={form} patch={patch} />}
+              {step === 5 &&
+                (isPlatformBuild ? (
+                  <PlatformPlanningStep form={form} patch={patch} />
+                ) : (
+                  <PlanningStep form={form} patch={patch} />
+                ))}
               {step === 6 && <TerrainsStep form={form} patch={patch} />}
               {step === 7 && (
                 <SummaryStep form={form} preview={preview} />
