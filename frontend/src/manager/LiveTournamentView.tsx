@@ -129,6 +129,12 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
         loser: result.loser,
         display: result.display,
         sets: result.sets,
+        ...(isPlatformBuild
+          ? {
+              launchedAt: result.launchedAt,
+              validatedAt: result.validatedAt,
+            }
+          : {}),
       };
     }
 
@@ -137,6 +143,8 @@ export function LiveTournamentView({ liveData, onPdfExported, platformFinish }: 
       template_id: templateId,
       matches,
       match_results,
+      platform_post_live:
+        isPlatformBuild && Object.keys(match_results).length > 0,
       completed: [...progress.completed],
       fields,
       planning_layout: planning_layout ?? {},

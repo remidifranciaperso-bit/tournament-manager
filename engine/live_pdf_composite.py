@@ -392,6 +392,7 @@ def composer_page_bracket_native(
     club_name: str | None = None,
     crosspage_stub: dict | None = None,
     show_placement_labels: bool = True,
+    platform_post_live: bool = False,
 ) -> None:
     """Bandeaux Engine + tableau bracket PyMuPDF (sans capture DOM)."""
     from engine.bracket_crosspage_stub import draw_crosspage_margin_stub
@@ -419,6 +420,7 @@ def composer_page_bracket_native(
         match_results=match_results,
         show_placement_labels=show_placement_labels,
         export_mode=True,
+        platform_post_live=platform_post_live,
     )
     if bracket_area.y1 < content_rect.y1 - 0.5:
         page.draw_rect(
@@ -445,6 +447,7 @@ def composer_page_planning_native(
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
     club_name: str | None = None,
+    platform_post_live: bool = False,
 ) -> None:
     """Bandeaux Engine + tableau planning PyMuPDF (en-têtes identiques participants)."""
     from engine.live_export_render_support import draw_planning_table
@@ -467,6 +470,7 @@ def composer_page_planning_native(
         match_results,
         base_dir=base_dir,
         export_mode=True,
+        platform_post_live=platform_post_live,
     )
 
 
@@ -517,6 +521,7 @@ def composer_page_pool_native(
     logo_bytes: bytes | None = None,
     logo_wh: tuple[int, int] | None = None,
     club_name: str | None = None,
+    platform_post_live: bool = False,
 ) -> None:
     from engine.live_export_render_pool import draw_pool_page
 
@@ -538,6 +543,7 @@ def composer_page_pool_native(
         match_results,
         base_dir=base_dir,
         export_mode=True,
+        platform_post_live=platform_post_live,
     )
 
 

@@ -808,10 +808,19 @@ def _draw_match_box(
     base_dir: Path | None = None,
     export_mode: bool = False,
     pool_qualifiers: dict[str, str] | None = None,
+    platform_post_live: bool = False,
 ) -> None:
-    has_score = False if export_mode else bool(result and result.get("display"))
-    header_frac = 0.22 if export_mode or not has_score else 0.20
-    score_frac = 0.14 if export_mode or not has_score else 0.18
+    has_live_result = bool(
+        platform_post_live and result and result.get("display")
+    )
+    effective_export_mode = export_mode and not has_live_result
+    has_score = (
+        False
+        if effective_export_mode
+        else bool(result and result.get("display"))
+    )
+    header_frac = 0.22 if effective_export_mode or not has_score else 0.20
+    score_frac = 0.14 if effective_export_mode or not has_score else 0.18
     header_bottom = rect.y0 + rect.height * header_frac
     score_h = rect.height * score_frac
     score_top = rect.y1 - score_h
@@ -828,7 +837,7 @@ def _draw_match_box(
     code = match.get("code", "")
     terrain = match.get("terrain") or ""
     heure = match.get("heure") or ""
-    header_bold = not export_mode
+    header_bold = not effective_export_mode
 
     code_rect = fitz.Rect(header.x0 + 2, header.y0, header.x0 + header.width * 0.42, header.y1)
     terrain_rect = fitz.Rect(header.x0, header.y0, header.x1, header.y1)
@@ -866,7 +875,7 @@ def _draw_match_box(
 
     if placement_label:
         label_size = _pt_on_area(
-            PLACEMENT_BRUSH_PT if export_mode else PLACEMENT_PT,
+            PLACEMENT_BRUSH_PT if effective_export_mode else PLACEMENT_PT,
             area,
         )
         if placement_label == "1-2" and split_main_bracket:
@@ -917,6 +926,10 @@ def _draw_match_box(
         fitz.TEXT_ALIGN_LEFT if is_placeholder(equipe2) else fitz.TEXT_ALIGN_CENTER
     )
 
+    winner = result.get("winner") if result else None
+    team1_bold = platform_post_live and winner == 1
+    team2_bold = platform_post_live and winner == 2
+
     if is_placeholder(equipe1):
         if not _draw_live_placeholder(
             page,
@@ -950,6 +963,7 @@ def _draw_match_box(
             fontfile=fonts.get("noto"),
             align=team1_align,
             fonts=fonts,
+            bold=team1_bold,
         )
 
     if is_placeholder(equipe2):
@@ -985,6 +999,7 @@ def _draw_match_box(
             fontfile=fonts.get("noto"),
             align=team2_align,
             fonts=fonts,
+            bold=team2_bold,
         )
 
     if _is_emoji_placeholder_label(equipe1):
@@ -1020,11 +1035,11 @@ def _draw_match_box(
         fontsize=_pt_on_area(VS_PT, area),
         color=ARENA_600,
         fontfile=fonts.get("noto"),
-        bold=not export_mode,
+        bold=not effective_export_mode,
     )
 
     score_rect = fitz.Rect(rect.x0, score_top, rect.x1, rect.y1)
-    if has_score and not export_mode:
+    if has_score and not effective_export_mode:
         _insert_textbox(
             page,
             score_rect,
@@ -1118,6 +1133,7 @@ def draw_bracket_slide(
     base_dir: Path | None = None,
     split_main_bracket: bool = False,
     export_mode: bool = False,
+    platform_post_live: bool = False,
 ) -> None:
     from engine.live_team_resolve import feed_key_from_team_label
 
@@ -1159,6 +1175,7 @@ def draw_bracket_slide(
             base_dir=base_dir,
             export_mode=export_mode,
             pool_qualifiers=pool_qualifiers,
+            platform_post_live=platform_post_live,
         )
 
     for feed in feeds:
@@ -1199,6 +1216,21 @@ def _planning_slots(layout_fields: list[dict]) -> list[tuple[int | None, int]]:
     return slots
 
 
+def _format_match_duration_minutes(
+    launched_at: object | None,
+    validated_at: object | None,
+) -> str:
+    if launched_at is None or validated_at is None:
+        return "—"
+    try:
+        launched = float(launched_at)
+        validated = float(validated_at)
+    except (TypeError, ValueError):
+        return "—"
+    minutes = max(0, round((validated - launched) / 60_000))
+    return f"{minutes} min"
+
+
 def _build_planning_rows(
     layout_fields: list[dict],
     matches: list[dict],
@@ -1223,6 +1255,7 @@ def _build_planning_rows(
         if index - 1 >= len(source):
             continue
         match = source[index - 1]
+        result = match_results.get(match["code"]) or {}
         rows.append(
             {
                 "code": match["code"],
@@ -1240,7 +1273,10 @@ def _build_planning_rows(
                     match_results,
                     pool_qualifiers,
                 ),
-                "duration": "—",
+                "duration": _format_match_duration_minutes(
+                    result.get("launchedAt", result.get("launched_at")),
+                    result.get("validatedAt", result.get("validated_at")),
+                ),
             }
         )
     return rows
@@ -1623,16 +1659,21 @@ def draw_planning_table(
     *,
     base_dir: Path | None = None,
     export_mode: bool = True,
+    platform_post_live: bool = False,
 ) -> None:
     """Tableau planning calqué sur LivePlanningTab (capture export)."""
     rows = _build_planning_rows(layout_fields, matches, match_results)
+    if platform_post_live:
+        done_header = "TEMPS"
+    else:
+        done_header = "TERMINÉ" if export_mode else "FAIT"
     headers = [
         "CODE",
         "HEURE",
         "TERRAIN",
         "ÉQUIPE 1",
         "ÉQUIPE 2",
-        "TERMINÉ" if export_mode else "FAIT",
+        done_header,
     ]
     col_widths = PLANNING_COL_WIDTHS
     table_area = _fit_live_table_area(
@@ -1648,7 +1689,7 @@ def draw_planning_table(
             row["terrain"] or "—",
             row["equipe1"],
             row["equipe2"],
-            "" if export_mode else "☐",
+            row["duration"] if platform_post_live else ("" if export_mode else "☐"),
         ]
         for row in rows
     ]
@@ -1669,7 +1710,7 @@ def draw_planning_table(
         ],
         body_fonts=["tsl", "tsl", "noto", "noto", "noto", "tsl"],
         body_bold=[True, False, True, False, False, False],
-        checkbox_cols=[5] if export_mode else None,
+        checkbox_cols=[5] if export_mode and not platform_post_live else None,
     )
 
 

@@ -15,8 +15,12 @@ export interface LivePdfExportPayload {
   matches: LiveMatch[];
   match_results: Record<
     string,
-    Pick<StoredMatchResult, "winner" | "loser" | "display" | "sets">
+    Pick<
+      StoredMatchResult,
+      "winner" | "loser" | "display" | "sets" | "launchedAt" | "validatedAt"
+    >
   >;
+  platform_post_live?: boolean;
   completed: string[];
   fields: Record<string, string>;
   planning_layout: Record<string, LiveLayoutField[]>;

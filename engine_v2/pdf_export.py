@@ -79,6 +79,7 @@ def exporter_pdf_engine_v2(
     template_id: str | None = None,
     native_planning: bool = False,
     planning_layout: dict | None = None,
+    platform_post_live: bool = False,
 ) -> None:
     """
     Assemble le PDF final Engine V2.
@@ -174,6 +175,7 @@ def exporter_pdf_engine_v2(
                             logo_bytes=logo_bytes,
                             logo_wh=logo_wh,
                             club_name=club_name,
+                            platform_post_live=platform_post_live,
                         )
                     elif capture_data:
                         composer_page_export(
@@ -273,6 +275,7 @@ def exporter_pdf_engine_v2(
                         logo_wh=logo_wh,
                         club_name=club_name,
                         crosspage_stub=(crosspage_stubs or {}).get(key),
+                        platform_post_live=platform_post_live,
                     )
                     continue
 
@@ -304,6 +307,7 @@ def exporter_pdf_engine_v2(
                         logo_bytes=logo_bytes,
                         logo_wh=logo_wh,
                         club_name=club_name,
+                        platform_post_live=platform_post_live,
                     )
                     continue
 

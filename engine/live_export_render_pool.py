@@ -270,11 +270,15 @@ def draw_pool_page(
     *,
     base_dir: Path | None,
     export_mode: bool = True,
+    platform_post_live: bool = False,
 ) -> None:
     pool = pool_matches(matches, letter)
     teams = pool_roster(matches, letter)
     live_filled = any(match_results.get(match.get("code", "")) for match in pool)
-    box_export_mode = export_mode and not live_filled
+    if platform_post_live:
+        box_export_mode = True
+    else:
+        box_export_mode = export_mode and not live_filled
     fit = fitz.Rect(
         area.x0,
         area.y0 + FINAL_TABLE_VERTICAL_MARGIN_PT,
@@ -314,6 +318,7 @@ def draw_pool_page(
             split_main_bracket=False,
             base_dir=base_dir,
             export_mode=box_export_mode,
+            platform_post_live=platform_post_live,
         )
 
     rows_count = max(1, (len(pool) + _GRID_COLS - 1) // _GRID_COLS)

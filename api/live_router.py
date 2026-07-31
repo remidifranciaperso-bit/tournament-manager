@@ -45,6 +45,7 @@ class LivePdfExportBody(BaseModel):
     crosspage_stubs: dict[str, dict] | None = None
     meta: dict | None = None
     pack_version: str | None = None
+    platform_post_live: bool = False
 
 
 def _ecrire_logo_temporaire(upload: UploadFile, suffix: str) -> Path:
@@ -424,6 +425,7 @@ def _generer_pdf_export(token: str, body: LivePdfExportBody | None = None) -> Pa
                 else None,
                 native_planning=use_native,
                 planning_layout=body.planning_layout if use_native else None,
+                platform_post_live=bool(body.platform_post_live and use_native),
             )
         else:
             from engine.live_pdf_export import exporter_pdf_tournoi_manager
